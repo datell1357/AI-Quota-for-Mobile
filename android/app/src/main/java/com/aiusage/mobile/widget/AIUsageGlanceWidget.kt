@@ -10,21 +10,48 @@ import androidx.glance.appwidget.provideContent
 import androidx.glance.layout.Column
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.text.Text
+import org.json.JSONArray
+import org.json.JSONObject
 
 class AIUsageGlanceWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
-            AIUsageWidgetContent()
+            AIUsageWidgetContent(WidgetSnapshotCache(context).readState())
         }
     }
 }
 
 @Composable
-private fun AIUsageWidgetContent() {
+private fun AIUsageWidgetContent(state: WidgetSnapshotState) {
     Column(modifier = GlanceModifier.fillMaxSize()) {
         Text("AI Usage")
-        Text("Reads latest snapshot from local cache")
+        Text(state.deviceName.ifBlank { "No PC linked" })
+        Text("Status: ${state.status}")
+        parsePrimaryProvider(state.snapshotJson)?.let { Text(it) }
+        if (state.updatedAt.isNotBlank()) {
+            Text(state.updatedAt)
+        } else {
+            Text("Reads latest snapshot from local cache")
+        }
     }
+}
+
+private fun parsePrimaryProvider(snapshotJson: String): String? {
+    if (snapshotJson.isBlank()) return null
+    return runCatching {
+        val providers = JSONObject(snapshotJson).optJSONArray("providers") ?: JSONArray()
+        val provider = providers.optJSONObject(0) ?: return null
+        val name = provider.optString("displayName", provider.optString("providerId", "Provider"))
+        val lines = provider.optJSONArray("lines") ?: JSONArray()
+        val line = lines.optJSONObject(0)
+        val used = line?.opt("used")?.toString()
+        val limit = line?.opt("limit")?.toString()
+        when {
+            !used.isNullOrBlank() && !limit.isNullOrBlank() -> "$name $used/$limit"
+            provider.optString("errorCode").isNotBlank() -> "$name ${provider.optString("errorCode")}"
+            else -> name
+        }
+    }.getOrNull()
 }
 
 class AIUsageGlanceWidgetReceiver : GlanceAppWidgetReceiver() {

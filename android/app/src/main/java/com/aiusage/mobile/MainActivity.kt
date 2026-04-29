@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,7 +27,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.aiusage.mobile.sync.AIUsageApiClient
 import com.aiusage.mobile.sync.PairingCodeUiState
+import com.aiusage.mobile.sync.SnapshotProviderLine
+import com.aiusage.mobile.sync.SnapshotRefreshResult
 import com.aiusage.mobile.sync.SnapshotRepository
+import com.aiusage.mobile.sync.SnapshotStatus
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -75,9 +79,27 @@ fun AIUsageApp(
     var currentUser by remember { mutableStateOf(auth.currentUser) }
     var authMessage by remember { mutableStateOf<String?>(null) }
     var pairingState by remember { mutableStateOf<PairingCodeUiState>(PairingCodeUiState.Idle) }
-    var sampleSnapshotSaved by remember { mutableStateOf(false) }
     var signingIn by remember { mutableStateOf(false) }
+    var refreshingSnapshot by remember { mutableStateOf(false) }
+    var snapshotResult by remember { mutableStateOf<SnapshotRefreshResult?>(null) }
+    var snapshotMessage by remember { mutableStateOf<String?>(null) }
     val coroutineScope = rememberCoroutineScope()
+
+    fun refreshLatestSnapshot(uid: String) {
+        refreshingSnapshot = true
+        snapshotMessage = null
+        coroutineScope.launch {
+            try {
+                val result = repository.refreshLatestSnapshot(uid)
+                snapshotResult = result
+                snapshotMessage = result.message
+            } catch (error: Throwable) {
+                snapshotMessage = error.message ?: "Could not refresh latest snapshot"
+            } finally {
+                refreshingSnapshot = false
+            }
+        }
+    }
 
     val googleLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -113,10 +135,18 @@ fun AIUsageApp(
             currentUser = firebaseAuth.currentUser
             if (firebaseAuth.currentUser == null) {
                 pairingState = PairingCodeUiState.Idle
+                snapshotResult = null
+                snapshotMessage = null
             }
         }
         auth.addAuthStateListener(listener)
         onDispose { auth.removeAuthStateListener(listener) }
+    }
+
+    LaunchedEffect(currentUser?.uid) {
+        val uid = currentUser?.uid ?: return@LaunchedEffect
+        refreshLatestSnapshot(uid)
+        repository.enqueueRefresh(uid)
     }
 
     Column(
@@ -180,7 +210,9 @@ fun AIUsageApp(
         SignedInContent(
             user = currentUser,
             pairingState = pairingState,
-            sampleSnapshotSaved = sampleSnapshotSaved,
+            snapshotResult = snapshotResult,
+            snapshotMessage = snapshotMessage,
+            refreshingSnapshot = refreshingSnapshot,
             onGeneratePairingCode = {
                 currentUser?.getIdToken(false)
                     ?.addOnSuccessListener { tokenResult ->
@@ -212,9 +244,8 @@ fun AIUsageApp(
                         )
                     }
             },
-            onSaveSampleSnapshot = {
-                repository.saveForWidget(sampleSnapshotJson)
-                sampleSnapshotSaved = true
+            onRefreshSnapshot = {
+                currentUser?.uid?.let(::refreshLatestSnapshot)
             },
             onSignOut = {
                 auth.signOut()
@@ -222,6 +253,8 @@ fun AIUsageApp(
                 signingIn = false
                 authMessage = null
                 pairingState = PairingCodeUiState.Idle
+                snapshotResult = null
+                snapshotMessage = null
             }
         )
     }
@@ -231,13 +264,21 @@ fun AIUsageApp(
 private fun SignedInContent(
     user: FirebaseUser?,
     pairingState: PairingCodeUiState,
-    sampleSnapshotSaved: Boolean,
+    snapshotResult: SnapshotRefreshResult?,
+    snapshotMessage: String?,
+    refreshingSnapshot: Boolean,
     onGeneratePairingCode: () -> Unit,
-    onSaveSampleSnapshot: () -> Unit,
+    onRefreshSnapshot: () -> Unit,
     onSignOut: () -> Unit
 ) {
     Text(user?.email ?: user?.uid.orEmpty(), style = MaterialTheme.typography.bodyMedium)
-    Text("No PC linked", style = MaterialTheme.typography.titleMedium)
+
+    Text("Linked device", style = MaterialTheme.typography.titleMedium)
+    Text(snapshotResult?.deviceName ?: "No PC linked")
+
+    Text("Snapshot status", style = MaterialTheme.typography.titleMedium)
+    Text(snapshotResult?.status?.name ?: SnapshotStatus.NotLinked.name)
+
     Button(onClick = onGeneratePairingCode, modifier = Modifier.fillMaxWidth()) {
         Text("Generate PC Link Code")
     }
@@ -252,14 +293,21 @@ private fun SignedInContent(
         is PairingCodeUiState.Failed -> Text(pairingState.message)
     }
 
-    Button(onClick = onSaveSampleSnapshot, modifier = Modifier.fillMaxWidth()) {
-        Text("Save sample snapshot")
+    Button(onClick = onRefreshSnapshot, modifier = Modifier.fillMaxWidth()) {
+        Text(if (refreshingSnapshot) "Refreshing snapshot..." else "Refresh latest snapshot")
     }
 
-    if (sampleSnapshotSaved) {
+    snapshotMessage?.let { Text(it) }
+
+    snapshotResult?.updatedAt?.takeIf { it.isNotBlank() }?.let {
+        Text("Updated at $it")
+    }
+
+    if (!snapshotResult?.providers.isNullOrEmpty()) {
         Text("Latest Snapshot", style = MaterialTheme.typography.titleMedium)
-        ProviderRow("Codex", "42/100")
-        ProviderRow("Claude", "auth_expired")
+        snapshotResult?.providers?.forEach { provider ->
+            ProviderRow(provider)
+        }
     }
 
     Button(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
@@ -268,20 +316,10 @@ private fun SignedInContent(
 }
 
 @Composable
-private fun ProviderRow(name: String, value: String) {
+private fun ProviderRow(line: SnapshotProviderLine) {
     Row(modifier = Modifier.fillMaxWidth()) {
-        Text(name)
+        Text(line.providerName)
         Spacer(modifier = Modifier.weight(1f))
-        Text(value)
+        Text(line.summary)
     }
 }
-
-private const val sampleSnapshotJson = """
-{
-  "schemaVersion": 1,
-  "providers": [
-    { "providerId": "codex", "displayName": "Codex", "status": "ok" },
-    { "providerId": "claude", "displayName": "Claude", "status": "error" }
-  ]
-}
-"""

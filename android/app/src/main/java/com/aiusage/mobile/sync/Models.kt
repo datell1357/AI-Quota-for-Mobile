@@ -39,3 +39,19 @@ enum class ProviderStatus {
     unknown
 }
 
+data class SnapshotProviderLine(
+    val providerName: String,
+    val summary: String
+)
+
+data class SnapshotRefreshResult(
+    val deviceId: String?,
+    val deviceName: String?,
+    val status: SnapshotStatus,
+    val ageSeconds: Long?,
+    val fetchedAt: String?,
+    val updatedAt: String?,
+    val message: String,
+    val providers: List<SnapshotProviderLine>,
+    val rawSnapshotJson: String
+)

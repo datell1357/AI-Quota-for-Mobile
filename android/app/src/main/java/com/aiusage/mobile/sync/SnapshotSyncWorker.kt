@@ -3,18 +3,18 @@ package com.aiusage.mobile.sync
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.aiusage.mobile.widget.WidgetSnapshotCache
 
 class SnapshotSyncWorker(
     appContext: Context,
     workerParameters: WorkerParameters
 ) : CoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result {
-        val cachedSnapshot = WidgetSnapshotCache(applicationContext).read()
-        if (cachedSnapshot.isBlank()) {
-            return Result.retry()
+        val uid = inputData.getString("uid") ?: return Result.failure()
+        return try {
+            SnapshotRepository(applicationContext).refreshLatestSnapshot(uid)
+            Result.success()
+        } catch (_: Throwable) {
+            Result.retry()
         }
-        WidgetSnapshotCache(applicationContext).write(cachedSnapshot)
-        return Result.success()
     }
 }

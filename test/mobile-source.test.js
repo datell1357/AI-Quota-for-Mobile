@@ -50,6 +50,7 @@ test("Android app has API client, typed UI state, and non-placeholder widget syn
   const api = source("android/app/src/main/java/com/aiusage/mobile/sync/AIUsageApiClient.kt");
   const pairing = source("android/app/src/main/java/com/aiusage/mobile/sync/PairingCodeViewModel.kt");
   const status = source("android/app/src/main/java/com/aiusage/mobile/sync/SnapshotStatus.kt");
+  const repo = source("android/app/src/main/java/com/aiusage/mobile/sync/SnapshotRepository.kt");
   const worker = source("android/app/src/main/java/com/aiusage/mobile/sync/SnapshotSyncWorker.kt");
   const cache = source("android/app/src/main/java/com/aiusage/mobile/widget/WidgetSnapshotCache.kt");
 
@@ -63,11 +64,21 @@ test("Android app has API client, typed UI state, and non-placeholder widget syn
   assert.match(status, /Offline/);
   assert.match(status, /15 \* 60/);
   assert.match(status, /24 \* 60 \* 60/);
+  assert.match(repo, /FirebaseFirestore/);
+  assert.match(repo, /collection\("users"\)/);
+  assert.match(repo, /collection\("devices"\)/);
+  assert.match(repo, /collection\("snapshots"\)/);
+  assert.match(repo, /resolveSnapshotStatus/);
+  assert.match(repo, /saveForWidget/);
+  assert.match(worker, /refreshLatestSnapshot/);
+  assert.match(worker, /inputData\.getString\("uid"\)/);
   assert.doesNotMatch(worker, /write\("\{}"\)/);
+  assert.match(cache, /updatedAt/);
+  assert.match(cache, /status/);
   assert.doesNotMatch(cache, /"\{}"/);
 });
 
-test("Android main UI uses Firebase auth and pairing API instead of local placeholder state", () => {
+test("Android main UI uses Firebase auth, pairing API, and Firestore-backed snapshot refresh", () => {
   const main = source("android/app/src/main/java/com/aiusage/mobile/MainActivity.kt");
   const manifest = source("android/app/src/main/AndroidManifest.xml");
   const styles = source("android/app/src/main/res/values/styles.xml");
@@ -86,17 +97,22 @@ test("Android main UI uses Firebase auth and pairing API instead of local placeh
   assert.match(main, /auth\.currentUser/);
   assert.match(main, /getIdToken\(false\)/);
   assert.match(main, /createPairingCode/);
+  assert.match(main, /refreshLatestSnapshot/);
+  assert.match(main, /Latest Snapshot/);
+  assert.match(main, /Refresh latest snapshot/);
+  assert.match(main, /Linked device/);
+  assert.match(main, /Snapshot status/);
   assert.match(main, /No PC linked/);
   assert.match(main, /Generate PC Link Code/);
   assert.match(main, /Signing in\.\.\./);
   assert.match(main, /Sign out/);
-  assert.match(main, /Codex/);
-  assert.match(main, /Claude/);
-  assert.match(main, /Save sample snapshot/);
+  assert.match(main, /providers\?\.forEach/);
   assert.doesNotMatch(main, /signedIn = true/);
   assert.doesNotMatch(main, /482 193/);
+  assert.doesNotMatch(main, /Save sample snapshot/);
   assert.match(gradle, /play-services-auth/);
   assert.match(gradle, /lifecycle-runtime-ktx/);
+  assert.match(gradle, /kotlinx-coroutines-play-services/);
   assert.match(gradle, /buildConfig = true/);
 });
 
