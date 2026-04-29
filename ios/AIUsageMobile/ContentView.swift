@@ -24,10 +24,16 @@ struct ContentView: View {
 }
 
 struct SignInView: View {
+    @EnvironmentObject private var session: SessionViewModel
+
     var body: some View {
         VStack(spacing: 12) {
-            Button("Continue with Google") {}
-            Button("Continue with GitHub") {}
+            Button("Continue with Google") {
+                session.markSignedInForPreview()
+            }
+            Button("Continue with GitHub") {
+                session.markSignedInForPreview()
+            }
         }
         .buttonStyle(.borderedProminent)
         .padding()
@@ -35,12 +41,15 @@ struct SignInView: View {
 }
 
 struct PairingView: View {
+    @EnvironmentObject private var snapshotStore: SnapshotStore
     @StateObject private var viewModel = PairingCodeViewModel(
         apiClient: AIUsageAPIClient(baseURL: URL(string: "https://example.invalid")!)
     )
 
     var body: some View {
         VStack(spacing: 16) {
+            Text("No PC linked")
+                .font(.headline)
             Text(viewModel.state.title)
                 .font(.headline)
             Button("Generate PC Link Code") {
@@ -53,6 +62,9 @@ struct PairingView: View {
                     .font(.system(size: 42, weight: .semibold, design: .monospaced))
                 Text(viewModel.countdownText() ?? "Expires in 10:00")
                     .foregroundStyle(.secondary)
+            }
+            Button("Save sample snapshot") {
+                snapshotStore.loadSampleSnapshot()
             }
         }
         .padding()

@@ -66,3 +66,35 @@ test("Android app has API client, typed UI state, and non-placeholder widget syn
   assert.doesNotMatch(worker, /write\("\{}"\)/);
   assert.doesNotMatch(cache, /"\{}"/);
 });
+
+test("Android main UI exposes pre-production mobile flow up to snapshot display", () => {
+  const main = source("android/app/src/main/java/com/aiusage/mobile/MainActivity.kt");
+  const manifest = source("android/app/src/main/AndroidManifest.xml");
+  const styles = source("android/app/src/main/res/values/styles.xml");
+
+  assert.match(manifest, /android:theme="@style\/Theme\.AIUsage"/);
+  assert.match(styles, /windowActionBar">false/);
+  assert.match(styles, /windowNoTitle">true/);
+  assert.match(main, /Continue with Google/);
+  assert.match(main, /Continue with GitHub/);
+  assert.match(main, /No PC linked/);
+  assert.match(main, /Generate PC Link Code/);
+  assert.match(main, /482 193/);
+  assert.match(main, /Expires in 10:00/);
+  assert.match(main, /Codex/);
+  assert.match(main, /Claude/);
+  assert.match(main, /Save sample snapshot/);
+});
+
+test("iOS main UI exposes pre-production mobile flow up to snapshot display", () => {
+  const content = source("ios/AIUsageMobile/ContentView.swift");
+  const store = source("ios/AIUsageMobile/SnapshotStore.swift");
+
+  assert.match(content, /Continue with Google/);
+  assert.match(content, /Continue with GitHub/);
+  assert.match(content, /No PC linked/);
+  assert.match(content, /Generate PC Link Code/);
+  assert.match(content, /Save sample snapshot/);
+  assert.match(store, /Codex/);
+  assert.match(store, /Claude/);
+});

@@ -2,7 +2,8 @@
   <application
     android:allowBackup="false"
     android:label="AI Usage"
-    android:supportsRtl="true">
+    android:supportsRtl="true"
+    android:theme="@style/Theme.AIUsage">
     <activity
       android:name=".MainActivity"
       android:exported="true">
@@ -23,4 +24,3 @@
     </receiver>
   </application>
 </manifest>
-

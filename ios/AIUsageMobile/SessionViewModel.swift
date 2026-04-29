@@ -7,5 +7,8 @@ final class SessionViewModel: ObservableObject {
     func restore() async {
         state = .signedOut
     }
-}
 
+    func markSignedInForPreview() {
+        state = .signedIn
+    }
+}
