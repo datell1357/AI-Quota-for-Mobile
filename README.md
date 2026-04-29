@@ -42,6 +42,16 @@ npm.cmd run lint
 
 PowerShell 실행 정책 때문에 `npm`이 `npm.ps1`로 실행되지 않는 환경에서는 `npm.cmd`를 사용합니다.
 
+Android 빌드는 Windows에서 Android Studio JBR과 SDK를 명시해 실행합니다.
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+$env:ANDROID_HOME='C:\Users\datell1357\AppData\Local\Android\Sdk'
+$env:ANDROID_SDK_ROOT='C:\Users\datell1357\AppData\Local\Android\Sdk'
+gradle -p android :app:assembleDebug --console=plain
+gradle -p android :app:testDebugUnitTest --console=plain
+```
+
 ## Firebase Functions
 
 제공하는 HTTPS API:

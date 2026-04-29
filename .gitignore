@@ -10,4 +10,8 @@ build/
 *.local
 GoogleService-Info.plist
 google-services.json
-
+local.properties
+.android-home/
+.tmp/
+android/.gradle/
+android-emulator-*.png
