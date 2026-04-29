@@ -10,23 +10,25 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read, create, update: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId);
       allow delete: if false;
 
       match /devices/{deviceId} {
         allow read: if isOwner(userId);
-        allow create, update, delete: if false;
+        allow create, update: if isOwner(userId);
+        allow delete: if false;
 
         match /snapshots/{snapshotId} {
           allow read: if isOwner(userId);
-          allow write: if false;
+          allow create, update: if isOwner(userId);
+          allow delete: if false;
         }
       }
     }
 
-    match /pairingCodes/{code} {
+    match /{document=**} {
       allow read, write: if false;
     }
   }
 }
-

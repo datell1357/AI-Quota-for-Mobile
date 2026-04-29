@@ -20,7 +20,7 @@ test("mobile skeleton contains iOS app, iOS widget, Android app, and Android Gla
   }
 });
 
-test("mobile skeleton documents cache-only widget behavior and avoids provider credentials", () => {
+test("mobile skeleton documents widget cache behavior and avoids provider credentials", () => {
   const iosCache = readFileSync(join(root, "ios/AIUsageMobile/SnapshotCache.swift"), "utf8");
   const androidRepo = readFileSync(
     join(root, "android/app/src/main/java/com/aiusage/mobile/sync/SnapshotRepository.kt"),
@@ -33,7 +33,6 @@ test("mobile skeleton documents cache-only widget behavior and avoids provider c
 
   assert.match(iosCache, /App Group cache/);
   assert.match(androidRepo, /display-only snapshot/);
-  assert.match(widget, /cache/);
+  assert.match(widget, /local cache|cache/);
   assert.doesNotMatch(`${iosCache}\n${androidRepo}\n${widget}`, /accessToken|refreshToken|apiKey/);
 });
-

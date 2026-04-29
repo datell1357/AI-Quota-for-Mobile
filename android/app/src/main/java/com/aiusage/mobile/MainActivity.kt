@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -25,8 +26,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.aiusage.mobile.sync.AIUsageApiClient
-import com.aiusage.mobile.sync.PairingCodeUiState
+import com.aiusage.mobile.sync.SnapshotDevice
 import com.aiusage.mobile.sync.SnapshotProviderLine
 import com.aiusage.mobile.sync.SnapshotRefreshResult
 import com.aiusage.mobile.sync.SnapshotRepository
@@ -43,9 +43,6 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private val repository by lazy { SnapshotRepository(applicationContext) }
     private val auth by lazy { FirebaseAuth.getInstance() }
-    private val apiClient by lazy {
-        AIUsageApiClient(BuildConfig.AI_USAGE_FUNCTIONS_BASE_URL.trimEnd('/'))
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,7 +51,6 @@ class MainActivity : ComponentActivity() {
                 AIUsageApp(
                     activity = this,
                     auth = auth,
-                    apiClient = apiClient,
                     repository = repository
                 )
             }
@@ -73,26 +69,40 @@ class MainActivity : ComponentActivity() {
 fun AIUsageApp(
     activity: MainActivity,
     auth: FirebaseAuth,
-    apiClient: AIUsageApiClient,
     repository: SnapshotRepository
 ) {
     var currentUser by remember { mutableStateOf(auth.currentUser) }
     var authMessage by remember { mutableStateOf<String?>(null) }
-    var pairingState by remember { mutableStateOf<PairingCodeUiState>(PairingCodeUiState.Idle) }
     var signingIn by remember { mutableStateOf(false) }
     var refreshingSnapshot by remember { mutableStateOf(false) }
     var snapshotResult by remember { mutableStateOf<SnapshotRefreshResult?>(null) }
     var snapshotMessage by remember { mutableStateOf<String?>(null) }
+    var deviceList by remember { mutableStateOf<List<SnapshotDevice>>(emptyList()) }
+    var selectedDeviceId by remember { mutableStateOf<String?>(null) }
+    var renameDraft by remember { mutableStateOf("") }
     val coroutineScope = rememberCoroutineScope()
+
+    fun loadDevices(uid: String) {
+        coroutineScope.launch {
+            val devices = repository.listDevices(uid)
+            deviceList = devices
+            val selected = selectedDeviceId?.takeIf { id -> devices.any { it.deviceId == id } }
+                ?: devices.firstOrNull()?.deviceId
+            selectedDeviceId = selected
+            renameDraft = devices.firstOrNull { it.deviceId == selected }?.deviceName.orEmpty()
+        }
+    }
 
     fun refreshLatestSnapshot(uid: String) {
         refreshingSnapshot = true
         snapshotMessage = null
         coroutineScope.launch {
             try {
-                val result = repository.refreshLatestSnapshot(uid)
+                val result = repository.refreshLatestSnapshot(uid, selectedDeviceId)
                 snapshotResult = result
+                selectedDeviceId = result.deviceId ?: selectedDeviceId
                 snapshotMessage = result.message
+                loadDevices(uid)
             } catch (error: Throwable) {
                 snapshotMessage = error.message ?: "Could not refresh latest snapshot"
             } finally {
@@ -134,9 +144,11 @@ fun AIUsageApp(
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
             currentUser = firebaseAuth.currentUser
             if (firebaseAuth.currentUser == null) {
-                pairingState = PairingCodeUiState.Idle
                 snapshotResult = null
                 snapshotMessage = null
+                deviceList = emptyList()
+                selectedDeviceId = null
+                renameDraft = ""
             }
         }
         auth.addAuthStateListener(listener)
@@ -145,6 +157,7 @@ fun AIUsageApp(
 
     LaunchedEffect(currentUser?.uid) {
         val uid = currentUser?.uid ?: return@LaunchedEffect
+        loadDevices(uid)
         refreshLatestSnapshot(uid)
         repository.enqueueRefresh(uid)
     }
@@ -154,7 +167,6 @@ fun AIUsageApp(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text("AI Usage", style = MaterialTheme.typography.headlineMedium)
-
         authMessage?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
 
         if (currentUser == null) {
@@ -209,40 +221,31 @@ fun AIUsageApp(
 
         SignedInContent(
             user = currentUser,
-            pairingState = pairingState,
+            deviceList = deviceList,
+            selectedDeviceId = selectedDeviceId,
+            renameDraft = renameDraft,
             snapshotResult = snapshotResult,
             snapshotMessage = snapshotMessage,
             refreshingSnapshot = refreshingSnapshot,
-            onGeneratePairingCode = {
-                currentUser?.getIdToken(false)
-                    ?.addOnSuccessListener { tokenResult ->
-                        val idToken = tokenResult.token
-                        if (idToken == null) {
-                            pairingState = PairingCodeUiState.Failed("Missing Firebase ID token")
-                            return@addOnSuccessListener
-                        }
-
-                        pairingState = PairingCodeUiState.Loading
-                        coroutineScope.launch {
-                            try {
-                                val response = apiClient.createPairingCode(idToken)
-                                pairingState = PairingCodeUiState.Ready(
-                                    code = response.displayCode,
-                                    expiresAt = response.expiresAt,
-                                    helperText = "Expires in 10:00"
-                                )
-                            } catch (error: Throwable) {
-                                pairingState = PairingCodeUiState.Failed(
-                                    error.message ?: "Could not generate PC link code"
-                                )
-                            }
-                        }
+            onSelectDevice = { device ->
+                selectedDeviceId = device.deviceId
+                renameDraft = device.deviceName
+                currentUser?.uid?.let(::refreshLatestSnapshot)
+            },
+            onRenameDraftChanged = { renameDraft = it },
+            onSaveDeviceName = {
+                val uid = currentUser?.uid ?: return@SignedInContent
+                val deviceId = selectedDeviceId ?: return@SignedInContent
+                coroutineScope.launch {
+                    try {
+                        repository.updateDeviceName(uid, deviceId, renameDraft)
+                        snapshotMessage = "Device name updated"
+                        loadDevices(uid)
+                        refreshLatestSnapshot(uid)
+                    } catch (error: Throwable) {
+                        snapshotMessage = error.message ?: "Could not update device name"
                     }
-                    ?.addOnFailureListener { error ->
-                        pairingState = PairingCodeUiState.Failed(
-                            error.message ?: "Could not refresh Firebase ID token"
-                        )
-                    }
+                }
             },
             onRefreshSnapshot = {
                 currentUser?.uid?.let(::refreshLatestSnapshot)
@@ -252,9 +255,11 @@ fun AIUsageApp(
                 GoogleSignIn.getClient(activity, activity.googleSignInOptions()).signOut()
                 signingIn = false
                 authMessage = null
-                pairingState = PairingCodeUiState.Idle
                 snapshotResult = null
                 snapshotMessage = null
+                deviceList = emptyList()
+                selectedDeviceId = null
+                renameDraft = ""
             }
         )
     }
@@ -263,35 +268,57 @@ fun AIUsageApp(
 @Composable
 private fun SignedInContent(
     user: FirebaseUser?,
-    pairingState: PairingCodeUiState,
+    deviceList: List<SnapshotDevice>,
+    selectedDeviceId: String?,
+    renameDraft: String,
     snapshotResult: SnapshotRefreshResult?,
     snapshotMessage: String?,
     refreshingSnapshot: Boolean,
-    onGeneratePairingCode: () -> Unit,
+    onSelectDevice: (SnapshotDevice) -> Unit,
+    onRenameDraftChanged: (String) -> Unit,
+    onSaveDeviceName: () -> Unit,
     onRefreshSnapshot: () -> Unit,
     onSignOut: () -> Unit
 ) {
     Text(user?.email ?: user?.uid.orEmpty(), style = MaterialTheme.typography.bodyMedium)
 
-    Text("Linked device", style = MaterialTheme.typography.titleMedium)
-    Text(snapshotResult?.deviceName ?: "No PC linked")
+    Text("Connected devices", style = MaterialTheme.typography.titleMedium)
+    if (deviceList.isEmpty()) {
+        Text("No PC linked")
+    } else {
+        deviceList.forEach { device ->
+            Button(
+                onClick = { onSelectDevice(device) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Text(device.deviceName)
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(device.status.name)
+                }
+            }
+        }
+    }
+
+    Text("Selected device", style = MaterialTheme.typography.titleMedium)
+    Text(snapshotResult?.deviceName ?: deviceList.firstOrNull { it.deviceId == selectedDeviceId }?.deviceName ?: "No PC linked")
+
+    Text("Rename selected device", style = MaterialTheme.typography.titleMedium)
+    OutlinedTextField(
+        value = renameDraft,
+        onValueChange = onRenameDraftChanged,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text("Device name") }
+    )
+    Button(
+        onClick = onSaveDeviceName,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("Save device name")
+    }
 
     Text("Snapshot status", style = MaterialTheme.typography.titleMedium)
     Text(snapshotResult?.status?.name ?: SnapshotStatus.NotLinked.name)
-
-    Button(onClick = onGeneratePairingCode, modifier = Modifier.fillMaxWidth()) {
-        Text("Generate PC Link Code")
-    }
-
-    when (pairingState) {
-        PairingCodeUiState.Idle -> Unit
-        PairingCodeUiState.Loading -> Text("Signing in...")
-        is PairingCodeUiState.Ready -> {
-            Text(pairingState.code, style = MaterialTheme.typography.displaySmall)
-            Text(pairingState.helperText)
-        }
-        is PairingCodeUiState.Failed -> Text(pairingState.message)
-    }
 
     Button(onClick = onRefreshSnapshot, modifier = Modifier.fillMaxWidth()) {
         Text(if (refreshingSnapshot) "Refreshing snapshot..." else "Refresh latest snapshot")
@@ -305,7 +332,7 @@ private fun SignedInContent(
 
     if (!snapshotResult?.providers.isNullOrEmpty()) {
         Text("Latest Snapshot", style = MaterialTheme.typography.titleMedium)
-        snapshotResult?.providers?.forEach { provider ->
+        snapshotResult.providers.forEach { provider ->
             ProviderRow(provider)
         }
     }

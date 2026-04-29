@@ -26,7 +26,33 @@ class SnapshotRepository(private val context: Context) {
             )
     }
 
-    suspend fun refreshLatestSnapshot(uid: String): SnapshotRefreshResult {
+    suspend fun listDevices(uid: String): List<SnapshotDevice> {
+        val deviceDocuments = firestore.collection("users")
+            .document(uid)
+            .collection("devices")
+            .get()
+            .await()
+            .documents
+
+        return deviceDocuments.map { deviceDocument ->
+            val snapshotDocument = deviceDocument.reference
+                .collection("snapshots")
+                .document("latest")
+                .get()
+                .await()
+            val parsedSnapshot = parseSnapshot(deviceDocument, snapshotDocument)
+            SnapshotDevice(
+                deviceId = deviceDocument.id,
+                deviceName = parsedSnapshot.deviceName ?: "Unnamed device",
+                status = parsedSnapshot.status,
+                lastSeenAt = deviceDocument.getString("lastSeenAt"),
+                fetchedAt = parsedSnapshot.fetchedAt,
+                summary = parsedSnapshot.message
+            )
+        }.sortedByDescending { timestampMillis(it.lastSeenAt) }
+    }
+
+    suspend fun refreshLatestSnapshot(uid: String, preferredDeviceId: String? = null): SnapshotRefreshResult {
         val devices = firestore.collection("users")
             .document(uid)
             .collection("devices")
@@ -50,72 +76,32 @@ class SnapshotRepository(private val context: Context) {
             return result
         }
 
-        val activeDevice = devices
-            .sortedByDescending { timestampMillis(it.get("lastSeenAt")) }
-            .firstOrNull { snapshot ->
-                snapshot.getBoolean("syncEnabled") != false && snapshot.get("revokedAt") == null
-            }
-
-        if (activeDevice == null) {
-            val revokedDevice = devices.first()
-            val result = SnapshotRefreshResult(
-                deviceId = revokedDevice.id,
-                deviceName = revokedDevice.getString("name"),
-                status = SnapshotStatus.Revoked,
-                ageSeconds = null,
-                fetchedAt = null,
-                updatedAt = null,
-                message = "Linked PC was revoked",
-                providers = emptyList(),
-                rawSnapshotJson = ""
-            )
-            saveForWidget(result.rawSnapshotJson, result.status.name, result.deviceName.orEmpty(), "")
-            return result
-        }
-
-        val snapshotDocument = activeDevice.reference
+        val selectedDevice = selectDevice(devices, preferredDeviceId)
+        val snapshotDocument = selectedDevice.reference
             .collection("snapshots")
             .document("latest")
             .get()
             .await()
 
-        if (!snapshotDocument.exists()) {
-            val result = SnapshotRefreshResult(
-                deviceId = activeDevice.id,
-                deviceName = activeDevice.getString("name"),
-                status = SnapshotStatus.NotLinked,
-                ageSeconds = null,
-                fetchedAt = null,
-                updatedAt = null,
-                message = "No uploaded snapshot yet",
-                providers = emptyList(),
-                rawSnapshotJson = ""
-            )
-            saveForWidget(result.rawSnapshotJson, result.status.name, result.deviceName.orEmpty(), "")
-            return result
-        }
-
-        val snapshotMap = snapshotDocument.data ?: emptyMap()
-        val snapshotJson = JSONObject(snapshotMap).toString()
-        val providers = parseProviders(snapshotDocument)
-        val fetchedAt = snapshotDocument.getString("fetchedAt")
-        val updatedAt = snapshotDocument.getString("uploadedAt") ?: fetchedAt
-        val ageSeconds = fetchedAt?.let(::ageSeconds)
-        val hasProviderError = providers.any { it.summary.contains("error", ignoreCase = true) }
-        val status = resolveSnapshotStatus(ageSeconds, hasProviderError)
-        val result = SnapshotRefreshResult(
-            deviceId = activeDevice.id,
-            deviceName = activeDevice.getString("name"),
-            status = status,
-            ageSeconds = ageSeconds,
-            fetchedAt = fetchedAt,
-            updatedAt = updatedAt,
-            message = statusMessage(status),
-            providers = providers,
-            rawSnapshotJson = snapshotJson
+        val result = parseSnapshot(selectedDevice, snapshotDocument)
+        saveForWidget(
+            snapshotJson = result.rawSnapshotJson,
+            status = result.status.name,
+            deviceName = result.deviceName.orEmpty(),
+            updatedAt = result.updatedAt.orEmpty()
         )
-        saveForWidget(snapshotJson, status.name, result.deviceName.orEmpty(), updatedAt.orEmpty())
         return result
+    }
+
+    suspend fun updateDeviceName(uid: String, deviceId: String, deviceName: String) {
+        val normalized = deviceName.trim()
+        require(normalized.isNotEmpty()) { "Device name is required" }
+        firestore.collection("users")
+            .document(uid)
+            .collection("devices")
+            .document(deviceId)
+            .update("name", normalized)
+            .await()
     }
 
     fun saveForWidget(
@@ -130,6 +116,76 @@ class SnapshotRepository(private val context: Context) {
 
     fun latestCachedSnapshot(): String {
         return cache.read()
+    }
+
+    private fun selectDevice(
+        devices: List<DocumentSnapshot>,
+        preferredDeviceId: String?
+    ): DocumentSnapshot {
+        val preferred = preferredDeviceId?.let { id -> devices.firstOrNull { it.id == id } }
+        if (preferred != null) return preferred
+        return devices.sortedByDescending { timestampMillis(it.get("lastSeenAt")) }
+            .firstOrNull { document ->
+                document.getBoolean("syncEnabled") != false && document.get("revokedAt") == null
+            }
+            ?: devices.first()
+    }
+
+    private fun parseSnapshot(
+        deviceDocument: DocumentSnapshot,
+        snapshotDocument: DocumentSnapshot
+    ): SnapshotRefreshResult {
+        val deviceId = deviceDocument.id
+        val deviceName = deviceDocument.getString("name")
+        val revoked = deviceDocument.get("revokedAt") != null || deviceDocument.getBoolean("syncEnabled") == false
+
+        if (revoked) {
+            return SnapshotRefreshResult(
+                deviceId = deviceId,
+                deviceName = deviceName,
+                status = SnapshotStatus.Revoked,
+                ageSeconds = null,
+                fetchedAt = null,
+                updatedAt = null,
+                message = "Linked PC was revoked",
+                providers = emptyList(),
+                rawSnapshotJson = ""
+            )
+        }
+
+        if (!snapshotDocument.exists()) {
+            return SnapshotRefreshResult(
+                deviceId = deviceId,
+                deviceName = deviceName,
+                status = SnapshotStatus.NotLinked,
+                ageSeconds = null,
+                fetchedAt = null,
+                updatedAt = null,
+                message = "No uploaded snapshot yet",
+                providers = emptyList(),
+                rawSnapshotJson = ""
+            )
+        }
+
+        val snapshotMap = snapshotDocument.data ?: emptyMap()
+        val snapshotJson = JSONObject(snapshotMap).toString()
+        val providers = parseProviders(snapshotDocument)
+        val fetchedAt = snapshotDocument.getString("fetchedAt")
+        val updatedAt = snapshotDocument.getString("uploadedAt") ?: fetchedAt
+        val ageSeconds = fetchedAt?.let(::ageSeconds)
+        val hasProviderError = providers.any { it.summary.contains("error", ignoreCase = true) }
+        val status = resolveSnapshotStatus(ageSeconds, hasProviderError)
+        return SnapshotRefreshResult(
+            deviceId = deviceId,
+            deviceName = deviceName,
+            status = status,
+            ageSeconds = ageSeconds,
+            fetchedAt = fetchedAt,
+            updatedAt = updatedAt,
+            message = statusMessage(status),
+            providers = providers,
+            rawSnapshotJson = snapshotJson
+        )
     }
 
     private fun parseProviders(snapshot: DocumentSnapshot): List<SnapshotProviderLine> {

@@ -44,6 +44,15 @@ data class SnapshotProviderLine(
     val summary: String
 )
 
+data class SnapshotDevice(
+    val deviceId: String,
+    val deviceName: String,
+    val status: SnapshotStatus,
+    val lastSeenAt: String?,
+    val fetchedAt: String?,
+    val summary: String
+)
+
 data class SnapshotRefreshResult(
     val deviceId: String?,
     val deviceName: String?,

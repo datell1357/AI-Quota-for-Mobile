@@ -36,10 +36,9 @@ test("iOS app has a real sync API client and typed UI state model", () => {
   assert.match(status, /24 \* 60 \* 60/);
 });
 
-test("Android app has API client, typed UI state, and non-placeholder widget sync", () => {
+test("Android app has device-list snapshot sync and non-placeholder widget cache", () => {
   const requiredPaths = [
-    "android/app/src/main/java/com/aiusage/mobile/sync/AIUsageApiClient.kt",
-    "android/app/src/main/java/com/aiusage/mobile/sync/PairingCodeViewModel.kt",
+    "android/app/src/main/java/com/aiusage/mobile/sync/Models.kt",
     "android/app/src/main/java/com/aiusage/mobile/sync/SnapshotStatus.kt"
   ];
 
@@ -47,18 +46,14 @@ test("Android app has API client, typed UI state, and non-placeholder widget syn
     assert.equal(existsSync(join(root, path)), true, `${path} should exist`);
   }
 
-  const api = source("android/app/src/main/java/com/aiusage/mobile/sync/AIUsageApiClient.kt");
-  const pairing = source("android/app/src/main/java/com/aiusage/mobile/sync/PairingCodeViewModel.kt");
+  const models = source("android/app/src/main/java/com/aiusage/mobile/sync/Models.kt");
   const status = source("android/app/src/main/java/com/aiusage/mobile/sync/SnapshotStatus.kt");
   const repo = source("android/app/src/main/java/com/aiusage/mobile/sync/SnapshotRepository.kt");
   const worker = source("android/app/src/main/java/com/aiusage/mobile/sync/SnapshotSyncWorker.kt");
   const cache = source("android/app/src/main/java/com/aiusage/mobile/widget/WidgetSnapshotCache.kt");
 
-  assert.match(api, /suspend fun createPairingCode/);
-  assert.match(api, /suspend fun fetchLatestSnapshot/);
-  assert.match(api, /HttpURLConnection/);
-  assert.match(pairing, /sealed interface PairingCodeUiState/);
-  assert.match(pairing, /Expires in/);
+  assert.match(models, /data class SnapshotRefreshResult/);
+  assert.match(models, /data class SnapshotDevice/);
   assert.match(status, /Fresh/);
   assert.match(status, /Stale/);
   assert.match(status, /Offline/);
@@ -70,6 +65,8 @@ test("Android app has API client, typed UI state, and non-placeholder widget syn
   assert.match(repo, /collection\("snapshots"\)/);
   assert.match(repo, /resolveSnapshotStatus/);
   assert.match(repo, /saveForWidget/);
+  assert.match(repo, /updateDeviceName/);
+  assert.match(repo, /listDevices/);
   assert.match(worker, /refreshLatestSnapshot/);
   assert.match(worker, /inputData\.getString\("uid"\)/);
   assert.doesNotMatch(worker, /write\("\{}"\)/);
@@ -78,7 +75,7 @@ test("Android app has API client, typed UI state, and non-placeholder widget syn
   assert.doesNotMatch(cache, /"\{}"/);
 });
 
-test("Android main UI uses Firebase auth, pairing API, and Firestore-backed snapshot refresh", () => {
+test("Android main UI uses Firebase auth with device list, rename flow, and snapshot refresh", () => {
   const main = source("android/app/src/main/java/com/aiusage/mobile/MainActivity.kt");
   const manifest = source("android/app/src/main/AndroidManifest.xml");
   const styles = source("android/app/src/main/res/values/styles.xml");
@@ -95,20 +92,22 @@ test("Android main UI uses Firebase auth, pairing API, and Firestore-backed snap
   assert.match(main, /GoogleAuthProvider/);
   assert.match(main, /OAuthProvider\.newBuilder\("github\.com"\)/);
   assert.match(main, /auth\.currentUser/);
-  assert.match(main, /getIdToken\(false\)/);
-  assert.match(main, /createPairingCode/);
   assert.match(main, /refreshLatestSnapshot/);
+  assert.match(main, /deviceList/);
+  assert.match(main, /Rename selected device/);
+  assert.match(main, /Save device name/);
+  assert.match(main, /Selected device/);
+  assert.match(main, /Connected devices/);
   assert.match(main, /Latest Snapshot/);
   assert.match(main, /Refresh latest snapshot/);
-  assert.match(main, /Linked device/);
   assert.match(main, /Snapshot status/);
   assert.match(main, /No PC linked/);
-  assert.match(main, /Generate PC Link Code/);
   assert.match(main, /Signing in\.\.\./);
   assert.match(main, /Sign out/);
-  assert.match(main, /providers\?\.forEach/);
+  assert.match(main, /providers\.forEach/);
   assert.doesNotMatch(main, /signedIn = true/);
   assert.doesNotMatch(main, /482 193/);
+  assert.doesNotMatch(main, /Generate PC Link Code/);
   assert.doesNotMatch(main, /Save sample snapshot/);
   assert.match(gradle, /play-services-auth/);
   assert.match(gradle, /lifecycle-runtime-ktx/);
