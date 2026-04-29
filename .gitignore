@@ -1,0 +1,13 @@
+node_modules/
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+coverage/
+dist/
+build/
+.DS_Store
+*.local
+GoogleService-Info.plist
+google-services.json
+

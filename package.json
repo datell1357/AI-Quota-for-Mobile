@@ -1,0 +1,20 @@
+{
+  "name": "ai-usage-mobile-sync",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Firebase and mobile sync foundation for AI Usage mobile apps.",
+  "type": "module",
+  "scripts": {
+    "test": "node functions/test/core.test.js && node test/structure.test.js",
+    "test:functions": "node functions/test/core.test.js",
+    "lint": "node --check functions/src/core.js && node --check functions/src/index.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {},
+  "dependencies": {
+    "firebase-admin": "^13.0.0",
+    "firebase-functions": "^6.0.0"
+  }
+}

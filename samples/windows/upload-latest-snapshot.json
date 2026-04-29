@@ -1,0 +1,39 @@
+{
+  "deviceId": "dev_home_pc_abc123",
+  "snapshot": {
+    "schemaVersion": 1,
+    "fetchedAt": "2026-04-29T01:00:00.000Z",
+    "source": "ai-usage-windows",
+    "providers": [
+      {
+        "providerId": "codex",
+        "displayName": "Codex",
+        "plan": "Pro 10x",
+        "status": "ok",
+        "fetchedAt": "2026-04-29T01:00:00.000Z",
+        "lines": [
+          {
+            "type": "progress",
+            "label": "Session",
+            "used": 42,
+            "limit": 100,
+            "format": {
+              "kind": "percent"
+            },
+            "resetsAt": "2026-04-29T15:00:00.000Z"
+          }
+        ]
+      },
+      {
+        "providerId": "claude",
+        "displayName": "Claude",
+        "status": "error",
+        "fetchedAt": "2026-04-29T01:00:00.000Z",
+        "errorCode": "auth_expired",
+        "errorMessage": "PC에서 다시 로그인 필요",
+        "lines": []
+      }
+    ]
+  }
+}
+
