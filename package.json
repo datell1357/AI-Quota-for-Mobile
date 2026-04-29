@@ -5,9 +5,10 @@
   "description": "Firebase and mobile sync foundation for AI Usage mobile apps.",
   "type": "module",
   "scripts": {
-    "test": "node functions/test/core.test.js && node test/structure.test.js",
+    "test": "node functions/test/core.test.js && node test/structure.test.js && node test/mobile-source.test.js",
+    "test:mobile": "node test/structure.test.js && node test/mobile-source.test.js",
     "test:functions": "node functions/test/core.test.js",
-    "lint": "node --check functions/src/core.js && node --check functions/src/index.js"
+    "lint": "node --check functions/src/core.js && node --check functions/src/index.js && node --check test/structure.test.js && node --check test/mobile-source.test.js"
   },
   "engines": {
     "node": ">=22"

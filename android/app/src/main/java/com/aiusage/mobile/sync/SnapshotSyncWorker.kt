@@ -10,8 +10,11 @@ class SnapshotSyncWorker(
     workerParameters: WorkerParameters
 ) : CoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result {
-        WidgetSnapshotCache(applicationContext).write("{}")
+        val cachedSnapshot = WidgetSnapshotCache(applicationContext).read()
+        if (cachedSnapshot.isBlank()) {
+            return Result.retry()
+        }
+        WidgetSnapshotCache(applicationContext).write(cachedSnapshot)
         return Result.success()
     }
 }
-

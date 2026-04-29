@@ -10,7 +10,6 @@ class WidgetSnapshotCache(private val context: Context) {
     }
 
     fun read(): String {
-        return preferences.getString("latest_snapshot", "{}") ?: "{}"
+        return preferences.getString("latest_snapshot", "") ?: ""
     }
 }
-

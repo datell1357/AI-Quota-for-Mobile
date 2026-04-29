@@ -6,6 +6,8 @@ import androidx.work.WorkManager
 import com.aiusage.mobile.widget.WidgetSnapshotCache
 
 class SnapshotRepository(private val context: Context) {
+    private val cache = WidgetSnapshotCache(context)
+
     fun refreshLatestSnapshot() {
         WorkManager.getInstance(context)
             .enqueue(OneTimeWorkRequestBuilder<SnapshotSyncWorker>().build())
@@ -13,7 +15,10 @@ class SnapshotRepository(private val context: Context) {
 
     fun saveForWidget(snapshotJson: String) {
         // Stores display-only snapshot cache for app and widget rendering.
-        WidgetSnapshotCache(context).write(snapshotJson)
+        cache.write(snapshotJson)
+    }
+
+    fun latestCachedSnapshot(): String {
+        return cache.read()
     }
 }
-

@@ -36,6 +36,7 @@
 
 ```bash
 npm.cmd test
+npm.cmd run test:mobile
 npm.cmd run lint
 ```
 
@@ -56,20 +57,23 @@ PowerShell 실행 정책 때문에 `npm`이 `npm.ps1`로 실행되지 않는 환
 - 신규 Firebase 프로젝트 생성 및 실제 project id 연결
 - Google/GitHub Firebase Auth provider 설정
 - Firebase Functions/Rules emulator 테스트 확장
-- 실제 Windows 앱 repo에 Mobile Sync UI/uploader 연결
 - iOS Xcode project 및 Android Firebase config 연결
+- iOS/Android native build 환경에서 `xcodebuild`와 Gradle 검증 실행
+- 실제 Windows 앱 repo에 Mobile Sync UI/uploader 연결
 
 ## 미결 사항
 
 - [x] 신규 Firebase 프로젝트 기준으로 결정
 - [x] PC device upload 인증을 signed device token 방식으로 결정
 - [x] Android 위젯 구현 방식을 Glance로 결정
+- [ ] iOS Xcode project 파일 생성 및 Firebase SDK 연결
+- [ ] Android Gradle wrapper/Firebase plugin 연결
 - [ ] Windows 앱 기존 기술 스택/설정 화면 구현 방식 확인
 
 ## 권장 구현 순서
 
 1. Firebase 데이터 모델 + pairing flow
-2. AI Usage for Windows sync uploader
-3. 모바일 앱 latest snapshot viewer
-4. iOS/Android 위젯
+2. 모바일 앱 latest snapshot viewer
+3. iOS/Android 위젯
+4. AI Usage for Windows sync uploader
 5. 보안 강화와 다중 device 관리

@@ -11,10 +11,16 @@ final class SnapshotStore: ObservableObject {
         do {
             if let snapshot = try cache.load() {
                 providers = snapshot.providers
+                devices = [
+                    DeviceSummary(
+                        id: "cached",
+                        name: "Cached PC",
+                        lastSeenAt: snapshot.uploadedAt
+                    )
+                ]
             }
         } catch {
             providers = []
         }
     }
 }
-

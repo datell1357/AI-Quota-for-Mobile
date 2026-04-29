@@ -35,19 +35,23 @@ struct SignInView: View {
 }
 
 struct PairingView: View {
-    @State private var code: String?
+    @StateObject private var viewModel = PairingCodeViewModel(
+        apiClient: AIUsageAPIClient(baseURL: URL(string: "https://example.invalid")!)
+    )
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("No PC linked")
+            Text(viewModel.state.title)
                 .font(.headline)
             Button("Generate PC Link Code") {
-                code = "482 193"
+                Task {
+                    await viewModel.generate(idToken: "")
+                }
             }
-            if let code {
+            if case let .ready(code, _) = viewModel.state {
                 Text(code)
                     .font(.system(size: 42, weight: .semibold, design: .monospaced))
-                Text("Expires in 10:00")
+                Text(viewModel.countdownText() ?? "Expires in 10:00")
                     .foregroundStyle(.secondary)
             }
         }
@@ -79,4 +83,3 @@ struct SnapshotListView: View {
         }
     }
 }
-
