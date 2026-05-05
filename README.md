@@ -48,6 +48,12 @@ Not required for the free plan:
 5. Keep device management and renaming in settings.
 6. Update the widget cache from the selected snapshot.
 
+## Refresh behavior
+
+- While the app is open, the selected snapshot refreshes every 60 seconds.
+- In the background, a best-effort WorkManager job refreshes the widget cache every 5 minutes.
+- Android may delay background work based on battery, idle, and manufacturer policies.
+
 ## Commands
 
 ```powershell

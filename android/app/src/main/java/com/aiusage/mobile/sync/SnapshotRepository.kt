@@ -2,6 +2,7 @@ package com.aiusage.mobile.sync
 
 import android.content.Context
 import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.aiusage.mobile.widget.WidgetSnapshotCache
@@ -11,8 +12,10 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import org.json.JSONObject
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 
 class SnapshotRepository(private val context: Context) {
+    private val preferences = context.getSharedPreferences("ai_usage_sync", Context.MODE_PRIVATE)
     private val cache = WidgetSnapshotCache(context)
     private val firestore = FirebaseFirestore.getInstance()
 
@@ -24,6 +27,29 @@ class SnapshotRepository(private val context: Context) {
                     .setInputData(input)
                     .build()
             )
+    }
+
+    fun rememberSignedInUser(uid: String) {
+        preferences.edit().putString("uid", uid).apply()
+    }
+
+    fun clearSignedInUser() {
+        preferences.edit().remove("uid").apply()
+        WorkManager.getInstance(context).cancelUniqueWork(WIDGET_REFRESH_WORK)
+    }
+
+    fun storedUid(): String? {
+        return preferences.getString("uid", null)
+    }
+
+    fun scheduleWidgetRefresh(uid: String) {
+        val input = Data.Builder().putString("uid", uid).build()
+        val request = OneTimeWorkRequestBuilder<SnapshotSyncWorker>()
+            .setInputData(input)
+            .setInitialDelay(5, TimeUnit.MINUTES)
+            .build()
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork(WIDGET_REFRESH_WORK, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
     }
 
     suspend fun listDevices(uid: String): List<SnapshotDevice> {
@@ -228,7 +254,8 @@ class SnapshotRepository(private val context: Context) {
         } else {
             null
         }
-        val isInactivePlaceholder = used != null && used == 0.0 && ratio == 1.0
+        val hasVisibleMetadata = !line["label"]?.toString().isNullOrBlank() || !line["resetsAt"]?.toString().isNullOrBlank()
+        val isInactivePlaceholder = used != null && used == 0.0 && ratio == 1.0 && !hasVisibleMetadata
         if (isInactivePlaceholder) return null
         if (remainingValue == null && ratio == null) return null
         return SnapshotUsageLimitLine(
@@ -297,5 +324,9 @@ class SnapshotRepository(private val context: Context) {
             SnapshotStatus.ProviderError -> "One or more providers need attention"
             SnapshotStatus.Revoked -> "Linked PC was revoked"
         }
+    }
+
+    private companion object {
+        const val WIDGET_REFRESH_WORK = "ai_usage_widget_refresh"
     }
 }

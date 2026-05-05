@@ -71,8 +71,13 @@ test("Android app has device-list snapshot sync and non-placeholder widget cache
   assert.match(repo, /saveForWidget/);
   assert.match(repo, /updateDeviceName/);
   assert.match(repo, /listDevices/);
+  assert.match(repo, /rememberSignedInUser/);
+  assert.match(repo, /scheduleWidgetRefresh/);
+  assert.match(repo, /5, TimeUnit\.MINUTES/);
   assert.match(worker, /refreshLatestSnapshot/);
   assert.match(worker, /inputData\.getString\("uid"\)/);
+  assert.match(worker, /storedUid/);
+  assert.match(worker, /scheduleWidgetRefresh/);
   assert.doesNotMatch(worker, /write\("\{}"\)/);
   assert.match(cache, /updatedAt/);
   assert.match(cache, /status/);
@@ -109,6 +114,10 @@ test("Android main UI uses Firebase auth with device list, rename flow, and snap
   assert.match(main, /Snapshot status/);
   assert.match(main, /No PC linked/);
   assert.match(main, /remainingRatio/);
+  assert.match(main, /delay\(60_000\)/);
+  assert.match(main, /isActive/);
+  assert.match(main, /rememberSignedInUser/);
+  assert.match(main, /scheduleWidgetRefresh/);
   assert.match(main, /Signing in\.\.\./);
   assert.match(main, /Sign out/);
   assert.match(main, /providers\.forEach/);

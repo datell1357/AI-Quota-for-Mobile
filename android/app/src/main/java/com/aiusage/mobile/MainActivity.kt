@@ -51,6 +51,8 @@ import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -171,9 +173,15 @@ fun AIUsageApp(
 
     LaunchedEffect(currentUser?.uid) {
         val uid = currentUser?.uid ?: return@LaunchedEffect
+        repository.rememberSignedInUser(uid)
         loadDevices(uid)
         refreshLatestSnapshot(uid)
         repository.enqueueRefresh(uid)
+        repository.scheduleWidgetRefresh(uid)
+        while (isActive) {
+            delay(60_000)
+            refreshLatestSnapshot(uid)
+        }
     }
 
     Column(
@@ -243,6 +251,7 @@ fun AIUsageApp(
             onSignOut = {
                 auth.signOut()
                 GoogleSignIn.getClient(activity, activity.googleSignInOptions()).signOut()
+                repository.clearSignedInUser()
                 signingIn = false
                 authMessage = null
                 snapshotResult = null
