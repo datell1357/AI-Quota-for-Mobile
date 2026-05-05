@@ -46,12 +46,30 @@ private fun parsePrimaryProvider(snapshotJson: String): String? {
         val line = lines.optJSONObject(0)
         val used = line?.opt("used")?.toString()
         val limit = line?.opt("limit")?.toString()
+        val remaining = line?.opt("remaining")?.toString()
+        val remainingText = remainingLimitText(used, limit, remaining)
         when {
-            !used.isNullOrBlank() && !limit.isNullOrBlank() -> "$name $used/$limit"
+            !remainingText.isNullOrBlank() -> "$name $remainingText"
             provider.optString("errorCode").isNotBlank() -> "$name ${provider.optString("errorCode")}"
             else -> name
         }
     }.getOrNull()
+}
+
+private fun remainingLimitText(used: String?, limit: String?, remaining: String?): String? {
+    val limitValue = limit?.toDoubleOrNull()
+    val remainingValue = remaining?.toDoubleOrNull()
+        ?: limitValue?.let { limitNumber ->
+            used?.toDoubleOrNull()?.let { usedNumber -> (limitNumber - usedNumber).coerceAtLeast(0.0) }
+        }
+    if (remainingValue == null) return null
+    if (limitValue != null && limitValue > 0.0) {
+        val percent = (remainingValue / limitValue * 100).coerceIn(0.0, 100.0)
+        val formatted = if (percent % 1.0 == 0.0) percent.toLong().toString() else percent.toString()
+        return "$formatted% left"
+    }
+    val formatted = if (remainingValue % 1.0 == 0.0) remainingValue.toLong().toString() else remainingValue.toString()
+    return "$formatted left"
 }
 
 class AIUsageGlanceWidgetReceiver : GlanceAppWidgetReceiver() {

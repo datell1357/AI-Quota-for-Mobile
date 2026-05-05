@@ -5,7 +5,8 @@ Android-first mobile sync for AI Usage. The current MVP targets the free Firebas
 - Android app signs in with Firebase Auth using Google.
 - Windows app will sign in with the same Firebase account.
 - Firestore stores device records and per-device latest snapshots.
-- The Android app shows connected devices, lets the user rename a device, and renders the latest snapshot for the selected device.
+- The Android app focuses the home screen on remaining AI usage limits for the selected device.
+- Device selection, rename, refresh, and sign-out live in the settings view.
 - The Android widget reads only from local cache.
 
 ## Current scope
@@ -43,8 +44,8 @@ Not required for the free plan:
 1. Sign in with Google.
 2. Load the user's device list from Firestore.
 3. Pick the most recent device by default.
-4. Render the selected device snapshot.
-5. Allow renaming the selected device.
+4. Render active providers only, using remaining limit values such as `80% left`.
+5. Keep device management and renaming in settings.
 6. Update the widget cache from the selected snapshot.
 
 ## Commands

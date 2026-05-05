@@ -27,9 +27,10 @@ The project now uses the free Firebase model.
 - Sign in with Google
 - Read the device list from Firestore
 - Select the most recent device by default
-- Allow manual device switching
-- Allow renaming the selected device
-- Read and render the selected device latest snapshot
+- Show remaining usage limits on the home screen
+- Allow manual device switching from settings
+- Allow renaming the selected device from settings
+- Read and render active providers from the selected device latest snapshot
 - Cache display-only widget data locally
 
 ## Snapshot rules
@@ -61,9 +62,10 @@ Windows uploads must never store:
 
 ## Device UX contract
 
-- Android must show a connected device list
-- Android must show which device is currently selected
-- Android must allow device rename
+- Android home must focus on remaining AI usage limits
+- Android settings must show connected devices
+- Android settings must show which device is currently selected
+- Android settings must allow device rename
 - Android must show snapshot freshness and provider error state
 
 ## Verification

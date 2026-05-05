@@ -39,9 +39,19 @@ enum class ProviderStatus {
     unknown
 }
 
-data class SnapshotProviderLine(
+data class SnapshotUsageLimitLine(
+    val label: String,
+    val remainingText: String,
+    val resetText: String?,
+    val remainingRatio: Float?
+)
+
+data class SnapshotProviderUsage(
+    val providerId: String,
     val providerName: String,
-    val summary: String
+    val plan: String?,
+    val status: String,
+    val lines: List<SnapshotUsageLimitLine>
 )
 
 data class SnapshotDevice(
@@ -61,6 +71,6 @@ data class SnapshotRefreshResult(
     val fetchedAt: String?,
     val updatedAt: String?,
     val message: String,
-    val providers: List<SnapshotProviderLine>,
+    val providers: List<SnapshotProviderUsage>,
     val rawSnapshotJson: String
 )

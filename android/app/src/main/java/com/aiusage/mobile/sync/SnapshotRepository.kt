@@ -173,7 +173,7 @@ class SnapshotRepository(private val context: Context) {
         val fetchedAt = snapshotDocument.getString("fetchedAt")
         val updatedAt = snapshotDocument.getString("uploadedAt") ?: fetchedAt
         val ageSeconds = fetchedAt?.let(::ageSeconds)
-        val hasProviderError = providers.any { it.summary.contains("error", ignoreCase = true) }
+        val hasProviderError = providers.any { it.status.equals("error", ignoreCase = true) }
         val status = resolveSnapshotStatus(ageSeconds, hasProviderError)
         return SnapshotRefreshResult(
             deviceId = deviceId,
@@ -188,33 +188,83 @@ class SnapshotRepository(private val context: Context) {
         )
     }
 
-    private fun parseProviders(snapshot: DocumentSnapshot): List<SnapshotProviderLine> {
+    private fun parseProviders(snapshot: DocumentSnapshot): List<SnapshotProviderUsage> {
         val providers = (snapshot.get("providers") as? List<*>)
             ?.filterIsInstance<Map<String, Any?>>()
             ?: return emptyList()
-        return providers.map { provider ->
+        return providers.mapNotNull { provider ->
+            val providerId = provider["providerId"]?.toString().orEmpty()
             val providerName = provider["displayName"]?.toString()
-                ?: provider["providerId"]?.toString()
+                ?: providerId.ifBlank { null }
                 ?: "Provider"
             val status = provider["status"]?.toString().orEmpty()
             val lines = (provider["lines"] as? List<*>)?.filterIsInstance<Map<String, Any?>>()
-            val primaryLine = lines?.firstOrNull()
-            val summary = when {
-                primaryLine == null -> status.ifBlank { "unknown" }
-                primaryLine["used"] != null && primaryLine["limit"] != null ->
-                    "${formatNumber(primaryLine["used"])} / ${formatNumber(primaryLine["limit"])}"
-                primaryLine["remaining"] != null ->
-                    "Remaining ${formatNumber(primaryLine["remaining"])}"
-                else -> primaryLine["label"]?.toString() ?: status.ifBlank { "unknown" }
-            }
-            SnapshotProviderLine(
+                ?.mapNotNull(::parseUsageLine)
+                .orEmpty()
+            if (lines.isEmpty() && status != "error") return@mapNotNull null
+            SnapshotProviderUsage(
+                providerId = providerId,
                 providerName = providerName,
-                summary = if (status == "error" && provider["errorCode"] != null) {
+                plan = provider["plan"]?.toString(),
+                status = if (status == "error" && provider["errorCode"] != null) {
                     provider["errorCode"].toString()
-                } else {
-                    summary
-                }
+                } else status.ifBlank { "unknown" },
+                lines = lines
             )
+        }
+    }
+
+    private fun parseUsageLine(line: Map<String, Any?>): SnapshotUsageLimitLine? {
+        val remaining = numeric(line["remaining"])
+        val used = numeric(line["used"])
+        val limit = numeric(line["limit"])
+        val remainingValue = remaining ?: if (used != null && limit != null) {
+            (limit - used).coerceAtLeast(0.0)
+        } else {
+            null
+        }
+        val ratio = if (remainingValue != null && limit != null && limit > 0.0) {
+            (remainingValue / limit).coerceIn(0.0, 1.0)
+        } else {
+            null
+        }
+        val isInactivePlaceholder = used != null && used == 0.0 && ratio == 1.0
+        if (isInactivePlaceholder) return null
+        if (remainingValue == null && ratio == null) return null
+        return SnapshotUsageLimitLine(
+            label = line["label"]?.toString()?.ifBlank { null } ?: "Limit",
+            remainingText = remainingText(remainingValue, ratio),
+            resetText = line["resetsAt"]?.toString()?.let(::resetText),
+            remainingRatio = ratio?.toFloat()
+        )
+    }
+
+    private fun remainingText(remainingValue: Double?, ratio: Double?): String {
+        if (ratio != null) {
+            return "${formatNumber(ratio * 100)}% left"
+        }
+        return "${formatNumber(remainingValue)} left"
+    }
+
+    private fun resetText(value: String): String? {
+        return runCatching {
+            val seconds = (Instant.parse(value).epochSecond - Instant.now().epochSecond).coerceAtLeast(0L)
+            val days = seconds / (24 * 60 * 60)
+            val hours = (seconds % (24 * 60 * 60)) / (60 * 60)
+            val minutes = (seconds % (60 * 60)) / 60
+            when {
+                days > 0 -> "Resets in ${days}d ${hours}h"
+                hours > 0 -> "Resets in ${hours}h ${minutes}m"
+                else -> "Resets in ${minutes}m"
+            }
+        }.getOrNull()
+    }
+
+    private fun numeric(value: Any?): Double? {
+        return when (value) {
+            is Number -> value.toDouble()
+            is String -> value.toDoubleOrNull()
+            else -> null
         }
     }
 

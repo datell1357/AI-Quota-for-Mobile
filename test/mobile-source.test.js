@@ -54,6 +54,10 @@ test("Android app has device-list snapshot sync and non-placeholder widget cache
 
   assert.match(models, /data class SnapshotRefreshResult/);
   assert.match(models, /data class SnapshotDevice/);
+  assert.match(models, /data class SnapshotProviderUsage/);
+  assert.match(models, /data class SnapshotUsageLimitLine/);
+  assert.match(models, /remainingText/);
+  assert.match(models, /remainingRatio/);
   assert.match(status, /Fresh/);
   assert.match(status, /Stale/);
   assert.match(status, /Offline/);
@@ -92,14 +96,19 @@ test("Android main UI uses Firebase auth with device list, rename flow, and snap
   assert.match(main, /auth\.currentUser/);
   assert.match(main, /refreshLatestSnapshot/);
   assert.match(main, /deviceList/);
+  assert.match(main, /LimitDashboard/);
+  assert.match(main, /ProviderLimitCard/);
+  assert.match(main, /ProviderLimitLine/);
+  assert.match(main, /SettingsPanel/);
   assert.match(main, /Rename selected device/);
   assert.match(main, /Save device name/);
   assert.match(main, /Selected device/);
   assert.match(main, /Connected devices/);
-  assert.match(main, /Latest Snapshot/);
+  assert.match(main, /Usage Limits/);
   assert.match(main, /Refresh latest snapshot/);
   assert.match(main, /Snapshot status/);
   assert.match(main, /No PC linked/);
+  assert.match(main, /remainingRatio/);
   assert.match(main, /Signing in\.\.\./);
   assert.match(main, /Sign out/);
   assert.match(main, /providers\.forEach/);
@@ -108,6 +117,7 @@ test("Android main UI uses Firebase auth with device list, rename flow, and snap
   assert.doesNotMatch(main, /signedIn = true/);
   assert.doesNotMatch(main, /482 193/);
   assert.doesNotMatch(main, /Generate PC Link Code/);
+  assert.doesNotMatch(main, /Latest Snapshot/);
   assert.doesNotMatch(main, /Save sample snapshot/);
   assert.match(gradle, /play-services-auth/);
   assert.match(gradle, /lifecycle-runtime-ktx/);

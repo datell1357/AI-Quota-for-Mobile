@@ -6,15 +6,24 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -24,10 +33,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aiusage.mobile.sync.SnapshotDevice
-import com.aiusage.mobile.sync.SnapshotProviderLine
+import com.aiusage.mobile.sync.SnapshotProviderUsage
+import com.aiusage.mobile.sync.SnapshotUsageLimitLine
 import com.aiusage.mobile.sync.SnapshotRefreshResult
 import com.aiusage.mobile.sync.SnapshotRepository
 import com.aiusage.mobile.sync.SnapshotStatus
@@ -79,6 +93,7 @@ fun AIUsageApp(
     var deviceList by remember { mutableStateOf<List<SnapshotDevice>>(emptyList()) }
     var selectedDeviceId by remember { mutableStateOf<String?>(null) }
     var renameDraft by remember { mutableStateOf("") }
+    var showSettings by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
     fun loadDevices(uid: String) {
@@ -162,13 +177,17 @@ fun AIUsageApp(
     }
 
     Column(
-        modifier = Modifier.padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF8FAFC))
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("AI Usage", style = MaterialTheme.typography.headlineMedium)
         authMessage?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
 
         if (currentUser == null) {
+            Text("AI Usage", style = MaterialTheme.typography.headlineMedium)
             Button(
                 onClick = {
                     signingIn = true
@@ -194,6 +213,7 @@ fun AIUsageApp(
             snapshotResult = snapshotResult,
             snapshotMessage = snapshotMessage,
             refreshingSnapshot = refreshingSnapshot,
+            showSettings = showSettings,
             onSelectDevice = { device ->
                 selectedDeviceId = device.deviceId
                 renameDraft = device.deviceName
@@ -217,6 +237,9 @@ fun AIUsageApp(
             onRefreshSnapshot = {
                 currentUser?.uid?.let(::refreshLatestSnapshot)
             },
+            onToggleSettings = {
+                showSettings = !showSettings
+            },
             onSignOut = {
                 auth.signOut()
                 GoogleSignIn.getClient(activity, activity.googleSignInOptions()).signOut()
@@ -227,6 +250,7 @@ fun AIUsageApp(
                 deviceList = emptyList()
                 selectedDeviceId = null
                 renameDraft = ""
+                showSettings = false
             }
         )
     }
@@ -234,6 +258,154 @@ fun AIUsageApp(
 
 @Composable
 private fun SignedInContent(
+    user: FirebaseUser?,
+    deviceList: List<SnapshotDevice>,
+    selectedDeviceId: String?,
+    renameDraft: String,
+    snapshotResult: SnapshotRefreshResult?,
+    snapshotMessage: String?,
+    refreshingSnapshot: Boolean,
+    showSettings: Boolean,
+    onSelectDevice: (SnapshotDevice) -> Unit,
+    onRenameDraftChanged: (String) -> Unit,
+    onSaveDeviceName: () -> Unit,
+    onRefreshSnapshot: () -> Unit,
+    onToggleSettings: () -> Unit,
+    onSignOut: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            Text("AI Usage", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text(
+                snapshotResult?.deviceName ?: deviceList.firstOrNull { it.deviceId == selectedDeviceId }?.deviceName ?: "No PC linked",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFF64748B)
+            )
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        Button(onClick = onToggleSettings) {
+            Text(if (showSettings) "Close" else "⚙ Settings")
+        }
+    }
+
+    if (showSettings) {
+        SettingsPanel(
+            user = user,
+            deviceList = deviceList,
+            selectedDeviceId = selectedDeviceId,
+            renameDraft = renameDraft,
+            snapshotResult = snapshotResult,
+            snapshotMessage = snapshotMessage,
+            refreshingSnapshot = refreshingSnapshot,
+            onSelectDevice = onSelectDevice,
+            onRenameDraftChanged = onRenameDraftChanged,
+            onSaveDeviceName = onSaveDeviceName,
+            onRefreshSnapshot = onRefreshSnapshot,
+            onSignOut = onSignOut
+        )
+    } else {
+        LimitDashboard(
+            snapshotResult = snapshotResult,
+            snapshotMessage = snapshotMessage,
+            refreshingSnapshot = refreshingSnapshot,
+            onRefreshSnapshot = onRefreshSnapshot
+        )
+    }
+}
+
+@Composable
+private fun LimitDashboard(
+    snapshotResult: SnapshotRefreshResult?,
+    snapshotMessage: String?,
+    refreshingSnapshot: Boolean,
+    onRefreshSnapshot: () -> Unit
+) {
+    Text("Usage Limits", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+    Text(snapshotResult?.status?.name ?: SnapshotStatus.NotLinked.name, color = Color(0xFF64748B))
+
+    if (snapshotResult?.providers.isNullOrEmpty()) {
+        Text(snapshotMessage ?: "No active AI usage limits to show")
+    } else {
+        snapshotResult.providers.forEach { provider ->
+            ProviderLimitCard(provider)
+        }
+    }
+
+    snapshotResult?.updatedAt?.takeIf { it.isNotBlank() }?.let {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Text("Updates soon", color = Color(0xFF64748B))
+            Spacer(modifier = Modifier.weight(1f))
+            Text("Updated at $it", color = Color(0xFF64748B))
+        }
+    }
+
+    Button(onClick = onRefreshSnapshot, modifier = Modifier.fillMaxWidth()) {
+        Text(if (refreshingSnapshot) "Refreshing snapshot..." else "Refresh latest snapshot")
+    }
+}
+
+@Composable
+private fun ProviderLimitCard(provider: SnapshotProviderUsage) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = Color.White,
+        tonalElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(provider.providerName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.weight(1f))
+                provider.plan?.takeIf { it.isNotBlank() }?.let {
+                    Text(it, color = Color(0xFF475569))
+                }
+            }
+            provider.lines.forEach { line ->
+                ProviderLimitLine(line)
+            }
+            if (provider.status != "ok") {
+                Text(provider.status, color = Color(0xFFDC2626))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProviderLimitLine(line: SnapshotUsageLimitLine) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(line.label, style = MaterialTheme.typography.bodyLarge)
+            Spacer(modifier = Modifier.weight(1f))
+            line.resetText?.let { Text(it, color = Color(0xFF64748B)) }
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(12.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(Color(0xFFE5E7EB))
+        ) {
+            LinearProgressIndicator(
+                progress = { line.remainingRatio ?: 0f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(12.dp),
+                color = Color(0xFF111827),
+                trackColor = Color.Transparent
+            )
+        }
+        Text(line.remainingText, color = Color(0xFF64748B))
+    }
+}
+
+@Composable
+private fun SettingsPanel(
     user: FirebaseUser?,
     deviceList: List<SnapshotDevice>,
     selectedDeviceId: String?,
@@ -293,27 +465,7 @@ private fun SignedInContent(
 
     snapshotMessage?.let { Text(it) }
 
-    snapshotResult?.updatedAt?.takeIf { it.isNotBlank() }?.let {
-        Text("Updated at $it")
-    }
-
-    if (!snapshotResult?.providers.isNullOrEmpty()) {
-        Text("Latest Snapshot", style = MaterialTheme.typography.titleMedium)
-        snapshotResult.providers.forEach { provider ->
-            ProviderRow(provider)
-        }
-    }
-
     Button(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
         Text("Sign out")
-    }
-}
-
-@Composable
-private fun ProviderRow(line: SnapshotProviderLine) {
-    Row(modifier = Modifier.fillMaxWidth()) {
-        Text(line.providerName)
-        Spacer(modifier = Modifier.weight(1f))
-        Text(line.summary)
     }
 }

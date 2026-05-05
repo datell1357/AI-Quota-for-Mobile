@@ -16,9 +16,9 @@ AI Usage Mobile Sync shows the latest AI usage snapshot from one or more Windows
 ## Core jobs
 
 - Sign in once on Android with Google
-- See every connected Windows device for the signed-in account
+- See remaining AI usage limits first, matching the Windows app
+- Open device management from settings
 - Rename a device to something meaningful like `Home PC` or `Work Laptop`
-- Open the latest snapshot for the selected device
 - Surface stale, offline, revoked, and provider-error states clearly
 
 ## MVP scope
@@ -26,8 +26,8 @@ AI Usage Mobile Sync shows the latest AI usage snapshot from one or more Windows
 - Android app with Google sign-in
 - Firestore device list under `/users/{uid}/devices`
 - Latest snapshot under `/users/{uid}/devices/{deviceId}/snapshots/latest`
-- Device rename from Android
-- Android widget backed by local cache only
+- Device rename from Android settings
+- Android widget backed by local cache only with remaining limit text
 - Multi-device support with newest device selected by default
 
 ## Out of scope for this phase
@@ -44,15 +44,15 @@ AI Usage Mobile Sync shows the latest AI usage snapshot from one or more Windows
 1. The user signs in on Android with Google.
 2. The app reads `/users/{uid}/devices`.
 3. The app selects the most recent device by `lastSeenAt`.
-4. The user can switch devices from the list.
-5. The user can rename the selected device.
-6. The app reads `/snapshots/latest` for the selected device and renders provider usage.
+4. The home screen reads `/snapshots/latest` and renders active provider limits.
+5. The user opens settings to switch devices or rename the selected device.
+6. The app hides inactive placeholder providers from the home screen.
 7. The widget shows cached display data only.
 
 ## Success criteria
 
 - Android login succeeds with Google.
-- Connected devices appear for the signed-in user.
+- Active provider limits appear for the signed-in user.
 - Device renaming updates Firestore and is reflected in the UI.
-- The selected device snapshot renders without provider credentials stored on mobile.
+- The selected device snapshot renders remaining limits without provider credentials stored on mobile.
 - The widget updates from cache and never fetches credentials directly.
