@@ -37,7 +37,6 @@ import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.auth.OAuthProvider
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -183,38 +182,6 @@ fun AIUsageApp(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(if (signingIn) "Signing in..." else "Continue with Google")
-            }
-            Button(
-                onClick = {
-                    signingIn = true
-                    authMessage = null
-                    val provider = OAuthProvider.newBuilder("github.com")
-                    val pendingResult = auth.pendingAuthResult
-                    if (pendingResult != null) {
-                        pendingResult
-                            .addOnSuccessListener {
-                                signingIn = false
-                                currentUser = auth.currentUser
-                            }
-                            .addOnFailureListener { error ->
-                                signingIn = false
-                                authMessage = error.message ?: "GitHub sign-in failed"
-                            }
-                    } else {
-                        auth.startActivityForSignInWithProvider(activity, provider.build())
-                            .addOnSuccessListener {
-                                signingIn = false
-                                currentUser = auth.currentUser
-                            }
-                            .addOnFailureListener { error ->
-                                signingIn = false
-                                authMessage = error.message ?: "GitHub sign-in failed"
-                            }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Continue with GitHub")
             }
             return@Column
         }

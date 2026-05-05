@@ -86,11 +86,9 @@ test("Android main UI uses Firebase auth with device list, rename flow, and snap
   assert.match(styles, /windowActionBar">false/);
   assert.match(styles, /windowNoTitle">true/);
   assert.match(main, /Continue with Google/);
-  assert.match(main, /Continue with GitHub/);
   assert.match(main, /FirebaseAuth/);
   assert.match(main, /GoogleSignInOptions/);
   assert.match(main, /GoogleAuthProvider/);
-  assert.match(main, /OAuthProvider\.newBuilder\("github\.com"\)/);
   assert.match(main, /auth\.currentUser/);
   assert.match(main, /refreshLatestSnapshot/);
   assert.match(main, /deviceList/);
@@ -105,6 +103,8 @@ test("Android main UI uses Firebase auth with device list, rename flow, and snap
   assert.match(main, /Signing in\.\.\./);
   assert.match(main, /Sign out/);
   assert.match(main, /providers\.forEach/);
+  assert.doesNotMatch(main, /Continue with GitHub/);
+  assert.doesNotMatch(main, /OAuthProvider\.newBuilder\("github\.com"\)/);
   assert.doesNotMatch(main, /signedIn = true/);
   assert.doesNotMatch(main, /482 193/);
   assert.doesNotMatch(main, /Generate PC Link Code/);

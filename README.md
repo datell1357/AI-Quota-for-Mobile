@@ -2,7 +2,7 @@
 
 Android-first mobile sync for AI Usage. The current MVP targets the free Firebase model:
 
-- Android app signs in with Firebase Auth using Google or GitHub.
+- Android app signs in with Firebase Auth using Google.
 - Windows app will sign in with the same Firebase account.
 - Firestore stores device records and per-device latest snapshots.
 - The Android app shows connected devices, lets the user rename a device, and renders the latest snapshot for the selected device.
@@ -27,7 +27,7 @@ Android-first mobile sync for AI Usage. The current MVP targets the free Firebas
 Required:
 
 - Firestore database
-- Firebase Authentication with Google and GitHub providers enabled
+- Firebase Authentication with the Google provider enabled
 - Android app registered in Firebase
 - `google-services.json` placed at `android/app/google-services.json`
 
@@ -40,7 +40,7 @@ Not required for the free plan:
 
 ## Android flow
 
-1. Sign in with Google or GitHub.
+1. Sign in with Google.
 2. Load the user's device list from Firestore.
 3. Pick the most recent device by default.
 4. Render the selected device snapshot.

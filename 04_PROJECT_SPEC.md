@@ -24,7 +24,7 @@ The project now uses the free Firebase model.
 
 ## Android requirements
 
-- Sign in with Google or GitHub
+- Sign in with Google
 - Read the device list from Firestore
 - Select the most recent device by default
 - Allow manual device switching

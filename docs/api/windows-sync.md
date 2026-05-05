@@ -4,7 +4,7 @@ This document describes the direct Firestore contract for AI Usage for Windows w
 
 ## Authentication
 
-- Windows signs in with Firebase Auth using Google or GitHub.
+- Windows signs in with Firebase Auth using Google.
 - Android signs in with the same Firebase project.
 - The same Firebase account produces the same `uid`.
 - No pairing code is used.

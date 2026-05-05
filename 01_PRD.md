@@ -15,7 +15,7 @@ AI Usage Mobile Sync shows the latest AI usage snapshot from one or more Windows
 
 ## Core jobs
 
-- Sign in once on Android with Google or GitHub
+- Sign in once on Android with Google
 - See every connected Windows device for the signed-in account
 - Rename a device to something meaningful like `Home PC` or `Work Laptop`
 - Open the latest snapshot for the selected device
@@ -23,7 +23,7 @@ AI Usage Mobile Sync shows the latest AI usage snapshot from one or more Windows
 
 ## MVP scope
 
-- Android app with Google and GitHub sign-in
+- Android app with Google sign-in
 - Firestore device list under `/users/{uid}/devices`
 - Latest snapshot under `/users/{uid}/devices/{deviceId}/snapshots/latest`
 - Device rename from Android
@@ -41,7 +41,7 @@ AI Usage Mobile Sync shows the latest AI usage snapshot from one or more Windows
 
 ## User flow
 
-1. The user signs in on Android with Google or GitHub.
+1. The user signs in on Android with Google.
 2. The app reads `/users/{uid}/devices`.
 3. The app selects the most recent device by `lastSeenAt`.
 4. The user can switch devices from the list.
@@ -51,7 +51,7 @@ AI Usage Mobile Sync shows the latest AI usage snapshot from one or more Windows
 
 ## Success criteria
 
-- Android login succeeds with Google or GitHub.
+- Android login succeeds with Google.
 - Connected devices appear for the signed-in user.
 - Device renaming updates Firestore and is reflected in the UI.
 - The selected device snapshot renders without provider credentials stored on mobile.

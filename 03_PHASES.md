@@ -10,7 +10,7 @@ Goal:
 
 Scope:
 
-- Firebase Auth with Google and GitHub
+- Firebase Auth with Google
 - Firestore owner-scoped rules
 - Android device list
 - selected device snapshot view
