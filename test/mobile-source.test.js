@@ -51,6 +51,7 @@ test("Android app has device-list snapshot sync and non-placeholder widget cache
   const repo = source("android/app/src/main/java/com/aiusage/mobile/sync/SnapshotRepository.kt");
   const worker = source("android/app/src/main/java/com/aiusage/mobile/sync/SnapshotSyncWorker.kt");
   const cache = source("android/app/src/main/java/com/aiusage/mobile/widget/WidgetSnapshotCache.kt");
+  const notificationController = source("android/app/src/main/java/com/aiusage/mobile/notification/UsageLimitNotificationController.kt");
 
   assert.match(models, /data class SnapshotRefreshResult/);
   assert.match(models, /data class SnapshotDevice/);
@@ -82,6 +83,7 @@ test("Android app has device-list snapshot sync and non-placeholder widget cache
   assert.match(cache, /updatedAt/);
   assert.match(cache, /status/);
   assert.doesNotMatch(cache, /"\{}"/);
+  assert.match(notificationController, /getBoolean\(KEY_ENABLED,\s*true\)/);
 });
 
 test("Android main UI uses Firebase auth with device list, rename flow, and snapshot refresh", () => {

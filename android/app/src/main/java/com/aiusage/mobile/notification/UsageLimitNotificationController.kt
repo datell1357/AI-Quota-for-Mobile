@@ -25,7 +25,7 @@ object UsageLimitNotificationController {
 
     fun isEnabled(context: Context): Boolean {
         return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getBoolean(KEY_ENABLED, false)
+            .getBoolean(KEY_ENABLED, true)
     }
 
     fun setEnabled(context: Context, enabled: Boolean) {
