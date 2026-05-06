@@ -106,4 +106,9 @@ class WidgetGaugeParserTest {
         assertEquals(48, compactGaugeLayoutSpec(3).gaugeWidthDp)
         assertEquals(48, compactGaugeLayoutSpec(4).gaugeWidthDp)
     }
+
+    @Test
+    fun widgetBackgroundIsTransparent() {
+        assertEquals(0f, widgetBackgroundColor().alpha)
+    }
 }
