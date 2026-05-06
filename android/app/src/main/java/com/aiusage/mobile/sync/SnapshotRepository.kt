@@ -224,6 +224,7 @@ class SnapshotRepository(private val context: Context) {
                 ?: providerId.ifBlank { null }
                 ?: "Provider"
             val status = provider["status"]?.toString().orEmpty()
+            if (!isVisibleProvider(provider, status)) return@mapNotNull null
             val lines = (provider["lines"] as? List<*>)?.filterIsInstance<Map<String, Any?>>()
                 ?.mapNotNull(::parseUsageLine)
                 .orEmpty()
@@ -238,6 +239,14 @@ class SnapshotRepository(private val context: Context) {
                 lines = lines
             )
         }
+    }
+
+    private fun isVisibleProvider(provider: Map<String, Any?>, status: String): Boolean {
+        if (status.equals("disabled", ignoreCase = true)) return false
+        if (provider["enabled"] == false) return false
+        if (provider["active"] == false) return false
+        if (provider["visible"] == false) return false
+        return true
     }
 
     private fun parseUsageLine(line: Map<String, Any?>): SnapshotUsageLimitLine? {

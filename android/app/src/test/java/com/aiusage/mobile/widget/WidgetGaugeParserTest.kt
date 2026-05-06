@@ -68,4 +68,34 @@ class WidgetGaugeParserTest {
         assertEquals("claude", gauges.single().providerId)
         assertTrue(gauges.single().remainingRatio > 0f)
     }
+
+    @Test
+    fun skipsDisabledProvidersFromWindowsSettings() {
+        val snapshotJson = """
+            {
+              "providers": [
+                {"providerId":"claude","status":"ok","lines":[{"label":"Session","used":20,"limit":100,"remaining":80}]},
+                {"providerId":"gemini","status":"disabled","lines":[{"label":"Pro","used":0,"limit":100,"remaining":100}]},
+                {"providerId":"codex","status":"ok","lines":[{"label":"Session","used":10,"limit":100,"remaining":90}]}
+              ]
+            }
+        """.trimIndent()
+
+        val gauges = parseWidgetProviderGauges(snapshotJson)
+
+        assertEquals(listOf("claude", "codex"), gauges.map { it.providerId })
+    }
+
+    @Test
+    fun growsWidgetGaugeHeightWhenFewerProvidersAreVisible() {
+        assertEquals(12, compactGaugeLayoutSpec(1).gaugeHeightDp)
+        assertEquals(9, compactGaugeLayoutSpec(2).gaugeHeightDp)
+        assertEquals(7, compactGaugeLayoutSpec(3).gaugeHeightDp)
+        assertEquals(6, compactGaugeLayoutSpec(4).gaugeHeightDp)
+
+        assertEquals(14, expandedGaugeLayoutSpec(1).gaugeHeightDp)
+        assertEquals(12, expandedGaugeLayoutSpec(2).gaugeHeightDp)
+        assertEquals(10, expandedGaugeLayoutSpec(3).gaugeHeightDp)
+        assertEquals(8, expandedGaugeLayoutSpec(4).gaugeHeightDp)
+    }
 }

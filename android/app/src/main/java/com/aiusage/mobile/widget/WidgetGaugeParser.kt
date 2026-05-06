@@ -19,12 +19,22 @@ fun parseWidgetProviderGauges(snapshotJson: String, now: Instant = Instant.now()
             for (index in 0 until providers.length()) {
                 if (size == MAX_WIDGET_GAUGES) break
                 val provider = providers.optJSONObject(index) ?: continue
+                if (!provider.isVisibleProvider()) continue
                 val providerId = provider.optString("providerId", "unknown").ifBlank { "unknown" }
                 val line = firstGaugeableLine(provider.optJSONArray("lines") ?: JSONArray(), now) ?: continue
                 add(WidgetProviderGauge(providerId = providerId, remainingRatio = line.ratio, remainingText = line.remainingText, resetText = line.resetText))
             }
         }
     }.getOrDefault(emptyList())
+}
+
+private fun JSONObject.isVisibleProvider(): Boolean {
+    val status = optString("status").trim().lowercase()
+    if (status == "disabled") return false
+    if (has("enabled") && !optBoolean("enabled", true)) return false
+    if (has("active") && !optBoolean("active", true)) return false
+    if (has("visible") && !optBoolean("visible", true)) return false
+    return true
 }
 
 private fun firstGaugeableLine(lines: JSONArray, now: Instant): ParsedGaugeLine? {

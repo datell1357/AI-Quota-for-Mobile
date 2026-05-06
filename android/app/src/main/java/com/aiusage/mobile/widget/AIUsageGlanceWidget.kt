@@ -53,6 +53,11 @@ private fun AIUsageWidgetContent(gauges: List<WidgetProviderGauge>) {
     val currentSize = LocalSize.current
     val isCompact = currentSize.width < 140.dp || currentSize.height < 100.dp
     val visibleGauges = gauges.take(MAX_VISIBLE_GAUGES)
+    val layoutSpec = if (isCompact) {
+        compactGaugeLayoutSpec(visibleGauges.size)
+    } else {
+        expandedGaugeLayoutSpec(visibleGauges.size)
+    }
 
     Column(
         modifier = GlanceModifier
@@ -66,50 +71,52 @@ private fun AIUsageWidgetContent(gauges: List<WidgetProviderGauge>) {
             return@Column
         }
 
-        visibleGauges.forEach { gauge ->
+        visibleGauges.forEachIndexed { index, gauge ->
             if (isCompact) {
-                CompactGauge(gauge)
+                CompactGauge(gauge, layoutSpec)
             } else {
-                IconGauge(gauge)
+                IconGauge(gauge, layoutSpec)
             }
-            Spacer(modifier = GlanceModifier.height(if (isCompact) 3.dp else 5.dp))
+            if (index < visibleGauges.lastIndex && layoutSpec.rowSpacerHeightDp > 0) {
+                Spacer(modifier = GlanceModifier.height(layoutSpec.rowSpacerHeightDp.dp))
+            }
         }
     }
 }
 
 @Composable
-private fun CompactGauge(gauge: WidgetProviderGauge) {
+private fun CompactGauge(gauge: WidgetProviderGauge, layoutSpec: WidgetGaugeLayoutSpec) {
     Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
         Image(
             provider = ImageProvider(providerIconRes(gauge.providerId)),
             contentDescription = gauge.providerId,
-            modifier = GlanceModifier.size(9.dp)
+            modifier = GlanceModifier.size(layoutSpec.iconSizeDp.dp)
         )
         Spacer(modifier = GlanceModifier.width(3.dp))
         GaugeBar(
             ratio = gauge.remainingRatio,
-            width = 44.dp,
-            height = 6.dp,
-            radius = 3.dp
+            width = layoutSpec.gaugeWidthDp.dp,
+            height = layoutSpec.gaugeHeightDp.dp,
+            radius = layoutSpec.gaugeRadiusDp.dp
         )
     }
 }
 
 @Composable
-private fun IconGauge(gauge: WidgetProviderGauge) {
+private fun IconGauge(gauge: WidgetProviderGauge, layoutSpec: WidgetGaugeLayoutSpec) {
     Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
         Image(
             provider = ImageProvider(providerIconRes(gauge.providerId)),
             contentDescription = gauge.providerId,
-            modifier = GlanceModifier.size(18.dp)
+            modifier = GlanceModifier.size(layoutSpec.iconSizeDp.dp)
         )
         Spacer(modifier = GlanceModifier.width(8.dp))
         Column {
             GaugeBar(
                 ratio = gauge.remainingRatio,
-                width = 220.dp,
-                height = 8.dp,
-                radius = 4.dp
+                width = layoutSpec.gaugeWidthDp.dp,
+                height = layoutSpec.gaugeHeightDp.dp,
+                radius = layoutSpec.gaugeRadiusDp.dp
             )
             Spacer(modifier = GlanceModifier.height(2.dp))
             Row {
