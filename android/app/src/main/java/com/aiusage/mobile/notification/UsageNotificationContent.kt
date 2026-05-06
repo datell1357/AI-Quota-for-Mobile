@@ -45,6 +45,7 @@ private fun providerLabel(providerId: String): String {
         "claude" -> "Claude"
         "codex", "openai" -> "Codex"
         "gemini" -> "Gemini"
+        "copilot", "github-copilot", "github_copilot" -> "Copilot"
         "antigravity" -> "Antigravity"
         else -> providerId.replaceFirstChar { char -> char.uppercase() }
     }

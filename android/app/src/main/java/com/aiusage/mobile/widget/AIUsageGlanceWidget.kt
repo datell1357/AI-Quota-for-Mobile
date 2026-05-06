@@ -165,6 +165,7 @@ private fun providerIconRes(providerId: String): Int {
         "claude" -> R.drawable.ic_provider_claude
         "codex", "openai" -> R.drawable.ic_provider_openai
         "gemini" -> R.drawable.ic_provider_gemini
+        "copilot", "github-copilot", "github_copilot" -> R.drawable.ic_provider_copilot
         "antigravity" -> R.drawable.ic_provider_antigravity
         else -> R.drawable.ic_provider_unknown
     }
