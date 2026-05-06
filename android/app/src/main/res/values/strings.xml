@@ -1,0 +1,16 @@
+<resources>
+    <string name="settings_open">Settings</string>
+    <string name="settings_close">Close</string>
+    <string name="settings_status_bar_gauges">Status bar gauges</string>
+    <string name="settings_status_bar_gauges_description">Pinned silent notification with active provider gauges</string>
+    <string name="settings_connected_devices">Connected devices</string>
+    <string name="settings_no_pc_linked">No PC linked</string>
+    <string name="settings_selected_device">Selected device</string>
+    <string name="settings_rename_selected_device">Rename selected device</string>
+    <string name="settings_device_name">Device name</string>
+    <string name="settings_save_device_name">Save device name</string>
+    <string name="settings_snapshot_status">Snapshot status</string>
+    <string name="settings_refresh_latest_snapshot">Refresh latest snapshot</string>
+    <string name="settings_refreshing_snapshot">Refreshing snapshot...</string>
+    <string name="settings_sign_out">Sign out</string>
+</resources>

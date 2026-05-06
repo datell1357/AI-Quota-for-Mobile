@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aiusage.mobile.notification.UsageLimitNotificationController
@@ -331,7 +332,7 @@ private fun SignedInContent(
         }
         Spacer(modifier = Modifier.weight(1f))
         Button(onClick = onToggleSettings) {
-            Text(if (showSettings) "Close" else "⚙ Settings")
+            Text(if (showSettings) stringResource(R.string.settings_close) else "⚙ ${stringResource(R.string.settings_open)}")
         }
     }
 
@@ -388,9 +389,15 @@ private fun LimitDashboard(
         }
     }
 
-    Button(onClick = onRefreshSnapshot, modifier = Modifier.fillMaxWidth()) {
-        Text(if (refreshingSnapshot) "Refreshing snapshot..." else "Refresh latest snapshot")
-    }
+        Button(onClick = onRefreshSnapshot, modifier = Modifier.fillMaxWidth()) {
+            Text(
+                if (refreshingSnapshot) {
+                    stringResource(R.string.settings_refreshing_snapshot)
+                } else {
+                    stringResource(R.string.settings_refresh_latest_snapshot)
+                }
+            )
+        }
 }
 
 @Composable
@@ -474,8 +481,8 @@ private fun SettingsPanel(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Status bar gauges", style = MaterialTheme.typography.titleMedium)
-            Text("Pinned silent notification with active provider gauges", color = Color(0xFF64748B))
+            Text(stringResource(R.string.settings_status_bar_gauges), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.settings_status_bar_gauges_description), color = Color(0xFF64748B))
         }
         Switch(
             checked = notificationEnabled,
@@ -483,9 +490,9 @@ private fun SettingsPanel(
         )
     }
 
-    Text("Connected devices", style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.settings_connected_devices), style = MaterialTheme.typography.titleMedium)
     if (deviceList.isEmpty()) {
-        Text("No PC linked")
+        Text(stringResource(R.string.settings_no_pc_linked))
     } else {
         deviceList.forEach { device ->
             Button(
@@ -501,33 +508,39 @@ private fun SettingsPanel(
         }
     }
 
-    Text("Selected device", style = MaterialTheme.typography.titleMedium)
-    Text(snapshotResult?.deviceName ?: deviceList.firstOrNull { it.deviceId == selectedDeviceId }?.deviceName ?: "No PC linked")
+    Text(stringResource(R.string.settings_selected_device), style = MaterialTheme.typography.titleMedium)
+    Text(snapshotResult?.deviceName ?: deviceList.firstOrNull { it.deviceId == selectedDeviceId }?.deviceName ?: stringResource(R.string.settings_no_pc_linked))
 
-    Text("Rename selected device", style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.settings_rename_selected_device), style = MaterialTheme.typography.titleMedium)
     OutlinedTextField(
         value = renameDraft,
         onValueChange = onRenameDraftChanged,
         modifier = Modifier.fillMaxWidth(),
-        label = { Text("Device name") }
+        label = { Text(stringResource(R.string.settings_device_name)) }
     )
     Button(
         onClick = onSaveDeviceName,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Text("Save device name")
+        Text(stringResource(R.string.settings_save_device_name))
     }
 
-    Text("Snapshot status", style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.settings_snapshot_status), style = MaterialTheme.typography.titleMedium)
     Text(snapshotResult?.status?.name ?: SnapshotStatus.NotLinked.name)
 
     Button(onClick = onRefreshSnapshot, modifier = Modifier.fillMaxWidth()) {
-        Text(if (refreshingSnapshot) "Refreshing snapshot..." else "Refresh latest snapshot")
+        Text(
+            if (refreshingSnapshot) {
+                stringResource(R.string.settings_refreshing_snapshot)
+            } else {
+                stringResource(R.string.settings_refresh_latest_snapshot)
+            }
+        )
     }
 
     snapshotMessage?.let { Text(it) }
 
     Button(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
-        Text("Sign out")
+        Text(stringResource(R.string.settings_sign_out))
     }
 }

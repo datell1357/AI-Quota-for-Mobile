@@ -1,0 +1,16 @@
+<resources>
+    <string name="settings_open">설정</string>
+    <string name="settings_close">닫기</string>
+    <string name="settings_status_bar_gauges">상태 표시줄 게이지</string>
+    <string name="settings_status_bar_gauges_description">활성 provider 게이지를 무음 고정 알림으로 표시</string>
+    <string name="settings_connected_devices">연결된 장치</string>
+    <string name="settings_no_pc_linked">연결된 PC 없음</string>
+    <string name="settings_selected_device">선택된 장치</string>
+    <string name="settings_rename_selected_device">선택된 장치 이름 변경</string>
+    <string name="settings_device_name">장치 이름</string>
+    <string name="settings_save_device_name">장치 이름 저장</string>
+    <string name="settings_snapshot_status">스냅샷 상태</string>
+    <string name="settings_refresh_latest_snapshot">최신 스냅샷 새로고침</string>
+    <string name="settings_refreshing_snapshot">스냅샷 새로고침 중...</string>
+    <string name="settings_sign_out">로그아웃</string>
+</resources>
