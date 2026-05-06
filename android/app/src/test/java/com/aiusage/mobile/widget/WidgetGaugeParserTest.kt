@@ -98,4 +98,12 @@ class WidgetGaugeParserTest {
         assertEquals(10, expandedGaugeLayoutSpec(3).gaugeHeightDp)
         assertEquals(8, expandedGaugeLayoutSpec(4).gaugeHeightDp)
     }
+
+    @Test
+    fun compactWidgetGaugeWidthIsTenPercentLonger() {
+        assertEquals(46, compactGaugeLayoutSpec(1).gaugeWidthDp)
+        assertEquals(46, compactGaugeLayoutSpec(2).gaugeWidthDp)
+        assertEquals(48, compactGaugeLayoutSpec(3).gaugeWidthDp)
+        assertEquals(48, compactGaugeLayoutSpec(4).gaugeWidthDp)
+    }
 }
