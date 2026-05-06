@@ -28,6 +28,9 @@ import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.text.Text
+import androidx.glance.text.TextAlign
+import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider
 import com.aiusage.mobile.R
 
 class AIUsageGlanceWidget : GlanceAppWidget() {
@@ -69,7 +72,7 @@ private fun AIUsageWidgetContent(gauges: List<WidgetProviderGauge>) {
             } else {
                 IconGauge(gauge)
             }
-            Spacer(modifier = GlanceModifier.height(if (isCompact) 3.dp else 8.dp))
+            Spacer(modifier = GlanceModifier.height(if (isCompact) 3.dp else 5.dp))
         }
     }
 }
@@ -93,12 +96,28 @@ private fun IconGauge(gauge: WidgetProviderGauge) {
             modifier = GlanceModifier.size(18.dp)
         )
         Spacer(modifier = GlanceModifier.width(8.dp))
-        GaugeBar(
-            ratio = gauge.remainingRatio,
-            width = 220.dp,
-            height = 9.dp,
-            radius = 4.dp
-        )
+        Column {
+            GaugeBar(
+                ratio = gauge.remainingRatio,
+                width = 220.dp,
+                height = 8.dp,
+                radius = 4.dp
+            )
+            Spacer(modifier = GlanceModifier.height(2.dp))
+            Row {
+                Text(
+                    text = gauge.remainingText,
+                    modifier = GlanceModifier.width(92.dp),
+                    style = WidgetCaptionStyle
+                )
+                Spacer(modifier = GlanceModifier.width(8.dp))
+                Text(
+                    text = gauge.resetText.orEmpty(),
+                    modifier = GlanceModifier.width(120.dp),
+                    style = WidgetCaptionStyle.copy(textAlign = TextAlign.End)
+                )
+            }
+        }
     }
 }
 
@@ -144,6 +163,11 @@ private fun gaugeColor(ratio: Float): Color {
 }
 
 private const val MAX_VISIBLE_GAUGES = 4
+
+private val WidgetCaptionStyle = TextStyle(
+    color = ColorProvider(Color(0xFFCBD5E1)),
+    textAlign = TextAlign.Start
+)
 
 class AIUsageGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = AIUsageGlanceWidget()
