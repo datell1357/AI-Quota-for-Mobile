@@ -1,6 +1,8 @@
 package com.aiusage.mobile
 
+import android.Manifest
 import android.app.Activity.RESULT_OK
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -24,6 +26,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -39,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.aiusage.mobile.notification.UsageLimitNotificationController
 import com.aiusage.mobile.sync.SnapshotDevice
 import com.aiusage.mobile.sync.SnapshotProviderUsage
 import com.aiusage.mobile.sync.SnapshotUsageLimitLine
@@ -61,6 +65,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        UsageLimitNotificationController.updateFromCache(applicationContext)
         setContent {
             MaterialTheme {
                 AIUsageApp(
@@ -96,7 +101,18 @@ fun AIUsageApp(
     var selectedDeviceId by remember { mutableStateOf<String?>(null) }
     var renameDraft by remember { mutableStateOf("") }
     var showSettings by remember { mutableStateOf(false) }
+    var notificationEnabled by remember { mutableStateOf(UsageLimitNotificationController.isEnabled(activity)) }
     val coroutineScope = rememberCoroutineScope()
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        notificationEnabled = granted
+        UsageLimitNotificationController.setEnabled(activity, granted)
+        if (granted) {
+            UsageLimitNotificationController.updateFromCache(activity)
+        }
+    }
 
     fun loadDevices(uid: String) {
         coroutineScope.launch {
@@ -222,6 +238,23 @@ fun AIUsageApp(
             snapshotMessage = snapshotMessage,
             refreshingSnapshot = refreshingSnapshot,
             showSettings = showSettings,
+            notificationEnabled = notificationEnabled,
+            onNotificationEnabledChanged = { enabled ->
+                if (!enabled) {
+                    notificationEnabled = false
+                    UsageLimitNotificationController.setEnabled(activity, false)
+                    return@SignedInContent
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    !UsageLimitNotificationController.canPostNotifications(activity)
+                ) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    notificationEnabled = true
+                    UsageLimitNotificationController.setEnabled(activity, true)
+                    UsageLimitNotificationController.updateFromCache(activity)
+                }
+            },
             onSelectDevice = { device ->
                 selectedDeviceId = device.deviceId
                 renameDraft = device.deviceName
@@ -275,6 +308,8 @@ private fun SignedInContent(
     snapshotMessage: String?,
     refreshingSnapshot: Boolean,
     showSettings: Boolean,
+    notificationEnabled: Boolean,
+    onNotificationEnabledChanged: (Boolean) -> Unit,
     onSelectDevice: (SnapshotDevice) -> Unit,
     onRenameDraftChanged: (String) -> Unit,
     onSaveDeviceName: () -> Unit,
@@ -309,6 +344,8 @@ private fun SignedInContent(
             snapshotResult = snapshotResult,
             snapshotMessage = snapshotMessage,
             refreshingSnapshot = refreshingSnapshot,
+            notificationEnabled = notificationEnabled,
+            onNotificationEnabledChanged = onNotificationEnabledChanged,
             onSelectDevice = onSelectDevice,
             onRenameDraftChanged = onRenameDraftChanged,
             onSaveDeviceName = onSaveDeviceName,
@@ -422,6 +459,8 @@ private fun SettingsPanel(
     snapshotResult: SnapshotRefreshResult?,
     snapshotMessage: String?,
     refreshingSnapshot: Boolean,
+    notificationEnabled: Boolean,
+    onNotificationEnabledChanged: (Boolean) -> Unit,
     onSelectDevice: (SnapshotDevice) -> Unit,
     onRenameDraftChanged: (String) -> Unit,
     onSaveDeviceName: () -> Unit,
@@ -429,6 +468,20 @@ private fun SettingsPanel(
     onSignOut: () -> Unit
 ) {
     Text(user?.email ?: user?.uid.orEmpty(), style = MaterialTheme.typography.bodyMedium)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Status bar gauges", style = MaterialTheme.typography.titleMedium)
+            Text("Pinned silent notification with active provider gauges", color = Color(0xFF64748B))
+        }
+        Switch(
+            checked = notificationEnabled,
+            onCheckedChange = onNotificationEnabledChanged
+        )
+    }
 
     Text("Connected devices", style = MaterialTheme.typography.titleMedium)
     if (deviceList.isEmpty()) {

@@ -6,6 +6,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.aiusage.mobile.widget.WidgetSnapshotCache
+import com.aiusage.mobile.notification.UsageLimitNotificationController
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -36,6 +37,7 @@ class SnapshotRepository(private val context: Context) {
     fun clearSignedInUser() {
         preferences.edit().remove("uid").apply()
         WorkManager.getInstance(context).cancelUniqueWork(WIDGET_REFRESH_WORK)
+        UsageLimitNotificationController.cancel(context)
     }
 
     fun storedUid(): String? {
@@ -138,6 +140,7 @@ class SnapshotRepository(private val context: Context) {
     ) {
         // Stores display-only snapshot cache for app and widget rendering.
         cache.write(snapshotJson, status, deviceName, updatedAt)
+        UsageLimitNotificationController.update(context, snapshotJson)
     }
 
     fun latestCachedSnapshot(): String {
