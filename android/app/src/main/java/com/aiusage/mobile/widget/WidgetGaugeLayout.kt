@@ -10,10 +10,10 @@ data class WidgetGaugeLayoutSpec(
 
 fun compactGaugeLayoutSpec(visibleGaugeCount: Int): WidgetGaugeLayoutSpec {
     return when (visibleGaugeCount.coerceIn(1, 4)) {
-        1 -> WidgetGaugeLayoutSpec(iconSizeDp = 10, gaugeWidthDp = 51, gaugeHeightDp = 12, gaugeRadiusDp = 6, rowSpacerHeightDp = 0)
-        2 -> WidgetGaugeLayoutSpec(iconSizeDp = 10, gaugeWidthDp = 51, gaugeHeightDp = 9, gaugeRadiusDp = 5, rowSpacerHeightDp = 8)
-        3 -> WidgetGaugeLayoutSpec(iconSizeDp = 9, gaugeWidthDp = 53, gaugeHeightDp = 7, gaugeRadiusDp = 4, rowSpacerHeightDp = 5)
-        else -> WidgetGaugeLayoutSpec(iconSizeDp = 9, gaugeWidthDp = 53, gaugeHeightDp = 6, gaugeRadiusDp = 3, rowSpacerHeightDp = 3)
+        1 -> WidgetGaugeLayoutSpec(iconSizeDp = 12, gaugeWidthDp = 51, gaugeHeightDp = 12, gaugeRadiusDp = 6, rowSpacerHeightDp = 0)
+        2 -> WidgetGaugeLayoutSpec(iconSizeDp = 12, gaugeWidthDp = 51, gaugeHeightDp = 9, gaugeRadiusDp = 5, rowSpacerHeightDp = 8)
+        3 -> WidgetGaugeLayoutSpec(iconSizeDp = 11, gaugeWidthDp = 53, gaugeHeightDp = 7, gaugeRadiusDp = 4, rowSpacerHeightDp = 5)
+        else -> WidgetGaugeLayoutSpec(iconSizeDp = 11, gaugeWidthDp = 53, gaugeHeightDp = 6, gaugeRadiusDp = 3, rowSpacerHeightDp = 3)
     }
 }
 

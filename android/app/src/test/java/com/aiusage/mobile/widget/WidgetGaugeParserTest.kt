@@ -108,6 +108,14 @@ class WidgetGaugeParserTest {
     }
 
     @Test
+    fun compactWidgetProviderIconsAreLarger() {
+        assertEquals(12, compactGaugeLayoutSpec(1).iconSizeDp)
+        assertEquals(12, compactGaugeLayoutSpec(2).iconSizeDp)
+        assertEquals(11, compactGaugeLayoutSpec(3).iconSizeDp)
+        assertEquals(11, compactGaugeLayoutSpec(4).iconSizeDp)
+    }
+
+    @Test
     fun widgetBackgroundIsTranslucent() {
         assertEquals(0.42f, widgetBackgroundColor().alpha, 0.01f)
     }
