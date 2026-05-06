@@ -62,6 +62,7 @@ private fun AIUsageWidgetContent(gauges: List<WidgetProviderGauge>) {
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
+            .cornerRadius(if (isCompact) 20.dp else 24.dp)
             .background(widgetBackgroundColor())
             .padding(if (isCompact) 4.dp else 10.dp),
         verticalAlignment = Alignment.Vertical.CenterVertically

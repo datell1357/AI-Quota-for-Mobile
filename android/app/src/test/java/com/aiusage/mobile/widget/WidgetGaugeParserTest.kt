@@ -100,15 +100,15 @@ class WidgetGaugeParserTest {
     }
 
     @Test
-    fun compactWidgetGaugeWidthIsTenPercentLonger() {
-        assertEquals(46, compactGaugeLayoutSpec(1).gaugeWidthDp)
-        assertEquals(46, compactGaugeLayoutSpec(2).gaugeWidthDp)
-        assertEquals(48, compactGaugeLayoutSpec(3).gaugeWidthDp)
-        assertEquals(48, compactGaugeLayoutSpec(4).gaugeWidthDp)
+    fun compactWidgetGaugeWidthIsTwentyPercentLonger() {
+        assertEquals(51, compactGaugeLayoutSpec(1).gaugeWidthDp)
+        assertEquals(51, compactGaugeLayoutSpec(2).gaugeWidthDp)
+        assertEquals(53, compactGaugeLayoutSpec(3).gaugeWidthDp)
+        assertEquals(53, compactGaugeLayoutSpec(4).gaugeWidthDp)
     }
 
     @Test
-    fun widgetBackgroundIsTransparent() {
-        assertEquals(0f, widgetBackgroundColor().alpha)
+    fun widgetBackgroundIsTranslucent() {
+        assertEquals(0.42f, widgetBackgroundColor().alpha, 0.01f)
     }
 }
