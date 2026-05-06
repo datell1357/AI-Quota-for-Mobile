@@ -100,13 +100,15 @@ object UsageLimitNotificationController {
         val views = RemoteViews(context.packageName, R.layout.notification_usage_gauges)
         views.setTextViewText(R.id.notification_title, content.summary)
         val rows = rowIds()
-        content.gauges.forEachIndexed { index, gauge ->
+        content.gaugeRows.forEachIndexed { index, gauge ->
             val row = rows[index]
             views.setViewVisibility(row.containerId, View.VISIBLE)
             views.setImageViewResource(row.iconId, providerIconRes(gauge.providerId))
             views.setProgressBar(row.progressId, 100, (gauge.remainingRatio * 100).toInt().coerceIn(0, 100), false)
+            views.setTextViewText(row.remainingTextId, gauge.remainingText)
+            views.setTextViewText(row.resetTextId, gauge.resetText)
         }
-        for (index in content.gauges.size until rows.size) {
+        for (index in content.gaugeRows.size until rows.size) {
             views.setViewVisibility(rows[index].containerId, View.GONE)
         }
         return views
@@ -124,10 +126,10 @@ object UsageLimitNotificationController {
 
     private fun rowIds(): List<NotificationGaugeRow> {
         return listOf(
-            NotificationGaugeRow(R.id.notification_row_0, R.id.notification_icon_0, R.id.notification_progress_0),
-            NotificationGaugeRow(R.id.notification_row_1, R.id.notification_icon_1, R.id.notification_progress_1),
-            NotificationGaugeRow(R.id.notification_row_2, R.id.notification_icon_2, R.id.notification_progress_2),
-            NotificationGaugeRow(R.id.notification_row_3, R.id.notification_icon_3, R.id.notification_progress_3)
+            NotificationGaugeRow(R.id.notification_row_0, R.id.notification_icon_0, R.id.notification_progress_0, R.id.notification_remaining_0, R.id.notification_reset_0),
+            NotificationGaugeRow(R.id.notification_row_1, R.id.notification_icon_1, R.id.notification_progress_1, R.id.notification_remaining_1, R.id.notification_reset_1),
+            NotificationGaugeRow(R.id.notification_row_2, R.id.notification_icon_2, R.id.notification_progress_2, R.id.notification_remaining_2, R.id.notification_reset_2),
+            NotificationGaugeRow(R.id.notification_row_3, R.id.notification_icon_3, R.id.notification_progress_3, R.id.notification_remaining_3, R.id.notification_reset_3)
         )
     }
 }
@@ -135,5 +137,7 @@ object UsageLimitNotificationController {
 private data class NotificationGaugeRow(
     val containerId: Int,
     val iconId: Int,
-    val progressId: Int
+    val progressId: Int,
+    val remainingTextId: Int,
+    val resetTextId: Int
 )

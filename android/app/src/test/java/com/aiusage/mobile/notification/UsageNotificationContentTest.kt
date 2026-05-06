@@ -22,5 +22,7 @@ class UsageNotificationContentTest {
         assertEquals("AI Usage", content.title)
         assertEquals("Claude 78% | Codex 81%", content.summary)
         assertEquals(listOf("claude", "codex"), content.gauges.map { it.providerId })
+        assertEquals(listOf("78% left", "81% left"), content.gaugeRows.map { it.remainingText })
+        assertEquals(listOf("Resets in 1h 0m", "Resets in 2h 0m"), content.gaugeRows.map { it.resetText })
     }
 }

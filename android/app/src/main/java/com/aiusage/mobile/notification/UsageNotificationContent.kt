@@ -8,6 +8,22 @@ data class UsageNotificationContent(
     val title: String,
     val summary: String,
     val gauges: List<WidgetProviderGauge>
+) {
+    val gaugeRows: List<UsageNotificationGaugeRow> = gauges.map { gauge ->
+        UsageNotificationGaugeRow(
+            providerId = gauge.providerId,
+            remainingRatio = gauge.remainingRatio,
+            remainingText = gauge.remainingText,
+            resetText = gauge.resetText.orEmpty()
+        )
+    }
+}
+
+data class UsageNotificationGaugeRow(
+    val providerId: String,
+    val remainingRatio: Float,
+    val remainingText: String,
+    val resetText: String
 )
 
 fun buildUsageNotificationContent(
