@@ -6,10 +6,12 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.aiusage.mobile.widget.WidgetSnapshotCache
+import com.aiusage.mobile.widget.AIUsageGlanceWidget
 import com.aiusage.mobile.notification.UsageLimitNotificationController
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.tasks.await
 import org.json.JSONObject
 import java.time.Instant
@@ -133,7 +135,7 @@ class SnapshotRepository(private val context: Context) {
             .await()
     }
 
-    fun saveForWidget(
+    suspend fun saveForWidget(
         snapshotJson: String,
         status: String = "NotLinked",
         deviceName: String = "",
@@ -142,6 +144,7 @@ class SnapshotRepository(private val context: Context) {
         // Stores display-only snapshot cache for app and widget rendering.
         cache.write(snapshotJson, status, deviceName, updatedAt)
         UsageLimitNotificationController.update(context, snapshotJson)
+        AIUsageGlanceWidget().updateAll(context)
     }
 
     fun latestCachedSnapshot(): String {

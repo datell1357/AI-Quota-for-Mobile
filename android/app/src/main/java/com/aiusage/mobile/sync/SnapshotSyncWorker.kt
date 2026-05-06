@@ -3,9 +3,6 @@ package com.aiusage.mobile.sync
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.aiusage.mobile.widget.AIUsageGlanceWidget
-import androidx.glance.appwidget.updateAll
-
 class SnapshotSyncWorker(
     appContext: Context,
     workerParameters: WorkerParameters
@@ -16,7 +13,6 @@ class SnapshotSyncWorker(
         return try {
             repository.rememberSignedInUser(uid)
             repository.refreshLatestSnapshot(uid)
-            AIUsageGlanceWidget().updateAll(applicationContext)
             Result.success()
         } catch (_: Throwable) {
             Result.success()

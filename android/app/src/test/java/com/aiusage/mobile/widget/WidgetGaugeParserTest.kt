@@ -70,6 +70,27 @@ class WidgetGaugeParserTest {
     }
 
     @Test
+    fun includesErrorProvidersWithoutLinesAsErrorGauges() {
+        val snapshotJson = """
+            {
+              "providers": [
+                {"providerId":"claude","status":"ok","lines":[{"label":"Session","used":20,"limit":100}]},
+                {"providerId":"codex","status":"ok","lines":[{"label":"Session","used":2,"limit":100}]},
+                {"providerId":"gemini","status":"ok","lines":[{"label":"Pro","used":0,"limit":100}]},
+                {"providerId":"copilot","status":"error","lines":[]}
+              ]
+            }
+        """.trimIndent()
+
+        val gauges = parseWidgetProviderGauges(snapshotJson)
+
+        assertEquals(listOf("claude", "codex", "gemini", "copilot"), gauges.map { it.providerId })
+        assertEquals(0f, gauges.last().remainingRatio)
+        assertEquals("Error", gauges.last().remainingText)
+        assertEquals(null, gauges.last().resetText)
+    }
+
+    @Test
     fun skipsDisabledProvidersFromWindowsSettings() {
         val snapshotJson = """
             {
