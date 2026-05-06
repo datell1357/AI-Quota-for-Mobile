@@ -76,11 +76,11 @@ private fun AIUsageWidgetContent(gauges: List<WidgetProviderGauge>) {
 
 @Composable
 private fun CompactGauge(gauge: WidgetProviderGauge) {
-    SegmentedGauge(
+    GaugeBar(
         ratio = gauge.remainingRatio,
-        segmentCount = 8,
-        segmentWidth = 5.dp,
-        segmentHeight = 5.dp
+        width = 42.dp,
+        height = 5.dp,
+        radius = 2.dp
     )
 }
 
@@ -93,31 +93,34 @@ private fun IconGauge(gauge: WidgetProviderGauge) {
             modifier = GlanceModifier.size(18.dp)
         )
         Spacer(modifier = GlanceModifier.width(8.dp))
-        SegmentedGauge(
+        GaugeBar(
             ratio = gauge.remainingRatio,
-            segmentCount = 12,
-            segmentWidth = 18.dp,
-            segmentHeight = 9.dp
+            width = 220.dp,
+            height = 9.dp,
+            radius = 4.dp
         )
     }
 }
 
 @Composable
-private fun SegmentedGauge(ratio: Float, segmentCount: Int, segmentWidth: Dp, segmentHeight: Dp) {
-    val activeSegments = (ratio.coerceIn(0f, 1f) * segmentCount).toInt().coerceIn(0, segmentCount)
+private fun GaugeBar(ratio: Float, width: Dp, height: Dp, radius: Dp) {
+    val activeWidth = width * ratio.coerceIn(0f, 1f)
     val activeColor = gaugeColor(ratio)
-    Row(modifier = GlanceModifier.height(segmentHeight)) {
-        repeat(segmentCount) { index ->
+    Box(
+        modifier = GlanceModifier
+            .width(width)
+            .height(height)
+            .cornerRadius(radius)
+            .background(Color(0xFF334155))
+    ) {
+        if (activeWidth > 0.dp) {
             Box(
                 modifier = GlanceModifier
-                    .width(segmentWidth)
-                    .height(segmentHeight)
-                    .cornerRadius(2.dp)
-                    .background(if (index < activeSegments) activeColor else Color(0xFF334155))
+                    .width(activeWidth)
+                    .height(height)
+                    .cornerRadius(radius)
+                    .background(activeColor)
             ) {}
-            if (index != segmentCount - 1) {
-                Spacer(modifier = GlanceModifier.width(2.dp))
-            }
         }
     }
 }
@@ -127,6 +130,7 @@ private fun providerIconRes(providerId: String): Int {
         "claude" -> R.drawable.ic_provider_claude
         "codex", "openai" -> R.drawable.ic_provider_openai
         "gemini" -> R.drawable.ic_provider_gemini
+        "antigravity" -> R.drawable.ic_provider_antigravity
         else -> R.drawable.ic_provider_unknown
     }
 }
