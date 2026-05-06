@@ -43,6 +43,7 @@ class AIUsageGlanceWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
+            // Widget renders only from the local cache written by the app refresh flow.
             AIUsageWidgetContent(parseWidgetProviderGauges(WidgetSnapshotCache(context).readState().snapshotJson))
         }
     }

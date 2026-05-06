@@ -62,7 +62,7 @@ class SnapshotRepository(private val context: Context) {
             .await()
             .documents
 
-        return deviceDocuments.map { deviceDocument ->
+        val devices = deviceDocuments.map { deviceDocument ->
             val snapshotDocument = deviceDocument.reference
                 .collection("snapshots")
                 .document("latest")
@@ -77,7 +77,8 @@ class SnapshotRepository(private val context: Context) {
                 fetchedAt = parsedSnapshot.fetchedAt,
                 summary = parsedSnapshot.message
             )
-        }.sortedByDescending { timestampMillis(it.lastSeenAt) }
+        }
+        return deduplicateDevicesByName(devices)
     }
 
     suspend fun refreshLatestSnapshot(uid: String, preferredDeviceId: String? = null): SnapshotRefreshResult {
