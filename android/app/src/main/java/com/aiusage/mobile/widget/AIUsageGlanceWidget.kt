@@ -79,12 +79,20 @@ private fun AIUsageWidgetContent(gauges: List<WidgetProviderGauge>) {
 
 @Composable
 private fun CompactGauge(gauge: WidgetProviderGauge) {
-    GaugeBar(
-        ratio = gauge.remainingRatio,
-        width = 42.dp,
-        height = 5.dp,
-        radius = 2.dp
-    )
+    Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
+        Image(
+            provider = ImageProvider(providerIconRes(gauge.providerId)),
+            contentDescription = gauge.providerId,
+            modifier = GlanceModifier.size(9.dp)
+        )
+        Spacer(modifier = GlanceModifier.width(3.dp))
+        GaugeBar(
+            ratio = gauge.remainingRatio,
+            width = 44.dp,
+            height = 6.dp,
+            radius = 3.dp
+        )
+    }
 }
 
 @Composable
