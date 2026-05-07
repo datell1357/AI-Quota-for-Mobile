@@ -2,6 +2,7 @@ package com.aiusage.mobile.notification
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -46,6 +47,13 @@ object UsageLimitNotificationController {
         update(context, WidgetSnapshotCache(context).readState().snapshotJson)
     }
 
+    fun foregroundNotification(context: Context): Notification {
+        val snapshotJson = WidgetSnapshotCache(context).readState().snapshotJson
+        val content = buildUsageNotificationContent(snapshotJson)
+        createChannel(context)
+        return buildNotification(context, content)
+    }
+
     @SuppressLint("MissingPermission")
     fun update(context: Context, snapshotJson: String) {
         if (!isEnabled(context)) return
@@ -53,20 +61,7 @@ object UsageLimitNotificationController {
 
         val content = buildUsageNotificationContent(snapshotJson)
         createChannel(context)
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_stat_ai_usage)
-            .setContentTitle(content.compactTitle)
-            .setContentText(content.compactText)
-            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
-            .setCustomContentView(compactRemoteViews(context, content))
-            .setCustomBigContentView(remoteViews(context, content))
-            .setContentIntent(contentIntent(context))
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .setSilent(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setShowWhen(false)
-            .build()
+        val notification = buildNotification(context, content)
 
         runCatching {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
@@ -89,6 +84,23 @@ object UsageLimitNotificationController {
             enableVibration(false)
         }
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+    }
+
+    private fun buildNotification(context: Context, content: UsageNotificationContent): Notification {
+        return NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_ai_usage)
+            .setContentTitle(content.compactTitle)
+            .setContentText(content.compactText)
+            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+            .setCustomContentView(compactRemoteViews(context, content))
+            .setCustomBigContentView(remoteViews(context, content))
+            .setContentIntent(contentIntent(context))
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setShowWhen(false)
+            .build()
     }
 
     private fun contentIntent(context: Context): PendingIntent {

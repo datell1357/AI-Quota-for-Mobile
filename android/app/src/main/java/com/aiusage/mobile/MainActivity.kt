@@ -44,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aiusage.mobile.notification.UsageLimitNotificationController
+import com.aiusage.mobile.sync.ForegroundRefreshController
 import com.aiusage.mobile.sync.SnapshotDevice
 import com.aiusage.mobile.sync.SnapshotProviderUsage
 import com.aiusage.mobile.sync.SnapshotUsageLimitLine
@@ -103,6 +104,9 @@ fun AIUsageApp(
     var renameDraft by remember { mutableStateOf("") }
     var showSettings by remember { mutableStateOf(false) }
     var notificationEnabled by remember { mutableStateOf(UsageLimitNotificationController.isEnabled(activity)) }
+    val foregroundRefreshController = remember { ForegroundRefreshController(activity.applicationContext) }
+    var preciseRefreshEnabled by remember { mutableStateOf(foregroundRefreshController.preciseRefreshEnabled()) }
+    var preciseRefreshPromptSeen by remember { mutableStateOf(foregroundRefreshController.preciseRefreshPromptSeen()) }
     val coroutineScope = rememberCoroutineScope()
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -112,7 +116,36 @@ fun AIUsageApp(
         UsageLimitNotificationController.setEnabled(activity, granted)
         if (granted) {
             UsageLimitNotificationController.updateFromCache(activity)
+            if (foregroundRefreshController.preciseRefreshEnabled() || preciseRefreshEnabled) {
+                preciseRefreshEnabled = true
+                foregroundRefreshController.setPreciseRefreshEnabled(true)
+            }
+        } else {
+            preciseRefreshEnabled = false
+            foregroundRefreshController.setPreciseRefreshEnabled(false)
         }
+    }
+
+    fun enablePreciseRefresh() {
+        foregroundRefreshController.markPreciseRefreshPromptSeen()
+        preciseRefreshPromptSeen = true
+        preciseRefreshEnabled = true
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            !UsageLimitNotificationController.canPostNotifications(activity)
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            return
+        }
+        notificationEnabled = true
+        UsageLimitNotificationController.setEnabled(activity, true)
+        foregroundRefreshController.setPreciseRefreshEnabled(true)
+    }
+
+    fun disablePreciseRefresh() {
+        foregroundRefreshController.markPreciseRefreshPromptSeen()
+        preciseRefreshPromptSeen = true
+        preciseRefreshEnabled = false
+        foregroundRefreshController.setPreciseRefreshEnabled(false)
     }
 
     fun loadDevices(uid: String) {
@@ -195,6 +228,11 @@ fun AIUsageApp(
         refreshLatestSnapshot(uid)
         repository.enqueueRefresh(uid)
         repository.scheduleWidgetRefresh(uid)
+        if (foregroundRefreshController.preciseRefreshEnabled() &&
+            (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || UsageLimitNotificationController.canPostNotifications(activity))
+        ) {
+            foregroundRefreshController.startPreciseRefresh()
+        }
         while (isActive) {
             delay(60_000)
             refreshLatestSnapshot(uid)
@@ -240,6 +278,19 @@ fun AIUsageApp(
             refreshingSnapshot = refreshingSnapshot,
             showSettings = showSettings,
             notificationEnabled = notificationEnabled,
+            preciseRefreshEnabled = preciseRefreshEnabled,
+            preciseRefreshPromptSeen = preciseRefreshPromptSeen,
+            onPreciseRefreshEnabledChanged = { enabled ->
+                if (enabled) {
+                    enablePreciseRefresh()
+                } else {
+                    disablePreciseRefresh()
+                }
+            },
+            onDismissPreciseRefreshPrompt = {
+                foregroundRefreshController.markPreciseRefreshPromptSeen()
+                preciseRefreshPromptSeen = true
+            },
             onNotificationEnabledChanged = { enabled ->
                 if (!enabled) {
                     notificationEnabled = false
@@ -286,6 +337,8 @@ fun AIUsageApp(
                 auth.signOut()
                 GoogleSignIn.getClient(activity, activity.googleSignInOptions()).signOut()
                 repository.clearSignedInUser()
+                foregroundRefreshController.stopPreciseRefresh()
+                preciseRefreshEnabled = false
                 signingIn = false
                 authMessage = null
                 snapshotResult = null
@@ -310,6 +363,10 @@ private fun SignedInContent(
     refreshingSnapshot: Boolean,
     showSettings: Boolean,
     notificationEnabled: Boolean,
+    preciseRefreshEnabled: Boolean,
+    preciseRefreshPromptSeen: Boolean,
+    onPreciseRefreshEnabledChanged: (Boolean) -> Unit,
+    onDismissPreciseRefreshPrompt: () -> Unit,
     onNotificationEnabledChanged: (Boolean) -> Unit,
     onSelectDevice: (SnapshotDevice) -> Unit,
     onRenameDraftChanged: (String) -> Unit,
@@ -336,6 +393,35 @@ private fun SignedInContent(
         }
     }
 
+    if (!preciseRefreshPromptSeen) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            color = Color.White,
+            tonalElevation = 1.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    stringResource(R.string.precise_refresh_prompt_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(stringResource(R.string.precise_refresh_prompt_body), color = Color(0xFF64748B))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { onPreciseRefreshEnabledChanged(true) }) {
+                        Text(stringResource(R.string.precise_refresh_enable))
+                    }
+                    Button(onClick = onDismissPreciseRefreshPrompt) {
+                        Text(stringResource(R.string.precise_refresh_standard))
+                    }
+                }
+            }
+        }
+    }
+
     if (showSettings) {
         SettingsPanel(
             user = user,
@@ -346,6 +432,8 @@ private fun SignedInContent(
             snapshotMessage = snapshotMessage,
             refreshingSnapshot = refreshingSnapshot,
             notificationEnabled = notificationEnabled,
+            preciseRefreshEnabled = preciseRefreshEnabled,
+            onPreciseRefreshEnabledChanged = onPreciseRefreshEnabledChanged,
             onNotificationEnabledChanged = onNotificationEnabledChanged,
             onSelectDevice = onSelectDevice,
             onRenameDraftChanged = onRenameDraftChanged,
@@ -467,6 +555,8 @@ private fun SettingsPanel(
     snapshotMessage: String?,
     refreshingSnapshot: Boolean,
     notificationEnabled: Boolean,
+    preciseRefreshEnabled: Boolean,
+    onPreciseRefreshEnabledChanged: (Boolean) -> Unit,
     onNotificationEnabledChanged: (Boolean) -> Unit,
     onSelectDevice: (SnapshotDevice) -> Unit,
     onRenameDraftChanged: (String) -> Unit,
@@ -487,6 +577,20 @@ private fun SettingsPanel(
         Switch(
             checked = notificationEnabled,
             onCheckedChange = onNotificationEnabledChanged
+        )
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(stringResource(R.string.settings_precise_refresh), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.settings_precise_refresh_description), color = Color(0xFF64748B))
+        }
+        Switch(
+            checked = preciseRefreshEnabled,
+            onCheckedChange = onPreciseRefreshEnabledChanged
         )
     }
 

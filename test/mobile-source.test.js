@@ -52,6 +52,9 @@ test("Android app has device-list snapshot sync and non-placeholder widget cache
   const worker = source("android/app/src/main/java/com/aiusage/mobile/sync/SnapshotSyncWorker.kt");
   const cache = source("android/app/src/main/java/com/aiusage/mobile/widget/WidgetSnapshotCache.kt");
   const notificationController = source("android/app/src/main/java/com/aiusage/mobile/notification/UsageLimitNotificationController.kt");
+  const manifest = source("android/app/src/main/AndroidManifest.xml");
+  const foregroundController = source("android/app/src/main/java/com/aiusage/mobile/sync/ForegroundRefreshController.kt");
+  const foregroundService = source("android/app/src/main/java/com/aiusage/mobile/sync/ForegroundRefreshService.kt");
   const compactNotificationLayout = source("android/app/src/main/res/layout/notification_usage_compact.xml");
 
   assert.match(models, /data class SnapshotRefreshResult/);
@@ -88,6 +91,19 @@ test("Android app has device-list snapshot sync and non-placeholder widget cache
   assert.doesNotMatch(cache, /"\{}"/);
   assert.match(notificationController, /getBoolean\(KEY_ENABLED,\s*true\)/);
   assert.match(notificationController, /setCustomContentView\(compactRemoteViews/);
+  assert.match(notificationController, /foregroundNotification/);
+  assert.match(manifest, /android\.permission\.FOREGROUND_SERVICE/);
+  assert.match(manifest, /android\.permission\.FOREGROUND_SERVICE_DATA_SYNC/);
+  assert.match(manifest, /ForegroundRefreshService/);
+  assert.match(manifest, /android:foregroundServiceType="dataSync"/);
+  assert.match(foregroundController, /KEY_PRECISE_REFRESH_ENABLED/);
+  assert.match(foregroundController, /KEY_PRECISE_REFRESH_PROMPT_SEEN/);
+  assert.match(foregroundController, /startForegroundService/);
+  assert.match(foregroundController, /stopService/);
+  assert.match(foregroundService, /class ForegroundRefreshService/);
+  assert.match(foregroundService, /startForeground/);
+  assert.match(foregroundService, /delay\(60_000\)/);
+  assert.match(foregroundService, /refreshLatestSnapshot/);
   assert.match(compactNotificationLayout, /notification_compact_summary/);
   assert.match(compactNotificationLayout, /android:maxLines="2"/);
   assert.doesNotMatch(compactNotificationLayout, /notification_compact_title/);
@@ -135,6 +151,16 @@ test("Android main UI uses Firebase auth with device list, rename flow, and snap
   assert.match(main, /stringResource\(R\.string\.settings_sign_out\)/);
   assert.match(strings, /name="settings_connected_devices">Connected devices/);
   assert.match(koreanStrings, /name="settings_connected_devices">연결된 장치/);
+  assert.match(main, /ForegroundRefreshController/);
+  assert.match(main, /preciseRefreshEnabled/);
+  assert.match(main, /preciseRefreshPromptSeen/);
+  assert.match(main, /settings_precise_refresh/);
+  assert.match(main, /precise_refresh_prompt_title/);
+  assert.match(main, /stopPreciseRefresh/);
+  assert.match(strings, /name="settings_precise_refresh">1-minute pinned refresh/);
+  assert.match(strings, /name="precise_refresh_prompt_title">Keep widgets closer to real time\?/);
+  assert.match(koreanStrings, /name="settings_precise_refresh">1분 고정 갱신/);
+  assert.match(koreanStrings, /name="precise_refresh_prompt_title">위젯을 더 실시간에 가깝게 유지할까요\?/);
   assert.match(main, /providers\.forEach/);
   assert.doesNotMatch(main, /Continue with GitHub/);
   assert.doesNotMatch(main, /OAuthProvider\.newBuilder\("github\.com"\)/);

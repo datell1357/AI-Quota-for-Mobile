@@ -13,5 +13,11 @@
     <string name="settings_snapshot_status">스냅샷 상태</string>
     <string name="settings_refresh_latest_snapshot">최신 스냅샷 새로고침</string>
     <string name="settings_refreshing_snapshot">스냅샷 새로고침 중...</string>
+    <string name="settings_precise_refresh">1분 고정 갱신</string>
+    <string name="settings_precise_refresh_description">조용한 고정 알림을 유지해 위젯을 더 자주 갱신합니다.</string>
+    <string name="precise_refresh_prompt_title">위젯을 더 실시간에 가깝게 유지할까요?</string>
+    <string name="precise_refresh_prompt_body">AI Usage는 조용한 고정 알림을 유지해 약 1분마다 한도를 갱신할 수 있습니다. 건너뛰면 Android가 허용할 때 백그라운드에서 약 5분 간격으로 위젯을 갱신합니다.</string>
+    <string name="precise_refresh_enable">1분 갱신 켜기</string>
+    <string name="precise_refresh_standard">기본 갱신 사용</string>
     <string name="settings_sign_out">로그아웃</string>
 </resources>
