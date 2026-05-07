@@ -11,8 +11,13 @@ build/
 GoogleService-Info.plist
 google-services.json
 local.properties
+keystore.properties
+*.jks
+*.keystore
+android/keystores/
 .android-home/
 .tmp/
 android/.gradle/
+android/app/build/
 android-emulator-*.png
 artifacts/

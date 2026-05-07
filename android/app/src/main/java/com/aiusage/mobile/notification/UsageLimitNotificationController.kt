@@ -1,6 +1,7 @@
 package com.aiusage.mobile.notification
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -45,6 +46,7 @@ object UsageLimitNotificationController {
         update(context, WidgetSnapshotCache(context).readState().snapshotJson)
     }
 
+    @SuppressLint("MissingPermission")
     fun update(context: Context, snapshotJson: String) {
         if (!isEnabled(context)) return
         if (!canPostNotifications(context)) return
@@ -66,7 +68,9 @@ object UsageLimitNotificationController {
             .setShowWhen(false)
             .build()
 
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+        runCatching {
+            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+        }
     }
 
     fun cancel(context: Context) {

@@ -1,4 +1,5 @@
 <resources>
+    <string name="app_name">AI Usage</string>
     <string name="settings_open">설정</string>
     <string name="settings_close">닫기</string>
     <string name="settings_status_bar_gauges">상태 표시줄 게이지</string>

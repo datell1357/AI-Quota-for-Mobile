@@ -1,4 +1,5 @@
 <resources>
+    <string name="app_name">AI Usage</string>
     <string name="settings_open">Settings</string>
     <string name="settings_close">Close</string>
     <string name="settings_status_bar_gauges">Status bar gauges</string>
