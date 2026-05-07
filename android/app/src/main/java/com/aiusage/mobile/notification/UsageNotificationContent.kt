@@ -7,6 +7,8 @@ import java.time.Instant
 data class UsageNotificationContent(
     val title: String,
     val summary: String,
+    val compactTitle: String,
+    val compactText: String,
     val gauges: List<WidgetProviderGauge>
 ) {
     val gaugeRows: List<UsageNotificationGaugeRow> = gauges.map { gauge ->
@@ -31,9 +33,13 @@ fun buildUsageNotificationContent(
     now: Instant = Instant.now()
 ): UsageNotificationContent {
     val gauges = parseWidgetProviderGauges(snapshotJson, now).take(MAX_NOTIFICATION_GAUGES)
+    val summary = notificationSummary(gauges)
+    val compactLines = compactNotificationLines(summary)
     return UsageNotificationContent(
         title = "AI Usage",
-        summary = notificationSummary(gauges),
+        summary = summary,
+        compactTitle = compactLines.first,
+        compactText = compactLines.second,
         gauges = gauges
     )
 }
@@ -45,6 +51,15 @@ private fun notificationSummary(gauges: List<WidgetProviderGauge>): String {
     if (items.size <= NOTIFICATION_SINGLE_LINE_MAX_ITEMS) return items.joinToString(" | ")
     return items.chunked(NOTIFICATION_SUMMARY_ITEMS_PER_LINE)
         .joinToString("\n") { line -> line.joinToString(" | ") }
+}
+
+private fun compactNotificationLines(summary: String): Pair<String, String> {
+    val lines = summary.lines()
+    return if (lines.size > 1) {
+        lines.first() to lines.drop(1).joinToString(" | ")
+    } else {
+        "AI Usage" to summary
+    }
 }
 
 private fun providerLabel(providerId: String): String {

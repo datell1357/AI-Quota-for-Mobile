@@ -43,5 +43,7 @@ class UsageNotificationContentTest {
         val content = buildUsageNotificationContent(snapshotJson, Instant.parse("2026-05-06T02:00:00Z"))
 
         assertEquals("Claude 100% | Codex 92%\nGemini 100% | Copilot Error", content.summary)
+        assertEquals("Claude 100% | Codex 92%", content.compactTitle)
+        assertEquals("Gemini 100% | Copilot Error", content.compactText)
     }
 }

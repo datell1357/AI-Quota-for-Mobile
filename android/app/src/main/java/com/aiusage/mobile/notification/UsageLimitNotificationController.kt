@@ -53,8 +53,8 @@ object UsageLimitNotificationController {
         createChannel(context)
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_ai_usage)
-            .setContentTitle(content.title)
-            .setContentText(content.summary)
+            .setContentTitle(content.compactTitle)
+            .setContentText(content.compactText)
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setCustomContentView(compactRemoteViews(context, content))
             .setCustomBigContentView(remoteViews(context, content))
@@ -117,7 +117,6 @@ object UsageLimitNotificationController {
 
     private fun compactRemoteViews(context: Context, content: UsageNotificationContent): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.notification_usage_compact)
-        views.setTextViewText(R.id.notification_compact_title, content.title)
         views.setTextViewText(R.id.notification_compact_summary, content.summary)
         return views
     }
