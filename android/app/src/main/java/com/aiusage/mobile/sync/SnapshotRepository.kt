@@ -53,7 +53,7 @@ class SnapshotRepository(private val context: Context) {
             .setInitialDelay(5, TimeUnit.MINUTES)
             .build()
         WorkManager.getInstance(context)
-            .enqueueUniqueWork(WIDGET_REFRESH_WORK, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
+            .enqueueUniqueWork(WIDGET_REFRESH_WORK, ExistingWorkPolicy.REPLACE, request)
     }
 
     suspend fun listDevices(uid: String): List<SnapshotDevice> {

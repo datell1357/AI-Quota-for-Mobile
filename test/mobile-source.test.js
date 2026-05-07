@@ -76,6 +76,8 @@ test("Android app has device-list snapshot sync and non-placeholder widget cache
   assert.match(repo, /rememberSignedInUser/);
   assert.match(repo, /scheduleWidgetRefresh/);
   assert.match(repo, /5, TimeUnit\.MINUTES/);
+  assert.match(repo, /ExistingWorkPolicy\.REPLACE/);
+  assert.doesNotMatch(repo, /ExistingWorkPolicy\.APPEND_OR_REPLACE/);
   assert.match(worker, /refreshLatestSnapshot/);
   assert.match(worker, /inputData\.getString\("uid"\)/);
   assert.match(worker, /storedUid/);
