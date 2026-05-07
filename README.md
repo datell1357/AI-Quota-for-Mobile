@@ -1,6 +1,6 @@
 # AI Usage for Mobile
 
-English | [한국어](#한국어)
+[English](#english) | [한국어](#한국어)
 
 ---
 
@@ -103,16 +103,11 @@ It must not store:
 See:
 
 - [Privacy Policy](docs/privacy-policy.md)
-- [Google Play Data Safety Draft](docs/store/data-safety.md)
 
 ### Documentation
 
-- [Google Play listing draft](docs/store/play-listing.md)
-- [Google Play release checklist](docs/store/release-checklist.md)
-- [Data Safety draft](docs/store/data-safety.md)
 - [Privacy Policy](docs/privacy-policy.md)
 - [Privacy Policy HTML](docs/privacy-policy.html)
-- [Store assets](store-assets/google-play)
 - [AI Usage for Windows](https://github.com/datell1357/AI-Usage-for-Windows)
 
 ### Build From Source
@@ -297,16 +292,11 @@ Firestore 경로:
 관련 문서:
 
 - [개인정보 처리방침](docs/privacy-policy.md)
-- [Google Play Data Safety 초안](docs/store/data-safety.md)
 
 ### 문서
 
-- [Google Play 등록 문구 초안](docs/store/play-listing.md)
-- [Google Play 릴리즈 체크리스트](docs/store/release-checklist.md)
-- [Data Safety 초안](docs/store/data-safety.md)
 - [개인정보 처리방침](docs/privacy-policy.md)
 - [개인정보 처리방침 HTML](docs/privacy-policy.html)
-- [스토어 asset](store-assets/google-play)
 - [AI Usage for Windows](https://github.com/datell1357/AI-Usage-for-Windows)
 
 ### 소스에서 빌드

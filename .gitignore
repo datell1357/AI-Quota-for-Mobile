@@ -21,3 +21,4 @@ android/.gradle/
 android/app/build/
 android-emulator-*.png
 artifacts/
+store-assets/
