@@ -89,6 +89,8 @@ test("Android app has device-list snapshot sync and non-placeholder widget cache
   assert.match(compactNotificationLayout, /notification_compact_summary/);
   assert.match(compactNotificationLayout, /android:maxLines="2"/);
   assert.doesNotMatch(compactNotificationLayout, /notification_compact_title/);
+  assert.doesNotMatch(compactNotificationLayout, /notification_compact_icon/);
+  assert.match(compactNotificationLayout, /android:textSize="14sp"/);
 });
 
 test("Android main UI uses Firebase auth with device list, rename flow, and snapshot refresh", () => {
