@@ -56,6 +56,7 @@ object UsageLimitNotificationController {
             .setContentTitle(content.title)
             .setContentText(content.summary)
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+            .setCustomContentView(compactRemoteViews(context, content))
             .setCustomBigContentView(remoteViews(context, content))
             .setContentIntent(contentIntent(context))
             .setOngoing(true)
@@ -111,6 +112,13 @@ object UsageLimitNotificationController {
         for (index in content.gaugeRows.size until rows.size) {
             views.setViewVisibility(rows[index].containerId, View.GONE)
         }
+        return views
+    }
+
+    private fun compactRemoteViews(context: Context, content: UsageNotificationContent): RemoteViews {
+        val views = RemoteViews(context.packageName, R.layout.notification_usage_compact)
+        views.setTextViewText(R.id.notification_compact_title, content.title)
+        views.setTextViewText(R.id.notification_compact_summary, content.summary)
         return views
     }
 
