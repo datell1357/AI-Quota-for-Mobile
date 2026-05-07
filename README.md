@@ -50,8 +50,8 @@ The mobile app displays the active providers included in the synced Windows snap
 | Codex | Available | Remaining session, weekly, Spark, credits, and related limits when uploaded by Windows. |
 | Gemini | Available | Gemini Pro / Flash limits when uploaded by Windows. |
 | GitHub Copilot | Available | Copilot limits or provider error state when uploaded by Windows. |
-| Antigravity | Hidden when disabled | Displayed only if enabled and included in the Windows snapshot. |
-| Cursor | Hidden when disabled | Displayed only if enabled and included in the Windows snapshot. |
+| Antigravity | Available | Antigravity limits or provider error state when uploaded by Windows. |
+| Cursor | Available | Cursor limits or provider error state when uploaded by Windows. |
 
 Providers marked disabled in the Windows app are hidden from the Android dashboard, widgets, and pinned notification.
 
@@ -244,8 +244,8 @@ AI Usage for Mobile은 provider credential을 직접 수집하지 않습니다. 
 | Codex | 지원 | Windows에서 업로드한 세션, 주간, Spark, credits 등 표시. |
 | Gemini | 지원 | Windows에서 업로드한 Gemini Pro / Flash 한도 표시. |
 | GitHub Copilot | 지원 | Windows에서 업로드한 Copilot 한도 또는 provider error 상태 표시. |
-| Antigravity | 비활성 시 숨김 | Windows에서 활성화되고 snapshot에 포함된 경우에만 표시. |
-| Cursor | 비활성 시 숨김 | Windows에서 활성화되고 snapshot에 포함된 경우에만 표시. |
+| Antigravity | 지원 | Windows에서 업로드한 Antigravity 한도 또는 provider error 상태 표시. |
+| Cursor | 지원 | Windows에서 업로드한 Cursor 한도 또는 provider error 상태 표시. |
 
 Windows 앱에서 disabled 상태인 provider는 Android 홈 화면, 위젯, 고정 알림에서 숨겨집니다.
 
