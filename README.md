@@ -8,7 +8,7 @@ English | [한국어](#한국어)
 
 AI Usage for Mobile is the Android companion app for [AI Usage for Windows](https://github.com/datell1357/AI-Usage-for-Windows). It shows AI usage limit snapshots synced from the Windows app, with an Android dashboard, home screen widgets, and a pinned silent notification.
 
-![AI Usage Android widget](store-assets/google-play/screenshots/03-home-widgets-ko.png)
+![AI Usage Android widget](English_Screenshot.png)
 
 ### Download
 
@@ -202,7 +202,7 @@ MIT
 
 AI Usage for Mobile은 [AI Usage for Windows](https://github.com/datell1357/AI-Usage-for-Windows)의 Android 동반 앱입니다. Windows 앱이 Firebase에 동기화한 AI 사용 한도 snapshot을 Android 앱, 홈 화면 위젯, 고정 무음 알림에서 확인할 수 있습니다.
 
-![AI Usage Android 위젯](store-assets/google-play/screenshots/03-home-widgets-ko.png)
+![AI Usage Android 위젯](Korean_Screenshot.png)
 
 ### 다운로드
 
