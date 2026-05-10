@@ -19,5 +19,12 @@
     <string name="precise_refresh_prompt_body">AI Usage는 조용한 고정 알림을 유지해 약 1분마다 한도를 갱신할 수 있습니다. 건너뛰면 Android가 허용할 때 백그라운드에서 약 5분 간격으로 위젯을 갱신합니다.</string>
     <string name="precise_refresh_enable">1분 갱신 켜기</string>
     <string name="precise_refresh_standard">기본 갱신 사용</string>
+    <string name="support_email">datell1357@naver.com</string>
+    <string name="settings_account_deletion">계정 및 데이터 삭제</string>
+    <string name="settings_account_deletion_description">AI Usage 계정 데이터와 동기화된 스냅샷 삭제를 요청합니다.</string>
+    <string name="settings_request_account_deletion">계정 삭제 요청</string>
+    <string name="account_deletion_email_subject">AI Usage 계정 삭제 요청</string>
+    <string name="account_deletion_email_body">AI Usage 계정 데이터와 동기화된 스냅샷을 삭제해 주세요.\n\n로그인 이메일: %1$s\nFirebase UID: %2$s\n\n동기화된 기기 및 스냅샷 데이터가 삭제될 수 있음을 이해합니다.</string>
+    <string name="account_deletion_no_mail_app">사용 가능한 이메일 앱이 없습니다. datell1357@naver.com으로 삭제를 요청하세요.</string>
     <string name="settings_sign_out">로그아웃</string>
 </resources>

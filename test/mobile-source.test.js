@@ -118,6 +118,8 @@ test("Android main UI uses Firebase auth with device list, rename flow, and snap
   const strings = source("android/app/src/main/res/values/strings.xml");
   const koreanStrings = source("android/app/src/main/res/values-ko/strings.xml");
   const gradle = source("android/app/build.gradle.kts");
+  const accountDeletion = source("docs/account-deletion.md");
+  const privacyPolicy = source("docs/privacy-policy.md");
 
   assert.match(manifest, /android:theme="@style\/Theme\.AIUsage"/);
   assert.match(manifest, /uses-permission android:name="android\.permission\.INTERNET"/);
@@ -157,10 +159,18 @@ test("Android main UI uses Firebase auth with device list, rename flow, and snap
   assert.match(main, /settings_precise_refresh/);
   assert.match(main, /precise_refresh_prompt_title/);
   assert.match(main, /stopPreciseRefresh/);
+  assert.match(main, /Intent\.ACTION_SENDTO/);
+  assert.match(main, /settings_request_account_deletion/);
   assert.match(strings, /name="settings_precise_refresh">1-minute pinned refresh/);
   assert.match(strings, /name="precise_refresh_prompt_title">Keep widgets closer to real time\?/);
+  assert.match(strings, /name="support_email">datell1357@naver\.com/);
+  assert.match(strings, /name="settings_request_account_deletion">Request account deletion/);
   assert.match(koreanStrings, /name="settings_precise_refresh">1분 고정 갱신/);
   assert.match(koreanStrings, /name="precise_refresh_prompt_title">위젯을 더 실시간에 가깝게 유지할까요\?/);
+  assert.match(koreanStrings, /name="settings_request_account_deletion">계정 삭제 요청/);
+  assert.match(accountDeletion, /datell1357@naver\.com/);
+  assert.match(accountDeletion, /Request account deletion/);
+  assert.match(privacyPolicy, /datell1357@naver\.com/);
   assert.match(main, /providers\.forEach/);
   assert.doesNotMatch(main, /Continue with GitHub/);
   assert.doesNotMatch(main, /OAuthProvider\.newBuilder\("github\.com"\)/);

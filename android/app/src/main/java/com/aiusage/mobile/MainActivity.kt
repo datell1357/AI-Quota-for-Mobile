@@ -2,6 +2,8 @@ package com.aiusage.mobile
 
 import android.Manifest
 import android.app.Activity.RESULT_OK
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -146,6 +148,22 @@ fun AIUsageApp(
         preciseRefreshPromptSeen = true
         preciseRefreshEnabled = false
         foregroundRefreshController.setPreciseRefreshEnabled(false)
+    }
+
+    fun requestAccountDeletion() {
+        val email = activity.getString(R.string.support_email)
+        val userEmail = currentUser?.email.orEmpty()
+        val uid = currentUser?.uid.orEmpty()
+        val intent = Intent(Intent.ACTION_SENDTO).apply {
+            data = Uri.parse("mailto:$email")
+            putExtra(Intent.EXTRA_SUBJECT, activity.getString(R.string.account_deletion_email_subject))
+            putExtra(Intent.EXTRA_TEXT, activity.getString(R.string.account_deletion_email_body, userEmail, uid))
+        }
+        runCatching {
+            activity.startActivity(intent)
+        }.onFailure {
+            snapshotMessage = activity.getString(R.string.account_deletion_no_mail_app)
+        }
     }
 
     fun loadDevices(uid: String) {
@@ -330,6 +348,9 @@ fun AIUsageApp(
             onRefreshSnapshot = {
                 currentUser?.uid?.let(::refreshLatestSnapshot)
             },
+            onRequestAccountDeletion = {
+                requestAccountDeletion()
+            },
             onToggleSettings = {
                 showSettings = !showSettings
             },
@@ -372,6 +393,7 @@ private fun SignedInContent(
     onRenameDraftChanged: (String) -> Unit,
     onSaveDeviceName: () -> Unit,
     onRefreshSnapshot: () -> Unit,
+    onRequestAccountDeletion: () -> Unit,
     onToggleSettings: () -> Unit,
     onSignOut: () -> Unit
 ) {
@@ -439,6 +461,7 @@ private fun SignedInContent(
             onRenameDraftChanged = onRenameDraftChanged,
             onSaveDeviceName = onSaveDeviceName,
             onRefreshSnapshot = onRefreshSnapshot,
+            onRequestAccountDeletion = onRequestAccountDeletion,
             onSignOut = onSignOut
         )
     } else {
@@ -562,6 +585,7 @@ private fun SettingsPanel(
     onRenameDraftChanged: (String) -> Unit,
     onSaveDeviceName: () -> Unit,
     onRefreshSnapshot: () -> Unit,
+    onRequestAccountDeletion: () -> Unit,
     onSignOut: () -> Unit
 ) {
     Text(user?.email ?: user?.uid.orEmpty(), style = MaterialTheme.typography.bodyMedium)
@@ -643,6 +667,12 @@ private fun SettingsPanel(
     }
 
     snapshotMessage?.let { Text(it) }
+
+    Text(stringResource(R.string.settings_account_deletion), style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.settings_account_deletion_description), color = Color(0xFF64748B))
+    Button(onClick = onRequestAccountDeletion, modifier = Modifier.fillMaxWidth()) {
+        Text(stringResource(R.string.settings_request_account_deletion))
+    }
 
     Button(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
         Text(stringResource(R.string.settings_sign_out))
