@@ -168,6 +168,15 @@ test("Android main UI uses Firebase auth with device list, rename flow, and snap
   assert.match(main, /LimitDashboard/);
   assert.match(main, /ProviderLimitCard/);
   assert.match(main, /ProviderLimitLine/);
+  assert.match(main, /AppHeader/);
+  assert.match(main, /AppHeader\(showSettings = showSettings, onToggleSettings = onToggleSettings\)/);
+  assert.doesNotMatch(main, /AppHeader\([^)]*snapshotResult/);
+  assert.doesNotMatch(main, /AppHeader\([^)]*deviceList/);
+  assert.match(main, /HeaderTopOffset/);
+  assert.match(main, /WindowsAppBackground/);
+  assert.match(main, /BrandPurple/);
+  assert.match(main, /PlanPill/);
+  assert.match(main, /BorderStroke\(1\.dp, DividerColor\)/);
   assert.match(main, /SettingsPanel/);
   assert.match(main, /stringResource\(R\.string\.settings_rename_selected_device\)/);
   assert.match(main, /stringResource\(R\.string\.settings_save_device_name\)/);
@@ -205,6 +214,7 @@ test("Android main UI uses Firebase auth with device list, rename flow, and snap
   assert.match(accountDeletion, /Request account deletion/);
   assert.match(privacyPolicy, /datell1357@naver\.com/);
   assert.match(main, /providers\.forEach/);
+  assert.doesNotMatch(main, /Text\(\s*"Windows PC"/);
   assert.doesNotMatch(main, /Continue with GitHub/);
   assert.doesNotMatch(main, /OAuthProvider\.newBuilder\("github\.com"\)/);
   assert.doesNotMatch(main, /signedIn = true/);

@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,16 +21,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -63,6 +67,21 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+private val WindowsAppBackground = Color(0xFFF4F6F8)
+private val PanelColor = Color(0xFFFFFFFF)
+private val InkColor = Color(0xFF111827)
+private val MutedColor = Color(0xFF64748B)
+private val DividerColor = Color(0xFFE5E7EB)
+private val GaugeTrackColor = Color(0xFFE9ECF2)
+private val GaugeFillColor = Color(0xFF0F172A)
+private val BrandPurple = Color(0xFF6E52B5)
+private val SuccessColor = Color(0xFF22C55E)
+private val WarningColor = Color(0xFFF59E0B)
+private val DangerColor = Color(0xFFEF4444)
+private val HeaderTopOffset = 22.dp
+private val WindowsCardShape = RoundedCornerShape(10.dp)
+private val PillShape = RoundedCornerShape(999.dp)
+
 class MainActivity : ComponentActivity() {
     private val repository by lazy { SnapshotRepository(applicationContext) }
     private val auth by lazy { FirebaseAuth.getInstance() }
@@ -71,7 +90,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         UsageLimitNotificationController.updateFromCache(applicationContext)
         setContent {
-            MaterialTheme {
+            MaterialTheme(
+                colorScheme = lightColorScheme(
+                    primary = BrandPurple,
+                    background = WindowsAppBackground,
+                    surface = PanelColor,
+                    onSurface = InkColor
+                )
+            ) {
                 AIUsageApp(
                     activity = this,
                     auth = auth,
@@ -260,7 +286,7 @@ fun AIUsageApp(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFC))
+            .background(WindowsAppBackground)
             .verticalScroll(rememberScrollState())
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -268,7 +294,8 @@ fun AIUsageApp(
         authMessage?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
 
         if (currentUser == null) {
-            Text("AI Usage", style = MaterialTheme.typography.headlineMedium)
+            Spacer(modifier = Modifier.height(HeaderTopOffset))
+            Text("AI Usage", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = InkColor)
             Button(
                 onClick = {
                     signingIn = true
@@ -279,7 +306,9 @@ fun AIUsageApp(
                     ).signInIntent
                     googleLauncher.launch(googleIntent)
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = PillShape,
+                colors = ButtonDefaults.buttonColors(containerColor = BrandPurple)
             ) {
                 Text(if (signingIn) "Signing in..." else "Continue with Google")
             }
@@ -397,30 +426,15 @@ private fun SignedInContent(
     onToggleSettings: () -> Unit,
     onSignOut: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column {
-            Text("AI Usage", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text(
-                snapshotResult?.deviceName ?: deviceList.firstOrNull { it.deviceId == selectedDeviceId }?.deviceName ?: "No PC linked",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF64748B)
-            )
-        }
-        Spacer(modifier = Modifier.weight(1f))
-        Button(onClick = onToggleSettings) {
-            Text(if (showSettings) stringResource(R.string.settings_close) else "⚙ ${stringResource(R.string.settings_open)}")
-        }
-    }
+    AppHeader(showSettings = showSettings, onToggleSettings = onToggleSettings)
 
     if (!preciseRefreshPromptSeen) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp),
-            color = Color.White,
-            tonalElevation = 1.dp
+            color = PanelColor,
+            tonalElevation = 0.dp,
+            border = BorderStroke(1.dp, DividerColor)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -431,12 +445,20 @@ private fun SignedInContent(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                Text(stringResource(R.string.precise_refresh_prompt_body), color = Color(0xFF64748B))
+                Text(stringResource(R.string.precise_refresh_prompt_body), color = MutedColor)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { onPreciseRefreshEnabledChanged(true) }) {
+                    Button(
+                        onClick = { onPreciseRefreshEnabledChanged(true) },
+                        shape = PillShape,
+                        colors = ButtonDefaults.buttonColors(containerColor = BrandPurple)
+                    ) {
                         Text(stringResource(R.string.precise_refresh_enable))
                     }
-                    Button(onClick = onDismissPreciseRefreshPrompt) {
+                    Button(
+                        onClick = onDismissPreciseRefreshPrompt,
+                        shape = PillShape,
+                        colors = ButtonDefaults.buttonColors(containerColor = GaugeFillColor)
+                    ) {
                         Text(stringResource(R.string.precise_refresh_standard))
                     }
                 }
@@ -475,14 +497,37 @@ private fun SignedInContent(
 }
 
 @Composable
+private fun AppHeader(
+    showSettings: Boolean,
+    onToggleSettings: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = HeaderTopOffset),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("AI Usage", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = InkColor)
+        Spacer(modifier = Modifier.weight(1f))
+        Button(
+            onClick = onToggleSettings,
+            shape = PillShape,
+            colors = ButtonDefaults.buttonColors(containerColor = BrandPurple)
+        ) {
+            Text(if (showSettings) stringResource(R.string.settings_close) else "⚙ ${stringResource(R.string.settings_open)}")
+        }
+    }
+}
+
+@Composable
 private fun LimitDashboard(
     snapshotResult: SnapshotRefreshResult?,
     snapshotMessage: String?,
     refreshingSnapshot: Boolean,
     onRefreshSnapshot: () -> Unit
 ) {
-    Text("Usage Limits", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-    Text(snapshotResult?.status?.name ?: SnapshotStatus.NotLinked.name, color = Color(0xFF64748B))
+    Text("Usage Limits", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = InkColor)
+    Text(snapshotResult?.status?.name ?: SnapshotStatus.NotLinked.name, color = MutedColor)
 
     if (snapshotResult?.providers.isNullOrEmpty()) {
         Text(snapshotMessage ?: "No active AI usage limits to show")
@@ -494,49 +539,72 @@ private fun LimitDashboard(
 
     snapshotResult?.updatedAt?.takeIf { it.isNotBlank() }?.let {
         Row(modifier = Modifier.fillMaxWidth()) {
-            Text("Updates soon", color = Color(0xFF64748B))
+            Text("Updates soon", color = MutedColor)
             Spacer(modifier = Modifier.weight(1f))
-            Text("Updated at $it", color = Color(0xFF64748B))
+            Text("Updated at $it", color = MutedColor)
         }
     }
 
-        Button(onClick = onRefreshSnapshot, modifier = Modifier.fillMaxWidth()) {
-            Text(
-                if (refreshingSnapshot) {
-                    stringResource(R.string.settings_refreshing_snapshot)
-                } else {
-                    stringResource(R.string.settings_refresh_latest_snapshot)
-                }
-            )
-        }
+    Button(
+        onClick = onRefreshSnapshot,
+        modifier = Modifier.fillMaxWidth(),
+        shape = PillShape,
+        colors = ButtonDefaults.buttonColors(containerColor = BrandPurple)
+    ) {
+        Text(
+            if (refreshingSnapshot) {
+                stringResource(R.string.settings_refreshing_snapshot)
+            } else {
+                stringResource(R.string.settings_refresh_latest_snapshot)
+            }
+        )
+    }
 }
 
 @Composable
 private fun ProviderLimitCard(provider: SnapshotProviderUsage) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
-        color = Color.White,
-        tonalElevation = 1.dp
+        shape = WindowsCardShape,
+        color = PanelColor,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        border = BorderStroke(1.dp, DividerColor)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(provider.providerName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(provider.providerName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = InkColor)
                 Spacer(modifier = Modifier.weight(1f))
                 provider.plan?.takeIf { it.isNotBlank() }?.let {
-                    Text(it, color = Color(0xFF475569))
+                    PlanPill(it)
                 }
             }
             provider.lines.forEach { line ->
                 ProviderLimitLine(line)
             }
             if (provider.status != "ok") {
-                Text(provider.status, color = Color(0xFFDC2626))
+                Text(provider.status, color = DangerColor)
             }
         }
+    }
+}
+
+@Composable
+private fun PlanPill(plan: String) {
+    Surface(
+        shape = PillShape,
+        color = PanelColor,
+        border = BorderStroke(1.dp, DividerColor)
+    ) {
+        Text(
+            text = plan,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            color = Color(0xFF475569),
+            style = MaterialTheme.typography.bodyMedium
+        )
     }
 }
 
@@ -544,27 +612,43 @@ private fun ProviderLimitCard(provider: SnapshotProviderUsage) {
 private fun ProviderLimitLine(line: SnapshotUsageLimitLine) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(line.label, style = MaterialTheme.typography.bodyLarge)
+            Text(line.label, style = MaterialTheme.typography.bodyLarge, color = InkColor)
+            Spacer(modifier = Modifier.size(6.dp))
+            Box(
+                modifier = Modifier
+                    .size(7.dp)
+                    .clip(PillShape)
+                    .background(limitIndicatorColor(line.remainingRatio))
+            )
             Spacer(modifier = Modifier.weight(1f))
-            line.resetText?.let { Text(it, color = Color(0xFF64748B)) }
+            line.resetText?.let { Text(it, color = MutedColor) }
         }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(12.dp)
+                .height(10.dp)
                 .clip(RoundedCornerShape(6.dp))
-                .background(Color(0xFFE5E7EB))
+                .background(GaugeTrackColor)
         ) {
             LinearProgressIndicator(
                 progress = { line.remainingRatio ?: 0f },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(12.dp),
-                color = Color(0xFF111827),
+                    .height(10.dp),
+                color = GaugeFillColor,
                 trackColor = Color.Transparent
             )
         }
-        Text(line.remainingText, color = Color(0xFF64748B))
+        Text(line.remainingText, color = MutedColor)
+    }
+}
+
+private fun limitIndicatorColor(ratio: Float?): Color {
+    val value = ratio ?: 0f
+    return when {
+        value < 0.15f -> DangerColor
+        value < 0.35f -> WarningColor
+        else -> SuccessColor
     }
 }
 
