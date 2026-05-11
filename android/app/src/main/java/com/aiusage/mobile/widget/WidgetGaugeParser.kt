@@ -2,7 +2,11 @@ package com.aiusage.mobile.widget
 
 import org.json.JSONArray
 import org.json.JSONObject
+import java.math.RoundingMode
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
 import java.time.Instant
+import java.util.Locale
 
 data class WidgetProviderGauge(
     val providerId: String,
@@ -86,7 +90,7 @@ private fun resetText(value: String, now: Instant): String? {
 }
 
 private fun formatNumber(value: Double): String {
-    return if (value % 1.0 == 0.0) value.toLong().toString() else value.toString()
+    return DECIMAL_FORMAT.format(value)
 }
 
 private data class ParsedGaugeLine(
@@ -96,3 +100,6 @@ private data class ParsedGaugeLine(
 )
 
 private const val MAX_WIDGET_GAUGES = 4
+private val DECIMAL_FORMAT = DecimalFormat("0.#", DecimalFormatSymbols(Locale.US)).apply {
+    roundingMode = RoundingMode.HALF_UP
+}

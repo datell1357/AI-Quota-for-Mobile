@@ -56,6 +56,10 @@ test("Android app has device-list snapshot sync and non-placeholder widget cache
   const foregroundController = source("android/app/src/main/java/com/aiusage/mobile/sync/ForegroundRefreshController.kt");
   const foregroundService = source("android/app/src/main/java/com/aiusage/mobile/sync/ForegroundRefreshService.kt");
   const compactNotificationLayout = source("android/app/src/main/res/layout/notification_usage_compact.xml");
+  const widget = source("android/app/src/main/java/com/aiusage/mobile/widget/AIUsageGlanceWidget.kt");
+  const widgetParser = source("android/app/src/main/java/com/aiusage/mobile/widget/WidgetGaugeParser.kt");
+  const widgetXml = source("android/app/src/main/res/xml/ai_usage_widget.xml");
+  const largeWidgetXml = source("android/app/src/main/res/xml/ai_usage_widget_large.xml");
 
   assert.match(models, /data class SnapshotRefreshResult/);
   assert.match(models, /data class SnapshotDevice/);
@@ -92,10 +96,22 @@ test("Android app has device-list snapshot sync and non-placeholder widget cache
   assert.match(notificationController, /getBoolean\(KEY_ENABLED,\s*true\)/);
   assert.match(notificationController, /setCustomContentView\(compactRemoteViews/);
   assert.match(notificationController, /foregroundNotification/);
+  assert.match(repo, /DecimalFormat\("0\.#"/);
+  assert.match(widgetParser, /DecimalFormat\("0\.#"/);
+  assert.doesNotMatch(repo, /else number\.toString\(\)/);
+  assert.doesNotMatch(widgetParser, /else value\.toString\(\)/);
   assert.match(manifest, /android\.permission\.FOREGROUND_SERVICE/);
   assert.match(manifest, /android\.permission\.FOREGROUND_SERVICE_DATA_SYNC/);
   assert.match(manifest, /ForegroundRefreshService/);
   assert.match(manifest, /android:foregroundServiceType="dataSync"/);
+  assert.match(manifest, /AIUsageLargeGlanceWidgetReceiver/);
+  assert.match(manifest, /@xml\/ai_usage_widget_large/);
+  assert.match(widgetXml, /android:targetCellWidth="1"/);
+  assert.match(widgetXml, /android:targetCellHeight="1"/);
+  assert.match(largeWidgetXml, /android:targetCellWidth="3"/);
+  assert.match(largeWidgetXml, /android:targetCellHeight="2"/);
+  assert.doesNotMatch(widget, /widgetBackgroundColor/);
+  assert.match(widget, /AIUsageLargeGlanceWidget/);
   assert.match(foregroundController, /KEY_PRECISE_REFRESH_ENABLED/);
   assert.match(foregroundController, /KEY_PRECISE_REFRESH_PROMPT_SEEN/);
   assert.match(foregroundController, /startForegroundService/);

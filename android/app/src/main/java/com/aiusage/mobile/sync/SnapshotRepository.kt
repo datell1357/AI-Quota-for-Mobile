@@ -5,8 +5,9 @@ import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.aiusage.mobile.widget.WidgetSnapshotCache
 import com.aiusage.mobile.widget.AIUsageGlanceWidget
+import com.aiusage.mobile.widget.AIUsageLargeGlanceWidget
+import com.aiusage.mobile.widget.WidgetSnapshotCache
 import com.aiusage.mobile.notification.UsageLimitNotificationController
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
@@ -14,7 +15,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.tasks.await
 import org.json.JSONObject
+import java.math.RoundingMode
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
 import java.time.Instant
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class SnapshotRepository(private val context: Context) {
@@ -145,6 +150,7 @@ class SnapshotRepository(private val context: Context) {
         cache.write(snapshotJson, status, deviceName, updatedAt)
         UsageLimitNotificationController.update(context, snapshotJson)
         AIUsageGlanceWidget().updateAll(context)
+        AIUsageLargeGlanceWidget().updateAll(context)
     }
 
     fun latestCachedSnapshot(): String {
@@ -313,7 +319,7 @@ class SnapshotRepository(private val context: Context) {
 
     private fun formatNumber(value: Any?): String {
         val number = (value as? Number)?.toDouble() ?: return value?.toString() ?: "-"
-        return if (number % 1.0 == 0.0) number.toLong().toString() else number.toString()
+        return DECIMAL_FORMAT.format(number)
     }
 
     private fun timestampMillis(value: Any?): Long {
@@ -344,5 +350,8 @@ class SnapshotRepository(private val context: Context) {
 
     private companion object {
         const val WIDGET_REFRESH_WORK = "ai_usage_widget_refresh"
+        val DECIMAL_FORMAT = DecimalFormat("0.#", DecimalFormatSymbols(Locale.US)).apply {
+            roundingMode = RoundingMode.HALF_UP
+        }
     }
 }

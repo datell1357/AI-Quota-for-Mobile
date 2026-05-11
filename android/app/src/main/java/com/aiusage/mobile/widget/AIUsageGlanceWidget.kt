@@ -33,7 +33,7 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.aiusage.mobile.R
 
-class AIUsageGlanceWidget : GlanceAppWidget() {
+open class AIUsageGlanceWidget : GlanceAppWidget() {
     override val sizeMode: SizeMode = SizeMode.Responsive(
         setOf(
             DpSize(width = 64.dp, height = 64.dp),
@@ -63,8 +63,6 @@ private fun AIUsageWidgetContent(gauges: List<WidgetProviderGauge>) {
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
-            .cornerRadius(if (isCompact) 20.dp else 24.dp)
-            .background(widgetBackgroundColor())
             .padding(if (isCompact) 4.dp else 10.dp),
         verticalAlignment = Alignment.Vertical.CenterVertically
     ) {
@@ -189,4 +187,10 @@ private val WidgetCaptionStyle = TextStyle(
 
 class AIUsageGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = AIUsageGlanceWidget()
+}
+
+class AIUsageLargeGlanceWidget : AIUsageGlanceWidget()
+
+class AIUsageLargeGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = AIUsageLargeGlanceWidget()
 }
