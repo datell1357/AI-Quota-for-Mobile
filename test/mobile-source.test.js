@@ -57,9 +57,12 @@ test("Android app has device-list snapshot sync and non-placeholder widget cache
   const foregroundService = source("android/app/src/main/java/com/aiusage/mobile/sync/ForegroundRefreshService.kt");
   const compactNotificationLayout = source("android/app/src/main/res/layout/notification_usage_compact.xml");
   const widget = source("android/app/src/main/java/com/aiusage/mobile/widget/AIUsageGlanceWidget.kt");
+  const widgetLayout = source("android/app/src/main/java/com/aiusage/mobile/widget/WidgetGaugeLayout.kt");
   const widgetParser = source("android/app/src/main/java/com/aiusage/mobile/widget/WidgetGaugeParser.kt");
   const widgetXml = source("android/app/src/main/res/xml/ai_usage_widget.xml");
   const largeWidgetXml = source("android/app/src/main/res/xml/ai_usage_widget_large.xml");
+  const colors = source("android/app/src/main/res/values/colors.xml");
+  const nightColors = source("android/app/src/main/res/values-night/colors.xml");
 
   assert.match(models, /data class SnapshotRefreshResult/);
   assert.match(models, /data class SnapshotDevice/);
@@ -110,7 +113,21 @@ test("Android app has device-list snapshot sync and non-placeholder widget cache
   assert.match(widgetXml, /android:targetCellHeight="1"/);
   assert.match(largeWidgetXml, /android:targetCellWidth="3"/);
   assert.match(largeWidgetXml, /android:targetCellHeight="2"/);
-  assert.doesNotMatch(widget, /widgetBackgroundColor/);
+  assert.match(widget, /widgetBackgroundColor/);
+  assert.match(widget, /\.background\(widgetBackgroundColor\(\)\)/);
+  assert.match(widget, /cornerRadius\(if \(isCompact\) 20\.dp else 24\.dp\)/);
+  assert.match(widget, /ColorProvider\(R\.color\.widget_background\)/);
+  assert.match(widget, /ColorProvider\(R\.color\.widget_caption\)/);
+  assert.match(colors, /name="widget_background">#4DFFFFFF/);
+  assert.match(colors, /name="widget_caption">#475569/);
+  assert.match(nightColors, /name="widget_background">#4D0F172A/);
+  assert.match(nightColors, /name="widget_caption">#CBD5E1/);
+  assert.match(widgetLayout, /gaugeWidthDp = 41/);
+  assert.match(widgetLayout, /gaugeWidthDp = 42/);
+  assert.match(widgetLayout, /gaugeWidthDp = 176/);
+  assert.doesNotMatch(widgetLayout, /gaugeWidthDp = 51/);
+  assert.doesNotMatch(widgetLayout, /gaugeWidthDp = 53/);
+  assert.doesNotMatch(widgetLayout, /gaugeWidthDp = 220/);
   assert.match(widget, /AIUsageLargeGlanceWidget/);
   assert.match(foregroundController, /KEY_PRECISE_REFRESH_ENABLED/);
   assert.match(foregroundController, /KEY_PRECISE_REFRESH_PROMPT_SEEN/);

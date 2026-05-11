@@ -63,6 +63,8 @@ private fun AIUsageWidgetContent(gauges: List<WidgetProviderGauge>) {
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
+            .cornerRadius(if (isCompact) 20.dp else 24.dp)
+            .background(widgetBackgroundColor())
             .padding(if (isCompact) 4.dp else 10.dp),
         verticalAlignment = Alignment.Vertical.CenterVertically
     ) {
@@ -181,9 +183,13 @@ private fun gaugeColor(ratio: Float): Color {
 private const val MAX_VISIBLE_GAUGES = 4
 
 private val WidgetCaptionStyle = TextStyle(
-    color = ColorProvider(Color(0xFFCBD5E1)),
+    color = ColorProvider(R.color.widget_caption),
     textAlign = TextAlign.Start
 )
+
+private fun widgetBackgroundColor(): ColorProvider {
+    return ColorProvider(R.color.widget_background)
+}
 
 class AIUsageGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = AIUsageGlanceWidget()
