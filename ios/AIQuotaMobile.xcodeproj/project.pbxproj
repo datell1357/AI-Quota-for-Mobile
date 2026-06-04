@@ -1,0 +1,857 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		100000000000000000000001 /* AIQuotaMobileApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000101 /* AIQuotaMobileApp.swift */; };
+		100000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000102 /* ContentView.swift */; };
+		100000000000000000000003 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000103 /* Models.swift */; };
+		100000000000000000000004 /* SessionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000104 /* SessionViewModel.swift */; };
+		100000000000000000000005 /* SnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000105 /* SnapshotStore.swift */; };
+		100000000000000000000006 /* SnapshotCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000106 /* SnapshotCache.swift */; };
+		100000000000000000000007 /* SnapshotStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000107 /* SnapshotStatus.swift */; };
+		100000000000000000000008 /* PairingCodeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000108 /* PairingCodeViewModel.swift */; };
+		100000000000000000000009 /* AIQuotaAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000109 /* AIQuotaAPIClient.swift */; };
+		100000000000000000000010 /* AIQuotaWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000110 /* AIQuotaWidget.swift */; };
+		100000000000000000000011 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000103 /* Models.swift */; };
+		100000000000000000000012 /* SnapshotCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000106 /* SnapshotCache.swift */; };
+		100000000000000000000013 /* AIQuotaMobileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000111 /* AIQuotaMobileTests.swift */; };
+		100000000000000000000014 /* AIQuotaMobileUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000112 /* AIQuotaMobileUITests.swift */; };
+		100000000000000000000015 /* AIQuotaWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 100000000000000000000202 /* AIQuotaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		100000000000000000000016 /* ProviderModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000115 /* ProviderModels.swift */; };
+		100000000000000000000017 /* ProviderModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000116 /* ProviderModelsTests.swift */; };
+		100000000000000000000018 /* connected-codex.json in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000117 /* connected-codex.json */; };
+		100000000000000000000019 /* disconnected-claude.json in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000118 /* disconnected-claude.json */; };
+		100000000000000000000020 /* stale-gemini-with-previous-usage.json in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000119 /* stale-gemini-with-previous-usage.json */; };
+		100000000000000000000021 /* interactive-auth-copilot-with-previous-usage.json in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000120 /* interactive-auth-copilot-with-previous-usage.json */; };
+		100000000000000000000022 /* collector-error-cursor.json in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000121 /* collector-error-cursor.json */; };
+		100000000000000000000023 /* empty-antigravity.json in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000122 /* empty-antigravity.json */; };
+		100000000000000000000024 /* AIQuotaDesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000123 /* AIQuotaDesignTokens.swift */; };
+		100000000000000000000025 /* AIQuotaDesignTokensTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000124 /* AIQuotaDesignTokensTests.swift */; };
+		100000000000000000000026 /* AIQuotaAppShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000125 /* AIQuotaAppShell.swift */; };
+		100000000000000000000027 /* AIQuotaAppShellTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000126 /* AIQuotaAppShellTests.swift */; };
+		100000000000000000000028 /* ProviderDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000127 /* ProviderDashboardView.swift */; };
+		100000000000000000000029 /* DashboardReorderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000128 /* DashboardReorderTests.swift */; };
+		100000000000000000000030 /* DashboardReorderUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000129 /* DashboardReorderUITests.swift */; };
+		100000000000000000000031 /* ProviderDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000130 /* ProviderDetailView.swift */; };
+		100000000000000000000032 /* ProviderDetailTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000131 /* ProviderDetailTests.swift */; };
+		100000000000000000000033 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000132 /* SettingsView.swift */; };
+		100000000000000000000034 /* SettingsViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000133 /* SettingsViewTests.swift */; };
+		100000000000000000000035 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000134 /* L10n.swift */; };
+		100000000000000000000036 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000136 /* Localizable.strings */; };
+		100000000000000000000037 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000139 /* Localizable.strings */; };
+		100000000000000000000038 /* LocalizationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000135 /* LocalizationUITests.swift */; };
+		100000000000000000000039 /* ProviderDefinitions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000142 /* ProviderDefinitions.swift */; };
+		100000000000000000000040 /* ProviderDefinitionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000143 /* ProviderDefinitionsTests.swift */; };
+		100000000000000000000041 /* ProviderSecureState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000144 /* ProviderSecureState.swift */; };
+		100000000000000000000042 /* ProviderSecureStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000145 /* ProviderSecureStateTests.swift */; };
+		100000000000000000000043 /* ProviderWebLoginCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000146 /* ProviderWebLoginCollector.swift */; };
+		100000000000000000000044 /* ProviderWebLoginCollectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000147 /* ProviderWebLoginCollectorTests.swift */; };
+		100000000000000000000045 /* ProviderUsageNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000148 /* ProviderUsageNormalizer.swift */; };
+		100000000000000000000046 /* ProviderUsageNormalizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000149 /* ProviderUsageNormalizerTests.swift */; };
+		100000000000000000000047 /* NativeProviderCollectors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000150 /* NativeProviderCollectors.swift */; };
+		100000000000000000000048 /* NativeProviderCollectorsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000151 /* NativeProviderCollectorsTests.swift */; };
+		100000000000000000000049 /* ProviderRefreshOrchestrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000152 /* ProviderRefreshOrchestrator.swift */; };
+		100000000000000000000050 /* ProviderRefreshOrchestratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000153 /* ProviderRefreshOrchestratorTests.swift */; };
+		100000000000000000000051 /* AIQuotaWidgetSurfacePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000154 /* AIQuotaWidgetSurfacePolicy.swift */; };
+		100000000000000000000052 /* WidgetSurfaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000155 /* WidgetSurfaceTests.swift */; };
+		100000000000000000000053 /* ProviderNotificationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000156 /* ProviderNotificationCoordinator.swift */; };
+		100000000000000000000054 /* ProviderNotificationCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000157 /* ProviderNotificationCoordinatorTests.swift */; };
+		100000000000000000000055 /* NotificationLiveRefreshUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000158 /* NotificationLiveRefreshUITests.swift */; };
+		100000000000000000000056 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000159 /* PrivacyInfo.xcprivacy */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		100000000000000000000301 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 100000000000000000000300 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 100000000000000000000401;
+			remoteInfo = AIQuotaWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		100000000000000000000501 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				100000000000000000000015 /* AIQuotaWidgetExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		100000000000000000000101 /* AIQuotaMobileApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIQuotaMobileApp.swift; sourceTree = "<group>"; };
+		100000000000000000000102 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		100000000000000000000103 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		100000000000000000000104 /* SessionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionViewModel.swift; sourceTree = "<group>"; };
+		100000000000000000000105 /* SnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotStore.swift; sourceTree = "<group>"; };
+		100000000000000000000106 /* SnapshotCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotCache.swift; sourceTree = "<group>"; };
+		100000000000000000000107 /* SnapshotStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotStatus.swift; sourceTree = "<group>"; };
+		100000000000000000000108 /* PairingCodeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingCodeViewModel.swift; sourceTree = "<group>"; };
+		100000000000000000000109 /* AIQuotaAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIQuotaAPIClient.swift; sourceTree = "<group>"; };
+		100000000000000000000110 /* AIQuotaWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIQuotaWidget.swift; sourceTree = "<group>"; };
+		100000000000000000000111 /* AIQuotaMobileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIQuotaMobileTests.swift; sourceTree = "<group>"; };
+		100000000000000000000112 /* AIQuotaMobileUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIQuotaMobileUITests.swift; sourceTree = "<group>"; };
+		100000000000000000000113 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		100000000000000000000114 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		100000000000000000000115 /* ProviderModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderModels.swift; sourceTree = "<group>"; };
+		100000000000000000000116 /* ProviderModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderModelsTests.swift; sourceTree = "<group>"; };
+		100000000000000000000117 /* connected-codex.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "connected-codex.json"; sourceTree = "<group>"; };
+		100000000000000000000118 /* disconnected-claude.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "disconnected-claude.json"; sourceTree = "<group>"; };
+		100000000000000000000119 /* stale-gemini-with-previous-usage.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "stale-gemini-with-previous-usage.json"; sourceTree = "<group>"; };
+		100000000000000000000120 /* interactive-auth-copilot-with-previous-usage.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "interactive-auth-copilot-with-previous-usage.json"; sourceTree = "<group>"; };
+		100000000000000000000121 /* collector-error-cursor.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "collector-error-cursor.json"; sourceTree = "<group>"; };
+		100000000000000000000122 /* empty-antigravity.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "empty-antigravity.json"; sourceTree = "<group>"; };
+		100000000000000000000123 /* AIQuotaDesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIQuotaDesignTokens.swift; sourceTree = "<group>"; };
+		100000000000000000000124 /* AIQuotaDesignTokensTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIQuotaDesignTokensTests.swift; sourceTree = "<group>"; };
+		100000000000000000000125 /* AIQuotaAppShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIQuotaAppShell.swift; sourceTree = "<group>"; };
+		100000000000000000000126 /* AIQuotaAppShellTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIQuotaAppShellTests.swift; sourceTree = "<group>"; };
+		100000000000000000000127 /* ProviderDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderDashboardView.swift; sourceTree = "<group>"; };
+		100000000000000000000128 /* DashboardReorderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardReorderTests.swift; sourceTree = "<group>"; };
+		100000000000000000000129 /* DashboardReorderUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardReorderUITests.swift; sourceTree = "<group>"; };
+		100000000000000000000130 /* ProviderDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderDetailView.swift; sourceTree = "<group>"; };
+		100000000000000000000131 /* ProviderDetailTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderDetailTests.swift; sourceTree = "<group>"; };
+		100000000000000000000132 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		100000000000000000000133 /* SettingsViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewTests.swift; sourceTree = "<group>"; };
+		100000000000000000000134 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
+		100000000000000000000135 /* LocalizationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationUITests.swift; sourceTree = "<group>"; };
+		100000000000000000000137 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		100000000000000000000138 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
+		100000000000000000000140 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		100000000000000000000141 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
+		100000000000000000000142 /* ProviderDefinitions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderDefinitions.swift; sourceTree = "<group>"; };
+		100000000000000000000143 /* ProviderDefinitionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderDefinitionsTests.swift; sourceTree = "<group>"; };
+		100000000000000000000144 /* ProviderSecureState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderSecureState.swift; sourceTree = "<group>"; };
+		100000000000000000000145 /* ProviderSecureStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderSecureStateTests.swift; sourceTree = "<group>"; };
+		100000000000000000000146 /* ProviderWebLoginCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderWebLoginCollector.swift; sourceTree = "<group>"; };
+		100000000000000000000147 /* ProviderWebLoginCollectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderWebLoginCollectorTests.swift; sourceTree = "<group>"; };
+		100000000000000000000148 /* ProviderUsageNormalizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderUsageNormalizer.swift; sourceTree = "<group>"; };
+		100000000000000000000149 /* ProviderUsageNormalizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderUsageNormalizerTests.swift; sourceTree = "<group>"; };
+		100000000000000000000150 /* NativeProviderCollectors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeProviderCollectors.swift; sourceTree = "<group>"; };
+		100000000000000000000151 /* NativeProviderCollectorsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeProviderCollectorsTests.swift; sourceTree = "<group>"; };
+		100000000000000000000152 /* ProviderRefreshOrchestrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderRefreshOrchestrator.swift; sourceTree = "<group>"; };
+		100000000000000000000153 /* ProviderRefreshOrchestratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderRefreshOrchestratorTests.swift; sourceTree = "<group>"; };
+		100000000000000000000154 /* AIQuotaWidgetSurfacePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIQuotaWidgetSurfacePolicy.swift; sourceTree = "<group>"; };
+		100000000000000000000155 /* WidgetSurfaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSurfaceTests.swift; sourceTree = "<group>"; };
+		100000000000000000000156 /* ProviderNotificationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderNotificationCoordinator.swift; sourceTree = "<group>"; };
+		100000000000000000000157 /* ProviderNotificationCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderNotificationCoordinatorTests.swift; sourceTree = "<group>"; };
+		100000000000000000000158 /* NotificationLiveRefreshUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationLiveRefreshUITests.swift; sourceTree = "<group>"; };
+		100000000000000000000159 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		100000000000000000000201 /* AIQuotaMobile.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AIQuotaMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		100000000000000000000202 /* AIQuotaWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AIQuotaWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		100000000000000000000203 /* AIQuotaMobileTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AIQuotaMobileTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		100000000000000000000204 /* AIQuotaMobileUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AIQuotaMobileUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		100000000000000000000601 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		100000000000000000000602 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		100000000000000000000603 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		100000000000000000000604 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		100000000000000000000701 = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000702 /* AIQuotaMobile */,
+				100000000000000000000703 /* AIQuotaWidget */,
+				100000000000000000000704 /* AIQuotaMobileTests */,
+				100000000000000000000705 /* AIQuotaMobileUITests */,
+				100000000000000000000708 /* ProviderSnapshotFixtures */,
+				100000000000000000000706 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		100000000000000000000702 /* AIQuotaMobile */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000101 /* AIQuotaMobileApp.swift */,
+				100000000000000000000102 /* ContentView.swift */,
+				100000000000000000000103 /* Models.swift */,
+				100000000000000000000104 /* SessionViewModel.swift */,
+				100000000000000000000105 /* SnapshotStore.swift */,
+				100000000000000000000106 /* SnapshotCache.swift */,
+				100000000000000000000107 /* SnapshotStatus.swift */,
+				100000000000000000000108 /* PairingCodeViewModel.swift */,
+				100000000000000000000109 /* AIQuotaAPIClient.swift */,
+				100000000000000000000707 /* Domain */,
+				100000000000000000000709 /* Design */,
+				100000000000000000000714 /* Localization */,
+				100000000000000000000716 /* Providers */,
+				100000000000000000000717 /* Notifications */,
+				100000000000000000000715 /* Security */,
+				100000000000000000000710 /* UI */,
+				100000000000000000000136 /* Localizable.strings */,
+				100000000000000000000159 /* PrivacyInfo.xcprivacy */,
+				100000000000000000000113 /* Info.plist */,
+			);
+			path = AIQuotaMobile;
+			sourceTree = "<group>";
+		};
+		100000000000000000000703 /* AIQuotaWidget */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000110 /* AIQuotaWidget.swift */,
+				100000000000000000000139 /* Localizable.strings */,
+				100000000000000000000114 /* Info.plist */,
+			);
+			path = AIQuotaWidget;
+			sourceTree = "<group>";
+		};
+		100000000000000000000704 /* AIQuotaMobileTests */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000111 /* AIQuotaMobileTests.swift */,
+				100000000000000000000116 /* ProviderModelsTests.swift */,
+				100000000000000000000124 /* AIQuotaDesignTokensTests.swift */,
+				100000000000000000000126 /* AIQuotaAppShellTests.swift */,
+				100000000000000000000128 /* DashboardReorderTests.swift */,
+				100000000000000000000131 /* ProviderDetailTests.swift */,
+				100000000000000000000133 /* SettingsViewTests.swift */,
+				100000000000000000000143 /* ProviderDefinitionsTests.swift */,
+				100000000000000000000145 /* ProviderSecureStateTests.swift */,
+				100000000000000000000147 /* ProviderWebLoginCollectorTests.swift */,
+				100000000000000000000149 /* ProviderUsageNormalizerTests.swift */,
+				100000000000000000000151 /* NativeProviderCollectorsTests.swift */,
+				100000000000000000000153 /* ProviderRefreshOrchestratorTests.swift */,
+				100000000000000000000155 /* WidgetSurfaceTests.swift */,
+				100000000000000000000157 /* ProviderNotificationCoordinatorTests.swift */,
+			);
+			path = AIQuotaMobileTests;
+			sourceTree = "<group>";
+		};
+		100000000000000000000707 /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000115 /* ProviderModels.swift */,
+				100000000000000000000142 /* ProviderDefinitions.swift */,
+				100000000000000000000154 /* AIQuotaWidgetSurfacePolicy.swift */,
+			);
+			path = Domain;
+			sourceTree = "<group>";
+		};
+		100000000000000000000708 /* ProviderSnapshotFixtures */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000117 /* connected-codex.json */,
+				100000000000000000000118 /* disconnected-claude.json */,
+				100000000000000000000119 /* stale-gemini-with-previous-usage.json */,
+				100000000000000000000120 /* interactive-auth-copilot-with-previous-usage.json */,
+				100000000000000000000121 /* collector-error-cursor.json */,
+				100000000000000000000122 /* empty-antigravity.json */,
+			);
+			path = "../test/fixtures/provider-snapshots";
+			sourceTree = "<group>";
+		};
+		100000000000000000000709 /* Design */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000123 /* AIQuotaDesignTokens.swift */,
+			);
+			path = Design;
+			sourceTree = "<group>";
+		};
+		100000000000000000000710 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000125 /* AIQuotaAppShell.swift */,
+				100000000000000000000711 /* Dashboard */,
+				100000000000000000000712 /* ProviderDetail */,
+				100000000000000000000713 /* Settings */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		100000000000000000000711 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000127 /* ProviderDashboardView.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		100000000000000000000712 /* ProviderDetail */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000130 /* ProviderDetailView.swift */,
+			);
+			path = ProviderDetail;
+			sourceTree = "<group>";
+		};
+		100000000000000000000713 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000132 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		100000000000000000000714 /* Localization */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000134 /* L10n.swift */,
+			);
+			path = Localization;
+			sourceTree = "<group>";
+		};
+		100000000000000000000715 /* Security */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000144 /* ProviderSecureState.swift */,
+			);
+			path = Security;
+			sourceTree = "<group>";
+		};
+		100000000000000000000716 /* Providers */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000146 /* ProviderWebLoginCollector.swift */,
+				100000000000000000000148 /* ProviderUsageNormalizer.swift */,
+				100000000000000000000150 /* NativeProviderCollectors.swift */,
+				100000000000000000000152 /* ProviderRefreshOrchestrator.swift */,
+			);
+			path = Providers;
+			sourceTree = "<group>";
+		};
+		100000000000000000000717 /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000156 /* ProviderNotificationCoordinator.swift */,
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
+		100000000000000000000705 /* AIQuotaMobileUITests */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000112 /* AIQuotaMobileUITests.swift */,
+				100000000000000000000129 /* DashboardReorderUITests.swift */,
+				100000000000000000000135 /* LocalizationUITests.swift */,
+				100000000000000000000158 /* NotificationLiveRefreshUITests.swift */,
+			);
+			path = AIQuotaMobileUITests;
+			sourceTree = "<group>";
+		};
+		100000000000000000000706 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000201 /* AIQuotaMobile.app */,
+				100000000000000000000202 /* AIQuotaWidgetExtension.appex */,
+				100000000000000000000203 /* AIQuotaMobileTests.xctest */,
+				100000000000000000000204 /* AIQuotaMobileUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXVariantGroup section */
+		100000000000000000000136 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				100000000000000000000137 /* en */,
+				100000000000000000000138 /* ko */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		100000000000000000000139 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				100000000000000000000140 /* en */,
+				100000000000000000000141 /* ko */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin PBXNativeTarget section */
+		100000000000000000000400 /* AIQuotaMobile */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 100000000000000000000900 /* Build configuration list for PBXNativeTarget "AIQuotaMobile" */;
+			buildPhases = (
+				100000000000000000000801 /* Sources */,
+				100000000000000000000601 /* Frameworks */,
+				100000000000000000000806 /* Resources */,
+				100000000000000000000501 /* Embed App Extensions */,
+			);
+			buildRules = ();
+			dependencies = (
+				100000000000000000000302 /* PBXTargetDependency */,
+			);
+			name = AIQuotaMobile;
+			productName = AIQuotaMobile;
+			productReference = 100000000000000000000201 /* AIQuotaMobile.app */;
+			productType = "com.apple.product-type.application";
+		};
+		100000000000000000000401 /* AIQuotaWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 100000000000000000000901 /* Build configuration list for PBXNativeTarget "AIQuotaWidgetExtension" */;
+			buildPhases = (
+				100000000000000000000802 /* Sources */,
+				100000000000000000000602 /* Frameworks */,
+				100000000000000000000807 /* Resources */,
+			);
+			buildRules = ();
+			dependencies = ();
+			name = AIQuotaWidgetExtension;
+			productName = AIQuotaWidgetExtension;
+			productReference = 100000000000000000000202 /* AIQuotaWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		100000000000000000000402 /* AIQuotaMobileTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 100000000000000000000902 /* Build configuration list for PBXNativeTarget "AIQuotaMobileTests" */;
+			buildPhases = (
+				100000000000000000000803 /* Sources */,
+				100000000000000000000603 /* Frameworks */,
+				100000000000000000000805 /* Resources */,
+			);
+			buildRules = ();
+			dependencies = ();
+			name = AIQuotaMobileTests;
+			productName = AIQuotaMobileTests;
+			productReference = 100000000000000000000203 /* AIQuotaMobileTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		100000000000000000000403 /* AIQuotaMobileUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 100000000000000000000903 /* Build configuration list for PBXNativeTarget "AIQuotaMobileUITests" */;
+			buildPhases = (
+				100000000000000000000804 /* Sources */,
+				100000000000000000000604 /* Frameworks */,
+			);
+			buildRules = ();
+			dependencies = ();
+			name = AIQuotaMobileUITests;
+			productName = AIQuotaMobileUITests;
+			productReference = 100000000000000000000204 /* AIQuotaMobileUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		100000000000000000000300 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					100000000000000000000400 = {CreatedOnToolsVersion = 16.0; };
+					100000000000000000000401 = {CreatedOnToolsVersion = 16.0; };
+					100000000000000000000402 = {CreatedOnToolsVersion = 16.0; TestTargetID = 100000000000000000000400; };
+					100000000000000000000403 = {CreatedOnToolsVersion = 16.0; TestTargetID = 100000000000000000000400; };
+				};
+			};
+			buildConfigurationList = 100000000000000000000904 /* Build configuration list for PBXProject "AIQuotaMobile" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				ko,
+				Base,
+			);
+			mainGroup = 100000000000000000000701;
+			productRefGroup = 100000000000000000000706 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				100000000000000000000400 /* AIQuotaMobile */,
+				100000000000000000000401 /* AIQuotaWidgetExtension */,
+				100000000000000000000402 /* AIQuotaMobileTests */,
+				100000000000000000000403 /* AIQuotaMobileUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		100000000000000000000805 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000018 /* connected-codex.json in Resources */,
+				100000000000000000000019 /* disconnected-claude.json in Resources */,
+				100000000000000000000020 /* stale-gemini-with-previous-usage.json in Resources */,
+				100000000000000000000021 /* interactive-auth-copilot-with-previous-usage.json in Resources */,
+				100000000000000000000022 /* collector-error-cursor.json in Resources */,
+				100000000000000000000023 /* empty-antigravity.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		100000000000000000000806 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000036 /* Localizable.strings in Resources */,
+				100000000000000000000056 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		100000000000000000000807 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000037 /* Localizable.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		100000000000000000000801 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000001 /* AIQuotaMobileApp.swift in Sources */,
+				100000000000000000000002 /* ContentView.swift in Sources */,
+				100000000000000000000003 /* Models.swift in Sources */,
+				100000000000000000000004 /* SessionViewModel.swift in Sources */,
+				100000000000000000000005 /* SnapshotStore.swift in Sources */,
+				100000000000000000000006 /* SnapshotCache.swift in Sources */,
+				100000000000000000000007 /* SnapshotStatus.swift in Sources */,
+				100000000000000000000008 /* PairingCodeViewModel.swift in Sources */,
+				100000000000000000000009 /* AIQuotaAPIClient.swift in Sources */,
+				100000000000000000000016 /* ProviderModels.swift in Sources */,
+				100000000000000000000024 /* AIQuotaDesignTokens.swift in Sources */,
+				100000000000000000000026 /* AIQuotaAppShell.swift in Sources */,
+				100000000000000000000028 /* ProviderDashboardView.swift in Sources */,
+				100000000000000000000031 /* ProviderDetailView.swift in Sources */,
+				100000000000000000000033 /* SettingsView.swift in Sources */,
+				100000000000000000000035 /* L10n.swift in Sources */,
+				100000000000000000000039 /* ProviderDefinitions.swift in Sources */,
+				100000000000000000000051 /* AIQuotaWidgetSurfacePolicy.swift in Sources */,
+				100000000000000000000041 /* ProviderSecureState.swift in Sources */,
+				100000000000000000000043 /* ProviderWebLoginCollector.swift in Sources */,
+				100000000000000000000045 /* ProviderUsageNormalizer.swift in Sources */,
+				100000000000000000000047 /* NativeProviderCollectors.swift in Sources */,
+				100000000000000000000049 /* ProviderRefreshOrchestrator.swift in Sources */,
+				100000000000000000000053 /* ProviderNotificationCoordinator.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		100000000000000000000802 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000010 /* AIQuotaWidget.swift in Sources */,
+				100000000000000000000011 /* Models.swift in Sources */,
+				100000000000000000000012 /* SnapshotCache.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		100000000000000000000803 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000013 /* AIQuotaMobileTests.swift in Sources */,
+				100000000000000000000017 /* ProviderModelsTests.swift in Sources */,
+				100000000000000000000025 /* AIQuotaDesignTokensTests.swift in Sources */,
+				100000000000000000000027 /* AIQuotaAppShellTests.swift in Sources */,
+				100000000000000000000029 /* DashboardReorderTests.swift in Sources */,
+				100000000000000000000032 /* ProviderDetailTests.swift in Sources */,
+				100000000000000000000034 /* SettingsViewTests.swift in Sources */,
+				100000000000000000000040 /* ProviderDefinitionsTests.swift in Sources */,
+				100000000000000000000042 /* ProviderSecureStateTests.swift in Sources */,
+				100000000000000000000044 /* ProviderWebLoginCollectorTests.swift in Sources */,
+				100000000000000000000046 /* ProviderUsageNormalizerTests.swift in Sources */,
+				100000000000000000000048 /* NativeProviderCollectorsTests.swift in Sources */,
+				100000000000000000000050 /* ProviderRefreshOrchestratorTests.swift in Sources */,
+				100000000000000000000052 /* WidgetSurfaceTests.swift in Sources */,
+				100000000000000000000054 /* ProviderNotificationCoordinatorTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		100000000000000000000804 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000014 /* AIQuotaMobileUITests.swift in Sources */,
+				100000000000000000000030 /* DashboardReorderUITests.swift in Sources */,
+				100000000000000000000038 /* LocalizationUITests.swift in Sources */,
+				100000000000000000000055 /* NotificationLiveRefreshUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		100000000000000000000302 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 100000000000000000000401 /* AIQuotaWidgetExtension */;
+			targetProxy = 100000000000000000000301 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		100000000000000000001001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		100000000000000000001002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		100000000000000000001003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ios/AIQuotaMobile/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.aiquota.mobile;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		100000000000000000001004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ios/AIQuotaMobile/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.aiquota.mobile;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		100000000000000000001005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ios/AIQuotaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.aiquota.mobile.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		100000000000000000001006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ios/AIQuotaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.aiquota.mobile.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		100000000000000000001007 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.aiquota.mobile.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AIQuotaMobile.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AIQuotaMobile";
+			};
+			name = Debug;
+		};
+		100000000000000000001008 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.aiquota.mobile.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AIQuotaMobile.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AIQuotaMobile";
+			};
+			name = Release;
+		};
+		100000000000000000001009 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.aiquota.mobile.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = AIQuotaMobile;
+			};
+			name = Debug;
+		};
+		100000000000000000001010 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.aiquota.mobile.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = AIQuotaMobile;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		100000000000000000000904 /* Build configuration list for PBXProject "AIQuotaMobile" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				100000000000000000001001 /* Debug */,
+				100000000000000000001002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		100000000000000000000900 /* Build configuration list for PBXNativeTarget "AIQuotaMobile" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				100000000000000000001003 /* Debug */,
+				100000000000000000001004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		100000000000000000000901 /* Build configuration list for PBXNativeTarget "AIQuotaWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				100000000000000000001005 /* Debug */,
+				100000000000000000001006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		100000000000000000000902 /* Build configuration list for PBXNativeTarget "AIQuotaMobileTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				100000000000000000001007 /* Debug */,
+				100000000000000000001008 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		100000000000000000000903 /* Build configuration list for PBXNativeTarget "AIQuotaMobileUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				100000000000000000001009 /* Debug */,
+				100000000000000000001010 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 100000000000000000000300 /* Project object */;
+}

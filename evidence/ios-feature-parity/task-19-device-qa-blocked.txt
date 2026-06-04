@@ -1,0 +1,27 @@
+Task 19 - Device QA pass
+Date: 2026-06-04
+Host: Windows PowerShell
+
+Plan requirement
+- Simulator: layout, localization, reorder, widget previews, mocked provider refresh.
+- Real device: Google/GitHub login WebView/OAuth redirect, WKWebView cookie persistence, widget refresh, background refresh best-effort.
+- Evidence: screenshots/videos under docs/qa/ios-feature-parity-YYYY-MM-DD/.
+
+Availability check
+- Command: where.exe xcodebuild; where.exe swift; where.exe xcrun; where.exe simctl
+- Result:
+  - xcodebuild: not found
+  - swift: not found
+  - xcrun: not found
+  - simctl: not found
+
+Blocked status
+- Task 19 cannot be completed on this Windows host.
+- No simulator screenshots, videos, widget previews, XCUITest run, or real-device QA can be truthfully produced here.
+- Task 19 remains unchecked in plans/ios-feature-parity.md.
+
+Prepared artifact
+- docs/qa/ios-feature-parity-2026-06-04/README.md contains the Mac/Xcode simulator and real-device QA procedure plus required artifact names.
+
+Cleanup
+- No simulator, device session, process, port, browser, or temp runtime resource was started.

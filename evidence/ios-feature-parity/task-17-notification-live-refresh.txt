@@ -1,0 +1,56 @@
+Task 17 - Port notification/live-refresh UX
+Date: 2026-06-04
+Host: Windows PowerShell, no xcodebuild/swift on PATH
+
+RED
+- Command: node test/ios-notification-live-refresh.test.js
+- Result: FAIL before implementation
+- Observable failures:
+  - ios/AIQuotaMobile/Notifications/ProviderNotificationCoordinator.swift should exist
+  - settings_ios_notifications_title should be used in SettingsView
+  - ProviderNotificationCoordinator.swift in Sources should exist in Xcode project
+
+Implementation
+- Added ios/AIQuotaMobile/Notifications/ProviderNotificationCoordinator.swift.
+- Uses UserNotifications local notification requests instead of Android pinned/foreground notification behavior.
+- Uses WidgetCenter.shared.reloadAllTimelines() plus ProviderBackgroundRefreshScheduler.submitBestEffortAppRefresh() as passive iOS surfaces.
+- Added mockable UserNotificationScheduling, WidgetTimelineReloading, and ProviderNotificationSettingsStoring seams.
+- Updated ios/AIQuotaMobile/UI/Settings/SettingsView.swift with iOS notification language and permission-state copy.
+- Updated ios/AIQuotaMobile/UI/AIQuotaAppShell.swift so settings toggle calls handleNotificationToggle(enabled:snapshots:).
+- Added ios/AIQuotaMobileTests/ProviderNotificationCoordinatorTests.swift.
+- Added ios/AIQuotaMobileUITests/NotificationLiveRefreshUITests.swift for granted and denied permission paths.
+- Added English/Korean localization keys and Xcode membership.
+
+Verification
+- PASS: node test/ios-notification-live-refresh.test.js
+- PASS: node test/ios-settings.test.js; node test/ios-localization.test.js; node test/ios-app-shell.test.js
+- PASS: full iOS guard suite:
+  node test/ios-xcode-project.test.js; node test/ios-provider-models.test.js; node test/ios-provider-fixtures.test.js; node test/ios-design-tokens.test.js; node test/ios-app-shell.test.js; node test/ios-dashboard.test.js; node test/ios-provider-detail.test.js; node test/ios-settings.test.js; node test/ios-localization.test.js; node test/ios-provider-definitions.test.js; node test/ios-secure-provider-state.test.js; node test/ios-web-login-collector.test.js; node test/ios-provider-normalizers.test.js; node test/ios-native-collectors.test.js; node test/ios-refresh-orchestration.test.js; node test/ios-widget-surfaces.test.js; node test/ios-notification-live-refresh.test.js
+- PASS: npm.cmd run lint
+- PASS with warnings only: git diff --check
+  - warnings are CRLF conversion notices for pre-existing touched files.
+- EXPECTED FAIL: npm.cmd test
+  - Android local-first shell source assertion still expects requestNotificationPermissionOnFirstLaunch in MainActivity.kt.
+  - Android Google native OAuth source assertion still expects GeminiCliOAuthRepository(appContext).fetchUsagePayloadFromStoredCredential() in AIQuotaAppShell.kt.
+- BLOCKED EXTERNAL GATE: where.exe xcodebuild; where.exe swift
+  - both commands returned "Could not find files for the given pattern(s)."
+
+Manual QA channel
+- Windows-local substitute: NotificationLiveRefreshUITests.swift documents the simulator QA path for denied and granted permission states using launch arguments:
+  - -AIQuotaNotificationPermissionDenied
+  - -AIQuotaNotificationPermissionGranted
+- Real simulator QA and notification permission prompt automation remain blocked until macOS/Xcode is available.
+
+Adversarial QA
+- malformed input: missing coordinator/settings/membership produced RED before implementation.
+- prompt injection: not applicable; notification content is composed from local ProviderUsageSnapshot and omits account/message secret fields.
+- cancel/resume: source-backed guards, evidence, plan, and ledger are rerunnable after interruption.
+- stale state: node guards read current Swift, strings, pbxproj, and package files from disk.
+- dirty worktree: unrelated dirty/untracked files left untouched.
+- hung or long commands: focused guards, lint, diff check, and npm test completed quickly.
+- flaky tests: Task 17 guard passed directly and in full iOS guard suite.
+- misleading success output: guard requires concrete UserNotifications, WidgetKit reload, BG scheduling, settings copy, Swift unit tests, UI tests, and Xcode membership.
+- repeated interruptions: compaction resume continued from Task 17 RED to GREEN.
+
+Cleanup
+- No QA sessions, PIDs, ports, browsers, emulators, or temp dirs spawned.

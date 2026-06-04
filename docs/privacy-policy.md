@@ -2,7 +2,7 @@
 
 최종 업데이트: 2026년 6월 1일
 
-AI Quota는 Android 기기에서 AI provider의 남은 사용량과 reset 시간을 확인하기 위한 앱입니다.
+AI Quota는 Android 및 iOS 기기에서 AI provider의 남은 사용량과 reset 시간을 확인하기 위한 앱입니다.
 
 ## 개발자 연락처
 
@@ -19,7 +19,7 @@ AI Quota는 사용자가 직접 시작한 provider 세션 또는 OAuth 연결을
 - reset time
 - 마지막 수집 시각
 - stale, collecting, auth-required 같은 표시 상태
-- 홈 화면 위젯 및 상태 표시줄 알림 표시 cache
+- 홈 화면 위젯, WidgetKit, 로컬 알림 및 상태 표시줄 알림 표시 cache
 - provider별 WebView 세션 데이터 또는 OAuth 기반 로컬 세션 상태
 
 Gemini 또는 Antigravity 연결에 Google OAuth가 사용되는 경우, AI Quota는 사용자가 승인한 범위 안에서 Google 계정의 기본 프로필, 이메일 주소, OAuth callback data, OAuth token, Google Cloud 또는 Code Assist 관련 사용량 응답을 처리할 수 있습니다. 이 정보는 provider 로그인 완료, 세션 refresh, provider 연결 상태 표시, 사용량 snapshot 생성을 위해 사용됩니다.
@@ -29,6 +29,10 @@ Gemini 또는 Antigravity 연결에 Google OAuth가 사용되는 경우, AI Quot
 Gemini와 Antigravity의 경우 AI Quota는 Firebase Functions를 token gateway로 사용할 수 있습니다. 이 gateway는 사용자가 요청한 provider 연결을 완료하기 위해 OAuth callback URL 또는 authorization code, token refresh 요청, provider 사용량 응답, Firebase 인증 사용자 식별자를 처리할 수 있습니다.
 
 Antigravity의 경우 사용자의 quota monitoring 기능을 유지하기 위해 암호화된 provider refresh token이 Firebase에 저장될 수 있습니다. provider 연결 해제를 실행하면 지원되는 경우 server-side provider secret record가 삭제됩니다.
+
+## iOS 로컬 저장 경계
+
+iOS 앱은 provider별 WebView 상태를 `WKWebsiteDataStore`에 보관하고 native provider credential은 iOS Keychain에 보관합니다. Provider secrets are not uploaded by the iOS app. WidgetKit은 App Group sanitized widget cache만 읽으며, 이 cache는 provider secret 또는 raw provider payload를 포함하지 않는 표시 전용 데이터입니다.
 
 ## 개발자 서버로 의도적으로 전송하지 않는 정보
 
@@ -49,7 +53,7 @@ AI Quota는 로컬 표시 데이터와 provider 연결 데이터를 다음 목�
 
 - 앱에서 현재 AI quota 정보 표시
 - 홈 화면 위젯 표시
-- 사용자가 선택한 상태 표시줄 고정 알림 표시
+- 사용자가 선택한 Android 상태 표시줄 알림 또는 iOS 로컬 알림 표시
 - 사용자가 라이브 모니터링을 켠 경우 provider 사용량 refresh
 - provider collection이 일시적으로 실패한 경우 재시도
 - 사용자가 요청한 provider 연결 해제 처리
@@ -62,7 +66,7 @@ AI Quota는 지원 provider의 공식 앱이 아니며, 해당 provider와 제�
 
 ## 데이터 보안
 
-provider 및 OAuth 통신은 HTTPS 기반 연결을 사용합니다. 로컬 cache, WebView 세션 데이터, OAuth 기반 로컬 세션 상태는 Android 앱 저장소에 보관됩니다. Firebase-hosted token gateway record는 Firebase security rules 및 Firebase App Check로 보호되며, 적용 가능한 경우 암호화된 provider secret storage로 보호됩니다. AI Quota는 Google 사용자 데이터를 판매하지 않으며, 앱 기능 제공에 필요한 경우 외에는 공유하지 않습니다.
+provider 및 OAuth 통신은 HTTPS 기반 연결을 사용합니다. 로컬 cache, WebView 세션 데이터, OAuth 기반 로컬 세션 상태는 Android 앱 저장소 또는 iOS Keychain/WKWebsiteDataStore에 보관됩니다. iOS WidgetKit용 App Group sanitized widget cache는 표시 전용 snapshot만 포함합니다. Firebase-hosted token gateway record는 Firebase security rules 및 Firebase App Check로 보호되며, 적용 가능한 경우 암호화된 provider secret storage로 보호됩니다. AI Quota는 Google 사용자 데이터를 판매하지 않으며, 앱 기능 제공에 필요한 경우 외에는 공유하지 않습니다.
 
 ## 데이터 보관 및 삭제
 

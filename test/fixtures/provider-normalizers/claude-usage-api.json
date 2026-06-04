@@ -1,0 +1,44 @@
+{
+  "providerId": "claude",
+  "source": "PROVIDER_API",
+  "rawPayload": {
+    "account": "user@example.com",
+    "plan": "Pro",
+    "usage": {
+      "five_hour": {
+        "used_percent": 25,
+        "reset_at": "2026-05-19T12:00:00Z"
+      },
+      "seven_day": {
+        "used_percent": 40,
+        "reset_text": "Resets in 3d"
+      },
+      "seven_day_omelette": {
+        "used_percent": 10
+      }
+    }
+  },
+  "expected": {
+    "providerId": "claude",
+    "planLabel": "Pro",
+    "account": "user@example.com",
+    "sourceLabel": "provider-api",
+    "confidence": 0.99,
+    "lines": [
+      {
+        "label": "Claude Session",
+        "remainingPercent": 0.75,
+        "resetsAt": "2026-05-19T12:00:00Z"
+      },
+      {
+        "label": "Claude Weekly",
+        "remainingPercent": 0.6,
+        "resetText": "Resets in 3d"
+      },
+      {
+        "label": "Claude Design",
+        "remainingPercent": 0.9
+      }
+    ]
+  }
+}

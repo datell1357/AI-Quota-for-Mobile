@@ -1,0 +1,38 @@
+Task: 7. Rebuild provider detail
+Date: 2026-06-04T12:09:22.7595292+09:00
+Plan: plans/ios-feature-parity.md
+
+RED
+- Command: node test/ios-provider-detail.test.js
+- Result: failed before implementation.
+- Failure class:
+  - ios/AIQuotaMobile/UI/ProviderDetail/ProviderDetailView.swift missing.
+  - ios/AIQuotaMobileTests/ProviderDetailTests.swift missing.
+  - AIQuotaAppShell.swift still routed provider details to placeholder ProviderDetailShellView.
+  - Xcode project missing provider-detail source/test membership.
+
+GREEN
+- Command: node test/ios-provider-detail.test.js
+- Result: pass, 3/3 tests.
+- Command: node test/ios-xcode-project.test.js; node test/ios-provider-models.test.js; node test/ios-provider-fixtures.test.js; node test/ios-design-tokens.test.js; node test/ios-app-shell.test.js; node test/ios-dashboard.test.js; node test/ios-provider-detail.test.js
+- Result: pass, all iOS Windows-local Node guards.
+- Command: npm.cmd run lint
+- Result: pass.
+- Command: npm.cmd test
+- Result: still fails only in pre-existing Android source assertions listed below.
+
+Implementation
+- Added ios/AIQuotaMobile/UI/ProviderDetail/ProviderDetailView.swift.
+- Added provider detail window chrome, provider path bar, summary block, status/plan/updated lines, connect/disconnect action, add-widget action, usage rows, progress bars, metadata text, and analysis section.
+- Added helper coverage for providerDetailStatus, providerDetailAnalysis, providerDetailUsageLabel, providerDetailPercentText, and metadataText.
+- Wired AppRoute.providerDetail through ProviderDetailView using providerDetailSnapshot(for:).
+- Removed placeholder ProviderDetailShellView.
+- Added ios/AIQuotaMobileTests/ProviderDetailTests.swift.
+- Added Xcode source membership for ProviderDetailView.swift and ProviderDetailTests.swift.
+
+Known external gates
+- xcodebuild and swift are unavailable on this Windows host.
+- Fixture-backed screenshot acceptance still requires macOS/Xcode simulator.
+- Full npm.cmd test still fails in pre-existing Android source assertions:
+  - test/mobile-source.test.js expects requestNotificationPermissionOnFirstLaunch in MainActivity.kt.
+  - test/mobile-source.test.js expects GeminiCliOAuthRepository(appContext).fetchUsagePayloadFromStoredCredential() in AIQuotaAppShell.kt.

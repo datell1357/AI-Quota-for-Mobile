@@ -1,0 +1,42 @@
+{
+  "providerId": "codex",
+  "source": "PROVIDER_API",
+  "rawPayload": {
+    "account": "user@example.com",
+    "plan_type": "prolite",
+    "rate_limits": {
+      "primary_window": {
+        "used_percent": 20,
+        "reset_after_seconds": 18000
+      },
+      "secondary_window": {
+        "used_percent": 50
+      },
+      "spark": {
+        "used_percent": 3
+      }
+    }
+  },
+  "expected": {
+    "providerId": "codex",
+    "planLabel": "Pro 5x",
+    "account": "user@example.com",
+    "sourceLabel": "provider-api",
+    "confidence": 0.99,
+    "lines": [
+      {
+        "label": "Codex Session",
+        "remainingPercent": 0.8,
+        "resetText": "Resets in 5h"
+      },
+      {
+        "label": "Codex Weekly",
+        "remainingPercent": 0.5
+      },
+      {
+        "label": "Codex Spark",
+        "remainingPercent": 0.97
+      }
+    ]
+  }
+}

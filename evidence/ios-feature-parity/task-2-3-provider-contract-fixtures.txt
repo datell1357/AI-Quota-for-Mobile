@@ -1,0 +1,36 @@
+﻿COMMAND: node test/ios-provider-models.test.js
+PASS OBSERVABLE: provider domain tests pass
+
+✔ iOS provider domain mirrors Android provider identity and state contracts (1.3631ms)
+✔ iOS provider snapshot preserves trusted-payload and previous-usage policies (0.52ms)
+✔ iOS Xcode project includes provider domain source and contract tests (1.0316ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7.3075
+
+COMMAND: node test/ios-provider-fixtures.test.js
+PASS OBSERVABLE: fixture tests pass
+
+✔ shared provider snapshot fixtures cover required connection states (1.938ms)
+✔ shared provider snapshot fixtures use iOS and Android-compatible snapshot keys (1.3152ms)
+✔ Swift provider model tests reference the shared fixture names (0.4549ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8.5671
+
+COMMAND: npm.cmd run lint
+PASS OBSERVABLE: command exits 0
+
+
+> ai-quota-mobile@0.1.0 lint
+> node --check functions/src/core.js && node --check functions/src/index.js && node --check functions/src/geminiCliGateway.js && node --check test/structure.test.js && node --check test/mobile-source.test.js && node --check test/ios-xcode-project.test.js && node --check test/ios-provider-models.test.js && node --check test/ios-provider-fixtures.test.js

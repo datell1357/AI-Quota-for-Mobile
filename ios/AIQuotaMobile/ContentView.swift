@@ -11,11 +11,7 @@ struct ContentView: View {
                 case .signedOut:
                     SignInView()
                 case .signedIn:
-                    if snapshotStore.devices.isEmpty {
-                        PairingView()
-                    } else {
-                        SnapshotListView()
-                    }
+                    AIQuotaAppShell(snapshotStore: snapshotStore)
                 }
             }
             .navigationTitle("AI Quota")

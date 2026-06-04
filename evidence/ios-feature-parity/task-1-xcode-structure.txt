@@ -1,0 +1,18 @@
+﻿COMMAND: node test/ios-xcode-project.test.js
+PASS OBSERVABLE: tests 2 pass 0 fail
+
+✔ iOS Xcode project declares app, widget, unit-test, and UI-test targets (1.3766ms)
+✔ iOS Xcode project includes existing app and widget Swift sources (0.489ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6.7565
+
+COMMAND: xcodebuild -list -project ios/AIQuotaMobile.xcodeproj
+PASS OBSERVABLE: target list includes AIQuotaMobile, AIQuotaWidgetExtension, AIQuotaMobileTests, AIQuotaMobileUITests
+
+BLOCKED: xcodebuild unavailable on this Windows host

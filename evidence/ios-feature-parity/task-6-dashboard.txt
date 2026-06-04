@@ -1,0 +1,45 @@
+Task: 6. Rebuild dashboard
+Date: 2026-06-04T12:03:56.3152849+09:00
+Plan: plans/ios-feature-parity.md
+
+RED
+- Command: node test/ios-dashboard.test.js
+- Result: failed before implementation.
+- Failure class:
+  - ios/AIQuotaMobile/UI/Dashboard/ProviderDashboardView.swift missing.
+  - ios/AIQuotaMobileTests/DashboardReorderTests.swift missing.
+  - ios/AIQuotaMobileUITests/DashboardReorderUITests.swift missing.
+  - AIQuotaAppShell.swift not wired to ProviderDashboardView.
+  - Xcode project missing dashboard source/test membership.
+
+GREEN
+- Command: node test/ios-dashboard.test.js
+- Result: pass, 5/5 tests.
+- Command: node test/ios-xcode-project.test.js; node test/ios-provider-models.test.js; node test/ios-provider-fixtures.test.js; node test/ios-design-tokens.test.js; node test/ios-app-shell.test.js; node test/ios-dashboard.test.js
+- Result: pass, all iOS Windows-local Node guards.
+- Command: npm.cmd run lint
+- Result: pass.
+- Command: git diff --check
+- Result: no whitespace errors; CRLF conversion warnings only for existing Windows checkout behavior.
+
+Implementation
+- Added ios/AIQuotaMobile/UI/Dashboard/ProviderDashboardView.swift.
+- Added provider cards with macOS/Windows token colors, traffic-light chrome, preview usage lines, empty state, Connect action, Add Widget action, and accessibility IDs.
+- Added long-press + drag gesture path with deterministic insertion-slot helpers:
+  - dragInsertionSlotFromCenter
+  - insertionSlotCenter
+  - targetIndexFromInsertionSlot
+  - dragTargetIndexFromCenter
+  - previewVisibleProviderOrder
+- Wired dashboard into AIQuotaAppShell with @AppStorage("dashboard.providerOrder") persistence.
+- Added legacy ProviderUsage -> ProviderUsageSnapshot adapter for current SnapshotStore cache.
+- Added DashboardReorderTests.swift for adjacent reorder, grid insertion, preview move, and duplicate input normalization.
+- Added DashboardReorderUITests.swift documenting XCUITest acceptance path for adjacent-card drag persistence.
+- Added Xcode source membership for dashboard source, unit test, and UI test.
+
+Known external gates
+- xcodebuild and swift are unavailable on this Windows host.
+- Swift XCTest and XCUITest execution still require macOS/Xcode simulator.
+- Full npm.cmd test still fails in pre-existing Android source assertions:
+  - test/mobile-source.test.js expects requestNotificationPermissionOnFirstLaunch in MainActivity.kt.
+  - test/mobile-source.test.js expects GeminiCliOAuthRepository(appContext).fetchUsagePayloadFromStoredCredential() in AIQuotaAppShell.kt.

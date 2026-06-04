@@ -1,0 +1,73 @@
+Task: 14. Port native OAuth/API collectors
+Date: 2026-06-04T13:16:12.4123117+09:00
+Plan: plans/ios-feature-parity.md
+
+RED
+- Command: node test/ios-native-collectors.test.js
+- Result: failed before implementation.
+- Failure class:
+  - ios/AIQuotaMobile/Providers/NativeProviderCollectors.swift missing.
+  - Info.plist missing Gemini and Antigravity OAuth redirect schemes/client-id slots.
+  - Xcode project missing NativeProviderCollectors.swift source membership.
+  - Xcode project missing NativeProviderCollectorsTests.swift test membership.
+
+GREEN
+- Command: node test/ios-native-collectors.test.js
+- Result: pass, 3/3 tests.
+- Command: iOS guard suite:
+  - node test/ios-xcode-project.test.js
+  - node test/ios-provider-models.test.js
+  - node test/ios-provider-fixtures.test.js
+  - node test/ios-design-tokens.test.js
+  - node test/ios-app-shell.test.js
+  - node test/ios-dashboard.test.js
+  - node test/ios-provider-detail.test.js
+  - node test/ios-settings.test.js
+  - node test/ios-localization.test.js
+  - node test/ios-provider-definitions.test.js
+  - node test/ios-secure-provider-state.test.js
+  - node test/ios-web-login-collector.test.js
+  - node test/ios-provider-normalizers.test.js
+  - node test/ios-native-collectors.test.js
+- Result: pass.
+- Command: npm.cmd run lint
+- Result: pass.
+- Command: git diff --check
+- Result: no whitespace errors; CRLF conversion warnings only for existing Windows checkout behavior.
+- Command: npm.cmd test
+- Result: still fails only in pre-existing Android source assertions listed below.
+- Command: where.exe xcodebuild; where.exe swift
+- Result: both commands returned no match on this Windows host.
+
+Implementation
+- Added ios/AIQuotaMobile/Providers/NativeProviderCollectors.swift.
+- Added NativeOAuthConfiguration for Gemini and Antigravity iOS client-id Info.plist keys, redirect schemes, redirect URIs, Google OAuth endpoints, and scopes.
+- Added NativeProviderHTTPClient plus URLSessionNativeProviderHTTPClient for mockable provider API calls.
+- Added NativeProviderCollector with Keychain-backed ProviderSecretStore access, refresh token storage, PKCE verifier/state storage, access-token refresh, and provider dispatch.
+- Added Gemini native path:
+  - refresh access token through OAuth token endpoint.
+  - call cloudcode-pa.googleapis.com v1internal:loadCodeAssist.
+  - call cloudcode-pa.googleapis.com v1internal:retrieveUserQuota.
+  - normalize trusted quota buckets through ProviderUsageNormalizer.
+- Added Antigravity native path:
+  - refresh access token through OAuth token endpoint.
+  - call daily-cloudcode-pa.googleapis.com v1internal:loadCodeAssist.
+  - call daily-cloudcode-pa.googleapis.com v1internal:fetchAvailableModels.
+  - map HTTP 403 to BACKEND_API_FORBIDDEN without requiring WebView re-login.
+- Added Cursor native path:
+  - use stored native API credential/access token.
+  - call api2.cursor.sh/auth/poll.
+  - request WebView fallback when native credential or trusted payload is unavailable.
+- Added ios/AIQuotaMobileTests/NativeProviderCollectorsTests.swift with mocked HTTP and in-memory secret store coverage for token refresh, trusted Gemini payload success, Antigravity private API forbidden, Cursor WebView fallback, and OAuth configuration.
+- Updated ios/AIQuotaMobile/Info.plist with aiquota-gemini and aiquota-antigravity URL schemes plus AIQuotaGeminiIOSClientId and AIQuotaAntigravityIOSClientId placeholders.
+- Added test/ios-native-collectors.test.js and wired it into package test, test:mobile, and lint scripts.
+- Updated ios/AIQuotaMobile.xcodeproj/project.pbxproj with native collector source and unit-test membership.
+
+Known external gates
+- xcodebuild is unavailable on this Windows host: where.exe xcodebuild returned no match.
+- swift is unavailable on this Windows host: where.exe swift returned no match.
+- Swift unit execution and real OAuth redirect testing still require macOS/Xcode.
+- Real iOS OAuth client IDs must be supplied through build settings before device/simulator OAuth QA.
+- Full npm.cmd test still fails in pre-existing Android source assertions:
+  - test/mobile-source.test.js expects requestNotificationPermissionOnFirstLaunch in MainActivity.kt.
+  - test/mobile-source.test.js expects GeminiCliOAuthRepository(appContext).fetchUsagePayloadFromStoredCredential() in AIQuotaAppShell.kt.

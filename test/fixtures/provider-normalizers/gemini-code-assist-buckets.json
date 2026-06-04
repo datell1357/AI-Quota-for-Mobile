@@ -1,0 +1,49 @@
+{
+  "providerId": "gemini",
+  "source": "NETWORK_RESPONSE",
+  "rawPayload": {
+    "plan": "standard-tier",
+    "account": "user@gmail.com",
+    "limits": [
+      {
+        "modelId": "gemini-2.5-pro",
+        "remainingFraction": 0.98,
+        "resetTime": "2026-05-19T12:00:00Z"
+      },
+      {
+        "modelId": "gemini-2.5-pro-preview",
+        "remainingFraction": 0.75,
+        "resetTime": "2026-05-19T11:00:00Z"
+      },
+      {
+        "modelId": "gemini-2.5-flash",
+        "remainingFraction": 0.99,
+        "resetTime": "2026-05-19T10:00:00Z"
+      }
+    ]
+  },
+  "expected": {
+    "providerId": "gemini",
+    "planLabel": "Paid",
+    "account": "user@gmail.com",
+    "sourceLabel": "webview-network",
+    "confidence": 0.96,
+    "lines": [
+      {
+        "label": "2.5 pro",
+        "remainingPercent": 0.98,
+        "resetsAt": "2026-05-19T12:00:00Z"
+      },
+      {
+        "label": "2.5 pro-pre",
+        "remainingPercent": 0.75,
+        "resetsAt": "2026-05-19T11:00:00Z"
+      },
+      {
+        "label": "2.5 flash",
+        "remainingPercent": 0.99,
+        "resetsAt": "2026-05-19T10:00:00Z"
+      }
+    ]
+  }
+}

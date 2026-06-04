@@ -1,0 +1,55 @@
+Task: 10. Port provider definitions and allowlists
+Date: 2026-06-04T12:35:30.3121262+09:00
+Plan: plans/ios-feature-parity.md
+
+RED
+- Command: node test/ios-provider-definitions.test.js
+- Result: failed before implementation.
+- Failure class:
+  - ios/AIQuotaMobile/Domain/ProviderDefinitions.swift missing.
+  - ios/AIQuotaMobileTests/ProviderDefinitionsTests.swift missing.
+  - Xcode project missing provider definition source/test membership.
+
+GREEN
+- Command: node test/ios-provider-definitions.test.js
+- Result: pass, 3/3 tests.
+- Command: node test/ios-xcode-project.test.js
+- Result: pass, 2/2 tests.
+- Command: node test/ios-provider-models.test.js
+- Result: pass, 3/3 tests.
+- Command: node test/ios-provider-fixtures.test.js
+- Result: pass, 3/3 tests.
+- Command: node test/ios-design-tokens.test.js
+- Result: pass, 2/2 tests.
+- Command: node test/ios-app-shell.test.js
+- Result: pass, 3/3 tests.
+- Command: node test/ios-dashboard.test.js
+- Result: pass, 5/5 tests.
+- Command: node test/ios-provider-detail.test.js
+- Result: pass, 3/3 tests.
+- Command: node test/ios-settings.test.js
+- Result: pass, 3/3 tests.
+- Command: node test/ios-localization.test.js
+- Result: pass, 4/4 tests.
+- Command: npm.cmd run lint
+- Result: pass.
+- Command: git diff --check
+- Result: no whitespace errors; CRLF conversion warnings only for existing Windows checkout behavior.
+- Command: npm.cmd test
+- Result: still fails only in pre-existing Android source assertions listed below.
+
+Implementation
+- Added ios/AIQuotaMobile/Domain/ProviderDefinitions.swift.
+- Mirrored Android provider URLs, usage endpoints, session probes, auth store kinds, and collection kinds for Claude, Codex, Gemini, Copilot, Antigravity, and Cursor.
+- Kept loginAllowedHosts and collectorAllowedHosts separate.
+- Added Android-equivalent host checks, subdomain matching, malformed URL rejection, and regional accounts.google.* login allowance for providers that include accounts.google.com.
+- Added ios/AIQuotaMobileTests/ProviderDefinitionsTests.swift for registry parity, login allowlist, collector allowlist, regional Google account hosts, unrelated host rejection, and malformed URL rejection.
+- Added test/ios-provider-definitions.test.js and wired it into package test, test:mobile, and lint scripts.
+- Updated ios/AIQuotaMobile.xcodeproj/project.pbxproj with provider definition source and unit-test membership.
+
+Known external gates
+- xcodebuild and swift are unavailable on this Windows host.
+- Swift unit execution still requires macOS/Xcode.
+- Full npm.cmd test still fails in pre-existing Android source assertions:
+  - test/mobile-source.test.js expects requestNotificationPermissionOnFirstLaunch in MainActivity.kt.
+  - test/mobile-source.test.js expects GeminiCliOAuthRepository(appContext).fetchUsagePayloadFromStoredCredential() in AIQuotaAppShell.kt.

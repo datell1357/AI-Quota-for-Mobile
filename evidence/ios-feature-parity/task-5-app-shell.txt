@@ -1,0 +1,21 @@
+﻿COMMAND: node test/ios-app-shell.test.js
+PASS OBSERVABLE: app shell tests pass
+
+✔ iOS app shell exposes home, settings, and provider-detail navigation (1.1395ms)
+✔ iOS ContentView routes signed-in users through the app shell (0.2924ms)
+✔ iOS Xcode project includes app shell source and UI shell tests (1.0138ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6.5884
+
+COMMAND: npm.cmd run lint
+PASS OBSERVABLE: command exits 0
+
+
+> ai-quota-mobile@0.1.0 lint
+> node --check functions/src/core.js && node --check functions/src/index.js && node --check test/ios-xcode-project.test.js && node --check test/ios-provider-models.test.js && node --check test/ios-provider-fixtures.test.js && node --check test/ios-design-tokens.test.js && node --check test/ios-app-shell.test.js && node --check functions/src/geminiCliGateway.js && node --check test/structure.test.js && node --check test/mobile-source.test.js

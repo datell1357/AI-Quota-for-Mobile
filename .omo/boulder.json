@@ -1,0 +1,23 @@
+{
+  "schema_version": 2,
+  "active_work_id": "ios-feature-parity",
+  "works": {
+    "ios-feature-parity": {
+      "work_id": "ios-feature-parity",
+      "active_plan": "plans/ios-feature-parity.md",
+      "plan_name": "ios-feature-parity",
+      "session_ids": [
+        "codex:019e9066-24da-7453-96b5-e3589c2a8f8c"
+      ],
+      "status": "paused",
+      "paused_reason": "Task 19 and Task 20 require macOS/Xcode, iOS Simulator or real iOS device, and App Store Connect/TestFlight access. Windows host has no xcodebuild, swift, xcrun, or simctl.",
+      "blocked_external_gates": [
+        "macOS/Xcode simulator QA evidence for Task 19",
+        "real iOS device OAuth/WebView/widget/background-refresh QA evidence for Task 19",
+        "xcodebuild archive and App Store Connect TestFlight processing evidence for Task 20"
+      ],
+      "last_verified_at": "2026-06-04",
+      "worktree_path": null
+    }
+  }
+}

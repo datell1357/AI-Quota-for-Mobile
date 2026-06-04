@@ -1,0 +1,62 @@
+Task: 13. Port normalizers provider by provider
+Date: 2026-06-04T13:07:14.5624785+09:00
+Plan: plans/ios-feature-parity.md
+
+RED
+- Command: node test/ios-provider-normalizers.test.js
+- Result: failed before implementation.
+- Failure class:
+  - ios/AIQuotaMobile/Providers/ProviderUsageNormalizer.swift missing.
+  - Xcode project missing ProviderUsageNormalizer.swift source membership.
+  - Xcode project missing ProviderUsageNormalizerTests.swift test membership.
+
+GREEN
+- Command: node test/ios-provider-normalizers.test.js
+- Result: pass, 3/3 tests.
+- Command: iOS guard suite:
+  - node test/ios-xcode-project.test.js
+  - node test/ios-provider-models.test.js
+  - node test/ios-provider-fixtures.test.js
+  - node test/ios-design-tokens.test.js
+  - node test/ios-app-shell.test.js
+  - node test/ios-dashboard.test.js
+  - node test/ios-provider-detail.test.js
+  - node test/ios-settings.test.js
+  - node test/ios-localization.test.js
+  - node test/ios-provider-definitions.test.js
+  - node test/ios-secure-provider-state.test.js
+  - node test/ios-web-login-collector.test.js
+  - node test/ios-provider-normalizers.test.js
+- Result: pass.
+- Command: npm.cmd run lint
+- Result: pass.
+- Command: git diff --check
+- Result: no whitespace errors; CRLF conversion warnings only for existing Windows checkout behavior.
+- Command: npm.cmd test
+- Result: still fails only in pre-existing Android source assertions listed below.
+- Command: where.exe xcodebuild; where.exe swift
+- Result: both commands returned no match on this Windows host.
+
+Implementation
+- Added ios/AIQuotaMobile/Providers/ProviderUsageNormalizer.swift.
+- Added ProviderPayloadSource with Android-compatible source raw values, labels, and confidence values.
+- Added ProviderUsageNormalizer.normalize(providerId:rawPayload:source:fetchedAt:) with DOM_TEXT rejection, trusted JSON parsing, provider dispatch, and connected snapshot construction.
+- Implemented provider-specific normalization paths for Claude, Codex, Gemini, Copilot, Cursor, and Antigravity.
+- Added shared parity fixtures under test/fixtures/provider-normalizers for representative Android raw payloads and expected normalized output:
+  - claude-usage-api.json
+  - codex-wham-rate-limits.json
+  - gemini-code-assist-buckets.json
+  - copilot-quota-snapshots.json
+  - cursor-combined-plan-requests.json
+  - antigravity-collected-quota.json
+- Added ios/AIQuotaMobileTests/ProviderUsageNormalizerTests.swift to load every fixture and compare Swift output against expected Android labels, plan/account fields, source metadata, reset fields, amounts, units, and remaining percentages.
+- Added test/ios-provider-normalizers.test.js and wired it into package test, test:mobile, and lint scripts.
+- Updated ios/AIQuotaMobile.xcodeproj/project.pbxproj with normalizer source and unit-test membership.
+
+Known external gates
+- xcodebuild is unavailable on this Windows host: where.exe xcodebuild returned no match.
+- swift is unavailable on this Windows host: where.exe swift returned no match.
+- Swift unit execution still requires macOS/Xcode.
+- Full npm.cmd test still fails in pre-existing Android source assertions:
+  - test/mobile-source.test.js expects requestNotificationPermissionOnFirstLaunch in MainActivity.kt.
+  - test/mobile-source.test.js expects GeminiCliOAuthRepository(appContext).fetchUsagePayloadFromStoredCredential() in AIQuotaAppShell.kt.

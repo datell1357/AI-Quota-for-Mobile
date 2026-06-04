@@ -1,0 +1,21 @@
+﻿COMMAND: node test/ios-provider-models.test.js
+PASS OBSERVABLE: tests 3 pass 0 fail
+
+✔ iOS provider domain mirrors Android provider identity and state contracts (1.192ms)
+✔ iOS provider snapshot preserves trusted-payload and previous-usage policies (0.4133ms)
+✔ iOS Xcode project includes provider domain source and contract tests (0.8768ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6.9051
+
+COMMAND: npm.cmd run lint
+PASS OBSERVABLE: command exits 0
+
+
+> ai-quota-mobile@0.1.0 lint
+> node --check functions/src/core.js && node --check functions/src/index.js && node --check functions/src/geminiCliGateway.js && node --check test/structure.test.js && node --check test/mobile-source.test.js && node --check test/ios-xcode-project.test.js && node --check test/ios-provider-models.test.js

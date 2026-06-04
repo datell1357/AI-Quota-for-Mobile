@@ -1,0 +1,11 @@
+{
+  "providerId": "cursor",
+  "displayName": "Cursor",
+  "connectionState": "ERROR",
+  "refreshState": "IDLE",
+  "planLabel": null,
+  "account": null,
+  "updatedAt": "2026-06-04T00:00:00Z",
+  "message": "No trusted provider usage payload was collected.",
+  "lines": []
+}

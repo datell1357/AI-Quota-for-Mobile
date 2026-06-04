@@ -1,0 +1,3 @@
+"app_name" = "AI Quota";
+"widget_no_data" = "데이터 없음";
+"widget_description" = "캐시된 AI 사용량 스냅샷을 표시합니다.";

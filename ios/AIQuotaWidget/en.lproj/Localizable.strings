@@ -1,0 +1,3 @@
+"app_name" = "AI Quota";
+"widget_no_data" = "No data";
+"widget_description" = "Shows cached AI quota snapshot data.";

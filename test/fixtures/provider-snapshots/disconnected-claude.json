@@ -1,0 +1,11 @@
+{
+  "providerId": "claude",
+  "displayName": "Claude",
+  "connectionState": "DISCONNECTED",
+  "refreshState": "IDLE",
+  "planLabel": null,
+  "account": null,
+  "updatedAt": "2026-06-04T00:00:00Z",
+  "message": "Sign in required",
+  "lines": []
+}

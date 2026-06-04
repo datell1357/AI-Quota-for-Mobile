@@ -1,0 +1,53 @@
+{
+  "providerId": "antigravity",
+  "source": "STRUCTURED_SCRIPT",
+  "rawPayload": {
+    "subscription": {
+      "displayName": "Google AI Pro"
+    },
+    "quota": {
+      "windows": [
+        {
+          "displayName": "Agent mode",
+          "used": 12,
+          "limit": 50,
+          "resetTime": "2026-06-01T00:00:00Z",
+          "unit": "requests"
+        },
+        {
+          "metric": {
+            "displayName": "Autocomplete"
+          },
+          "remaining": 81,
+          "limit": 100,
+          "resetText": "Resets in 5h",
+          "unit": "requests"
+        }
+      ]
+    }
+  },
+  "expected": {
+    "providerId": "antigravity",
+    "planLabel": "Google AI Pro",
+    "sourceLabel": "structured-script",
+    "confidence": 0.9,
+    "lines": [
+      {
+        "label": "Agent mode",
+        "remainingPercent": 0.76,
+        "resetsAt": "2026-06-01T00:00:00Z",
+        "usedAmount": 12,
+        "limitAmount": 50,
+        "unit": "requests"
+      },
+      {
+        "label": "Autocomplete",
+        "remainingPercent": 0.81,
+        "resetText": "Resets in 5h",
+        "remainingAmount": 81,
+        "limitAmount": 100,
+        "unit": "requests"
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>AI Quota trusted Codex collector fixture</title>
+  </head>
+  <body>
+    <main>Codex local collector fixture</main>
+    <script>
+      window.webkit.messageHandlers.AIQuotaCollectorBridge.postMessage({
+        "type": "usagePayload",
+        "provider": "codex",
+        "pageURL": "https://chatgpt.com/",
+        "payload": "{\"provider\":\"codex\",\"planLabel\":\"Plus\",\"account\":\"fixture@example.com\",\"lines\":[{\"label\":\"Codex messages\",\"remainingPercent\":0.64,\"remainingText\":\"64% left\",\"resetText\":\"Resets tomorrow\",\"key\":\"codex_messages\"}]}"
+      });
+    </script>
+  </body>
+</html>

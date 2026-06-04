@@ -1,0 +1,31 @@
+{
+  "providerId": "codex",
+  "displayName": "Codex",
+  "connectionState": "CONNECTED",
+  "refreshState": "IDLE",
+  "planLabel": "Pro 10x",
+  "account": "fixture@example.invalid",
+  "updatedAt": "2026-06-04T00:00:00Z",
+  "message": null,
+  "lines": [
+    {
+      "label": "Session",
+      "remainingPercent": 0.58,
+      "remainingText": "58% left",
+      "resetText": "Resets tomorrow",
+      "detailText": "42/100",
+      "severity": "NORMAL",
+      "usedAmount": 42,
+      "limitAmount": 100,
+      "remainingAmount": 58,
+      "unit": "percent",
+      "category": "session",
+      "windowText": "daily",
+      "startsAt": null,
+      "resetsAt": "2026-06-05T00:00:00Z",
+      "sourceLabel": "provider-api",
+      "confidence": 0.99,
+      "key": "session"
+    }
+  ]
+}

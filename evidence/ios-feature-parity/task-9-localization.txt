@@ -1,0 +1,55 @@
+Task: 9. Rebuild localization
+Date: 2026-06-04T12:28:24.8535685+09:00
+Plan: plans/ios-feature-parity.md
+
+RED
+- Command: node test/ios-localization.test.js
+- Result: failed before implementation, 0/4 tests.
+- Failure class:
+  - ios/AIQuotaMobile/en.lproj/Localizable.strings missing.
+  - ios/AIQuotaMobile/Localization/L10n.swift missing.
+  - ios/AIQuotaMobileUITests/LocalizationUITests.swift missing.
+  - Xcode project missing app/widget localization resources and UI-test membership.
+
+GREEN
+- Command: node test/ios-localization.test.js
+- Result: pass, 4/4 tests.
+- Command: node test/ios-xcode-project.test.js
+- Result: pass, 2/2 tests.
+- Command: node test/ios-provider-models.test.js
+- Result: pass, 3/3 tests.
+- Command: node test/ios-provider-fixtures.test.js
+- Result: pass, 3/3 tests.
+- Command: node test/ios-design-tokens.test.js
+- Result: pass, 2/2 tests.
+- Command: node test/ios-app-shell.test.js
+- Result: pass, 3/3 tests.
+- Command: node test/ios-dashboard.test.js
+- Result: pass, 5/5 tests.
+- Command: node test/ios-provider-detail.test.js
+- Result: pass, 3/3 tests.
+- Command: node test/ios-settings.test.js
+- Result: pass, 3/3 tests.
+- Command: npm.cmd run lint
+- Result: pass.
+- Command: git diff --check
+- Result: no whitespace errors; CRLF conversion warnings only for existing Windows checkout behavior.
+- Command: npm.cmd test
+- Result: still fails only in pre-existing Android source assertions listed below.
+
+Implementation
+- Added ios/AIQuotaMobile/Localization/L10n.swift.
+- Added English and Korean Localizable.strings for the app target.
+- Added English and Korean Localizable.strings for the WidgetKit target.
+- Replaced visible iOS app labels in app shell, dashboard, provider detail, and settings with L10n keys.
+- Replaced widget app name/description strings with localized String(localized:) values.
+- Added ios/AIQuotaMobileUITests/LocalizationUITests.swift for Korean and English launch language checks.
+- Updated ios/AIQuotaMobile.xcodeproj/project.pbxproj with app/widget localization resources, L10n.swift, and LocalizationUITests.swift membership.
+- Added test/ios-localization.test.js and wired it into package test, test:mobile, and lint scripts.
+
+Known external gates
+- xcodebuild and swift are unavailable on this Windows host.
+- XCUITest Korean/English launch verification still requires macOS/Xcode simulator.
+- Full npm.cmd test still fails in pre-existing Android source assertions:
+  - test/mobile-source.test.js expects requestNotificationPermissionOnFirstLaunch in MainActivity.kt.
+  - test/mobile-source.test.js expects GeminiCliOAuthRepository(appContext).fetchUsagePayloadFromStoredCredential() in AIQuotaAppShell.kt.

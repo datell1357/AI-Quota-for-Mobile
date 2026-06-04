@@ -1,0 +1,69 @@
+Task 20 - TestFlight packaging prep
+Date: 2026-06-04
+Host: Windows PowerShell, no xcodebuild/swift/xcrun/simctl on PATH
+
+Source references checked
+- Apple Upload builds: https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds/
+- Apple App build statuses: https://developer.apple.com/help/app-store-connect/reference/app-uploads/app-build-statuses/
+
+RED
+- Command: node test/ios-testflight-packaging.test.js
+- Result: FAIL before implementation
+- Observable failures:
+  - scripts/ios/archive-testflight.sh should exist
+  - ios/ExportOptions.plist should exist
+  - store-assets/app-store/testflight-packaging.md should exist
+
+Implementation
+- Added scripts/ios/archive-testflight.sh.
+- Added ios/ExportOptions.plist.
+- Added store-assets/app-store/testflight-packaging.md.
+- Script captures:
+  - xcodebuild -list
+  - xcodebuild archive
+  - Release configuration
+  - generic iOS destination
+  - xcodebuild -exportArchive
+  - ios/ExportOptions.plist
+- Checklist captures:
+  - Apple Developer Program requirement
+  - app/widget bundle IDs
+  - DEVELOPMENT_TEAM setup gate
+  - Task 19 device QA pre-upload gate
+  - Xcode Organizer or Transporter upload path
+  - App Store Connect processing-start evidence gate
+  - signing certificate and provisioning profile non-commit rule
+
+Verification
+- PASS: node test/ios-testflight-packaging.test.js
+- PASS: full iOS guard suite:
+  node test/ios-xcode-project.test.js; node test/ios-provider-models.test.js; node test/ios-provider-fixtures.test.js; node test/ios-design-tokens.test.js; node test/ios-app-shell.test.js; node test/ios-dashboard.test.js; node test/ios-provider-detail.test.js; node test/ios-settings.test.js; node test/ios-localization.test.js; node test/ios-provider-definitions.test.js; node test/ios-secure-provider-state.test.js; node test/ios-web-login-collector.test.js; node test/ios-provider-normalizers.test.js; node test/ios-native-collectors.test.js; node test/ios-refresh-orchestration.test.js; node test/ios-widget-surfaces.test.js; node test/ios-notification-live-refresh.test.js; node test/ios-privacy-surface.test.js; node test/ios-testflight-packaging.test.js
+- PASS: npm.cmd run lint
+- PASS with warnings only: git diff --check
+  - warnings are CRLF conversion notices for pre-existing touched files.
+- EXPECTED FAIL: npm.cmd test
+  - Android local-first shell source assertion still expects requestNotificationPermissionOnFirstLaunch in MainActivity.kt.
+  - Android Google native OAuth source assertion still expects GeminiCliOAuthRepository(appContext).fetchUsagePayloadFromStoredCredential() in AIQuotaAppShell.kt.
+- BLOCKED EXTERNAL GATE: where.exe xcodebuild; where.exe swift; where.exe xcrun; where.exe simctl
+  - all commands returned "Could not find files for the given pattern(s)."
+
+Blocked completion status
+- Task 20 remains unchecked in plans/ios-feature-parity.md.
+- Completion still requires:
+  - xcodebuild archive success on a Mac.
+  - export/upload through Xcode Organizer or Transporter.
+  - App Store Connect/TestFlight processing starts.
+
+Adversarial QA
+- malformed input: missing packaging script/export options/checklist produced RED before implementation.
+- prompt injection: not applicable; packaging docs/scripts do not consume prompt text.
+- cancel/resume: source-backed guard, evidence, plan, and ledger are rerunnable after interruption.
+- stale state: tests read current script, plist, checklist, package file, and host tool availability.
+- dirty worktree: unrelated dirty/untracked files left untouched.
+- hung or long commands: packaging guard, iOS suite, lint, diff check, npm test, and where.exe checks completed quickly.
+- flaky tests: packaging guard passed directly and in full iOS guard suite.
+- misleading success output: Task 20 remains unchecked; no archive/upload/TestFlight processing claim was made.
+- repeated interruptions: continuation preserved Task 19/20 blocked state and added only preparatory packaging artifacts.
+
+Cleanup
+- No archive, IPA, simulator, device session, process, port, browser, or temp runtime resource was created.

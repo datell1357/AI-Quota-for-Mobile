@@ -1,0 +1,80 @@
+Task: 16. Rebuild WidgetKit surfaces
+Date: 2026-06-04T13:32:23.7343658+09:00
+Plan: plans/ios-feature-parity.md
+
+RED
+- Command: node test/ios-widget-surfaces.test.js
+- Result: failed before implementation.
+- Failure class:
+  - AIQuotaWidget.swift still used a single widget and SnapshotCache.
+  - Dashboard and provider-focused WidgetKit surfaces were missing.
+  - Small, medium, and large family support was incomplete.
+  - Sanitized App Group provider cache reader was missing.
+  - Empty, connected, stale, and error preview fixtures were missing.
+  - WidgetSurfaceTests.swift was missing from Xcode test sources.
+
+GREEN
+- Command: node test/ios-widget-surfaces.test.js
+- Result: pass, 4/4 tests.
+- Command: iOS guard suite:
+  - node test/ios-xcode-project.test.js
+  - node test/ios-provider-models.test.js
+  - node test/ios-provider-fixtures.test.js
+  - node test/ios-design-tokens.test.js
+  - node test/ios-app-shell.test.js
+  - node test/ios-dashboard.test.js
+  - node test/ios-provider-detail.test.js
+  - node test/ios-settings.test.js
+  - node test/ios-localization.test.js
+  - node test/ios-provider-definitions.test.js
+  - node test/ios-secure-provider-state.test.js
+  - node test/ios-web-login-collector.test.js
+  - node test/ios-provider-normalizers.test.js
+  - node test/ios-native-collectors.test.js
+  - node test/ios-refresh-orchestration.test.js
+  - node test/ios-widget-surfaces.test.js
+- Result: pass.
+- Command: npm.cmd run lint
+- Result: pass.
+- Command: git diff --check
+- Result: no whitespace errors; CRLF conversion warnings only for existing Windows checkout behavior.
+- Command: npm.cmd test
+- Result: still fails only in pre-existing Android source assertions listed below.
+- Command: where.exe xcodebuild; where.exe swift
+- Result: both commands returned no match on this Windows host.
+
+Implementation
+- Rebuilt ios/AIQuotaWidget/AIQuotaWidget.swift as a WidgetBundle with:
+  - AIQuotaDashboardWidget.
+  - AIQuotaProviderWidget.
+  - DashboardWidgetProvider timeline provider.
+  - ProviderFocusedWidgetProvider timeline provider.
+  - DashboardWidgetView.
+  - ProviderFocusedWidgetView.
+- Added AIQuotaWidgetCacheReader that reads only group.com.aiquota.mobile/provider-widget-cache.json via FileManager App Group container.
+- Replaced old SnapshotCache/UsageSnapshot widget path with a widget-local decodable sanitized schema:
+  - WidgetCacheEnvelope.
+  - WidgetProviderSnapshot.
+  - WidgetUsageLine.
+- Added dashboard rendering limits matching small, medium, and large intent:
+  - small: one provider.
+  - medium: three providers.
+  - large: six providers.
+- Added provider-focused ranking that prioritizes error, stale, then lowest remaining connected provider.
+- Added WidgetKit previews for:
+  - Dashboard Empty.
+  - Dashboard Connected.
+  - Provider Stale.
+  - Provider Error.
+- Added ios/AIQuotaMobile/Domain/AIQuotaWidgetSurfacePolicy.swift for app/test policy coverage against sanitized snapshots.
+- Added ios/AIQuotaMobileTests/WidgetSurfaceTests.swift covering sanitized-cache data, family limits, provider priority, and preview state coverage.
+- Added test/ios-widget-surfaces.test.js and wired it into package test, test:mobile, and lint scripts.
+- Updated ios/AIQuotaMobile.xcodeproj/project.pbxproj with widget surface policy and test membership.
+
+Known external gates
+- xcodebuild is unavailable on this Windows host: where.exe xcodebuild returned no match.
+- swift is unavailable on this Windows host: where.exe swift returned no match.
+- Swift WidgetKit previews, simulator screenshots, and actual widget rendering validation still require macOS/Xcode.
+- Full npm.cmd test still fails in pre-existing Android source assertions:
+  - test/mobile-source.test.js expects requestNotificationPermissionOnFirstLaunch in MainActivity.kt.
+  - test/mobile-source.test.js expects GeminiCliOAuthRepository(appContext).fetchUsagePayloadFromStoredCredential() in AIQuotaAppShell.kt.

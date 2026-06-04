@@ -1,0 +1,11 @@
+{
+  "providerId": "antigravity",
+  "displayName": "Antigravity",
+  "connectionState": "UNAVAILABLE",
+  "refreshState": "IDLE",
+  "planLabel": null,
+  "account": null,
+  "updatedAt": "2026-06-04T00:00:00Z",
+  "message": "Usage unavailable",
+  "lines": []
+}

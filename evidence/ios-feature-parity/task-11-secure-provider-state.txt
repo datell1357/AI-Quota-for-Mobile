@@ -1,0 +1,60 @@
+Task: 11. Build secure provider state
+Date: 2026-06-04T12:46:13.2320091+09:00
+Plan: plans/ios-feature-parity.md
+
+RED
+- Command: node test/ios-secure-provider-state.test.js
+- Result: failed before implementation.
+- Failure class:
+  - ios/AIQuotaMobile/Security/ProviderSecureState.swift missing.
+  - ios/AIQuotaMobileTests/ProviderSecureStateTests.swift missing.
+  - Xcode project missing secure provider state source/test membership.
+
+GREEN
+- Command: node test/ios-secure-provider-state.test.js
+- Result: pass, 4/4 tests.
+- Command: node test/ios-xcode-project.test.js
+- Result: pass, 2/2 tests.
+- Command: node test/ios-provider-models.test.js
+- Result: pass, 3/3 tests.
+- Command: node test/ios-provider-fixtures.test.js
+- Result: pass, 3/3 tests.
+- Command: node test/ios-design-tokens.test.js
+- Result: pass, 2/2 tests.
+- Command: node test/ios-app-shell.test.js
+- Result: pass, 3/3 tests.
+- Command: node test/ios-dashboard.test.js
+- Result: pass, 5/5 tests.
+- Command: node test/ios-provider-detail.test.js
+- Result: pass, 3/3 tests.
+- Command: node test/ios-settings.test.js
+- Result: pass, 3/3 tests.
+- Command: node test/ios-localization.test.js
+- Result: pass, 4/4 tests.
+- Command: node test/ios-provider-definitions.test.js
+- Result: pass, 3/3 tests.
+- Command: npm.cmd run lint
+- Result: pass.
+- Command: git diff --check
+- Result: no whitespace errors; CRLF conversion warnings only for existing Windows checkout behavior.
+- Command: npm.cmd test
+- Result: still fails only in pre-existing Android source assertions listed below.
+
+Implementation
+- Added ios/AIQuotaMobile/Security/ProviderSecureState.swift.
+- Added ProviderSecretKind, ProviderSecretDescriptor, ProviderSecretStore, and KeychainProviderSecretStore.
+- KeychainProviderSecretStore uses kSecClassGenericPassword, kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly, SecItemAdd, SecItemCopyMatching, and SecItemDelete.
+- Added ProviderWebSessionProfile with stable per-provider UUIDs for WKWebsiteDataStore(forIdentifier:) and remove(forIdentifier:).
+- Added SanitizedWidgetUsageLine, SanitizedWidgetProviderSnapshot, ProviderWidgetCacheEnvelope, ProviderWidgetSnapshotSanitizer, and AppGroupWidgetSnapshotStore.
+- App Group provider widget cache writes ProviderWidgetSnapshotSanitizer output only.
+- Added ios/AIQuotaMobileTests/ProviderSecureStateTests.swift for keychain descriptor scoping, provider profile uniqueness, widget sanitizer denylist, and cache schema version.
+- Added test/ios-secure-provider-state.test.js and wired it into package test, test:mobile, and lint scripts.
+- Updated ios/AIQuotaMobile.xcodeproj/project.pbxproj with secure state source and unit-test membership.
+
+Known external gates
+- xcodebuild is unavailable on this Windows host: where.exe xcodebuild returned no match.
+- swift is unavailable on this Windows host: where.exe swift returned no match.
+- Swift unit execution still requires macOS/Xcode.
+- Full npm.cmd test still fails in pre-existing Android source assertions:
+  - test/mobile-source.test.js expects requestNotificationPermissionOnFirstLaunch in MainActivity.kt.
+  - test/mobile-source.test.js expects GeminiCliOAuthRepository(appContext).fetchUsagePayloadFromStoredCredential() in AIQuotaAppShell.kt.

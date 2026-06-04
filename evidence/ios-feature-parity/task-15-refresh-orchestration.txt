@@ -1,0 +1,73 @@
+Task: 15. Port refresh orchestration
+Date: 2026-06-04T13:25:36.0315818+09:00
+Plan: plans/ios-feature-parity.md
+
+RED
+- Command: node test/ios-refresh-orchestration.test.js
+- Result: failed before implementation.
+- Failure class:
+  - ios/AIQuotaMobile/Providers/ProviderRefreshOrchestrator.swift missing.
+  - AIQuotaAppShell missing scenePhase/app-active refresh and pull-to-refresh wiring.
+  - Info.plist missing best-effort BG app refresh declarations.
+  - Xcode project missing ProviderRefreshOrchestrator.swift source membership.
+  - Xcode project missing ProviderRefreshOrchestratorTests.swift test membership.
+
+GREEN
+- Command: node test/ios-refresh-orchestration.test.js
+- Result: pass, 4/4 tests.
+- Command: iOS guard suite:
+  - node test/ios-xcode-project.test.js
+  - node test/ios-provider-models.test.js
+  - node test/ios-provider-fixtures.test.js
+  - node test/ios-design-tokens.test.js
+  - node test/ios-app-shell.test.js
+  - node test/ios-dashboard.test.js
+  - node test/ios-provider-detail.test.js
+  - node test/ios-settings.test.js
+  - node test/ios-localization.test.js
+  - node test/ios-provider-definitions.test.js
+  - node test/ios-secure-provider-state.test.js
+  - node test/ios-web-login-collector.test.js
+  - node test/ios-provider-normalizers.test.js
+  - node test/ios-native-collectors.test.js
+  - node test/ios-refresh-orchestration.test.js
+- Result: pass.
+- Command: npm.cmd run lint
+- Result: pass.
+- Command: git diff --check
+- Result: no whitespace errors; CRLF conversion warnings only for existing Windows checkout behavior.
+- Command: npm.cmd test
+- Result: still fails only in pre-existing Android source assertions listed below.
+- Command: where.exe xcodebuild; where.exe swift
+- Result: both commands returned no match on this Windows host.
+
+Implementation
+- Added ios/AIQuotaMobile/Providers/ProviderRefreshOrchestrator.swift.
+- Added ProviderRefreshTrigger for manual, app-active, and background app refresh runs.
+- Added NativeProviderCollecting protocol and NativeProviderCollector conformance so refresh orchestration can use native collector implementations or test doubles.
+- Added ProviderRefreshSnapshotWriting protocol and SnapshotStore conformance to mark providers collecting, apply successful native snapshots, and keep previous usage on failure.
+- Added ProviderBackgroundRefreshScheduling and ProviderBackgroundRefreshCompleting protocols plus ProviderBackgroundRefreshScheduler using BGAppRefreshTaskRequest.
+- Added ProviderRefreshOrchestrator with:
+  - manual refresh through refreshNow(providerIds:trigger:)
+  - app-active refresh through refreshOnAppActive(providerIds:) with throttling
+  - best-effort background handling through handleBackgroundRefresh(task:providerIds:)
+  - active provider tracking for busy UI state
+  - native provider filtering based on ProviderDefinitionRegistry collection kind
+- Wired AIQuotaAppShell to:
+  - own a ProviderRefreshOrchestrator
+  - trigger app-active refresh on task launch and scenePhase .active
+  - trigger manual refresh from dashboard .refreshable
+  - show provider detail busy state while a provider refresh is active
+- Updated Info.plist with BGTaskSchedulerPermittedIdentifiers, com.aiquota.mobile.provider-refresh, and UIBackgroundModes fetch.
+- Added ios/AIQuotaMobileTests/ProviderRefreshOrchestratorTests.swift with mocked collector, in-memory snapshot writer, and background task/scheduler doubles for manual refresh, app-active throttle, and background completion.
+- Added test/ios-refresh-orchestration.test.js and wired it into package test, test:mobile, and lint scripts.
+- Updated ios/AIQuotaMobile.xcodeproj/project.pbxproj with refresh orchestrator source and unit-test membership.
+
+Known external gates
+- xcodebuild is unavailable on this Windows host: where.exe xcodebuild returned no match.
+- swift is unavailable on this Windows host: where.exe swift returned no match.
+- Swift unit execution, simulator pull-to-refresh, scenePhase, and BGTaskScheduler validation still require macOS/Xcode.
+- BGAppRefreshTask remains best-effort by design; the app must not promise precise polling.
+- Full npm.cmd test still fails in pre-existing Android source assertions:
+  - test/mobile-source.test.js expects requestNotificationPermissionOnFirstLaunch in MainActivity.kt.
+  - test/mobile-source.test.js expects GeminiCliOAuthRepository(appContext).fetchUsagePayloadFromStoredCredential() in AIQuotaAppShell.kt.

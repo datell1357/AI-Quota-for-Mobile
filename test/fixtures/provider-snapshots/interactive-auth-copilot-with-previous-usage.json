@@ -1,0 +1,31 @@
+{
+  "providerId": "copilot",
+  "displayName": "Copilot",
+  "connectionState": "INTERACTIVE_AUTH_REQUIRED",
+  "refreshState": "IDLE",
+  "planLabel": "Copilot Pro",
+  "account": "fixture@example.invalid",
+  "updatedAt": "2026-06-04T00:00:00Z",
+  "message": "Connection needs attention",
+  "lines": [
+    {
+      "label": "Premium requests",
+      "remainingPercent": 0.34,
+      "remainingText": "34% left",
+      "resetText": "Resets monthly",
+      "detailText": "66/100",
+      "severity": "WARNING",
+      "usedAmount": 66,
+      "limitAmount": 100,
+      "remainingAmount": 34,
+      "unit": "percent",
+      "category": "premium",
+      "windowText": "monthly",
+      "startsAt": null,
+      "resetsAt": "2026-07-01T00:00:00Z",
+      "sourceLabel": "provider-api",
+      "confidence": 0.96,
+      "key": "premium_requests"
+    }
+  ]
+}

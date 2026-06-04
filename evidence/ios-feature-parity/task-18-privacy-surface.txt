@@ -1,0 +1,59 @@
+Task 18 - Build app-store-safe privacy surface
+Date: 2026-06-04
+Host: Windows PowerShell, no xcodebuild/swift on PATH
+
+Source references checked
+- Apple App Privacy Details: https://developer.apple.com/app-store/app-privacy-details/
+- Apple Privacy Manifest: https://developer.apple.com/documentation/bundleresources/adding-a-privacy-manifest-to-your-app-or-third-party-sdk
+- Apple Required Reason API overview: https://developer.apple.com/documentation/bundleresources/describing-use-of-required-reason-api
+
+RED
+- Command: node test/ios-privacy-surface.test.js
+- Result: FAIL before implementation
+- Observable failures:
+  - ios/AIQuotaMobile/PrivacyInfo.xcprivacy should exist
+  - docs/ios-privacy.md should exist
+  - store-assets/app-store/privacy-checklist.md should exist
+
+Implementation
+- Added ios/AIQuotaMobile/PrivacyInfo.xcprivacy.
+- Manifest declares:
+  - NSPrivacyTracking false
+  - no tracking domains
+  - no collected data types
+  - UserDefaults required-reason API entry NSPrivacyAccessedAPICategoryUserDefaults / CA92.1
+- Added docs/ios-privacy.md for iOS local storage boundaries.
+- Added store-assets/app-store/privacy-checklist.md and store-assets/app-store/app-privacy-details.md.
+- Updated docs/privacy-policy.md and docs/privacy-policy.html for Android/iOS wording, Keychain, WKWebsiteDataStore, App Group sanitized widget cache, and iOS provider secret non-upload boundary.
+- Added PrivacyInfo.xcprivacy to the AIQuotaMobile target resources.
+
+Verification
+- PASS: node test/ios-privacy-surface.test.js
+- PASS: full iOS guard suite:
+  node test/ios-xcode-project.test.js; node test/ios-provider-models.test.js; node test/ios-provider-fixtures.test.js; node test/ios-design-tokens.test.js; node test/ios-app-shell.test.js; node test/ios-dashboard.test.js; node test/ios-provider-detail.test.js; node test/ios-settings.test.js; node test/ios-localization.test.js; node test/ios-provider-definitions.test.js; node test/ios-secure-provider-state.test.js; node test/ios-web-login-collector.test.js; node test/ios-provider-normalizers.test.js; node test/ios-native-collectors.test.js; node test/ios-refresh-orchestration.test.js; node test/ios-widget-surfaces.test.js; node test/ios-notification-live-refresh.test.js; node test/ios-privacy-surface.test.js
+- PASS: npm.cmd run lint
+- PASS with warnings only: git diff --check
+  - warnings are CRLF conversion notices for pre-existing touched files.
+- EXPECTED FAIL: npm.cmd test
+  - Android local-first shell source assertion still expects requestNotificationPermissionOnFirstLaunch in MainActivity.kt.
+  - Android Google native OAuth source assertion still expects GeminiCliOAuthRepository(appContext).fetchUsagePayloadFromStoredCredential() in AIQuotaAppShell.kt.
+- BLOCKED EXTERNAL GATE: where.exe xcodebuild; where.exe swift
+  - both commands returned "Could not find files for the given pattern(s)."
+
+Manual QA channel
+- Windows-local substitute: source-backed App Store checklist and app privacy details were added under store-assets/app-store/.
+- Real App Store Connect entry validation remains blocked until Apple account/App Store Connect workflow and macOS/Xcode packaging are available.
+
+Adversarial QA
+- malformed input: missing manifest/docs/checklist produced RED before implementation.
+- prompt injection: not applicable; metadata/checklist is static repo-authored review text with no prompt execution path.
+- cancel/resume: source-backed guard tests, evidence, plan, and ledger are rerunnable after interruption.
+- stale state: tests read current manifest, docs, store metadata, pbxproj, and package files from disk.
+- dirty worktree: unrelated dirty/untracked files left untouched.
+- hung or long commands: privacy guard, iOS suite, lint, diff check, and npm test completed quickly.
+- flaky tests: privacy guard passed directly and in full iOS guard suite.
+- misleading success output: guard requires manifest resource membership, no-tracking values, UserDefaults reason, local-session wording, sanitized App Group cache wording, and checklist free of token/cookie/server-relay claims.
+- repeated interruptions: not applicable after Task 18 start; no interruption occurred.
+
+Cleanup
+- No QA sessions, PIDs, ports, browsers, emulators, or temp dirs spawned.

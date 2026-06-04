@@ -1,0 +1,40 @@
+{
+  "providerId": "copilot",
+  "source": "PROVIDER_API",
+  "rawPayload": {
+    "sku": "copilot_pro",
+    "quota_reset_date": "2026-06-01T00:00:00Z",
+    "quota_snapshots": {
+      "chat": {
+        "entitlement": 100,
+        "remaining": 88,
+        "percent_remaining": 88,
+        "reset_date": "2026-06-15"
+      },
+      "premium_interactions": {
+        "entitlement": 300,
+        "remaining": 221,
+        "percent_remaining": 73.5,
+        "reset_date": "2026-06-01T00:00:00Z"
+      }
+    }
+  },
+  "expected": {
+    "providerId": "copilot",
+    "planLabel": "Copilot Pro",
+    "sourceLabel": "provider-api",
+    "confidence": 0.99,
+    "lines": [
+      {
+        "label": "Chat",
+        "remainingPercent": 0.88,
+        "resetsAt": "2026-06-15"
+      },
+      {
+        "label": "Premium requests",
+        "remainingPercent": 0.74,
+        "resetsAt": "2026-06-01T00:00:00Z"
+      }
+    ]
+  }
+}

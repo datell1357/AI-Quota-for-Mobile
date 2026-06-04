@@ -1,0 +1,31 @@
+{
+  "providerId": "gemini",
+  "displayName": "Gemini",
+  "connectionState": "STALE",
+  "refreshState": "IDLE",
+  "planLabel": "Gemini Pro",
+  "account": "fixture@example.invalid",
+  "updatedAt": "2026-06-03T00:00:00Z",
+  "message": "Connection needs attention",
+  "lines": [
+    {
+      "label": "Gemini Pro",
+      "remainingPercent": 0.72,
+      "remainingText": "72% left",
+      "resetText": "Resets later today",
+      "detailText": "28% used",
+      "severity": "NORMAL",
+      "usedAmount": 28,
+      "limitAmount": 100,
+      "remainingAmount": 72,
+      "unit": "percent",
+      "category": "model",
+      "windowText": "daily",
+      "startsAt": null,
+      "resetsAt": "2026-06-04T12:00:00Z",
+      "sourceLabel": "provider-api",
+      "confidence": 0.98,
+      "key": "gemini_pro"
+    }
+  ]
+}

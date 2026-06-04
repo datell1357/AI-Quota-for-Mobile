@@ -1,0 +1,52 @@
+# Task 19/20 external blocker
+
+Date: 2026-06-04
+Host: Windows PowerShell
+Plan: plans/ios-feature-parity.md
+
+Status: blocked externally. Task 19 and Task 20 remain unchecked.
+
+Current check:
+
+```powershell
+where.exe xcodebuild; where.exe swift; where.exe xcrun; where.exe simctl
+```
+
+Observed output:
+
+```text
+INFO: Could not find files for the given pattern(s).
+INFO: Could not find files for the given pattern(s).
+INFO: Could not find files for the given pattern(s).
+INFO: Could not find files for the given pattern(s).
+```
+
+Why this blocks Task 19:
+
+- Simulator QA requires Xcode Simulator screenshots/videos for layout, localization, dashboard reorder, widget previews, and mocked provider refresh.
+- Real-device QA requires Google/GitHub login WebView/OAuth redirect, WKWebView cookie persistence, widget refresh, and background refresh evidence.
+
+Why this blocks Task 20:
+
+- Completion requires `xcodebuild archive` on macOS/Xcode.
+- Completion requires TestFlight upload and App Store Connect processing start evidence.
+
+Local prep already complete:
+
+- `docs/qa/ios-feature-parity-2026-06-04/README.md`
+- `evidence/ios-feature-parity/task-19-device-qa-blocked.txt`
+- `evidence/ios-feature-parity/task-20-testflight-packaging-prep.txt`
+- `scripts/ios/archive-testflight.sh`
+- `ios/ExportOptions.plist`
+- `store-assets/app-store/testflight-packaging.md`
+- `node test/ios-testflight-packaging.test.js`
+
+Next Mac gate:
+
+```sh
+xcodebuild test -project ios/AIQuotaMobile.xcodeproj -scheme AIQuotaMobile -destination 'platform=iOS Simulator,name=iPhone 16'
+scripts/ios/archive-testflight.sh
+```
+
+Do not mark Task 19 complete until screenshots/videos exist under `docs/qa/ios-feature-parity-YYYY-MM-DD/`.
+Do not mark Task 20 complete until archive succeeds and App Store Connect TestFlight processing starts.

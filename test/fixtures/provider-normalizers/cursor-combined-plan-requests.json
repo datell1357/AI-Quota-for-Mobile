@@ -1,0 +1,41 @@
+{
+  "providerId": "cursor",
+  "source": "PROVIDER_API",
+  "rawPayload": {
+    "membershipType": "Pro",
+    "email": "user@example.com",
+    "billingCycleStart": 1772556293029,
+    "billingCycleEnd": 1775234693029,
+    "planUsage": {
+      "totalPercentUsed": 4
+    },
+    "requestUsage": {
+      "gpt-4": {
+        "numRequests": 77,
+        "maxRequestUsage": 500
+      }
+    }
+  },
+  "expected": {
+    "providerId": "cursor",
+    "planLabel": "Pro",
+    "account": "user@example.com",
+    "sourceLabel": "provider-api",
+    "confidence": 0.99,
+    "lines": [
+      {
+        "label": "Total usage",
+        "remainingPercent": 0.96,
+        "resetsAt": "1775234693029"
+      },
+      {
+        "label": "Requests",
+        "remainingPercent": 0.846,
+        "usedAmount": 77,
+        "limitAmount": 500,
+        "unit": "requests",
+        "resetsAt": "1775234693029"
+      }
+    ]
+  }
+}
