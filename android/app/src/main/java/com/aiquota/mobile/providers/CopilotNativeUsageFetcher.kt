@@ -11,7 +11,7 @@ import org.json.JSONObject
 
 object CopilotNativeUsageFetcher {
     fun fetchUsagePayload(githubAccessToken: String? = null): String? {
-        val githubAuthorizationHeader = githubAccessToken?.let(::githubTokenAuthorizationHeader) ?: return null
+        val githubAuthorizationHeader = githubAccessToken?.let(::githubTokenAuthorizationHeader)
         val entitlement = fetchWrappedJson(COPILOT_ENTITLEMENT_URL)
         val token = fetchWrappedJson(COPILOT_CHAT_TOKEN_URL)
         val internalUser = fetchWrappedJson(

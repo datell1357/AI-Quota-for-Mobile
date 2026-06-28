@@ -309,7 +309,9 @@ object ProviderWebCollectorScripts {
                     (path == "/api/auth/session" ||
                         path == "/backend-api/subscriptions" ||
                         path == "/backend-api/me" ||
-                        path.startsWith("/backend-api/accounts/check"))
+                        path.startsWith("/backend-api/accounts/check") ||
+                        path == "/codex/cloud/settings/analytics" ||
+                        path == "/codex/settings/usage")
             ProviderId.GLM ->
                 (host == "api.z.ai" &&
                     (path == "/api/monitor/usage/quota/limit" ||
@@ -440,13 +442,21 @@ object ProviderWebCollectorScripts {
         pageUrl: String = "",
         awaitInteractiveLoginUsage: Boolean = false
     ): String {
-        return common(providerId, cookies, observedAccountId, pageText, pageUrl, awaitInteractiveLoginUsage) + "\n" +
+        val collectorScript = if (
+            ProviderAboutBlankCollectorPolicy.isEnabled(providerId) &&
+            pageUrl == "about:blank"
+        ) {
+            nativeProviderPayload(providerId)
+        } else {
             ProviderScriptProviders.providerFor(providerId).collectorScript(
                 ProviderCollectorAssets(
                     geminiCollectorAsset = geminiCollectorAsset,
                     antigravityCollectorAsset = antigravityCollectorAsset
                 )
             )
+        }
+        return common(providerId, cookies, observedAccountId, pageText, pageUrl, awaitInteractiveLoginUsage) + "\n" +
+            collectorScript
     }
 
     internal fun commonForTest(
@@ -1052,6 +1062,27 @@ object ProviderWebCollectorScripts {
                 });
               }
               setTimeout(runProbe, 1200);
+            })();
+        """.trimIndent()
+    }
+
+    internal fun nativeProviderPayload(providerId: ProviderId): String {
+        val provider = providerId.storageId
+        return """
+            (function(){
+              if (!window.__AIQuotaStartProviderCollector || !window.__AIQuotaStartProviderCollector("$provider")) return;
+              var c = window.__AIQuotaCollector;
+              if (!c || !c.fetchNativeUsagePayload) return;
+              c.fetchNativeUsagePayload().then(function(result) {
+                if (result && result.ok && result.payload) {
+                  c.post(result.payload);
+                  return;
+                }
+                var diagnostic = result && (result.diagnostic || result.error) || "${provider}_native_usage_unavailable";
+                c.fail(diagnostic, JSON.stringify(result || {}));
+              }).catch(function(error) {
+                c.fail("${provider}_native_usage_unavailable", String(error && error.message || error));
+              });
             })();
         """.trimIndent()
     }

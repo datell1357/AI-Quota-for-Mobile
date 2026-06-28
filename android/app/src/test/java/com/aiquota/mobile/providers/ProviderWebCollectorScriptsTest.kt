@@ -95,6 +95,28 @@ class ProviderWebCollectorScriptsTest {
     }
 
     @Test
+    fun aboutBlankScopedProvidersUseNativeUsagePayloadCollector() {
+        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT).forEach { providerId ->
+            val script = ProviderWebCollectorScripts.build(
+                providerId = providerId,
+                cookies = emptyMap(),
+                geminiCollectorAsset = "",
+                pageUrl = "about:blank"
+            )
+            assertTrue(script.contains("fetchNativeUsagePayload"))
+            assertTrue(script.contains("c.post(result.payload)"))
+        }
+
+        val glm = ProviderWebCollectorScripts.build(
+            providerId = ProviderId.GLM,
+            cookies = emptyMap(),
+            geminiCollectorAsset = "",
+            pageUrl = "about:blank"
+        )
+        assertFalse(glm.contains("fetchNativeUsagePayload().then"))
+    }
+
+    @Test
     fun serviceCollectorReinjectsOnlyProvidersThatNeedPageSettlePasses() {
         assertTrue(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.CLAUDE))
         assertTrue(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.OPENCODE))
@@ -1481,6 +1503,7 @@ class ProviderWebCollectorScriptsTest {
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CODEX, "https://chatgpt.com/backend-api/me"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CODEX, "https://chatgpt.com/backend-api/accounts/check/v4-2023-04-27"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CODEX, "https://chatgpt.com/backend-api/subscriptions?account_id=301d47ae-f627-4ddc-b2c2-330419bdc6ba"))
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CODEX, "https://chatgpt.com/codex/cloud/settings/analytics"))
 
         assertFalse(ProviderWebCollectorScripts.shouldRunCollectorFromResource(ProviderId.CODEX, "https://chatgpt.com/auth/login", "https://chatgpt.com/backend-api/me"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorFromResource(ProviderId.CODEX, "https://chatgpt.com/", "https://chatgpt.com/backend-api/me"))

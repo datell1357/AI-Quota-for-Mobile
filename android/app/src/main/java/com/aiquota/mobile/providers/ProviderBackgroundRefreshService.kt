@@ -1061,13 +1061,13 @@ class ProviderBackgroundRefreshService : Service() {
 
         @JavascriptInterface
         fun fetchProviderUsagePayload(): String {
-            if (ownerProviderId != ProviderId.GEMINI) {
-                return JSONObject().put("ok", false).put("error", "provider_mismatch").toString()
+            if (!ProviderAboutBlankCollectorPolicy.isEnabled(ownerProviderId)) {
+                return JSONObject().put("ok", false).put("error", "provider_not_allowlisted").toString()
             }
             if (!isNativeFetchBridgePageAllowed(ownerProviderId)) {
                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
             }
-            return GoogleWebSessionCodeAssistFetcher.bridgeUsagePayload(ownerProviderId)
+            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(ownerProviderId)
         }
 
         private fun isNativeFetchBridgePageAllowed(providerId: ProviderId): Boolean {

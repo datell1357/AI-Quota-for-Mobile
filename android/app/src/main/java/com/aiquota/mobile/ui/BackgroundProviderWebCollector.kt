@@ -35,6 +35,8 @@ import com.aiquota.mobile.providers.CursorNativeUsageFetcher
 import com.aiquota.mobile.providers.ProviderDefinitionRegistry
 import com.aiquota.mobile.providers.ProviderCollectorErrorPolicy
 import com.aiquota.mobile.providers.ProviderHiddenWebViewRetentionPolicy
+import com.aiquota.mobile.providers.ProviderAboutBlankCollectorPolicy
+import com.aiquota.mobile.providers.ProviderNativeUsagePayloadFetcher
 import com.aiquota.mobile.providers.ProviderRefreshFailure
 import com.aiquota.mobile.providers.ProviderRefreshFailureKind
 import com.aiquota.mobile.providers.ProviderRefreshHttpErrorPolicy
@@ -507,6 +509,18 @@ private class BackgroundUsageBridge(
             "provider=copilot nativeFetchAuth endpoint=${parsed?.optString("endpoint")} status=${parsed?.optInt("status", -1)}"
         )
         return result
+    }
+
+    @JavascriptInterface
+    fun fetchProviderUsagePayload(): String {
+        val job = currentProviderJob() ?: return JSONObject().put("ok", false).put("error", "no_active_job").toString()
+        if (!ProviderAboutBlankCollectorPolicy.isEnabled(job.job.providerId)) {
+            return JSONObject().put("ok", false).put("error", "provider_not_allowlisted").toString()
+        }
+        if (!isNativeFetchBridgePageAllowed(job)) {
+            return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
+        }
+        return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(job.job.providerId)
     }
 
     private fun isNativeFetchBridgePageAllowed(job: QueuedProviderRefreshJob): Boolean {
