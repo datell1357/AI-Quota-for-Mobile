@@ -115,11 +115,7 @@ object ProviderWebCollectorScripts {
     }
 
     fun shouldRunCollector(providerId: ProviderId, url: String, cookies: Map<String, String>, pageText: String): Boolean {
-        if ((providerId == ProviderId.COPILOT ||
-                providerId == ProviderId.GEMINI ||
-                providerId == ProviderId.ANTIGRAVITY) &&
-            url == "about:blank"
-        ) {
+        if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && url == "about:blank") {
             return true
         }
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
@@ -305,6 +301,7 @@ object ProviderWebCollectorScripts {
                     (path == "/api/account_profile" ||
                         path == "/api/organizations" ||
                         path == "/api/organizations/me" ||
+                        (path.startsWith("/api/organizations/") && path.endsWith("/usage")) ||
                         (path.startsWith("/api/bootstrap/") && path.endsWith("/current_user_access")) ||
                         (path.startsWith("/api/organizations/") && path.endsWith("/subscription_details")))
             ProviderId.CODEX ->
@@ -368,11 +365,7 @@ object ProviderWebCollectorScripts {
     }
 
     fun shouldAcceptCollectorPayload(providerId: ProviderId, pageUrl: String): Boolean {
-        if ((providerId == ProviderId.COPILOT ||
-                providerId == ProviderId.GEMINI ||
-                providerId == ProviderId.ANTIGRAVITY) &&
-            pageUrl == "about:blank"
-        ) {
+        if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && pageUrl == "about:blank") {
             return true
         }
         val uri = runCatching { URI(pageUrl) }.getOrNull() ?: return false
@@ -482,6 +475,7 @@ object ProviderWebCollectorScripts {
         val pageTextJson = JSONObject.quote(pageText)
         val pageUrlJson = JSONObject.quote(pageUrl)
         val awaitInteractiveLoginUsageJson = if (awaitInteractiveLoginUsage) "true" else "false"
+        val nativeJsonBridgeEnabledJson = if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) "true" else "false"
         return """
             (function(){
               if (!window.__AIQuotaStartProviderCollector) {
@@ -522,10 +516,15 @@ object ProviderWebCollectorScripts {
                     message: message || ""
                   }));
                 },
-                fetchJson: function(url) {
-                  return fetch(url, {
-                    credentials: "include",
-                    headers: { "accept": "application/json, text/html" }
+                 fetchJson: function(url) {
+                   var href = "";
+                   try { href = String(location && location.href || ""); } catch (error) {}
+                   if ($nativeJsonBridgeEnabledJson && href === "about:blank") {
+                     return this.fetchNativeJson(url);
+                   }
+                   return fetch(url, {
+                     credentials: "include",
+                     headers: { "accept": "application/json, text/html" }
                   }).then(function(response) {
                     return response.text().then(function(text) {
                       var json = {};
@@ -571,7 +570,7 @@ object ProviderWebCollectorScripts {
                   var parsed = Number(value);
                   return Number.isFinite(parsed) ? parsed : null;
                 },
-                line: function(value, fallbackLabel) {
+                 line: function(value, fallbackLabel) {
                   if (!value) return null;
                   var used = this.number(this.first(value, ["used_percent", "usedPercent", "totalPercentUsed", "utilization", "u"]));
                   var remainingFraction = this.number(this.first(value, ["remainingFraction", "remaining_fraction"]));
@@ -590,10 +589,32 @@ object ProviderWebCollectorScripts {
                   if (line.used_percent === undefined && line.remaining_fraction === undefined && line.remaining_percent === undefined) return null;
                   line.reset_text = this.first(value, ["reset_text", "resetText", "t"]);
                   line.resetAt = this.first(value, ["resetAt", "resets_at", "r"]);
-                  line.label = this.first(value, ["label", "name", "title"]) || fallbackLabel;
-                  return line;
-                }
-              };
+                   line.label = this.first(value, ["label", "name", "title"]) || fallbackLabel;
+                   return line;
+                 },
+                 fetchNativeJson: function(url) {
+                   if (!$nativeJsonBridgeEnabledJson) return Promise.resolve({ ok: false, url: url, error: "native_bridge_disabled" });
+                   try {
+                     if (!window.AIQuotaCollectorBridge || !window.AIQuotaCollectorBridge.fetchProviderJson) {
+                       return Promise.resolve({ ok: false, url: url, error: "native_bridge_missing" });
+                     }
+                     return Promise.resolve(JSON.parse(window.AIQuotaCollectorBridge.fetchProviderJson(url)));
+                   } catch (error) {
+                     return Promise.resolve({ ok: false, url: url, error: String(error && error.message || error) });
+                   }
+                 },
+                 fetchNativeUsagePayload: function() {
+                   if (!$nativeJsonBridgeEnabledJson) return Promise.resolve({ ok: false, error: "native_bridge_disabled" });
+                   try {
+                     if (!window.AIQuotaCollectorBridge || !window.AIQuotaCollectorBridge.fetchProviderUsagePayload) {
+                       return Promise.resolve({ ok: false, error: "native_bridge_missing" });
+                     }
+                     return Promise.resolve(JSON.parse(window.AIQuotaCollectorBridge.fetchProviderUsagePayload()));
+                   } catch (error) {
+                     return Promise.resolve({ ok: false, error: String(error && error.message || error) });
+                   }
+                 }
+               };
             })();
         """.trimIndent()
     }
@@ -1218,8 +1239,13 @@ object ProviderWebCollectorScripts {
                 }
                 return null;
               }
-              async function fetchCodexJson(url, timeoutMs) {
-                var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+               async function fetchCodexJson(url, timeoutMs) {
+                 var href = "";
+                 try { href = String(location && location.href || ""); } catch (error) {}
+                 if (href === "about:blank" && c.fetchNativeJson) {
+                   return await c.fetchNativeJson(url);
+                 }
+                 var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
                 var timer = null;
                 var timeout = timeoutMs || 5000;
                 var request = (async function() {
@@ -2231,6 +2257,21 @@ object ProviderWebCollectorScripts {
               installGeminiNetworkHook();
               var skipAttempts = 0;
               var collectAttempts = 0;
+              function isAboutBlankPage() {
+                try { return String(location && location.href || "") === "about:blank"; } catch (error) { return false; }
+              }
+              function postGeminiNativePayload() {
+                if (!isAboutBlankPage()) return Promise.resolve(false);
+                return c.fetchNativeUsagePayload().then(function(result) {
+                  if (result && result.ok && result.payload) {
+                    c.post(result.payload);
+                    return true;
+                  }
+                  return false;
+                }).catch(function() {
+                  return false;
+                });
+              }
               function postGeminiObservedPayload() {
                 try {
                   var rows = c.rows().concat(window.__AIQuotaGeminiNetworkRows || []);
@@ -2279,13 +2320,16 @@ object ProviderWebCollectorScripts {
               }
               function collectGeminiUsage() {
                 collectAttempts += 1;
-                if (skipAttempts < 3 && clickGeminiSetupSkip()) {
-                  skipAttempts += 1;
-                  setTimeout(collectGeminiUsage, 2200);
-                  return;
-                }
-                if (postGeminiObservedPayload()) return;
-                finishGeminiNoObservedPayload();
+                postGeminiNativePayload().then(function(done) {
+                  if (done) return;
+                  if (skipAttempts < 3 && clickGeminiSetupSkip()) {
+                    skipAttempts += 1;
+                    setTimeout(collectGeminiUsage, 2200);
+                    return;
+                  }
+                  if (postGeminiObservedPayload()) return;
+                  finishGeminiNoObservedPayload();
+                });
               }
               setTimeout(collectGeminiUsage, 1800);
             })();

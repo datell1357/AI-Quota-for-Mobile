@@ -1048,9 +1048,31 @@ class ProviderBackgroundRefreshService : Service() {
             return CopilotNativeUsageFetcher.fetchJsonWithAuthorization(url, authorizationHeader)
         }
 
+        @JavascriptInterface
+        fun fetchProviderJson(url: String): String {
+            if (!ProviderAboutBlankCollectorPolicy.isEnabled(ownerProviderId)) {
+                return JSONObject().put("ok", false).put("error", "provider_not_allowlisted").toString()
+            }
+            if (!isNativeFetchBridgePageAllowed(ownerProviderId)) {
+                return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
+            }
+            return ProviderNativeJsonBridge.fetchJson(ownerProviderId, url)
+        }
+
+        @JavascriptInterface
+        fun fetchProviderUsagePayload(): String {
+            if (ownerProviderId != ProviderId.GEMINI) {
+                return JSONObject().put("ok", false).put("error", "provider_mismatch").toString()
+            }
+            if (!isNativeFetchBridgePageAllowed(ownerProviderId)) {
+                return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
+            }
+            return GoogleWebSessionCodeAssistFetcher.bridgeUsagePayload(ownerProviderId)
+        }
+
         private fun isNativeFetchBridgePageAllowed(providerId: ProviderId): Boolean {
             val active = currentWebJobFor(providerId) ?: return false
-            val pageUrl = webJobLastUrls[active.requestId].orEmpty().ifBlank { active.job.startUrl }
+            val pageUrl = retainedWebViews[providerId]?.url.orEmpty().ifBlank { active.job.startUrl }
             return ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, pageUrl)
         }
 

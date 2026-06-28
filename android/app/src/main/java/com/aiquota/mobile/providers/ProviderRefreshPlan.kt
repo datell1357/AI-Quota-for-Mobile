@@ -96,6 +96,7 @@ object ProviderRefreshPlan {
     }
 
     private fun hiddenCollectorUrl(providerId: ProviderId): String {
+        if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) return "about:blank"
         return when (providerId) {
             ProviderId.CLAUDE -> "https://claude.ai/"
             ProviderId.CODEX -> "https://chatgpt.com/"
