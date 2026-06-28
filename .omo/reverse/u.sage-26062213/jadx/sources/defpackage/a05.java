@@ -1,0 +1,100 @@
+package defpackage;
+
+/* JADX INFO: compiled from: r8-map-id-307f6cdf5dad069c1280d5a258b34c4733645288135c3d5b66a2837f479f7eef */
+/* JADX INFO: loaded from: classes.dex */
+public final class a05 extends rn4 {
+    private static final a05 zzh;
+    private static volatile xo4 zzi;
+    private int zzb;
+    private int zze;
+    private int zzf;
+    private int zzg;
+
+    static {
+        a05 a05Var = new a05();
+        zzh = a05Var;
+        rn4.o(a05.class, a05Var);
+    }
+
+    @Override // defpackage.rn4
+    public final Object s(int i) {
+        xo4 qn4Var;
+        int i2 = i - 1;
+        if (i2 == 0) {
+            return (byte) 1;
+        }
+        if (i2 == 2) {
+            return new bp4(zzh, "\u0004\u0003\u0000\u0001\u0001\u0003\u0003\u0000\u0000\u0000\u0001᠌\u0000\u0002᠌\u0001\u0003᠌\u0002", new Object[]{"zzb", "zze", mm4.f, "zzf", mm4.e, "zzg", mm4.g});
+        }
+        if (i2 == 3) {
+            return new a05();
+        }
+        if (i2 == 4) {
+            return new pz4(zzh);
+        }
+        if (i2 == 5) {
+            return zzh;
+        }
+        if (i2 != 6) {
+            throw null;
+        }
+        xo4 xo4Var = zzi;
+        if (xo4Var != null) {
+            return xo4Var;
+        }
+        synchronized (a05.class) {
+            try {
+                qn4Var = zzi;
+                if (qn4Var == null) {
+                    qn4Var = new qn4(zzh);
+                    zzi = qn4Var;
+                }
+            } catch (Throwable th) {
+                throw th;
+            }
+        }
+        return qn4Var;
+    }
+
+    public final int t() {
+        int iB = uf4.b(this.zze);
+        if (iB == 0) {
+            return 1;
+        }
+        return iB;
+    }
+
+    public final int u() {
+        int i;
+        int i2 = this.zzf;
+        if (i2 != 0) {
+            i = 2;
+            if (i2 != 1) {
+                i = i2 != 2 ? 0 : 3;
+            }
+        } else {
+            i = 1;
+        }
+        if (i == 0) {
+            return 1;
+        }
+        return i;
+    }
+
+    public final int v() {
+        int i;
+        int i2 = this.zzg;
+        if (i2 != 0) {
+            i = 2;
+            if (i2 != 1) {
+                i = i2 != 2 ? 0 : 3;
+            }
+        } else {
+            i = 1;
+        }
+        if (i == 0) {
+            return 1;
+        }
+        return i;
+    }
+}

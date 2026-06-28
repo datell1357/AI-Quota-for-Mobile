@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:id="@+id/widget_unavailable_root"
+    android:background="@drawable/widget_bg"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <ImageView
+        android:id="@+id/widget_unavailable_icon"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:contentDescription="Service Icon"
+        android:alpha="0.5"/>
+    <TextView
+        android:textSize="13sp"
+        android:textColor="@color/glance_colorOnSurface"
+        android:gravity="center"
+        android:id="@+id/widget_unavailable_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="@string/widget_service_unavailable"/>
+</LinearLayout>

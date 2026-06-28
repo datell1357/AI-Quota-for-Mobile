@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider android:description="@string/widget_description" android:minWidth="110.0dp" android:minHeight="110.0dp" android:updatePeriodMillis="1800000" android:initialLayout="@layout/widget_initial_loading" android:configure="u.sage.widget.UsageWidgetConfigActivity" android:previewImage="@drawable/widget_preview" android:resizeMode="horizontal|vertical" android:minResizeWidth="103.0dp" android:minResizeHeight="40.0dp" android:widgetCategory="home_screen" android:widgetFeatures="reconfigurable" android:previewLayout="@layout/widget_preview" android:targetCellWidth="2" android:targetCellHeight="2"
+  xmlns:android="http://schemas.android.com/apk/res/android" />

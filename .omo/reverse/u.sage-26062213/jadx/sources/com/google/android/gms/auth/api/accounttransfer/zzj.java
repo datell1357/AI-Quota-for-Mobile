@@ -1,0 +1,22 @@
+package com.google.android.gms.auth.api.accounttransfer;
+
+import com.google.android.gms.common.api.Status;
+import defpackage.js4;
+import defpackage.pw3;
+
+/* JADX INFO: compiled from: r8-map-id-307f6cdf5dad069c1280d5a258b34c4733645288135c3d5b66a2837f479f7eef */
+/* JADX INFO: loaded from: classes.dex */
+class zzj extends js4 {
+    final zzl zzb;
+
+    public zzj(zzl zzlVar) {
+        this.zzb = zzlVar;
+    }
+
+    @Override // defpackage.ts4
+    public final void zzd(Status status) {
+        pw3 pw3Var = this.zzb.zzb;
+        int i = AccountTransferClient.zza;
+        pw3Var.a(new AccountTransferException(status));
+    }
+}

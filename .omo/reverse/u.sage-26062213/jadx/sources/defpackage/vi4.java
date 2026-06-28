@@ -1,0 +1,16 @@
+package defpackage;
+
+import com.google.android.gms.common.Feature;
+
+/* JADX INFO: compiled from: r8-map-id-307f6cdf5dad069c1280d5a258b34c4733645288135c3d5b66a2837f479f7eef */
+/* JADX INFO: loaded from: classes.dex */
+public abstract class vi4 {
+    public static final Feature a;
+    public static final Feature[] b;
+
+    static {
+        Feature feature = new Feature("CLIENT_TELEMETRY", 1L);
+        a = feature;
+        b = new Feature[]{feature};
+    }
+}
