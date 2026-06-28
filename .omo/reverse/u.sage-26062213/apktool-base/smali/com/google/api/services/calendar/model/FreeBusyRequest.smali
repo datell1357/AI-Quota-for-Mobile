@@ -1,0 +1,301 @@
+.class public final Lcom/google/api/services/calendar/model/FreeBusyRequest;
+.super Lcom/google/api/client/json/GenericJson;
+.source "r8-map-id-307f6cdf5dad069c1280d5a258b34c4733645288135c3d5b66a2837f479f7eef"
+
+
+# instance fields
+.field private calendarExpansionMax:Ljava/lang/Integer;
+    .annotation runtime Lcom/google/api/client/util/Key;
+    .end annotation
+.end field
+
+.field private groupExpansionMax:Ljava/lang/Integer;
+    .annotation runtime Lcom/google/api/client/util/Key;
+    .end annotation
+.end field
+
+.field private items:Ljava/util/List;
+    .annotation runtime Lcom/google/api/client/util/Key;
+    .end annotation
+
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "Ljava/util/List<",
+            "Lcom/google/api/services/calendar/model/FreeBusyRequestItem;",
+            ">;"
+        }
+    .end annotation
+.end field
+
+.field private timeMax:Lcom/google/api/client/util/DateTime;
+    .annotation runtime Lcom/google/api/client/util/Key;
+    .end annotation
+.end field
+
+.field private timeMin:Lcom/google/api/client/util/DateTime;
+    .annotation runtime Lcom/google/api/client/util/Key;
+    .end annotation
+.end field
+
+.field private timeZone:Ljava/lang/String;
+    .annotation runtime Lcom/google/api/client/util/Key;
+    .end annotation
+.end field
+
+
+# direct methods
+.method public constructor <init>()V
+    .locals 0
+
+    .line 1
+    invoke-direct {p0}, Lcom/google/api/client/json/GenericJson;-><init>()V
+
+    .line 2
+    .line 3
+    .line 4
+    return-void
+.end method
+
+
+# virtual methods
+.method public bridge synthetic clone()Lcom/google/api/client/json/GenericJson;
+    .locals 0
+
+    .line 10
+    invoke-virtual {p0}, Lcom/google/api/services/calendar/model/FreeBusyRequest;->clone()Lcom/google/api/services/calendar/model/FreeBusyRequest;
+
+    move-result-object p0
+
+    return-object p0
+.end method
+
+.method public bridge synthetic clone()Lcom/google/api/client/util/GenericData;
+    .locals 0
+
+    .line 8
+    invoke-virtual {p0}, Lcom/google/api/services/calendar/model/FreeBusyRequest;->clone()Lcom/google/api/services/calendar/model/FreeBusyRequest;
+
+    move-result-object p0
+
+    return-object p0
+.end method
+
+.method public clone()Lcom/google/api/services/calendar/model/FreeBusyRequest;
+    .locals 0
+
+    .line 1
+    invoke-super {p0}, Lcom/google/api/client/json/GenericJson;->clone()Lcom/google/api/client/json/GenericJson;
+
+    .line 2
+    .line 3
+    .line 4
+    move-result-object p0
+
+    .line 5
+    check-cast p0, Lcom/google/api/services/calendar/model/FreeBusyRequest;
+
+    .line 6
+    .line 7
+    return-object p0
+.end method
+
+.method public bridge synthetic clone()Ljava/lang/Object;
+    .locals 0
+
+    .line 9
+    invoke-virtual {p0}, Lcom/google/api/services/calendar/model/FreeBusyRequest;->clone()Lcom/google/api/services/calendar/model/FreeBusyRequest;
+
+    move-result-object p0
+
+    return-object p0
+.end method
+
+.method public getCalendarExpansionMax()Ljava/lang/Integer;
+    .locals 0
+
+    .line 1
+    iget-object p0, p0, Lcom/google/api/services/calendar/model/FreeBusyRequest;->calendarExpansionMax:Ljava/lang/Integer;
+
+    .line 2
+    .line 3
+    return-object p0
+.end method
+
+.method public getGroupExpansionMax()Ljava/lang/Integer;
+    .locals 0
+
+    .line 1
+    iget-object p0, p0, Lcom/google/api/services/calendar/model/FreeBusyRequest;->groupExpansionMax:Ljava/lang/Integer;
+
+    .line 2
+    .line 3
+    return-object p0
+.end method
+
+.method public getItems()Ljava/util/List;
+    .locals 0
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "()",
+            "Ljava/util/List<",
+            "Lcom/google/api/services/calendar/model/FreeBusyRequestItem;",
+            ">;"
+        }
+    .end annotation
+
+    .line 1
+    iget-object p0, p0, Lcom/google/api/services/calendar/model/FreeBusyRequest;->items:Ljava/util/List;
+
+    .line 2
+    .line 3
+    return-object p0
+.end method
+
+.method public getTimeMax()Lcom/google/api/client/util/DateTime;
+    .locals 0
+
+    .line 1
+    iget-object p0, p0, Lcom/google/api/services/calendar/model/FreeBusyRequest;->timeMax:Lcom/google/api/client/util/DateTime;
+
+    .line 2
+    .line 3
+    return-object p0
+.end method
+
+.method public getTimeMin()Lcom/google/api/client/util/DateTime;
+    .locals 0
+
+    .line 1
+    iget-object p0, p0, Lcom/google/api/services/calendar/model/FreeBusyRequest;->timeMin:Lcom/google/api/client/util/DateTime;
+
+    .line 2
+    .line 3
+    return-object p0
+.end method
+
+.method public getTimeZone()Ljava/lang/String;
+    .locals 0
+
+    .line 1
+    iget-object p0, p0, Lcom/google/api/services/calendar/model/FreeBusyRequest;->timeZone:Ljava/lang/String;
+
+    .line 2
+    .line 3
+    return-object p0
+.end method
+
+.method public bridge synthetic set(Ljava/lang/String;Ljava/lang/Object;)Lcom/google/api/client/json/GenericJson;
+    .locals 0
+
+    .line 9
+    invoke-virtual {p0, p1, p2}, Lcom/google/api/services/calendar/model/FreeBusyRequest;->set(Ljava/lang/String;Ljava/lang/Object;)Lcom/google/api/services/calendar/model/FreeBusyRequest;
+
+    move-result-object p0
+
+    return-object p0
+.end method
+
+.method public bridge synthetic set(Ljava/lang/String;Ljava/lang/Object;)Lcom/google/api/client/util/GenericData;
+    .locals 0
+
+    .line 8
+    invoke-virtual {p0, p1, p2}, Lcom/google/api/services/calendar/model/FreeBusyRequest;->set(Ljava/lang/String;Ljava/lang/Object;)Lcom/google/api/services/calendar/model/FreeBusyRequest;
+
+    move-result-object p0
+
+    return-object p0
+.end method
+
+.method public set(Ljava/lang/String;Ljava/lang/Object;)Lcom/google/api/services/calendar/model/FreeBusyRequest;
+    .locals 0
+
+    .line 1
+    invoke-super {p0, p1, p2}, Lcom/google/api/client/json/GenericJson;->set(Ljava/lang/String;Ljava/lang/Object;)Lcom/google/api/client/json/GenericJson;
+
+    .line 2
+    .line 3
+    .line 4
+    move-result-object p0
+
+    .line 5
+    check-cast p0, Lcom/google/api/services/calendar/model/FreeBusyRequest;
+
+    .line 6
+    .line 7
+    return-object p0
+.end method
+
+.method public setCalendarExpansionMax(Ljava/lang/Integer;)Lcom/google/api/services/calendar/model/FreeBusyRequest;
+    .locals 0
+
+    .line 1
+    iput-object p1, p0, Lcom/google/api/services/calendar/model/FreeBusyRequest;->calendarExpansionMax:Ljava/lang/Integer;
+
+    .line 2
+    .line 3
+    return-object p0
+.end method
+
+.method public setGroupExpansionMax(Ljava/lang/Integer;)Lcom/google/api/services/calendar/model/FreeBusyRequest;
+    .locals 0
+
+    .line 1
+    iput-object p1, p0, Lcom/google/api/services/calendar/model/FreeBusyRequest;->groupExpansionMax:Ljava/lang/Integer;
+
+    .line 2
+    .line 3
+    return-object p0
+.end method
+
+.method public setItems(Ljava/util/List;)Lcom/google/api/services/calendar/model/FreeBusyRequest;
+    .locals 0
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "(",
+            "Ljava/util/List<",
+            "Lcom/google/api/services/calendar/model/FreeBusyRequestItem;",
+            ">;)",
+            "Lcom/google/api/services/calendar/model/FreeBusyRequest;"
+        }
+    .end annotation
+
+    .line 1
+    iput-object p1, p0, Lcom/google/api/services/calendar/model/FreeBusyRequest;->items:Ljava/util/List;
+
+    .line 2
+    .line 3
+    return-object p0
+.end method
+
+.method public setTimeMax(Lcom/google/api/client/util/DateTime;)Lcom/google/api/services/calendar/model/FreeBusyRequest;
+    .locals 0
+
+    .line 1
+    iput-object p1, p0, Lcom/google/api/services/calendar/model/FreeBusyRequest;->timeMax:Lcom/google/api/client/util/DateTime;
+
+    .line 2
+    .line 3
+    return-object p0
+.end method
+
+.method public setTimeMin(Lcom/google/api/client/util/DateTime;)Lcom/google/api/services/calendar/model/FreeBusyRequest;
+    .locals 0
+
+    .line 1
+    iput-object p1, p0, Lcom/google/api/services/calendar/model/FreeBusyRequest;->timeMin:Lcom/google/api/client/util/DateTime;
+
+    .line 2
+    .line 3
+    return-object p0
+.end method
+
+.method public setTimeZone(Ljava/lang/String;)Lcom/google/api/services/calendar/model/FreeBusyRequest;
+    .locals 0
+
+    .line 1
+    iput-object p1, p0, Lcom/google/api/services/calendar/model/FreeBusyRequest;->timeZone:Ljava/lang/String;
+
+    .line 2
+    .line 3
+    return-object p0
+.end method

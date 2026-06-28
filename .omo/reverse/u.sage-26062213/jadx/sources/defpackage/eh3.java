@@ -1,0 +1,19 @@
+package defpackage;
+
+/* JADX INFO: compiled from: r8-map-id-307f6cdf5dad069c1280d5a258b34c4733645288135c3d5b66a2837f479f7eef */
+/* JADX INFO: loaded from: classes.dex */
+public interface eh3 extends jr0 {
+    void a0(ph3 ph3Var);
+
+    default boolean d0() {
+        return false;
+    }
+
+    default boolean g() {
+        return true;
+    }
+
+    default boolean g0() {
+        return false;
+    }
+}

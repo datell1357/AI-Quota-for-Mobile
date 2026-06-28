@@ -1,0 +1,23 @@
+package defpackage;
+
+import android.content.Context;
+import android.content.res.Configuration;
+import android.view.View;
+
+/* JADX INFO: compiled from: r8-map-id-307f6cdf5dad069c1280d5a258b34c4733645288135c3d5b66a2837f479f7eef */
+/* JADX INFO: loaded from: classes.dex */
+public final class ry0 extends View {
+    public final /* synthetic */ mv n;
+
+    /* JADX WARN: 'super' call moved to the top of the method (can break code semantics) */
+    public ry0(mv mvVar, Context context) {
+        super(context);
+        this.n = mvVar;
+    }
+
+    @Override // android.view.View
+    public final void onConfigurationChanged(Configuration configuration) {
+        configuration.getClass();
+        this.n.run();
+    }
+}

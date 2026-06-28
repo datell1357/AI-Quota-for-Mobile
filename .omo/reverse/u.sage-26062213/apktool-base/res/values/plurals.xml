@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="usage_last_updated_minutes_ago">
+        <item quantity="one">Last updated: %1$d minute ago</item>
+        <item quantity="other">Last updated: %1$d minutes ago</item>
+    </plurals>
+</resources>

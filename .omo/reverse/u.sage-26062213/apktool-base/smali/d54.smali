@@ -1,0 +1,34 @@
+.class public abstract Ld54;
+.super Ljava/lang/Object;
+.source "r8-map-id-307f6cdf5dad069c1280d5a258b34c4733645288135c3d5b66a2837f479f7eef"
+
+
+# static fields
+.field public static final a:Lpb1;
+
+.field public static final b:Lpb1;
+
+
+# direct methods
+.method static constructor <clinit>()V
+    .locals 1
+
+    .line 1
+    sget-object v0, Lpb1;->q:Lpb1;
+
+    .line 2
+    .line 3
+    sput-object v0, Ld54;->a:Lpb1;
+
+    .line 4
+    .line 5
+    sget-object v0, Lpb1;->p:Lpb1;
+
+    .line 6
+    .line 7
+    sput-object v0, Ld54;->b:Lpb1;
+
+    .line 8
+    .line 9
+    return-void
+.end method

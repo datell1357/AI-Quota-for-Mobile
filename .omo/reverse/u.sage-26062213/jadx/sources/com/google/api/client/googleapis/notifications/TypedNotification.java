@@ -1,0 +1,69 @@
+package com.google.api.client.googleapis.notifications;
+
+/* JADX INFO: compiled from: r8-map-id-307f6cdf5dad069c1280d5a258b34c4733645288135c3d5b66a2837f479f7eef */
+/* JADX INFO: loaded from: classes.dex */
+public class TypedNotification<T> extends AbstractNotification {
+    private T content;
+
+    public TypedNotification(long j, String str, String str2, String str3, String str4) {
+        super(j, str, str2, str3, str4);
+    }
+
+    public final T getContent() {
+        return this.content;
+    }
+
+    @Override // com.google.api.client.googleapis.notifications.AbstractNotification
+    public TypedNotification<T> setChanged(String str) {
+        return (TypedNotification) super.setChanged(str);
+    }
+
+    @Override // com.google.api.client.googleapis.notifications.AbstractNotification
+    public TypedNotification<T> setChannelExpiration(String str) {
+        return (TypedNotification) super.setChannelExpiration(str);
+    }
+
+    @Override // com.google.api.client.googleapis.notifications.AbstractNotification
+    public TypedNotification<T> setChannelId(String str) {
+        return (TypedNotification) super.setChannelId(str);
+    }
+
+    @Override // com.google.api.client.googleapis.notifications.AbstractNotification
+    public TypedNotification<T> setChannelToken(String str) {
+        return (TypedNotification) super.setChannelToken(str);
+    }
+
+    public TypedNotification<T> setContent(T t) {
+        this.content = t;
+        return this;
+    }
+
+    @Override // com.google.api.client.googleapis.notifications.AbstractNotification
+    public TypedNotification<T> setMessageNumber(long j) {
+        return (TypedNotification) super.setMessageNumber(j);
+    }
+
+    @Override // com.google.api.client.googleapis.notifications.AbstractNotification
+    public TypedNotification<T> setResourceId(String str) {
+        return (TypedNotification) super.setResourceId(str);
+    }
+
+    @Override // com.google.api.client.googleapis.notifications.AbstractNotification
+    public TypedNotification<T> setResourceState(String str) {
+        return (TypedNotification) super.setResourceState(str);
+    }
+
+    @Override // com.google.api.client.googleapis.notifications.AbstractNotification
+    public TypedNotification<T> setResourceUri(String str) {
+        return (TypedNotification) super.setResourceUri(str);
+    }
+
+    @Override // com.google.api.client.googleapis.notifications.AbstractNotification
+    public String toString() {
+        return super.toStringHelper().add("content", this.content).toString();
+    }
+
+    public TypedNotification(UnparsedNotification unparsedNotification) {
+        super(unparsedNotification);
+    }
+}

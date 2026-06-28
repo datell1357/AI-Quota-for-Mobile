@@ -1,0 +1,114 @@
+package defpackage;
+
+/* JADX INFO: compiled from: r8-map-id-307f6cdf5dad069c1280d5a258b34c4733645288135c3d5b66a2837f479f7eef */
+/* JADX INFO: loaded from: classes.dex */
+public abstract class v70 {
+    public static final long A;
+    public static final long B;
+    public static final long C;
+    public static final long D;
+    public static final long E;
+    public static final long F;
+    public static final long G;
+    public static final long H;
+    public static final long I;
+    public static final long J;
+    public static final long K;
+    public static final long L;
+    public static final long M;
+    public static final long N;
+    public static final long O;
+    public static final long P;
+    public static final long Q;
+    public static final long R;
+    public static final long S;
+    public static final long T;
+    public static final long U;
+    public static final long a;
+    public static final long b;
+    public static final long c;
+    public static final long d;
+    public static final long e;
+    public static final long f;
+    public static final long g;
+    public static final long h;
+    public static final long i;
+    public static final long j;
+    public static final long k;
+    public static final long l;
+    public static final long m;
+    public static final long n;
+    public static final long o;
+    public static final long p;
+    public static final long q;
+    public static final long r;
+    public static final long s;
+    public static final long t;
+
+    /* JADX INFO: renamed from: u, reason: collision with root package name */
+    public static final long f372u;
+    public static final long v;
+    public static final long w;
+    public static final long x;
+    public static final long y;
+    public static final long z;
+
+    static {
+        long j2 = ls2.x;
+        a = j2;
+        b = ls2.e;
+        c = ls2.g;
+        d = ls2.v;
+        long j3 = ls2.I;
+        e = j3;
+        f = ls2.m;
+        long j4 = ls2.i;
+        g = j4;
+        h = ls2.b;
+        i = ls2.a;
+        j = ls2.E;
+        long j5 = ls2.D;
+        k = j5;
+        l = j5;
+        m = ls2.G;
+        n = ls2.L;
+        long j6 = ls2.K;
+        o = j6;
+        p = j6;
+        q = ls2.N;
+        r = j4;
+        s = ls2.y;
+        t = ls2.S;
+        long j7 = ls2.R;
+        f372u = j7;
+        v = j7;
+        w = ls2.U;
+        x = ls2.z;
+        y = ls2.B;
+        z = ls2.H;
+        long j8 = ls2.J;
+        A = j8;
+        B = j8;
+        C = j3;
+        D = ls2.h;
+        E = ls2.O;
+        long j9 = ls2.Q;
+        F = j9;
+        G = j9;
+        H = ls2.P;
+        I = j2;
+        J = j2;
+        K = ls2.f189u;
+        L = ls2.t;
+        M = ls2.s;
+        N = ls2.w;
+        O = ls2.j;
+        P = ls2.r;
+        Q = ls2.C;
+        R = ls2.V;
+        long j10 = ls2.X;
+        S = j10;
+        T = j10;
+        U = ls2.W;
+    }
+}
