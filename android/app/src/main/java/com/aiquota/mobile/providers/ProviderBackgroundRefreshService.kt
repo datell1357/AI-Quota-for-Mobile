@@ -31,6 +31,7 @@ import com.aiquota.mobile.update.AppUpdatedRefreshCooldown
 import com.aiquota.mobile.widget.WidgetRefreshActions
 import com.aiquota.mobile.widget.WidgetRefreshFeedback
 import java.net.URI
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineScope
@@ -57,6 +58,7 @@ class ProviderBackgroundRefreshService : Service() {
     private var activeWebJob: ServiceWebRefreshJob? = null
     private var activeWebContinuation: CancellableContinuation<ServiceRefreshOutcome>? = null
     private val webJobLastUrls = mutableMapOf<Long, String>()
+    private val codexNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
     private var observedCodexAccountId: String? = null
     private var pendingManualProviderId: ProviderId? = null
     private var pendingManualWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
@@ -643,8 +645,9 @@ class ProviderBackgroundRefreshService : Service() {
             observedAccountId = observedCodexAccountId,
             pageText = pageText,
             pageUrl = url,
-            awaitInteractiveLoginUsage = providerId == ProviderId.GEMINI
+            awaitInteractiveLoginUsage = providerId == ProviderId.CODEX || providerId == ProviderId.GEMINI
         )
+        if (script.isBlank()) return
         Log.d(
             TAG,
             "${if (firstInjectionForPage) "inject" else "reinject"} " +
@@ -848,7 +851,10 @@ class ProviderBackgroundRefreshService : Service() {
         }
 
         override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
-            captureCodexAccountId(ownerProviderId, request.url.toString())
+            val url = request.url.toString()
+            captureCodexAccountId(ownerProviderId, url)
+            captureCodexNativeFetchHeaders(ownerProviderId, url, request.requestHeaders.orEmpty())
+            maybeStartCodexAboutBlankCollection(ownerProviderId, view, url)
             return null
         }
 
@@ -1061,7 +1067,12 @@ class ProviderBackgroundRefreshService : Service() {
             if (!isNativeFetchBridgePageAllowed(ownerProviderId)) {
                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
             }
-            return ProviderNativeJsonBridge.fetchJson(ownerProviderId, url, collectorUserAgent)
+            val headers = if (ownerProviderId == ProviderId.CODEX) {
+                codexNativeFetchHeadersFor(url)
+            } else {
+                emptyMap()
+            }
+            return ProviderNativeJsonBridge.fetchJson(ownerProviderId, url, collectorUserAgent, headers)
         }
 
         @JavascriptInterface
@@ -1095,6 +1106,67 @@ class ProviderBackgroundRefreshService : Service() {
     }
 
     private class ServiceCollectorChromeClient : WebChromeClient()
+
+    private fun maybeStartCodexAboutBlankCollection(providerId: ProviderId, view: WebView, resourceUrl: String) {
+        if (providerId != ProviderId.CODEX) return
+        val active = currentWebJobFor(providerId) ?: return
+        if (webJobLastUrls[active.requestId] == "about:blank") return
+        if (!shouldStartCodexNativeCollectionFromResource(resourceUrl)) return
+        mainHandler.post {
+            if (currentWebJobFor(providerId)?.requestId != active.requestId) return@post
+            if (webJobLastUrls[active.requestId] == "about:blank") return@post
+            collectorInjectionKeys.removeAll { it.startsWith("${active.requestId}:${providerId.storageId}:") }
+            recordWebJobUrl(active.requestId, "about:blank")
+            Log.d(TAG, "redirectUsage provider=codex to=about:blank from=${hostOf(resourceUrl)}${pathOf(resourceUrl)}")
+            view.stopLoading()
+            view.loadUrl("about:blank")
+        }
+    }
+
+    private fun shouldStartCodexNativeCollectionFromResource(url: String): Boolean {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val host = uri.host.orEmpty().lowercase()
+        if (host != "chatgpt.com" && !host.endsWith(".chatgpt.com")) return false
+        val path = uri.path.orEmpty().lowercase()
+        return path == "/api/auth/session" || path == "/backend-api/wham/usage"
+    }
+
+    private fun captureCodexNativeFetchHeaders(providerId: ProviderId, url: String, requestHeaders: Map<String, String>) {
+        if (providerId != ProviderId.CODEX) return
+        if (!ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, url)) return
+        val headers = requestHeaders
+            .filterKeys(::isCodexNativeForwardableHeader)
+            .filterValues(String::isNotBlank)
+        if (headers.isEmpty()) return
+        val key = codexNativeHeaderKey(url) ?: return
+        codexNativeFetchHeaders[key] = headers
+        codexNativeFetchHeaders[CODEX_NATIVE_HEADER_FALLBACK_KEY] = headers
+        Log.d(TAG, "capturedNativeHeaders provider=codex path=${pathOf(url)} names=${headers.keys.sorted().joinToString("|")}")
+    }
+
+    private fun codexNativeFetchHeadersFor(url: String): Map<String, String> {
+        val key = codexNativeHeaderKey(url)
+        return key?.let { codexNativeFetchHeaders[it] }
+            ?: codexNativeFetchHeaders[CODEX_NATIVE_HEADER_FALLBACK_KEY]
+            ?: emptyMap()
+    }
+
+    private fun codexNativeHeaderKey(url: String): String? {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return null
+        val host = uri.host.orEmpty().lowercase()
+        val path = uri.path.orEmpty().lowercase()
+        if (host != "chatgpt.com" && !host.endsWith(".chatgpt.com")) return null
+        return "$host$path"
+    }
+
+    private fun isCodexNativeForwardableHeader(name: String): Boolean {
+        val normalized = name.trim()
+        if (normalized.isBlank()) return false
+        return !normalized.equals("Host", ignoreCase = true) &&
+            !normalized.equals("Connection", ignoreCase = true) &&
+            !normalized.equals("Content-Length", ignoreCase = true) &&
+            !normalized.equals("Accept-Encoding", ignoreCase = true)
+    }
 
     private fun captureCodexAccountId(providerId: ProviderId, url: String) {
         if (providerId != ProviderId.CODEX) return
@@ -1254,6 +1326,7 @@ class ProviderBackgroundRefreshService : Service() {
         private const val GEMINI_SIGN_IN_CLICK_MAX_ATTEMPTS = 1
         private const val GEMINI_TERMINAL_CHECK_DELAY_MS = 4_000L
         private const val GEMINI_TERMINAL_CHECK_FALLBACK_DELAY_MS = 24_000L
+        private const val CODEX_NATIVE_HEADER_FALLBACK_KEY = "*"
         private const val LOGIN_PAGE_REACHED_MESSAGE = "Background refresh reached a provider login page."
         private const val TAG = "AIQuotaBgRefreshService"
         private const val PAGE_CAPTURE_SCRIPT =

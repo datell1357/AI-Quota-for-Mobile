@@ -235,7 +235,7 @@ class ProviderBackgroundRefreshServicePolicyTest {
         assertTrue(shouldOverride.contains("shouldWaitForGeminiRefreshSignInRedirect(active, url)"))
         assertTrue(shouldOverride.contains("allowSignInRedirect provider=gemini"))
         assertTrue(shouldOverride.contains("return false"))
-        assertTrue(service.contains("awaitInteractiveLoginUsage = providerId == ProviderId.GEMINI"))
+        assertTrue(service.contains("awaitInteractiveLoginUsage = providerId == ProviderId.CODEX || providerId == ProviderId.GEMINI"))
         assertTrue(service.contains("private fun maybeClickGeminiRefreshSignIn"))
         assertTrue(service.contains("clickSignIn provider=gemini"))
         assertTrue(service.contains("private fun shouldWaitForGeminiRefreshSignInRedirect"))
@@ -373,6 +373,16 @@ class ProviderBackgroundRefreshServicePolicyTest {
 
         assertTrue(nativeFetchGuard.contains("webJobLastUrls[active.requestId]"))
         assertFalse(nativeFetchGuard.contains("retainedWebViews[providerId]?.url"))
+    }
+
+    @Test
+    fun codexBackgroundRefreshSwitchesToAboutBlankNativeJsonAfterAuthResource() {
+        val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
+
+        assertTrue(service.contains("captureCodexNativeFetchHeaders(ownerProviderId, url, request.requestHeaders.orEmpty())"))
+        assertTrue(service.contains("maybeStartCodexAboutBlankCollection(ownerProviderId, view, url)"))
+        assertTrue(service.contains("recordWebJobUrl(active.requestId, \"about:blank\")"))
+        assertTrue(service.contains("ProviderNativeJsonBridge.fetchJson(ownerProviderId, url, collectorUserAgent, headers)"))
     }
 
     @Test
