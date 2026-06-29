@@ -537,17 +537,21 @@ class ProviderBackgroundRefreshService : Service() {
         val webView = retainedWebViews.getOrPut(job.providerId) {
             WebView(this).apply {
                 val cookieManager = CookieManager.getInstance()
+                val collectorUserAgent = ProviderWebViewUserAgent.hiddenCollectorUserAgent(
+                    this@ProviderBackgroundRefreshService,
+                    job.providerId
+                )
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 settings.databaseEnabled = true
                 settings.allowFileAccess = false
                 settings.javaScriptCanOpenWindowsAutomatically = true
                 settings.setSupportMultipleWindows(false)
-                settings.userAgentString = ProviderWebViewUserAgent.hiddenCollectorUserAgent(this@ProviderBackgroundRefreshService, job.providerId)
+                settings.userAgentString = collectorUserAgent
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     cookieManager.setAcceptThirdPartyCookies(this, true)
                 }
-                addJavascriptInterface(ServiceUsageBridge(job.providerId), BRIDGE_NAME)
+                addJavascriptInterface(ServiceUsageBridge(job.providerId, collectorUserAgent), BRIDGE_NAME)
                 webChromeClient = ServiceCollectorChromeClient()
                 webViewClient = ServiceCollectorWebViewClient(job.providerId)
             }
@@ -950,7 +954,8 @@ class ProviderBackgroundRefreshService : Service() {
     }
 
     private inner class ServiceUsageBridge(
-        private val ownerProviderId: ProviderId
+        private val ownerProviderId: ProviderId,
+        private val collectorUserAgent: String
     ) {
         @JavascriptInterface
         fun postUsagePayload(rawPayload: String) {
@@ -1056,7 +1061,7 @@ class ProviderBackgroundRefreshService : Service() {
             if (!isNativeFetchBridgePageAllowed(ownerProviderId)) {
                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
             }
-            return ProviderNativeJsonBridge.fetchJson(ownerProviderId, url)
+            return ProviderNativeJsonBridge.fetchJson(ownerProviderId, url, collectorUserAgent)
         }
 
         @JavascriptInterface
@@ -1067,7 +1072,7 @@ class ProviderBackgroundRefreshService : Service() {
             if (!isNativeFetchBridgePageAllowed(ownerProviderId)) {
                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
             }
-            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(ownerProviderId)
+            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(ownerProviderId, collectorUserAgent)
         }
 
         private fun isNativeFetchBridgePageAllowed(providerId: ProviderId): Boolean {

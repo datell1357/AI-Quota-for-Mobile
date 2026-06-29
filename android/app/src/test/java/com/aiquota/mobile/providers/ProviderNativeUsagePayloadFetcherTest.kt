@@ -83,6 +83,6 @@ class ProviderNativeUsagePayloadFetcherTest {
             .substringBefore("private fun fetchClaudePayload")
 
         assertFalse(bridgeMethod.contains("GoogleWebSessionCodeAssistFetcher"))
-        assertTrue(bridgeMethod.contains("ProviderId.GEMINI -> fetchGeminiPayload()"))
+        assertTrue(bridgeMethod.contains("ProviderId.GEMINI -> fetchGeminiPayload(userAgent)"))
     }
 }

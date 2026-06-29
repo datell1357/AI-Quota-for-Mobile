@@ -50,6 +50,10 @@ open class WebLoginActivity : Activity() {
     private var openCodePostLoginRedirected = false
     @Volatile
     private var oauthCallbackHandled = false
+    @Volatile
+    private var currentBridgePageUrl = ""
+    @Volatile
+    private var currentBridgeUserAgent = ProviderWebViewUserAgent.loginUserAgent()
     private val popupViews = mutableSetOf<WebView>()
     private val collectorInjectionKeys = mutableSetOf<String>()
     private val startedAtMs = SystemClock.elapsedRealtime()
@@ -102,6 +106,7 @@ open class WebLoginActivity : Activity() {
         }
         setContentView(rootContainer)
         val requestedStartUrl = intent.getStringExtra(EXTRA_START_URL) ?: definition.loginStartUrl
+        noteBridgePageUrl(requestedStartUrl)
         webView.loadUrl(requestedStartUrl)
     }
 
@@ -133,13 +138,15 @@ open class WebLoginActivity : Activity() {
         capabilities: ProviderLoginWebViewCapabilities
     ): WebView {
         return WebView(this).apply {
+            val loginUserAgent = ProviderWebViewUserAgent.loginUserAgent(this@WebLoginActivity)
+            currentBridgeUserAgent = loginUserAgent
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             settings.databaseEnabled = capabilities.databaseEnabled
             settings.allowFileAccess = capabilities.allowFileAccess
             settings.javaScriptCanOpenWindowsAutomatically = capabilities.javaScriptCanOpenWindowsAutomatically
             settings.setSupportMultipleWindows(capabilities.supportMultipleWindows)
-            settings.userAgentString = ProviderWebViewUserAgent.loginUserAgent(this@WebLoginActivity)
+            settings.userAgentString = loginUserAgent
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 cookieManager.setAcceptThirdPartyCookies(this, capabilities.acceptThirdPartyCookies)
             }
@@ -175,6 +182,12 @@ open class WebLoginActivity : Activity() {
         Log.i("AIQuotaLogin", "provider=${providerId.storageId} reauthWebSessionCleared=true")
     }
 
+    private fun noteBridgePageUrl(url: String?) {
+        if (!url.isNullOrBlank()) {
+            currentBridgePageUrl = url
+        }
+    }
+
     private inner class LoginWebChromeClient : WebChromeClient() {
         override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
             Log.d(
@@ -205,6 +218,7 @@ open class WebLoginActivity : Activity() {
 
     private inner class LoginWebViewClient : WebViewClient() {
         override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
+            noteBridgePageUrl(url)
             if (handleLoginCompleteNavigation(view, url)) return
             if (maybeRedirectGeminiToUsage(view, url)) return
             if (maybeRedirectGlmToUsage(view, url)) return
@@ -216,6 +230,7 @@ open class WebLoginActivity : Activity() {
             val url = request.url.toString()
             Log.d("AIQuotaLogin", "provider=${providerId.storageId} navigate=${safeUrlForLog(url)}")
             if (request.isForMainFrame) {
+                noteBridgePageUrl(url)
                 ProviderLoginUrlRewriter.rewriteMainFrameUrl(providerId, url)?.let { rewrittenUrl ->
                     Log.i("AIQuotaLogin", "provider=${providerId.storageId} googleOAuthRewrite=select_account")
                     view.loadUrl(rewrittenUrl)
@@ -265,6 +280,7 @@ open class WebLoginActivity : Activity() {
 
         override fun onLoadResource(view: WebView, url: String) {
             val pageUrl = view.url ?: url
+            noteBridgePageUrl(pageUrl)
             if (!ProviderWebCollectorScripts.shouldRunCollectorFromResource(providerId, pageUrl, url)) return
             view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
                 injectCollectorIfReady(view, pageUrl, decodeJsString(encoded))
@@ -272,6 +288,7 @@ open class WebLoginActivity : Activity() {
         }
 
         override fun onPageFinished(view: WebView, url: String) {
+            noteBridgePageUrl(url)
             logFirstPageFinished(url)
             if (handleLoginCompleteNavigation(view, url)) return
             if (maybeRedirectGeminiToUsage(view, url)) return
@@ -436,11 +453,11 @@ open class WebLoginActivity : Activity() {
             if (!isNativeFetchBridgePageAllowed(providerId)) {
                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
             }
-            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(providerId)
+            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(providerId, currentBridgeUserAgent)
         }
 
         private fun isNativeFetchBridgePageAllowed(expectedProviderId: ProviderId): Boolean {
-            val pageUrl = webView.url.orEmpty()
+            val pageUrl = currentBridgePageUrl
             return providerId == expectedProviderId &&
                 ProviderWebCollectorScripts.shouldAcceptCollectorPayload(expectedProviderId, pageUrl)
         }
@@ -628,6 +645,7 @@ open class WebLoginActivity : Activity() {
 
     private fun injectCollectorIfReady(view: WebView, url: String, pageText: String) {
         if (finished) return
+        noteBridgePageUrl(url)
         val cookies = cookiesFor(url)
         if (!ProviderWebCollectorScripts.shouldRunCollector(providerId, url, cookies, pageText)) return
         val injectionKey = "${providerId.storageId}:${hostOf(url)}:${routeKeyOf(url)}"

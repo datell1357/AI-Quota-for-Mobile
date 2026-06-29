@@ -10,14 +10,17 @@ import org.json.JSONObject
 import org.json.JSONTokener
 
 object ProviderNativeUsagePayloadFetcher {
-    fun bridgeUsagePayload(providerId: ProviderId): String {
+    fun bridgeUsagePayload(
+        providerId: ProviderId,
+        userAgent: String = ProviderWebViewUserAgent.loginUserAgent()
+    ): String {
         if (!ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
             return bridgeError(providerId, "provider_not_allowlisted")
         }
         val result = when (providerId) {
-            ProviderId.CLAUDE -> fetchClaudePayload()
-            ProviderId.CODEX -> fetchCodexPayload()
-            ProviderId.GEMINI -> fetchGeminiPayload()
+            ProviderId.CLAUDE -> fetchClaudePayload(userAgent)
+            ProviderId.CODEX -> fetchCodexPayload(userAgent)
+            ProviderId.GEMINI -> fetchGeminiPayload(userAgent)
             ProviderId.COPILOT -> NativePayloadResult(
                 payload = CopilotNativeUsageFetcher.fetchUsagePayload(),
                 diagnostic = "copilot_usage_unavailable"
@@ -27,24 +30,27 @@ object ProviderNativeUsagePayloadFetcher {
         return bridgeResult(providerId, result)
     }
 
-    private fun fetchClaudePayload(): NativePayloadResult {
+    private fun fetchClaudePayload(userAgent: String): NativePayloadResult {
         val statuses = mutableListOf<String>()
-        val organizations = fetchWrapped(ProviderId.CLAUDE, CLAUDE_ORGANIZATIONS_URL, statuses)
-        val accountProfile = fetchWrapped(ProviderId.CLAUDE, CLAUDE_ACCOUNT_PROFILE_URL, statuses)
+        val organizations = fetchWrapped(ProviderId.CLAUDE, CLAUDE_ORGANIZATIONS_URL, statuses, userAgent)
+        val accountProfile = fetchWrapped(ProviderId.CLAUDE, CLAUDE_ACCOUNT_PROFILE_URL, statuses, userAgent)
         val orgId = claudeOrgId(organizations.jsonValue())
-            ?: fetchWrapped(ProviderId.CLAUDE, CLAUDE_ORGANIZATIONS_ME_URL, statuses).let { claudeOrgId(it.jsonValue()) }
+            ?: fetchWrapped(ProviderId.CLAUDE, CLAUDE_ORGANIZATIONS_ME_URL, statuses, userAgent)
+                .let { claudeOrgId(it.jsonValue()) }
             ?: claudeOrgId(accountProfile.jsonValue())
             ?: return NativePayloadResult(null, "claude_organization_unavailable", statuses)
         val encodedOrgId = encodePath(orgId)
         val subscription = fetchWrapped(
             ProviderId.CLAUDE,
             "https://claude.ai/api/organizations/$encodedOrgId/subscription_details",
-            statuses
+            statuses,
+            userAgent
         )
         val usage = fetchWrapped(
             ProviderId.CLAUDE,
             "https://claude.ai/api/organizations/$encodedOrgId/usage",
-            statuses
+            statuses,
+            userAgent
         )
         val usageJson = usage.jsonObject() ?: return NativePayloadResult(null, "claude_usage_unavailable", statuses)
         val usagePayload = usageJson.optJSONObject("usage") ?: usageJson
@@ -58,20 +64,21 @@ object ProviderNativeUsagePayloadFetcher {
         return verifiedPayload(ProviderId.CLAUDE, payload, "claude_usage_unavailable", statuses)
     }
 
-    private fun fetchCodexPayload(): NativePayloadResult {
+    private fun fetchCodexPayload(userAgent: String): NativePayloadResult {
         val statuses = mutableListOf<String>()
-        val session = fetchWrapped(ProviderId.CODEX, CODEX_SESSION_URL, statuses)
-        val me = fetchWrapped(ProviderId.CODEX, CODEX_ME_URL, statuses)
-        val accountCheck = fetchWrapped(ProviderId.CODEX, CODEX_ACCOUNT_CHECK_URL, statuses)
+        val session = fetchWrapped(ProviderId.CODEX, CODEX_SESSION_URL, statuses, userAgent)
+        val me = fetchWrapped(ProviderId.CODEX, CODEX_ME_URL, statuses, userAgent)
+        val accountCheck = fetchWrapped(ProviderId.CODEX, CODEX_ACCOUNT_CHECK_URL, statuses, userAgent)
         val accountId = findFirstString(me.jsonValue(), CODEX_ACCOUNT_ID_KEYS)
             ?: findFirstString(accountCheck.jsonValue(), CODEX_ACCOUNT_ID_KEYS)
             ?: findFirstString(session.jsonValue(), CODEX_ACCOUNT_ID_KEYS)
         val subscriptions = fetchWrapped(
             ProviderId.CODEX,
             accountId?.let { "$CODEX_SUBSCRIPTIONS_URL?account_id=${encodeQuery(it)}" } ?: CODEX_SUBSCRIPTIONS_URL,
-            statuses
+            statuses,
+            userAgent
         )
-        val dashboard = fetchWrapped(ProviderId.CODEX, CODEX_USAGE_DASHBOARD_URL, statuses)
+        val dashboard = fetchWrapped(ProviderId.CODEX, CODEX_USAGE_DASHBOARD_URL, statuses, userAgent)
         val usage = codexUsageFromValue(dashboard.jsonValue())
             ?: codexUsageFromRaw(dashboard.rawText())
             ?: return NativePayloadResult(null, "codex_usage_unavailable", statuses)
@@ -90,17 +97,22 @@ object ProviderNativeUsagePayloadFetcher {
         return verifiedPayload(ProviderId.CODEX, payload, "codex_usage_unavailable", statuses)
     }
 
-    private fun fetchGeminiPayload(): NativePayloadResult {
+    private fun fetchGeminiPayload(userAgent: String): NativePayloadResult {
         val statuses = mutableListOf<String>()
-        val usagePage = fetchWrapped(ProviderId.GEMINI, GEMINI_USAGE_URL, statuses)
+        val usagePage = fetchWrapped(ProviderId.GEMINI, GEMINI_USAGE_URL, statuses, userAgent)
         val usage = geminiUsagePayloadFromValue(usagePage.jsonValue())
             ?: geminiUsagePayloadFromRaw(usagePage.rawText())
             ?: return NativePayloadResult(null, "gemini_usage_unavailable", statuses)
         return verifiedPayload(ProviderId.GEMINI, usage, "gemini_usage_unavailable", statuses)
     }
 
-    private fun fetchWrapped(providerId: ProviderId, url: String, statuses: MutableList<String>): JSONObject {
-        val wrapped = runCatching { JSONObject(ProviderNativeJsonBridge.fetchJson(providerId, url)) }
+    private fun fetchWrapped(
+        providerId: ProviderId,
+        url: String,
+        statuses: MutableList<String>,
+        userAgent: String
+    ): JSONObject {
+        val wrapped = runCatching { JSONObject(ProviderNativeJsonBridge.fetchJson(providerId, url, userAgent)) }
             .getOrElse { JSONObject().put("ok", false).put("url", url).put("error", it.javaClass.simpleName) }
         statuses += "${urlStatusLabel(url)}:${wrapped.optInt("status", -1)}:${wrapped.optString("error")}"
         return wrapped

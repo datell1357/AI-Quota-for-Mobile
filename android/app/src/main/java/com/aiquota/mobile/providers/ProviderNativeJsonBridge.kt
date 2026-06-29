@@ -17,20 +17,25 @@ object ProviderNativeJsonBridge {
             ProviderWebCollectorScripts.shouldRunCollectorOnResource(providerId, url)
     }
 
-    fun fetchJson(providerId: ProviderId, url: String): String {
+    fun fetchJson(
+        providerId: ProviderId,
+        url: String,
+        userAgent: String = ProviderWebViewUserAgent.loginUserAgent()
+    ): String {
         if (!isAllowedJsonUrl(providerId, url)) {
             return wrappedError(url, "blocked_provider_json_endpoint").toString()
         }
         val uri = runCatching { URI(url) }.getOrNull()
             ?: return wrappedError(url, "invalid_url").toString()
         val origin = "${uri.scheme}://${uri.host}"
+        val requestUserAgent = userAgent.takeIf { it.isNotBlank() } ?: ProviderWebViewUserAgent.loginUserAgent()
         return runCatching {
             val connection = (URL(url).openConnection() as HttpURLConnection).apply {
                 connectTimeout = NETWORK_TIMEOUT_MS
                 readTimeout = NETWORK_TIMEOUT_MS
                 requestMethod = "GET"
                 setRequestProperty("Accept", "application/json, text/html")
-                setRequestProperty("User-Agent", ProviderWebViewUserAgent.loginUserAgent())
+                setRequestProperty("User-Agent", requestUserAgent)
                 setRequestProperty("Referer", "$origin/")
                 setRequestProperty("X-Requested-With", "XMLHttpRequest")
                 CookieManager.getInstance().getCookie(origin)

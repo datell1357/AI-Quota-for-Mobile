@@ -126,14 +126,19 @@ fun BackgroundProviderWebCollector(
                 if (ProviderHiddenWebViewRetentionPolicy.shouldRetain(providerId)) {
                     val webView = retainedWebViews.getOrPut(providerId) {
                         val cookieManager = CookieManager.getInstance()
+                        val collectorUserAgent = ProviderWebViewUserAgent.hiddenCollectorUserAgent(
+                            container.context,
+                            providerId
+                        )
                         cookieManager.setAcceptCookie(true)
                         WebView(container.context).apply {
                             setBackgroundColor(Color.TRANSPARENT)
-                            configureForBackgroundCollection(cookieManager, providerId)
+                            configureForBackgroundCollection(cookieManager, collectorUserAgent)
                             addJavascriptInterface(
                                 BackgroundUsageBridge(
                                     ownerProviderId = providerId,
                                     context = container.context.applicationContext,
+                                    collectorUserAgent = collectorUserAgent,
                                     currentJob = { latestJob.value },
                                     currentPageUrl = { pageUrls[providerId].orEmpty() },
                                     onPayload = { job, payload -> latestOnPayload.value(job, payload) },
@@ -185,14 +190,14 @@ fun BackgroundProviderWebCollector(
 }
 
 @SuppressLint("SetJavaScriptEnabled")
-private fun WebView.configureForBackgroundCollection(cookieManager: CookieManager, providerId: ProviderId) {
+private fun WebView.configureForBackgroundCollection(cookieManager: CookieManager, collectorUserAgent: String) {
     settings.javaScriptEnabled = true
     settings.domStorageEnabled = true
     settings.databaseEnabled = true
     settings.allowFileAccess = false
     settings.javaScriptCanOpenWindowsAutomatically = true
     settings.setSupportMultipleWindows(false)
-    settings.userAgentString = ProviderWebViewUserAgent.hiddenCollectorUserAgent(context, providerId)
+    settings.userAgentString = collectorUserAgent
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
         cookieManager.setAcceptThirdPartyCookies(this, true)
     }
@@ -403,6 +408,7 @@ private class BackgroundCollectorWebViewClient(
 private class BackgroundUsageBridge(
     private val ownerProviderId: ProviderId,
     context: Context,
+    private val collectorUserAgent: String,
     private val currentJob: () -> QueuedProviderRefreshJob?,
     private val currentPageUrl: () -> String,
     private val onPayload: (QueuedProviderRefreshJob, String) -> Unit,
@@ -527,7 +533,7 @@ private class BackgroundUsageBridge(
         if (!isNativeFetchBridgePageAllowed(job)) {
             return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
         }
-        return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(job.job.providerId)
+        return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(job.job.providerId, collectorUserAgent)
     }
 
     private fun isNativeFetchBridgePageAllowed(job: QueuedProviderRefreshJob): Boolean {
