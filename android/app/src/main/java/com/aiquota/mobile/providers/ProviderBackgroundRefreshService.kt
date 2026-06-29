@@ -1072,7 +1072,7 @@ class ProviderBackgroundRefreshService : Service() {
 
         private fun isNativeFetchBridgePageAllowed(providerId: ProviderId): Boolean {
             val active = currentWebJobFor(providerId) ?: return false
-            val pageUrl = retainedWebViews[providerId]?.url.orEmpty().ifBlank { active.job.startUrl }
+            val pageUrl = webJobLastUrls[active.requestId].orEmpty().ifBlank { active.job.startUrl }
             return ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, pageUrl)
         }
 

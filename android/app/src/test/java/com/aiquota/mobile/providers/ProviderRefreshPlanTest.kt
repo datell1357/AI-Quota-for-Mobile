@@ -47,11 +47,11 @@ class ProviderRefreshPlanTest {
         )
         assertEquals(ProviderRefreshMode.NATIVE_API, jobs.first { it.providerId == ProviderId.ANTIGRAVITY }.mode)
         assertFalse(jobs.any { it.startUrl.contains("/auth/login") || it.startUrl.contains("/login") })
-        assertEquals("about:blank", jobs.first { it.providerId == ProviderId.CLAUDE }.startUrl)
-        assertEquals("about:blank", jobs.first { it.providerId == ProviderId.CODEX }.startUrl)
+        assertEquals("https://claude.ai/", jobs.first { it.providerId == ProviderId.CLAUDE }.startUrl)
+        assertEquals("https://chatgpt.com/", jobs.first { it.providerId == ProviderId.CODEX }.startUrl)
         assertEquals("https://opencode.ai/auth", jobs.first { it.providerId == ProviderId.OPENCODE }.startUrl)
-        assertEquals("about:blank", jobs.first { it.providerId == ProviderId.GEMINI }.startUrl)
-        assertEquals("about:blank", jobs.first { it.providerId == ProviderId.COPILOT }.startUrl)
+        assertEquals("https://gemini.google.com/usage", jobs.first { it.providerId == ProviderId.GEMINI }.startUrl)
+        assertEquals("https://github.com/settings/copilot/features", jobs.first { it.providerId == ProviderId.COPILOT }.startUrl)
         assertEquals("", jobs.first { it.providerId == ProviderId.ANTIGRAVITY }.startUrl)
         assertEquals("https://cursor.com/dashboard", jobs.first { it.providerId == ProviderId.CURSOR }.startUrl)
     }
@@ -62,24 +62,24 @@ class ProviderRefreshPlanTest {
 
         assertEquals(ProviderRefreshMode.HIDDEN_WEB_COLLECTOR, jobs.first { it.providerId == ProviderId.GEMINI }.mode)
         assertEquals(ProviderRefreshMode.NATIVE_API, jobs.first { it.providerId == ProviderId.ANTIGRAVITY }.mode)
-        assertEquals("about:blank", jobs.first { it.providerId == ProviderId.GEMINI }.startUrl)
+        assertEquals("https://gemini.google.com/usage", jobs.first { it.providerId == ProviderId.GEMINI }.startUrl)
         assertEquals("", jobs.first { it.providerId == ProviderId.ANTIGRAVITY }.startUrl)
     }
 
     @Test
-    fun geminiRefreshUsesAboutBlankCollector() {
+    fun geminiRefreshUsesUsagePageCollector() {
         val geminiJob = ProviderRefreshPlan.manualJobFor(ProviderId.GEMINI)
 
         assertEquals(ProviderRefreshMode.HIDDEN_WEB_COLLECTOR, geminiJob.mode)
-        assertEquals("about:blank", geminiJob.startUrl)
+        assertEquals("https://gemini.google.com/usage", geminiJob.startUrl)
     }
 
     @Test
-    fun onlyScopedProvidersUseAboutBlankBackgroundCollector() {
-        assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.CLAUDE).startUrl)
-        assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.CODEX).startUrl)
-        assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.GEMINI).startUrl)
-        assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.COPILOT).startUrl)
+    fun backgroundCollectorsUseVerifiedProviderStartUrls() {
+        assertEquals("https://claude.ai/", ProviderRefreshPlan.manualJobFor(ProviderId.CLAUDE).startUrl)
+        assertEquals("https://chatgpt.com/", ProviderRefreshPlan.manualJobFor(ProviderId.CODEX).startUrl)
+        assertEquals("https://gemini.google.com/usage", ProviderRefreshPlan.manualJobFor(ProviderId.GEMINI).startUrl)
+        assertEquals("https://github.com/settings/copilot/features", ProviderRefreshPlan.manualJobFor(ProviderId.COPILOT).startUrl)
 
         assertEquals("", ProviderRefreshPlan.manualJobFor(ProviderId.ANTIGRAVITY).startUrl)
         assertEquals("", ProviderRefreshPlan.manualJobFor(ProviderId.GLM).startUrl)

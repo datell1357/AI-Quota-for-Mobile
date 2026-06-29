@@ -365,14 +365,14 @@ class ProviderBackgroundRefreshServicePolicyTest {
     }
 
     @Test
-    fun nativeFetchJavascriptBridgeUsesProductionWebViewUrlGuard() {
+    fun nativeFetchJavascriptBridgeUsesRecordedPageUrlGuard() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val bridge = service.substringAfter("private inner class ServiceUsageBridge")
             .substringBefore("private class ServiceCollectorChromeClient")
         val nativeFetchGuard = bridge.substringAfter("private fun isNativeFetchBridgePageAllowed")
 
-        assertTrue(nativeFetchGuard.contains("retainedWebViews[providerId]?.url"))
-        assertFalse(nativeFetchGuard.contains("webJobLastUrls[active.requestId]"))
+        assertTrue(nativeFetchGuard.contains("webJobLastUrls[active.requestId]"))
+        assertFalse(nativeFetchGuard.contains("retainedWebViews[providerId]?.url"))
     }
 
     @Test

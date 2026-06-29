@@ -8,16 +8,15 @@ import org.junit.Test
 
 class ProviderNativeJsonBridgeTest {
     @Test
-    fun nativeJsonBridgeAllowsOnlyExistingScopedCollectorEndpoints() {
-        assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CLAUDE, "https://claude.ai/api/organizations"))
-        assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CLAUDE, "https://claude.ai/api/organizations/me"))
-        assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CLAUDE, "https://claude.ai/api/organizations/org_123/usage"))
-        assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, "https://chatgpt.com/api/auth/session"))
-        assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, "https://chatgpt.com/backend-api/subscriptions"))
-        assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, "https://chatgpt.com/codex/cloud/settings/analytics"))
-        assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.COPILOT, "https://github.com/github-copilot/chat/entitlement"))
-        assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.COPILOT, "https://api.github.com/copilot_internal/user"))
-
+    fun nativeJsonBridgeBlocksProviderEndpointsUntilVerified() {
+        assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CLAUDE, "https://claude.ai/api/organizations"))
+        assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CLAUDE, "https://claude.ai/api/organizations/me"))
+        assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CLAUDE, "https://claude.ai/api/organizations/org_123/usage"))
+        assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, "https://chatgpt.com/api/auth/session"))
+        assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, "https://chatgpt.com/backend-api/subscriptions"))
+        assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, "https://chatgpt.com/codex/cloud/settings/analytics"))
+        assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.COPILOT, "https://github.com/github-copilot/chat/entitlement"))
+        assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.COPILOT, "https://api.github.com/copilot_internal/user"))
         assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CLAUDE, "https://firebase.googleapis.com/relay"))
         assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, "https://admin.openai.com/analytics/codex"))
         assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.COPILOT, "https://github.com/settings/profile"))

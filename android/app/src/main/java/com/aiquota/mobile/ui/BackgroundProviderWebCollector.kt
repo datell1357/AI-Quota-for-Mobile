@@ -74,9 +74,11 @@ fun BackgroundProviderWebCollector(
     val webCollectorJob = currentJob?.takeIf { it.job.mode == ProviderRefreshMode.HIDDEN_WEB_COLLECTOR }
     val retainedWebViews = remember { mutableMapOf<ProviderId, WebView>() }
     val loadedRequestIds = remember { mutableMapOf<ProviderId, Long>() }
+    val pageUrls = remember { mutableMapOf<ProviderId, String>() }
 
     fun destroyProviderWebView(providerId: ProviderId) {
         loadedRequestIds.remove(providerId)
+        pageUrls.remove(providerId)
         retainedWebViews.remove(providerId)?.let { webView ->
             (webView.parent as? ViewGroup)?.removeView(webView)
             webView.destroyBackgroundCollector()
@@ -133,7 +135,7 @@ fun BackgroundProviderWebCollector(
                                     ownerProviderId = providerId,
                                     context = container.context.applicationContext,
                                     currentJob = { latestJob.value },
-                                    currentPageUrl = { retainedWebViews[providerId]?.url.orEmpty() },
+                                    currentPageUrl = { pageUrls[providerId].orEmpty() },
                                     onPayload = { job, payload -> latestOnPayload.value(job, payload) },
                                     onError = { job, message -> latestOnError.value(job, message) },
                                     onFinished = { requestId -> latestOnFinished.value(requestId) },
@@ -145,6 +147,7 @@ fun BackgroundProviderWebCollector(
                             webViewClient = BackgroundCollectorWebViewClient(
                                 ownerProviderId = providerId,
                                 currentJob = { latestJob.value },
+                                onPageUrl = { pageProviderId, url -> pageUrls[pageProviderId] = url },
                                 geminiCollectorAsset = geminiCollectorAsset,
                                 antigravityCollectorAsset = antigravityCollectorAsset,
                                 onPayload = { job, payload -> latestOnPayload.value(job, payload) },
@@ -216,6 +219,7 @@ private class BackgroundCollectorChromeClient : WebChromeClient() {
 private class BackgroundCollectorWebViewClient(
     private val ownerProviderId: ProviderId,
     private val currentJob: () -> QueuedProviderRefreshJob?,
+    private val onPageUrl: (ProviderId, String) -> Unit,
     private val geminiCollectorAsset: String,
     private val antigravityCollectorAsset: String,
     private val onPayload: (QueuedProviderRefreshJob, String) -> Unit,
@@ -234,6 +238,7 @@ private class BackgroundCollectorWebViewClient(
 
     override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
         val job = currentProviderJob() ?: return
+        onPageUrl(ownerProviderId, url)
         if (ProviderWebCollectorScripts.isRefreshLoginPage(job.job.providerId, url)) {
             finishWithErrorOnce(job, ProviderRefreshFailure.interactiveAuthRequired(LOGIN_PAGE_REACHED_MESSAGE))
             return
@@ -255,6 +260,7 @@ private class BackgroundCollectorWebViewClient(
     override fun onLoadResource(view: WebView, url: String) {
         val job = currentProviderJob() ?: return
         val pageUrl = view.url ?: url
+        onPageUrl(ownerProviderId, pageUrl)
         if (!ProviderWebCollectorScripts.shouldRunCollectorFromResource(job.job.providerId, pageUrl, url)) return
         val requestId = job.requestId
         val providerId = job.job.providerId
@@ -275,6 +281,7 @@ private class BackgroundCollectorWebViewClient(
         val job = currentProviderJob() ?: return
         val requestId = job.requestId
         val providerId = job.job.providerId
+        onPageUrl(ownerProviderId, url)
         Log.d(
             "AIQuotaBgCollector",
             "pageFinished provider=${providerId.storageId} start=${hostOf(job.job.startUrl)}${pathOf(job.job.startUrl)} url=${hostOf(url)}${pathOf(url)}"
