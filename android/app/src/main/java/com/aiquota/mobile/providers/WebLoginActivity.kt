@@ -283,7 +283,7 @@ open class WebLoginActivity : Activity() {
             noteBridgePageUrl(pageUrl)
             if (!ProviderWebCollectorScripts.shouldRunCollectorFromResource(providerId, pageUrl, url)) return
             view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
-                injectCollectorIfReady(view, pageUrl, decodeJsString(encoded))
+                injectCollectorIfReady(view, pageUrl, decodeJsString(encoded), resourceTriggered = true)
             }
         }
 
@@ -643,11 +643,16 @@ open class WebLoginActivity : Activity() {
         ).joinToString(",")
     }
 
-    private fun injectCollectorIfReady(view: WebView, url: String, pageText: String) {
+    private fun injectCollectorIfReady(
+        view: WebView,
+        url: String,
+        pageText: String,
+        resourceTriggered: Boolean = false
+    ) {
         if (finished) return
         noteBridgePageUrl(url)
         val cookies = cookiesFor(url)
-        if (!ProviderWebCollectorScripts.shouldRunCollector(providerId, url, cookies, pageText)) return
+        if (!resourceTriggered && !ProviderWebCollectorScripts.shouldRunCollector(providerId, url, cookies, pageText)) return
         val injectionKey = "${providerId.storageId}:${hostOf(url)}:${routeKeyOf(url)}"
         val firstInjectionForPage = collectorInjectionKeys.add(injectionKey)
         if (!firstInjectionForPage && !ProviderWebCollectorScripts.shouldAllowCollectorReinjection(providerId)) return

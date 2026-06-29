@@ -37,4 +37,15 @@ class WebLoginActivityNativeBridgeTest {
         assertTrue(nativeUsageSource.contains("fun bridgeUsagePayload(\n        providerId: ProviderId,\n        userAgent: String"))
         assertTrue(nativeUsageSource.contains("ProviderNativeJsonBridge.fetchJson(providerId, url, userAgent)"))
     }
+
+    @Test
+    fun resourceTriggeredCodexInjectionDoesNotRequirePageTextReadinessAgain() {
+        val source = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val injectBlock = source.substringAfter("private fun injectCollectorIfReady")
+            .substringBefore("        val injectionKey")
+
+        assertTrue(source.contains("injectCollectorIfReady(view, pageUrl, decodeJsString(encoded), resourceTriggered = true)"))
+        assertTrue(injectBlock.contains("resourceTriggered: Boolean = false"))
+        assertTrue(injectBlock.contains("if (!resourceTriggered && !ProviderWebCollectorScripts.shouldRunCollector(providerId, url, cookies, pageText)) return"))
+    }
 }
