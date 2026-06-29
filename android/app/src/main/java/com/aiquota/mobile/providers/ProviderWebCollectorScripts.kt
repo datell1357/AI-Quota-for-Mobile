@@ -442,10 +442,7 @@ object ProviderWebCollectorScripts {
         pageUrl: String = "",
         awaitInteractiveLoginUsage: Boolean = false
     ): String {
-        val collectorScript = if (
-            ProviderAboutBlankCollectorPolicy.isEnabled(providerId) &&
-            pageUrl == "about:blank"
-        ) {
+        val collectorScript = if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && pageUrl.isNotBlank()) {
             nativeProviderPayload(providerId)
         } else {
             ProviderScriptProviders.providerFor(providerId).collectorScript(

@@ -428,7 +428,18 @@ open class WebLoginActivity : Activity() {
             return result
         }
 
-    private fun isNativeFetchBridgePageAllowed(expectedProviderId: ProviderId): Boolean {
+        @JavascriptInterface
+        fun fetchProviderUsagePayload(): String {
+            if (!ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
+                return JSONObject().put("ok", false).put("error", "provider_not_allowlisted").toString()
+            }
+            if (!isNativeFetchBridgePageAllowed(providerId)) {
+                return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
+            }
+            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(providerId)
+        }
+
+        private fun isNativeFetchBridgePageAllowed(expectedProviderId: ProviderId): Boolean {
             val pageUrl = webView.url.orEmpty()
             return providerId == expectedProviderId &&
                 ProviderWebCollectorScripts.shouldAcceptCollectorPayload(expectedProviderId, pageUrl)

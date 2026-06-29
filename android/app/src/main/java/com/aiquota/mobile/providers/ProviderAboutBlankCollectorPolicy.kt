@@ -4,6 +4,9 @@ import com.aiquota.mobile.local.ProviderId
 
 object ProviderAboutBlankCollectorPolicy {
     fun isEnabled(providerId: ProviderId): Boolean {
-        return false
+        return providerId == ProviderId.CLAUDE ||
+            providerId == ProviderId.CODEX ||
+            providerId == ProviderId.GEMINI ||
+            providerId == ProviderId.COPILOT
     }
 }

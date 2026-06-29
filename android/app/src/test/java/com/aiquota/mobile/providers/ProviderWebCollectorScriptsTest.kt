@@ -12,13 +12,13 @@ class ProviderWebCollectorScriptsTest {
     @Test
     fun collectorRunsOnlyAfterProviderShellsAreReached() {
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CLAUDE, "https://claude.ai/new", mapOf("lastActiveOrg" to "org_123"), ""))
-        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CLAUDE, "about:blank", emptyMap(), ""))
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CLAUDE, "about:blank", emptyMap(), ""))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CODEX, "https://chatgpt.com/", emptyMap(), "ChatGPT"))
-        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CODEX, "about:blank", emptyMap(), ""))
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CODEX, "about:blank", emptyMap(), ""))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "https://gemini.google.com/app", emptyMap(), "Gemini"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "https://gemini.google.com/usage", emptyMap(), "Gemini usage"))
-        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "about:blank", emptyMap(), ""))
-        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "about:blank", emptyMap(), ""))
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "about:blank", emptyMap(), ""))
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "about:blank", emptyMap(), ""))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "https://github.com/settings/copilot", emptyMap(), ""))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "https://github.com/settings/billing/premium_requests_usage", emptyMap(), ""))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CURSOR, "https://cursor.com/dashboard", emptyMap(), ""))
@@ -82,11 +82,11 @@ class ProviderWebCollectorScriptsTest {
     }
 
     @Test
-    fun collectorRejectsAboutBlankUntilNativeBridgeProvidersAreVerified() {
-        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CLAUDE, "about:blank"))
-        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CODEX, "about:blank"))
-        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GEMINI, "about:blank"))
-        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.COPILOT, "about:blank"))
+    fun collectorAcceptsAboutBlankOnlyForNativeJsonProviders() {
+        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CLAUDE, "about:blank"))
+        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CODEX, "about:blank"))
+        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GEMINI, "about:blank"))
+        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.COPILOT, "about:blank"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.ANTIGRAVITY, "about:blank"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GLM, "about:blank"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.OPENCODE, "about:blank"))
@@ -94,9 +94,30 @@ class ProviderWebCollectorScriptsTest {
     }
 
     @Test
-    fun aboutBlankNativeUsagePayloadPolicyStaysDisabledUntilVerified() {
+    fun aboutBlankNativeUsagePayloadPolicyIncludesOnlyScopedProviders() {
         listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT).forEach { providerId ->
+            assertTrue(ProviderAboutBlankCollectorPolicy.isEnabled(providerId))
+        }
+        listOf(ProviderId.ANTIGRAVITY, ProviderId.GLM, ProviderId.OPENCODE, ProviderId.CURSOR).forEach { providerId ->
             assertFalse(ProviderAboutBlankCollectorPolicy.isEnabled(providerId))
+        }
+    }
+
+    @Test
+    fun scopedProvidersBuildOnlyNativeUsagePayloadCollector() {
+        mapOf(
+            ProviderId.CLAUDE to "https://claude.ai/new",
+            ProviderId.CODEX to "https://chatgpt.com/",
+            ProviderId.GEMINI to "https://gemini.google.com/usage",
+            ProviderId.COPILOT to "https://github.com/settings/copilot/features"
+        ).forEach { (providerId, pageUrl) ->
+            val script = ProviderWebCollectorScripts.build(providerId, emptyMap(), "", pageUrl = pageUrl)
+
+            assertTrue(script.contains("fetchNativeUsagePayload"))
+            assertFalse(script.contains("scanClaudePageState"))
+            assertFalse(script.contains("AIQuotaCodex collector started"))
+            assertFalse(script.contains("postGeminiObservedPayload"))
+            assertFalse(script.contains("AIQuotaCopilot collector_start"))
         }
     }
 
@@ -849,7 +870,7 @@ class ProviderWebCollectorScriptsTest {
     }
 
     @Test
-    fun geminiUsagePageDetectionFallsBackToInjectedPageUrl() {
+    fun geminiUsagePageCollectorUsesNativePayloadWhenInjectedWithPageUrl() {
         val script = ProviderWebCollectorScripts.build(
             ProviderId.GEMINI,
             emptyMap(),
@@ -857,8 +878,8 @@ class ProviderWebCollectorScriptsTest {
             pageUrl = "https://gemini.google.com/usage"
         )
 
-        assertTrue(script.contains("pageUrl: \"https://gemini.google.com/usage\""))
-        assertTrue(script.contains("isGeminiUsagePageUrl(c.pageUrl)"))
+        assertTrue(script.contains("fetchNativeUsagePayload"))
+        assertFalse(script.contains("isGeminiUsagePageUrl(c.pageUrl)"))
     }
 
     @Test
@@ -1508,7 +1529,7 @@ class ProviderWebCollectorScriptsTest {
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.COPILOT, "https://github.com/settings/billing/premium_requests_usage"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.COPILOT, "https://github.com/settings/billing/copilot_usage_card?customer_id=abc123&period=3&query="))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.COPILOT, "https://github.com/copilot_internal/user"))
-        assertFalse(
+        assertTrue(
             ProviderWebCollectorScripts.shouldRunCollectorFromResource(
                 ProviderId.COPILOT,
                 "about:blank",
