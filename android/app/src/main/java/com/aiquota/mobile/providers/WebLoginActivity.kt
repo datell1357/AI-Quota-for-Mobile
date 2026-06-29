@@ -272,7 +272,7 @@ open class WebLoginActivity : Activity() {
                 view.post { handleLoginCompleteNavigation(view, url) }
             }
             if (providerId == ProviderId.CODEX) {
-                val pageUrl = view.url ?: url
+                val pageUrl = currentBridgePageUrl.ifBlank { url }
                 if (ProviderWebCollectorScripts.shouldRunCollectorFromResource(providerId, pageUrl, url)) {
                     view.post {
                         noteBridgePageUrl(pageUrl)

@@ -58,6 +58,7 @@ class WebLoginActivityNativeBridgeTest {
         assertTrue(onPageFinishedBlock.contains("injectCollectorIfReady(view, url, \"\", resourceTriggered = true)"))
         assertTrue(interceptRequestBlock.contains("ProviderWebCollectorScripts.shouldRunCollectorFromResource(providerId, pageUrl, url)"))
         assertTrue(interceptRequestBlock.contains("injectCollectorIfReady(view, pageUrl, \"\", resourceTriggered = true)"))
+        assertFalse(interceptRequestBlock.contains("view.url"))
         assertTrue(collectorErrorBlock.contains("if (providerId == ProviderId.CODEX)"))
         assertTrue(collectorErrorBlock.contains("collectorInjectionKeys.clear()"))
         assertTrue(injectBlock.contains("resourceTriggered: Boolean = false"))
