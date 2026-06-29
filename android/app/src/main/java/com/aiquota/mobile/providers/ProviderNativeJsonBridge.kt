@@ -20,7 +20,8 @@ object ProviderNativeJsonBridge {
     fun fetchJson(
         providerId: ProviderId,
         url: String,
-        userAgent: String = ProviderWebViewUserAgent.loginUserAgent()
+        userAgent: String = ProviderWebViewUserAgent.loginUserAgent(),
+        requestHeaders: Map<String, String> = emptyMap()
     ): String {
         if (!isAllowedJsonUrl(providerId, url)) {
             return wrappedError(url, "blocked_provider_json_endpoint").toString()
@@ -38,9 +39,16 @@ object ProviderNativeJsonBridge {
                 setRequestProperty("User-Agent", requestUserAgent)
                 setRequestProperty("Referer", "$origin/")
                 setRequestProperty("X-Requested-With", "XMLHttpRequest")
-                CookieManager.getInstance().getCookie(origin)
-                    ?.takeIf(String::isNotBlank)
-                    ?.let { setRequestProperty("Cookie", it) }
+                requestHeaders
+                    .filterKeys(::isForwardableHeader)
+                    .filterValues(String::isNotBlank)
+                    .forEach { (name, value) -> setRequestProperty(name, value) }
+                if (!requestHeaders.keys.any { it.equals("Cookie", ignoreCase = true) }) {
+                    (CookieManager.getInstance().getCookie(url)
+                        ?: CookieManager.getInstance().getCookie(origin))
+                        ?.takeIf(String::isNotBlank)
+                        ?.let { setRequestProperty("Cookie", it) }
+                }
             }
             val status = connection.responseCode
             val stream = if (status in 200..299) connection.inputStream else connection.errorStream
@@ -78,6 +86,15 @@ object ProviderNativeJsonBridge {
             .put("ok", false)
             .put("url", url)
             .put("error", error)
+    }
+
+    private fun isForwardableHeader(name: String): Boolean {
+        val normalized = name.trim()
+        if (normalized.isBlank()) return false
+        return !normalized.equals("Host", ignoreCase = true) &&
+            !normalized.equals("Connection", ignoreCase = true) &&
+            !normalized.equals("Content-Length", ignoreCase = true) &&
+            !normalized.equals("Accept-Encoding", ignoreCase = true)
     }
 
     private const val TAG = "AIQuotaNativeJson"

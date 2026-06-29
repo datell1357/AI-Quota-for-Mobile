@@ -30,26 +30,34 @@ object ProviderNativeUsagePayloadFetcher {
         return bridgeResult(providerId, result)
     }
 
-    fun bridgeCodexDashboardPayload(rawText: String, plan: String?, accountId: String?): String {
-        val usage = codexUsageFromRaw(rawText)
+    fun bridgeCodexFetchedPayload(rawText: String, plan: String?, accountId: String?, account: String?): String {
+        val payload = codexFetchedPayload(rawText, plan, accountId, account)
             ?: return bridgeResult(
                 ProviderId.CODEX,
-                NativePayloadResult(null, "codex_usage_unavailable", listOf("dashboard:browser_parse_empty"))
+                NativePayloadResult(null, "codex_usage_unavailable")
             )
+        return bridgeResult(
+            ProviderId.CODEX,
+            verifiedPayload(ProviderId.CODEX, payload, "codex_usage_unavailable", emptyList())
+        )
+    }
+
+    internal fun codexFetchedPayloadForTest(rawText: String, plan: String?, accountId: String?, account: String?): JSONObject? {
+        return codexFetchedPayload(rawText, plan, accountId, account)
+    }
+
+    private fun codexFetchedPayload(rawText: String, plan: String?, accountId: String?, account: String?): JSONObject? {
+        val parsed = runCatching { JSONTokener(rawText).nextValue() }.getOrNull()
+        val usage = codexUsageFromValue(parsed)
+            ?: codexUsageFromRaw(rawText)
+            ?: return null
         val payload = JSONObject()
             .put("provider", ProviderId.CODEX.storageId)
             .put("usage", usage)
         accountId?.takeIf { it.isNotBlank() }?.let { payload.put("accountId", it) }
+        account?.takeIf { it.isNotBlank() }?.let { payload.put("account", it) }
         plan?.takeIf { it.isNotBlank() }?.let { payload.put("plan", it) }
-        return bridgeResult(
-            ProviderId.CODEX,
-            verifiedPayload(
-                ProviderId.CODEX,
-                payload,
-                "codex_usage_unavailable",
-                listOf("dashboard:browser_parse")
-            )
-        )
+        return payload
     }
 
     private fun fetchClaudePayload(userAgent: String): NativePayloadResult {

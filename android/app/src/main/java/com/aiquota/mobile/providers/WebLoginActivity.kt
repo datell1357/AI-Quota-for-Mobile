@@ -30,6 +30,7 @@ import java.net.URI
 import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import org.json.JSONObject
 
 open class WebLoginActivity : Activity() {
@@ -48,12 +49,15 @@ open class WebLoginActivity : Activity() {
     private var geminiSignInClickAttempts = 0
     private var glmPostLoginRedirected = false
     private var openCodePostLoginRedirected = false
+    private var codexPostLoginUsageRedirected = false
+    private var codexNativeCollectionStarted = false
     @Volatile
     private var oauthCallbackHandled = false
     @Volatile
     private var currentBridgePageUrl = ""
     @Volatile
     private var currentBridgeUserAgent = ProviderWebViewUserAgent.loginUserAgent()
+    private val codexNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
     private val popupViews = mutableSetOf<WebView>()
     private val collectorInjectionKeys = mutableSetOf<String>()
     private val startedAtMs = SystemClock.elapsedRealtime()
@@ -190,9 +194,14 @@ open class WebLoginActivity : Activity() {
 
     private inner class LoginWebChromeClient : WebChromeClient() {
         override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
+            val message = if (providerId == ProviderId.CODEX) {
+                " message=${consoleMessage.message().take(240)}"
+            } else {
+                ""
+            }
             Log.d(
                 "AIQuotaLoginConsole",
-                "provider=${providerId.storageId} consoleLevel=${consoleMessage.messageLevel()} line=${consoleMessage.lineNumber()}"
+                "provider=${providerId.storageId} consoleLevel=${consoleMessage.messageLevel()} line=${consoleMessage.lineNumber()}$message"
             )
             return true
         }
@@ -218,6 +227,11 @@ open class WebLoginActivity : Activity() {
 
     private inner class LoginWebViewClient : WebViewClient() {
         override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
+            if (isCodexAboutBlankNavigation(url)) {
+                noteBridgePageUrl("about:blank")
+                injectCollectorIfReady(view, "about:blank", "", resourceTriggered = true)
+                return
+            }
             noteBridgePageUrl(url)
             if (handleLoginCompleteNavigation(view, url)) return
             if (maybeRedirectGeminiToUsage(view, url)) return
@@ -229,6 +243,10 @@ open class WebLoginActivity : Activity() {
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val url = request.url.toString()
             Log.d("AIQuotaLogin", "provider=${providerId.storageId} navigate=${safeUrlForLog(url)}")
+            if (isCodexAboutBlankNavigation(url)) {
+                noteBridgePageUrl("about:blank")
+                return false
+            }
             if (request.isForMainFrame) {
                 noteBridgePageUrl(url)
                 ProviderLoginUrlRewriter.rewriteMainFrameUrl(providerId, url)?.let { rewrittenUrl ->
@@ -253,6 +271,7 @@ open class WebLoginActivity : Activity() {
         override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
             val url = request.url.toString()
             captureCodexAccountId(url)
+            captureCodexNativeFetchHeaders(request)
             logGoogleCodeAssistResource(request)
             Log.d("AIQuotaLogin", "provider=${providerId.storageId} resource=${safeUrlForLog(url)}")
             if (ProviderLoginStrategy.isInteractiveLoginSessionReached(providerId, url) &&
@@ -273,11 +292,11 @@ open class WebLoginActivity : Activity() {
             }
             if (providerId == ProviderId.CODEX) {
                 val pageUrl = currentBridgePageUrl.ifBlank { url }
-                if (ProviderWebCollectorScripts.shouldRunCollectorFromResource(providerId, pageUrl, url)) {
-                    view.post {
-                        noteBridgePageUrl(pageUrl)
-                        injectCollectorIfReady(view, pageUrl, "", resourceTriggered = true)
-                    }
+                if (shouldRedirectCodexToUsageAfterLogin(pageUrl, url)) {
+                    view.post { maybeRedirectCodexToUsageAfterLogin(view, pageUrl, url) }
+                }
+                if (shouldStartCodexNativeCollectionFromResource(url)) {
+                    view.post { maybeStartCodexNativeCollection(view, pageUrl, "resource") }
                 }
             }
             return if (ProviderLoginWebViewPolicy.shouldInterceptRequest(providerId, url)) {
@@ -292,7 +311,9 @@ open class WebLoginActivity : Activity() {
             noteBridgePageUrl(pageUrl)
             if (!ProviderWebCollectorScripts.shouldRunCollectorFromResource(providerId, pageUrl, url)) return
             if (providerId == ProviderId.CODEX) {
-                injectCollectorIfReady(view, pageUrl, "", resourceTriggered = true)
+                if (shouldStartCodexNativeCollectionFromResource(url)) {
+                    maybeStartCodexNativeCollection(view, pageUrl, "resource")
+                }
                 return
             }
             view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
@@ -301,14 +322,17 @@ open class WebLoginActivity : Activity() {
         }
 
         override fun onPageFinished(view: WebView, url: String) {
-            noteBridgePageUrl(url)
+            val effectiveUrl = if (isCodexAboutBlankNavigation(url)) "about:blank" else url
+            noteBridgePageUrl(effectiveUrl)
             logFirstPageFinished(url)
-            if (handleLoginCompleteNavigation(view, url)) return
-            if (maybeRedirectGeminiToUsage(view, url)) return
-            if (maybeRedirectGlmToUsage(view, url)) return
-            if (maybeRedirectOpenCodeToGo(view, url)) return
-            if (providerId == ProviderId.CODEX && ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, url)) {
-                injectCollectorIfReady(view, url, "", resourceTriggered = true)
+            if (handleLoginCompleteNavigation(view, effectiveUrl)) return
+            if (maybeRedirectGeminiToUsage(view, effectiveUrl)) return
+            if (maybeRedirectGlmToUsage(view, effectiveUrl)) return
+            if (maybeRedirectOpenCodeToGo(view, effectiveUrl)) return
+            if (providerId == ProviderId.CODEX && ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, effectiveUrl)) {
+                if (effectiveUrl == "about:blank") {
+                    injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
+                }
                 return
             }
             view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
@@ -466,14 +490,19 @@ open class WebLoginActivity : Activity() {
         }
 
         @JavascriptInterface
-        fun parseCodexUsagePayload(rawText: String, plan: String?, accountId: String?): String {
-            if (providerId != ProviderId.CODEX) {
-                return JSONObject().put("ok", false).put("error", "provider_mismatch").toString()
+        fun fetchProviderJson(url: String): String {
+            if (!ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
+                return JSONObject().put("ok", false).put("error", "provider_not_allowlisted").toString()
             }
-            if (!isNativeFetchBridgePageAllowed(ProviderId.CODEX)) {
+            if (!isNativeFetchBridgePageAllowed(providerId)) {
                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
             }
-            return ProviderNativeUsagePayloadFetcher.bridgeCodexDashboardPayload(rawText, plan, accountId)
+            val headers = if (providerId == ProviderId.CODEX) {
+                codexNativeFetchHeadersFor(url)
+            } else {
+                emptyMap()
+            }
+            return ProviderNativeJsonBridge.fetchJson(providerId, url, currentBridgeUserAgent, headers)
         }
 
         @JavascriptInterface
@@ -485,6 +514,17 @@ open class WebLoginActivity : Activity() {
                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
             }
             return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(providerId, currentBridgeUserAgent)
+        }
+
+        @JavascriptInterface
+        fun parseCodexFetchedPayload(rawText: String, plan: String?, accountId: String?, account: String?): String {
+            if (providerId != ProviderId.CODEX) {
+                return JSONObject().put("ok", false).put("error", "provider_mismatch").toString()
+            }
+            if (!isNativeFetchBridgePageAllowed(ProviderId.CODEX)) {
+                return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
+            }
+            return ProviderNativeUsagePayloadFetcher.bridgeCodexFetchedPayload(rawText, plan, accountId, account)
         }
 
         private fun isNativeFetchBridgePageAllowed(expectedProviderId: ProviderId): Boolean {
@@ -597,6 +637,101 @@ open class WebLoginActivity : Activity() {
         return true
     }
 
+    private fun maybeStartCodexNativeCollection(view: WebView, url: String, reason: String): Boolean {
+        if (providerId != ProviderId.CODEX || finished || codexNativeCollectionStarted || url == "about:blank") return false
+        codexNativeCollectionStarted = true
+        CookieManager.getInstance().flush()
+        collectorInjectionKeys.clear()
+        noteBridgePageUrl("about:blank")
+        Log.i("AIQuotaLogin", "provider=codex nativeCollectorStart=aboutblank reason=$reason from=${hostOf(url)}${pathOf(url)}")
+        injectCodexAboutBlankFrameCollector(view, url)
+        return true
+    }
+
+    private fun injectCodexAboutBlankFrameCollector(view: WebView, sourceUrl: String) {
+        val script = ProviderWebCollectorScripts.build(
+            providerId = ProviderId.CODEX,
+            cookies = cookiesFor(sourceUrl),
+            geminiCollectorAsset = geminiCollectorAsset,
+            antigravityCollectorAsset = antigravityCollectorAsset,
+            observedAccountId = observedCodexAccountId,
+            pageText = "",
+            pageUrl = "about:blank",
+            awaitInteractiveLoginUsage = true
+        )
+        val quotedScript = JSONObject.quote("window.AIQuotaCollectorBridge = parent.AIQuotaCollectorBridge;\n$script")
+        val frameScript = """
+            (function(){
+              var id = "__aiquota_codex_native_frame";
+              var oldFrame = document.getElementById(id);
+              if (oldFrame && oldFrame.parentNode) oldFrame.parentNode.removeChild(oldFrame);
+              var frame = document.createElement("iframe");
+              frame.id = id;
+              frame.src = "about:blank";
+              frame.style.cssText = "display:none;width:0;height:0;border:0";
+              (document.documentElement || document.body).appendChild(frame);
+              try {
+                var doc = frame.contentDocument || (frame.contentWindow && frame.contentWindow.document);
+                var nonceNode = document.querySelector("script[nonce]");
+                var nonce = nonceNode ? (nonceNode.nonce || nonceNode.getAttribute("nonce") || "") : "";
+                doc.open();
+                doc.write("<!doctype html><html><head><meta charset=\"utf-8\"></head><body></body></html>");
+                doc.close();
+                var script = doc.createElement("script");
+                if (nonce) script.setAttribute("nonce", nonce);
+                script.text = $quotedScript;
+                (doc.body || doc.documentElement).appendChild(script);
+              } catch (error) {
+                try {
+                  window.AIQuotaCollectorBridge.postCollectorError("codex_usage_unavailable", String(error && error.message || error));
+                } catch (_) {}
+              }
+            })();
+        """.trimIndent()
+        Log.i("AIQuotaCollector", "provider=codex collectorMode=webview-js inject host=aboutblank-frame")
+        view.evaluateJavascript(frameScript, null)
+    }
+
+    private fun maybeRedirectCodexToUsageAfterLogin(view: WebView, pageUrl: String, resourceUrl: String): Boolean {
+        if (!shouldRedirectCodexToUsageAfterLogin(pageUrl, resourceUrl)) return false
+        codexPostLoginUsageRedirected = true
+        collectorInjectionKeys.clear()
+        Log.i("AIQuotaLogin", "provider=codex postLoginRedirect=analytics from=${hostOf(pageUrl)}${pathOf(pageUrl)}")
+        view.loadUrl(ProviderLoginStrategy.CODEX_CALLBACK_RECOVERY_URL)
+        return true
+    }
+
+    private fun shouldRedirectCodexToUsageAfterLogin(pageUrl: String, resourceUrl: String): Boolean {
+        if (providerId != ProviderId.CODEX || finished || codexPostLoginUsageRedirected || codexNativeCollectionStarted) return false
+        val page = runCatching { URI(pageUrl) }.getOrNull() ?: return false
+        val resource = runCatching { URI(resourceUrl) }.getOrNull() ?: return false
+        val pageHost = page.host.orEmpty().lowercase(Locale.US)
+        val resourceHost = resource.host.orEmpty().lowercase(Locale.US)
+        if (pageHost != "chatgpt.com" && !pageHost.endsWith(".chatgpt.com")) return false
+        if (resourceHost != "chatgpt.com" && !resourceHost.endsWith(".chatgpt.com")) return false
+        val pagePath = page.path.orEmpty().lowercase(Locale.US)
+        if (pagePath.startsWith("/codex/cloud/settings/analytics") || pagePath.startsWith("/codex/settings/usage")) return false
+        if (pagePath.startsWith("/auth") || pagePath.startsWith("/login")) return false
+        val resourcePath = resource.path.orEmpty().lowercase(Locale.US)
+        return resourcePath == "/backend-api/me" || resourcePath.startsWith("/backend-api/accounts/check")
+    }
+
+    private fun shouldStartCodexNativeCollectionFromResource(url: String): Boolean {
+        if (providerId != ProviderId.CODEX) return false
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        if (host != "chatgpt.com" && !host.endsWith(".chatgpt.com")) return false
+        val path = uri.path.orEmpty().lowercase(Locale.US)
+        return path == "/backend-api/wham/usage"
+    }
+
+    private fun isCodexAboutBlankNavigation(url: String): Boolean {
+        if (providerId != ProviderId.CODEX || !codexNativeCollectionStarted) return false
+        if (url == "about:blank") return true
+        val scheme = runCatching { URI(url).scheme.orEmpty() }.getOrDefault("")
+        return scheme.equals("about", ignoreCase = true)
+    }
+
     private fun recoverCodexFromLocalAuthCallback(view: WebView, url: String) {
         CookieManager.getInstance().flush()
         collectorInjectionKeys.clear()
@@ -684,12 +819,6 @@ open class WebLoginActivity : Activity() {
         noteBridgePageUrl(url)
         val cookies = cookiesFor(url)
         if (!resourceTriggered && !ProviderWebCollectorScripts.shouldRunCollector(providerId, url, cookies, pageText)) return
-        val injectionKey = "${providerId.storageId}:${hostOf(url)}:${routeKeyOf(url)}"
-        val firstInjectionForPage = collectorInjectionKeys.add(injectionKey)
-        if (!firstInjectionForPage && !ProviderWebCollectorScripts.shouldAllowCollectorReinjection(providerId)) return
-        if (firstInjectionForPage) {
-            Log.i("AIQuotaCollector", "provider=${providerId.storageId} collectorMode=webview-js inject host=${hostOf(url)}")
-        }
         val script = ProviderWebCollectorScripts.build(
             providerId = providerId,
             cookies = cookies,
@@ -700,6 +829,13 @@ open class WebLoginActivity : Activity() {
             pageUrl = url,
             awaitInteractiveLoginUsage = providerId == ProviderId.CODEX || providerId == ProviderId.GEMINI
         )
+        if (script.isBlank()) return
+        val injectionKey = "${providerId.storageId}:${hostOf(url)}:${routeKeyOf(url)}"
+        val firstInjectionForPage = collectorInjectionKeys.add(injectionKey)
+        if (!firstInjectionForPage && !ProviderWebCollectorScripts.shouldAllowCollectorReinjection(providerId)) return
+        if (firstInjectionForPage) {
+            Log.i("AIQuotaCollector", "provider=${providerId.storageId} collectorMode=webview-js inject host=${hostOf(url)}")
+        }
         view.evaluateJavascript(script, null)
     }
 
@@ -732,6 +868,47 @@ open class WebLoginActivity : Activity() {
             observedCodexAccountId = accountId
             Log.i("AIQuotaLogin", "provider=codex observedAccountId=true")
         }
+    }
+
+    private fun captureCodexNativeFetchHeaders(request: WebResourceRequest) {
+        if (providerId != ProviderId.CODEX) return
+        val url = request.url.toString()
+        if (!ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, url)) return
+        val headers = request.requestHeaders.orEmpty()
+            .filterKeys(::isCodexNativeForwardableHeader)
+            .filterValues(String::isNotBlank)
+        if (headers.isEmpty()) return
+        val key = codexNativeHeaderKey(url) ?: return
+        codexNativeFetchHeaders[key] = headers
+        codexNativeFetchHeaders[CODEX_NATIVE_HEADER_FALLBACK_KEY] = headers
+        Log.d(
+            "AIQuotaLogin",
+            "provider=codex capturedNativeHeaders path=${pathOf(url)} names=${headers.keys.sorted().joinToString("|")}"
+        )
+    }
+
+    private fun codexNativeFetchHeadersFor(url: String): Map<String, String> {
+        val key = codexNativeHeaderKey(url)
+        return key?.let { codexNativeFetchHeaders[it] }
+            ?: codexNativeFetchHeaders[CODEX_NATIVE_HEADER_FALLBACK_KEY]
+            ?: emptyMap()
+    }
+
+    private fun codexNativeHeaderKey(url: String): String? {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return null
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        val path = uri.path.orEmpty().lowercase(Locale.US)
+        if (host != "chatgpt.com" && !host.endsWith(".chatgpt.com")) return null
+        return "$host$path"
+    }
+
+    private fun isCodexNativeForwardableHeader(name: String): Boolean {
+        val normalized = name.trim()
+        if (normalized.isBlank()) return false
+        return !normalized.equals("Host", ignoreCase = true) &&
+            !normalized.equals("Connection", ignoreCase = true) &&
+            !normalized.equals("Content-Length", ignoreCase = true) &&
+            !normalized.equals("Accept-Encoding", ignoreCase = true)
     }
 
     private fun finishSuccessfulLogin(
@@ -975,6 +1152,7 @@ open class WebLoginActivity : Activity() {
         private const val GEMINI_USAGE_REDIRECT_MIN_INTERVAL_MS = 1_500L
         private const val GEMINI_USAGE_REDIRECT_MAX_ATTEMPTS = 2
         private const val GEMINI_SIGN_IN_CLICK_MAX_ATTEMPTS = 2
+        private const val CODEX_NATIVE_HEADER_FALLBACK_KEY = "*"
         private const val PAGE_CAPTURE_SCRIPT =
             "(function(){return (document.documentElement.innerText||document.title||'').slice(0,12000);})()"
 

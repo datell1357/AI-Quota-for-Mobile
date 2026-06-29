@@ -39,8 +39,10 @@ class WebLoginActivityNativeBridgeTest {
     }
 
     @Test
-    fun resourceTriggeredCodexInjectionDoesNotRequirePageTextReadinessAgain() {
+    fun codexLoginSwitchesToAboutBlankBeforeNativeCollection() {
         val source = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val overrideNavigationBlock = source.substringAfter("override fun shouldOverrideUrlLoading")
+            .substringBefore("override fun shouldInterceptRequest")
         val onLoadResourceBlock = source.substringAfter("override fun onLoadResource")
             .substringBefore("override fun onPageFinished")
         val onPageFinishedBlock = source.substringAfter("override fun onPageFinished")
@@ -53,15 +55,25 @@ class WebLoginActivityNativeBridgeTest {
             .substringBefore("        val injectionKey")
 
         assertTrue(onLoadResourceBlock.contains("if (providerId == ProviderId.CODEX)"))
-        assertTrue(onLoadResourceBlock.contains("injectCollectorIfReady(view, pageUrl, \"\", resourceTriggered = true)"))
-        assertTrue(onPageFinishedBlock.contains("providerId == ProviderId.CODEX && ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, url)"))
-        assertTrue(onPageFinishedBlock.contains("injectCollectorIfReady(view, url, \"\", resourceTriggered = true)"))
-        assertTrue(interceptRequestBlock.contains("ProviderWebCollectorScripts.shouldRunCollectorFromResource(providerId, pageUrl, url)"))
-        assertTrue(interceptRequestBlock.contains("injectCollectorIfReady(view, pageUrl, \"\", resourceTriggered = true)"))
+        assertTrue(onLoadResourceBlock.contains("maybeStartCodexNativeCollection(view, pageUrl, \"resource\")"))
+        assertTrue(onPageFinishedBlock.contains("val effectiveUrl = if (isCodexAboutBlankNavigation(url)) \"about:blank\" else url"))
+        assertTrue(onPageFinishedBlock.contains("providerId == ProviderId.CODEX && ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, effectiveUrl)"))
+        assertTrue(onPageFinishedBlock.contains("if (effectiveUrl == \"about:blank\")"))
+        assertFalse(onPageFinishedBlock.contains("maybeStartCodexNativeCollection(view, url, \"page_finished\")"))
+        assertTrue(overrideNavigationBlock.contains("if (isCodexAboutBlankNavigation(url))"))
+        assertTrue(overrideNavigationBlock.contains("noteBridgePageUrl(\"about:blank\")"))
+        assertTrue(interceptRequestBlock.contains("shouldStartCodexNativeCollectionFromResource(url)"))
+        assertTrue(interceptRequestBlock.contains("maybeStartCodexNativeCollection(view, pageUrl, \"resource\")"))
         assertFalse(interceptRequestBlock.contains("view.url"))
         assertTrue(collectorErrorBlock.contains("if (providerId == ProviderId.CODEX)"))
         assertTrue(collectorErrorBlock.contains("collectorInjectionKeys.clear()"))
         assertTrue(injectBlock.contains("resourceTriggered: Boolean = false"))
         assertTrue(injectBlock.contains("if (!resourceTriggered && !ProviderWebCollectorScripts.shouldRunCollector(providerId, url, cookies, pageText)) return"))
+        assertFalse(source.contains("location.replace('about:blank')"))
+        assertTrue(source.contains("private fun injectCodexAboutBlankFrameCollector"))
+        assertTrue(source.contains("frame.src = \"about:blank\""))
+        assertTrue(source.contains("__aiquota_codex_native_frame"))
+        assertTrue(source.contains("private fun isCodexAboutBlankNavigation(url: String): Boolean"))
+        assertTrue(source.contains("if (providerId != ProviderId.CODEX || !codexNativeCollectionStarted) return false"))
     }
 }

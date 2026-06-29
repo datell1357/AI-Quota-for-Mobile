@@ -282,7 +282,7 @@ object ProviderDefinitionRegistry {
     private fun codexDefinition(providerId: ProviderId): ProviderDefinition {
         return ProviderDefinition(
             providerId = providerId,
-            loginStartUrl = "https://chatgpt.com/auth/login",
+            loginStartUrl = ProviderLoginStrategy.CODEX_CALLBACK_RECOVERY_URL,
             allowedHosts = setOf(
                 "chatgpt.com",
                 "chat.openai.com",

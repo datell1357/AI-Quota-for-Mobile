@@ -1054,17 +1054,6 @@ class ProviderBackgroundRefreshService : Service() {
         }
 
         @JavascriptInterface
-        fun parseCodexUsagePayload(rawText: String, plan: String?, accountId: String?): String {
-            if (ownerProviderId != ProviderId.CODEX) {
-                return JSONObject().put("ok", false).put("error", "provider_mismatch").toString()
-            }
-            if (!isNativeFetchBridgePageAllowed(ownerProviderId)) {
-                return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
-            }
-            return ProviderNativeUsagePayloadFetcher.bridgeCodexDashboardPayload(rawText, plan, accountId)
-        }
-
-        @JavascriptInterface
         fun fetchProviderJson(url: String): String {
             if (!ProviderAboutBlankCollectorPolicy.isEnabled(ownerProviderId)) {
                 return JSONObject().put("ok", false).put("error", "provider_not_allowlisted").toString()
@@ -1084,6 +1073,17 @@ class ProviderBackgroundRefreshService : Service() {
                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
             }
             return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(ownerProviderId, collectorUserAgent)
+        }
+
+        @JavascriptInterface
+        fun parseCodexFetchedPayload(rawText: String, plan: String?, accountId: String?, account: String?): String {
+            if (ownerProviderId != ProviderId.CODEX) {
+                return JSONObject().put("ok", false).put("error", "provider_mismatch").toString()
+            }
+            if (!isNativeFetchBridgePageAllowed(ProviderId.CODEX)) {
+                return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
+            }
+            return ProviderNativeUsagePayloadFetcher.bridgeCodexFetchedPayload(rawText, plan, accountId, account)
         }
 
         private fun isNativeFetchBridgePageAllowed(providerId: ProviderId): Boolean {

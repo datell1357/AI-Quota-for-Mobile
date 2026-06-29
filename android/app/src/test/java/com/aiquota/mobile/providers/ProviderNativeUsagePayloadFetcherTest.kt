@@ -85,4 +85,36 @@ class ProviderNativeUsagePayloadFetcherTest {
         assertFalse(bridgeMethod.contains("GoogleWebSessionCodeAssistFetcher"))
         assertTrue(bridgeMethod.contains("ProviderId.GEMINI -> fetchGeminiPayload(userAgent)"))
     }
+
+    @Test
+    fun codexNativeFetchedPayloadUsesWhamUsageJsonWithoutDomFallback() {
+        val payload = ProviderNativeUsagePayloadFetcher.codexFetchedPayloadForTest(
+            rawText = """
+                {
+                  "usage": {
+                    "rate_limits": {
+                      "primary_window": {"used_percent": 20, "reset_after_seconds": 18000},
+                      "secondary_window": {"remaining_percent": 44}
+                    }
+                  }
+                }
+            """.trimIndent(),
+            plan = "prolite",
+            accountId = "acct_test",
+            account = "tester@example.com"
+        )
+        assertNotNull(payload)
+        val snapshot = ProviderUsageNormalizer.normalize(
+            providerId = ProviderId.CODEX,
+            rawPayload = payload!!.toString(),
+            source = ProviderPayloadSource.NETWORK_RESPONSE,
+            fetchedAt = "2026-06-29T00:00:00Z"
+        )
+
+        assertNotNull(snapshot)
+        assertEquals("Pro 5x", snapshot!!.plan)
+        assertEquals("tester@example.com", snapshot.account)
+        assertEquals(0.80f, snapshot.lines.single { it.key == "codex:primary_window" }.remainingPercent ?: 0f, 0.001f)
+        assertEquals(0.44f, snapshot.lines.single { it.key == "codex:secondary_window" }.remainingPercent ?: 0f, 0.001f)
+    }
 }

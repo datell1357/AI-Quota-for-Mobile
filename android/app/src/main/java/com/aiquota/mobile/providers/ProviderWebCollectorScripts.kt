@@ -442,20 +442,18 @@ object ProviderWebCollectorScripts {
         pageUrl: String = "",
         awaitInteractiveLoginUsage: Boolean = false
     ): String {
-        val collectorScript = if (
-            providerId == ProviderId.CODEX &&
-            ProviderAboutBlankCollectorPolicy.isEnabled(providerId) &&
-            pageUrl.isNotBlank() &&
-            pageUrl != "about:blank"
-        ) {
-            codexCredentialedBrowserPayload(
-                forceCollectorStart = awaitInteractiveLoginUsage
-            )
+        val collectorScript = if (providerId == ProviderId.CODEX && ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
+            if (pageUrl == "about:blank") {
+                codexAboutBlankJsonPayload(forceCollectorStart = awaitInteractiveLoginUsage)
+            } else {
+                ""
+            }
         } else if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && pageUrl.isNotBlank()) {
-            nativeProviderPayload(
-                providerId,
-                forceCollectorStart = providerId == ProviderId.CODEX && awaitInteractiveLoginUsage
-            )
+            if (providerId == ProviderId.CODEX) {
+                codexAboutBlankJsonPayload(forceCollectorStart = awaitInteractiveLoginUsage)
+            } else {
+                nativeProviderPayload(providerId)
+            }
         } else {
             ProviderScriptProviders.providerFor(providerId).collectorScript(
                 ProviderCollectorAssets(
@@ -1097,158 +1095,84 @@ object ProviderWebCollectorScripts {
         """.trimIndent()
     }
 
-    internal fun codexCredentialedBrowserPayload(forceCollectorStart: Boolean = false): String {
+    internal fun codexAboutBlankJsonPayload(forceCollectorStart: Boolean = false): String {
         val forceCollectorStartJson = if (forceCollectorStart) "true" else "false"
         return """
             (function(){
               if (!window.__AIQuotaStartProviderCollector || !window.__AIQuotaStartProviderCollector("codex", $forceCollectorStartJson)) return;
               var c = window.__AIQuotaCollector;
               if (!c) return;
-              function parseJson(text) {
-                try { return text ? JSON.parse(text) : null; } catch (error) { return null; }
-              }
-              function fetchText(url, accept, timeoutMs) {
-                var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-                var timer = null;
-                var request = (async function() {
-                  var options = {
-                    credentials: "include",
-                    headers: { "accept": accept || "application/json, text/html" }
-                  };
-                  if (controller) options.signal = controller.signal;
-                  var response = await fetch(url, options);
-                  var text = await response.text();
-                  return { ok: response.ok, status: response.status, url: url, text: text };
-                })();
-                var timeout = new Promise(function(resolve) {
-                  timer = setTimeout(function() {
-                    try { if (controller) controller.abort(); } catch (error) {}
-                    resolve({ ok: false, status: "timeout", url: url, text: "" });
-                  }, timeoutMs || 6000);
-                });
-                return Promise.race([request, timeout]).finally(function() {
-                  if (timer) clearTimeout(timer);
-                });
-              }
-              function fetchJson(url) {
-                return fetchText(url, "application/json", 5000).then(function(result) {
-                  result.json = parseJson(result.text);
-                  return result;
-                }).catch(function(error) {
-                  return { ok: false, status: error && error.name === "AbortError" ? "timeout" : "error", url: url, json: null };
-                });
-              }
-              function pickString(value, keys, depth) {
-                if (!value || depth > 5) return null;
-                if (typeof value === "string") return value;
+              var accountKeys = [
+                "account_id", "accountId", "current_account_id", "currentAccountId",
+                "chatgpt_account_id", "chatgptAccountId", "id"
+              ];
+              var planKeys = ["plan", "plan_type", "planType", "subscription_plan", "subscriptionPlan", "name"];
+              var emailKeys = ["email", "account_email", "accountEmail"];
+              function findDeep(value, keys, depth) {
+                if (!value || depth > 8) return null;
                 if (Array.isArray(value)) {
-                  for (var i = 0; i < value.length && i < 40; i += 1) {
-                    var fromArray = pickString(value[i], keys, depth + 1);
-                    if (fromArray) return fromArray;
+                  for (var i = 0; i < value.length; i += 1) {
+                    var arrayResult = findDeep(value[i], keys, depth + 1);
+                    if (arrayResult) return arrayResult;
                   }
                   return null;
                 }
                 if (typeof value !== "object") return null;
                 for (var k = 0; k < keys.length; k += 1) {
-                  var direct = value[keys[k]];
-                  if (typeof direct === "string" && direct.length > 0) return direct;
+                  var key = keys[k];
+                  if (Object.prototype.hasOwnProperty.call(value, key) && value[key] !== null && value[key] !== undefined && value[key] !== "") {
+                    return String(value[key]);
+                  }
                 }
-                var objectKeys = Object.keys(value);
-                for (var j = 0; j < objectKeys.length && j < 80; j += 1) {
-                  var fromChild = pickString(value[objectKeys[j]], keys, depth + 1);
-                  if (fromChild) return fromChild;
+                var names = Object.keys(value);
+                for (var n = 0; n < names.length; n += 1) {
+                  var result = findDeep(value[names[n]], keys, depth + 1);
+                  if (result) return result;
                 }
                 return null;
               }
-              function pickAccountId(value) {
-                return pickString(value, [
-                  "chatgpt_account_id",
-                  "chatgptAccountId",
-                  "current_account_id",
-                  "currentAccountId",
-                  "selected_account_id",
-                  "selectedAccountId",
-                  "account_id",
-                  "accountId"
-                ], 0);
+              function jsonOf(result) {
+                return result && result.json ? result.json : {};
               }
-              function pickPlan(value) {
-                return pickString(value, [
-                  "plan_type",
-                  "planType",
-                  "subscription_type",
-                  "subscriptionType",
-                  "subscription_name",
-                  "subscriptionName",
-                  "plan",
-                  "plan_name",
-                  "planName",
-                  "plan_slug",
-                  "planSlug",
-                  "tier",
-                  "sku",
-                  "name",
-                  "title",
-                  "display_name",
-                  "displayName"
-                ], 0);
-              }
-              function parseCodexDashboard(rawText, plan, accountId) {
-                if (!window.AIQuotaCollectorBridge || !window.AIQuotaCollectorBridge.parseCodexUsagePayload) {
-                  return { ok: false, diagnostic: "native_bridge_missing" };
+              Promise.all([
+                c.fetchJson("https://chatgpt.com/api/auth/session").catch(function(){ return null; }),
+                c.fetchJson("https://chatgpt.com/backend-api/me").catch(function(){ return null; }),
+                c.fetchJson("https://chatgpt.com/backend-api/accounts/check/v4-2023-04-27").catch(function(){ return null; })
+              ]).then(function(initial) {
+                var session = jsonOf(initial[0]);
+                var me = jsonOf(initial[1]);
+                var accountCheck = jsonOf(initial[2]);
+                var accountId = findDeep(me, accountKeys, 0) || findDeep(accountCheck, accountKeys, 0) || findDeep(session, accountKeys, 0) || "";
+                var subscriptionUrl = "https://chatgpt.com/backend-api/subscriptions" + (accountId ? "?account_id=" + encodeURIComponent(accountId) : "");
+                 return Promise.all([
+                   Promise.resolve(session),
+                   Promise.resolve(me),
+                   Promise.resolve(accountCheck),
+                   c.fetchJson(subscriptionUrl).catch(function(){ return null; }),
+                   c.fetchJson("https://chatgpt.com/backend-api/wham/usage").catch(function(){ return null; }),
+                   c.fetchJson("https://chatgpt.com/codex/cloud/settings/analytics").catch(function(){ return null; })
+                 ]);
+               }).then(function(results) {
+                 var session = results[0] || {};
+                 var me = results[1] || {};
+                 var accountCheck = results[2] || {};
+                 var subscription = jsonOf(results[3]);
+                 var whamUsage = jsonOf(results[4]);
+                 var dashboard = jsonOf(results[5]);
+                 var accountId = findDeep(me, accountKeys, 0) || findDeep(accountCheck, accountKeys, 0) || findDeep(session, accountKeys, 0) || "";
+                 var plan = findDeep(subscription, planKeys, 0) || findDeep(accountCheck, planKeys, 0) || findDeep(me, planKeys, 0) || "";
+                 var account = findDeep(me, emailKeys, 0) || findDeep(session, emailKeys, 0) || findDeep(accountCheck, emailKeys, 0) || "";
+                 var usageEnvelope = {
+                   usage: whamUsage || {},
+                   dashboard: dashboard && dashboard.rawText ? String(dashboard.rawText) : dashboard || {}
+                 };
+                 var parsed = JSON.parse(window.AIQuotaCollectorBridge.parseCodexFetchedPayload(JSON.stringify(usageEnvelope), plan, accountId, account));
+                if (parsed && parsed.ok && parsed.payload) {
+                  c.post(parsed.payload);
+                  return;
                 }
-                try {
-                  return JSON.parse(window.AIQuotaCollectorBridge.parseCodexUsagePayload(rawText || "", plan || "", accountId || ""));
-                } catch (error) {
-                  return { ok: false, diagnostic: String(error && error.message || error) };
-                }
-              }
-              async function runCodexNativeJson() {
-                var session = await fetchJson("https://chatgpt.com/api/auth/session");
-                var me = await fetchJson("https://chatgpt.com/backend-api/me");
-                var accountCheck = await fetchJson("https://chatgpt.com/backend-api/accounts/check/v4-2023-04-27");
-                var accountId = pickAccountId(me.json) || pickAccountId(accountCheck.json) || pickAccountId(session.json) || c.observedAccountId || "";
-                var plan = pickPlan(me.json) || pickPlan(accountCheck.json) || pickPlan(session.json) || "";
-                var subscriptionUrls = accountId
-                  ? [
-                      "https://chatgpt.com/backend-api/subscriptions?account_id=" + encodeURIComponent(accountId),
-                      "https://chatgpt.com/backend-api/subscriptions"
-                    ]
-                  : ["https://chatgpt.com/backend-api/subscriptions"];
-                var subscriptionStatus = null;
-                for (var s = 0; s < subscriptionUrls.length && !plan; s += 1) {
-                  var subscription = await fetchJson(subscriptionUrls[s]);
-                  subscriptionStatus = subscription.status;
-                  if (subscription.ok) plan = pickPlan(subscription.json) || "";
-                }
-                var dashboardUrls = [
-                  "https://chatgpt.com/codex/cloud/settings/analytics",
-                  "https://chatgpt.com/codex/settings/usage"
-                ];
-                var parseDiagnostic = "codex_usage_unavailable";
-                var dashboardStatuses = [];
-                for (var i = 0; i < dashboardUrls.length; i += 1) {
-                  var dashboard = await fetchText(dashboardUrls[i], "text/html, application/json", 7000).catch(function(error) {
-                    return { ok: false, status: error && error.name === "AbortError" ? "timeout" : "error", text: "" };
-                  });
-                  dashboardStatuses.push(String(dashboard.status));
-                  if (!dashboard.ok) continue;
-                  var parsed = parseCodexDashboard(dashboard.text, plan, accountId);
-                  if (parsed && parsed.ok && parsed.payload) {
-                    c.post(parsed.payload);
-                    return;
-                  }
-                  parseDiagnostic = parsed && (parsed.diagnostic || parsed.error) || parseDiagnostic;
-                }
-                c.fail(parseDiagnostic, JSON.stringify({
-                  sessionStatus: session.status,
-                  meStatus: me.status,
-                  accountCheckStatus: accountCheck.status,
-                  subscriptionStatus: subscriptionStatus,
-                  dashboardStatuses: dashboardStatuses
-                }));
-              }
-              runCodexNativeJson().catch(function(error) {
+                c.fail(parsed && (parsed.diagnostic || parsed.error) || "codex_usage_unavailable", JSON.stringify(parsed || {}));
+              }).catch(function(error) {
                 c.fail("codex_usage_unavailable", String(error && error.message || error));
               });
             })();

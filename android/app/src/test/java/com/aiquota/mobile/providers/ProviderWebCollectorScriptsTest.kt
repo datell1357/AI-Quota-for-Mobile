@@ -107,18 +107,15 @@ class ProviderWebCollectorScriptsTest {
     fun scopedProvidersBuildOnlyNativeUsagePayloadCollector() {
         mapOf(
             ProviderId.CLAUDE to "https://claude.ai/new",
-            ProviderId.CODEX to "https://chatgpt.com/",
+            ProviderId.CODEX to "about:blank",
             ProviderId.GEMINI to "https://gemini.google.com/usage",
             ProviderId.COPILOT to "https://github.com/settings/copilot/features"
         ).forEach { (providerId, pageUrl) ->
             val script = ProviderWebCollectorScripts.build(providerId, emptyMap(), "", pageUrl = pageUrl)
 
-            if (providerId == ProviderId.CODEX) {
-                assertTrue(script.contains("parseCodexUsagePayload"))
-                assertFalse(script.contains("extractCodexVisibleDomUsage"))
-            } else {
-                assertTrue(script.contains("fetchNativeUsagePayload"))
-            }
+            assertTrue(script.contains("fetchNativeUsagePayload"))
+            assertFalse(script.contains("parseCodexUsagePayload"))
+            assertFalse(script.contains("extractCodexVisibleDomUsage"))
             assertFalse(script.contains("scanClaudePageState"))
             assertFalse(script.contains("AIQuotaCodex collector started"))
             assertFalse(script.contains("postGeminiObservedPayload"))
@@ -142,7 +139,8 @@ class ProviderWebCollectorScriptsTest {
             pageUrl = "about:blank"
         )
 
-        assertTrue(interactiveScript.contains("__AIQuotaStartProviderCollector(\"codex\", true)"))
+        assertFalse(interactiveScript.contains("__AIQuotaStartProviderCollector(\"codex\", true)"))
+        assertFalse(interactiveScript.contains("parseCodexUsagePayload"))
         assertTrue(backgroundScript.contains("__AIQuotaStartProviderCollector(\"codex\", false)"))
     }
 
