@@ -332,6 +332,8 @@ open class WebLoginActivity : Activity() {
             if (providerId == ProviderId.CODEX && ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, effectiveUrl)) {
                 if (effectiveUrl == "about:blank") {
                     injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
+                } else {
+                    maybeStartCodexNativeCollection(view, effectiveUrl, "page_finished")
                 }
                 return
             }
@@ -431,6 +433,7 @@ open class WebLoginActivity : Activity() {
                 }
                 if (shouldKeepLoginOpenUntilUsagePayload(errorKind)) {
                     if (providerId == ProviderId.CODEX) {
+                        codexNativeCollectionStarted = false
                         collectorInjectionKeys.clear()
                     }
                     Log.i("AIQuotaCollector", "provider=${providerId.storageId} awaitingUsagePayload=true errorKind=$errorKind")
