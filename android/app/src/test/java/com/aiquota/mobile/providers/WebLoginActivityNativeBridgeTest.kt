@@ -41,10 +41,25 @@ class WebLoginActivityNativeBridgeTest {
     @Test
     fun resourceTriggeredCodexInjectionDoesNotRequirePageTextReadinessAgain() {
         val source = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val onLoadResourceBlock = source.substringAfter("override fun onLoadResource")
+            .substringBefore("override fun onPageFinished")
+        val onPageFinishedBlock = source.substringAfter("override fun onPageFinished")
+            .substringBefore("override fun onReceivedError")
+        val interceptRequestBlock = source.substringAfter("override fun shouldInterceptRequest")
+            .substringBefore("override fun onLoadResource")
+        val collectorErrorBlock = source.substringAfter("fun postCollectorError")
+            .substringBefore("fun fetchCursorJson")
         val injectBlock = source.substringAfter("private fun injectCollectorIfReady")
             .substringBefore("        val injectionKey")
 
-        assertTrue(source.contains("injectCollectorIfReady(view, pageUrl, decodeJsString(encoded), resourceTriggered = true)"))
+        assertTrue(onLoadResourceBlock.contains("if (providerId == ProviderId.CODEX)"))
+        assertTrue(onLoadResourceBlock.contains("injectCollectorIfReady(view, pageUrl, \"\", resourceTriggered = true)"))
+        assertTrue(onPageFinishedBlock.contains("providerId == ProviderId.CODEX && ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, url)"))
+        assertTrue(onPageFinishedBlock.contains("injectCollectorIfReady(view, url, \"\", resourceTriggered = true)"))
+        assertTrue(interceptRequestBlock.contains("ProviderWebCollectorScripts.shouldRunCollectorFromResource(providerId, pageUrl, url)"))
+        assertTrue(interceptRequestBlock.contains("injectCollectorIfReady(view, pageUrl, \"\", resourceTriggered = true)"))
+        assertTrue(collectorErrorBlock.contains("if (providerId == ProviderId.CODEX)"))
+        assertTrue(collectorErrorBlock.contains("collectorInjectionKeys.clear()"))
         assertTrue(injectBlock.contains("resourceTriggered: Boolean = false"))
         assertTrue(injectBlock.contains("if (!resourceTriggered && !ProviderWebCollectorScripts.shouldRunCollector(providerId, url, cookies, pageText)) return"))
     }

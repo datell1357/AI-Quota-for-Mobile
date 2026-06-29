@@ -271,6 +271,15 @@ open class WebLoginActivity : Activity() {
             if (ProviderLoginStrategy.isLoginComplete(providerId, url, cookiesFor(url), "")) {
                 view.post { handleLoginCompleteNavigation(view, url) }
             }
+            if (providerId == ProviderId.CODEX) {
+                val pageUrl = view.url ?: url
+                if (ProviderWebCollectorScripts.shouldRunCollectorFromResource(providerId, pageUrl, url)) {
+                    view.post {
+                        noteBridgePageUrl(pageUrl)
+                        injectCollectorIfReady(view, pageUrl, "", resourceTriggered = true)
+                    }
+                }
+            }
             return if (ProviderLoginWebViewPolicy.shouldInterceptRequest(providerId, url)) {
                 super.shouldInterceptRequest(view, request)
             } else {
@@ -282,6 +291,10 @@ open class WebLoginActivity : Activity() {
             val pageUrl = view.url ?: url
             noteBridgePageUrl(pageUrl)
             if (!ProviderWebCollectorScripts.shouldRunCollectorFromResource(providerId, pageUrl, url)) return
+            if (providerId == ProviderId.CODEX) {
+                injectCollectorIfReady(view, pageUrl, "", resourceTriggered = true)
+                return
+            }
             view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
                 injectCollectorIfReady(view, pageUrl, decodeJsString(encoded), resourceTriggered = true)
             }
@@ -294,6 +307,10 @@ open class WebLoginActivity : Activity() {
             if (maybeRedirectGeminiToUsage(view, url)) return
             if (maybeRedirectGlmToUsage(view, url)) return
             if (maybeRedirectOpenCodeToGo(view, url)) return
+            if (providerId == ProviderId.CODEX && ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, url)) {
+                injectCollectorIfReady(view, url, "", resourceTriggered = true)
+                return
+            }
             view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
                 val pageText = decodeJsString(encoded)
                 if (maybeRedirectGeminiToUsage(view, url)) {
@@ -389,6 +406,9 @@ open class WebLoginActivity : Activity() {
                     return@runOnUiThread
                 }
                 if (shouldKeepLoginOpenUntilUsagePayload(errorKind)) {
+                    if (providerId == ProviderId.CODEX) {
+                        collectorInjectionKeys.clear()
+                    }
                     Log.i("AIQuotaCollector", "provider=${providerId.storageId} awaitingUsagePayload=true errorKind=$errorKind")
                     return@runOnUiThread
                 }
