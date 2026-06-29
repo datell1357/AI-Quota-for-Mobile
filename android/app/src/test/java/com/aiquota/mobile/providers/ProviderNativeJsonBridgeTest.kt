@@ -15,6 +15,7 @@ class ProviderNativeJsonBridgeTest {
         assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, "https://chatgpt.com/api/auth/session"))
         assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, "https://chatgpt.com/backend-api/subscriptions"))
         assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, "https://chatgpt.com/codex/cloud/settings/analytics"))
+        assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.GEMINI, "https://gemini.google.com/usage"))
         assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.COPILOT, "https://github.com/github-copilot/chat/entitlement"))
         assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.COPILOT, "https://api.github.com/copilot_internal/user"))
         assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CLAUDE, "https://firebase.googleapis.com/relay"))
