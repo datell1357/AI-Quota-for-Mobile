@@ -48,7 +48,7 @@ class ProviderRefreshPlanTest {
         assertEquals(ProviderRefreshMode.NATIVE_API, jobs.first { it.providerId == ProviderId.ANTIGRAVITY }.mode)
         assertFalse(jobs.any { it.startUrl.contains("/auth/login") || it.startUrl.contains("/login") })
         assertEquals("about:blank", jobs.first { it.providerId == ProviderId.CLAUDE }.startUrl)
-        assertEquals("about:blank", jobs.first { it.providerId == ProviderId.CODEX }.startUrl)
+        assertEquals("https://chatgpt.com/api/auth/session", jobs.first { it.providerId == ProviderId.CODEX }.startUrl)
         assertEquals("https://opencode.ai/auth", jobs.first { it.providerId == ProviderId.OPENCODE }.startUrl)
         assertEquals("about:blank", jobs.first { it.providerId == ProviderId.GEMINI }.startUrl)
         assertEquals("about:blank", jobs.first { it.providerId == ProviderId.COPILOT }.startUrl)
@@ -77,7 +77,7 @@ class ProviderRefreshPlanTest {
     @Test
     fun backgroundCollectorsUseAboutBlankOnlyForScopedNativeJsonProviders() {
         assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.CLAUDE).startUrl)
-        assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.CODEX).startUrl)
+        assertEquals("https://chatgpt.com/api/auth/session", ProviderRefreshPlan.manualJobFor(ProviderId.CODEX).startUrl)
         assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.GEMINI).startUrl)
         assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.COPILOT).startUrl)
 

@@ -113,12 +113,37 @@ class ProviderWebCollectorScriptsTest {
         ).forEach { (providerId, pageUrl) ->
             val script = ProviderWebCollectorScripts.build(providerId, emptyMap(), "", pageUrl = pageUrl)
 
-            assertTrue(script.contains("fetchNativeUsagePayload"))
+            if (providerId == ProviderId.CODEX) {
+                assertTrue(script.contains("parseCodexUsagePayload"))
+                assertFalse(script.contains("extractCodexVisibleDomUsage"))
+            } else {
+                assertTrue(script.contains("fetchNativeUsagePayload"))
+            }
             assertFalse(script.contains("scanClaudePageState"))
             assertFalse(script.contains("AIQuotaCodex collector started"))
             assertFalse(script.contains("postGeminiObservedPayload"))
             assertFalse(script.contains("AIQuotaCopilot collector_start"))
         }
+    }
+
+    @Test
+    fun codexInteractiveNativeCollectorBypassesStartTtlForUsageRetry() {
+        val interactiveScript = ProviderWebCollectorScripts.build(
+            providerId = ProviderId.CODEX,
+            cookies = emptyMap(),
+            geminiCollectorAsset = "",
+            pageUrl = "https://chatgpt.com/",
+            awaitInteractiveLoginUsage = true
+        )
+        val backgroundScript = ProviderWebCollectorScripts.build(
+            providerId = ProviderId.CODEX,
+            cookies = emptyMap(),
+            geminiCollectorAsset = "",
+            pageUrl = "about:blank"
+        )
+
+        assertTrue(interactiveScript.contains("__AIQuotaStartProviderCollector(\"codex\", true)"))
+        assertTrue(backgroundScript.contains("__AIQuotaStartProviderCollector(\"codex\", false)"))
     }
 
     @Test

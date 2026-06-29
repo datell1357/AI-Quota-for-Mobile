@@ -466,6 +466,17 @@ open class WebLoginActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun parseCodexUsagePayload(rawText: String, plan: String?, accountId: String?): String {
+            if (providerId != ProviderId.CODEX) {
+                return JSONObject().put("ok", false).put("error", "provider_mismatch").toString()
+            }
+            if (!isNativeFetchBridgePageAllowed(ProviderId.CODEX)) {
+                return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
+            }
+            return ProviderNativeUsagePayloadFetcher.bridgeCodexDashboardPayload(rawText, plan, accountId)
+        }
+
+        @JavascriptInterface
         fun fetchProviderUsagePayload(): String {
             if (!ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
                 return JSONObject().put("ok", false).put("error", "provider_not_allowlisted").toString()

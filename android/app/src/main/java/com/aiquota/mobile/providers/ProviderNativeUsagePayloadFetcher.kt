@@ -30,6 +30,28 @@ object ProviderNativeUsagePayloadFetcher {
         return bridgeResult(providerId, result)
     }
 
+    fun bridgeCodexDashboardPayload(rawText: String, plan: String?, accountId: String?): String {
+        val usage = codexUsageFromRaw(rawText)
+            ?: return bridgeResult(
+                ProviderId.CODEX,
+                NativePayloadResult(null, "codex_usage_unavailable", listOf("dashboard:browser_parse_empty"))
+            )
+        val payload = JSONObject()
+            .put("provider", ProviderId.CODEX.storageId)
+            .put("usage", usage)
+        accountId?.takeIf { it.isNotBlank() }?.let { payload.put("accountId", it) }
+        plan?.takeIf { it.isNotBlank() }?.let { payload.put("plan", it) }
+        return bridgeResult(
+            ProviderId.CODEX,
+            verifiedPayload(
+                ProviderId.CODEX,
+                payload,
+                "codex_usage_unavailable",
+                listOf("dashboard:browser_parse")
+            )
+        )
+    }
+
     private fun fetchClaudePayload(userAgent: String): NativePayloadResult {
         val statuses = mutableListOf<String>()
         val organizations = fetchWrapped(ProviderId.CLAUDE, CLAUDE_ORGANIZATIONS_URL, statuses, userAgent)
