@@ -170,6 +170,19 @@ class ProviderLoginStrategyTest {
     }
 
     @Test
+    fun copilotNativeCollectionStartsOnlyFromSignedInUsageShells() {
+        assertTrue(ProviderLoginStrategy.shouldStartCopilotNativeCollection("https://github.com/settings/copilot/features"))
+        assertTrue(ProviderLoginStrategy.shouldStartCopilotNativeCollection("https://github.com/settings/copilot"))
+        assertTrue(ProviderLoginStrategy.shouldStartCopilotNativeCollection("https://github.com/settings/billing/premium_requests_usage"))
+        assertTrue(ProviderLoginStrategy.shouldStartCopilotNativeCollection("https://github.com/github-copilot"))
+
+        assertFalse(ProviderLoginStrategy.shouldStartCopilotNativeCollection("https://github.com/login"))
+        assertFalse(ProviderLoginStrategy.shouldStartCopilotNativeCollection("https://github.com/sessions/two-factor"))
+        assertFalse(ProviderLoginStrategy.shouldStartCopilotNativeCollection("https://github.com/"))
+        assertFalse(ProviderLoginStrategy.shouldStartCopilotNativeCollection("https://api.github.com/copilot_internal/user"))
+    }
+
+    @Test
     fun oauthTransientErrorsAreRecoverable() {
         assertTrue(ProviderLoginStrategy.isTransientNavigationError("https://accounts.google.com/o/oauth2/v2/auth", -2))
         assertTrue(ProviderLoginStrategy.isTransientNavigationError("https://github.com/login/oauth/authorize", -6))

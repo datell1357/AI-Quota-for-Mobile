@@ -43,6 +43,7 @@ open class WebLoginActivity : Activity() {
     private var firstPageLogged = false
     private var observedCodexAccountId: String? = null
     private var copilotPostLoginRedirected = false
+    private var copilotNativeCollectionStarted = false
     private var lastGeminiUsageRedirectKey: String? = null
     private var lastGeminiUsageRedirectAtMs = 0L
     private var geminiUsageRedirectAttempts = 0
@@ -331,6 +332,7 @@ open class WebLoginActivity : Activity() {
             if (maybeRedirectGlmToUsage(view, effectiveUrl)) return
             if (maybeRedirectOpenCodeToGo(view, effectiveUrl)) return
             if (maybeStartClaudeNativeCollection(view, effectiveUrl, "page_finished")) return
+            if (maybeStartCopilotNativeCollection(view, effectiveUrl, "page_finished")) return
             if (providerId == ProviderId.CODEX && ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, effectiveUrl)) {
                 if (effectiveUrl == "about:blank") {
                     injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
@@ -342,6 +344,10 @@ open class WebLoginActivity : Activity() {
                 return
             }
             if (providerId == ProviderId.GEMINI && effectiveUrl == "about:blank") {
+                injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
+                return
+            }
+            if (providerId == ProviderId.COPILOT && effectiveUrl == "about:blank") {
                 injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
                 return
             }
@@ -690,6 +696,19 @@ open class WebLoginActivity : Activity() {
         return true
     }
 
+    private fun maybeStartCopilotNativeCollection(view: WebView, url: String, reason: String): Boolean {
+        if (providerId != ProviderId.COPILOT || finished || copilotNativeCollectionStarted || url == "about:blank") return false
+        if (!ProviderLoginStrategy.shouldStartCopilotNativeCollection(url)) return false
+        copilotNativeCollectionStarted = true
+        CookieManager.getInstance().flush()
+        collectorInjectionKeys.clear()
+        noteBridgePageUrl("about:blank")
+        Log.i("AIQuotaLogin", "provider=copilot nativeCollectorStart=aboutblank reason=$reason from=${hostOf(url)}${pathOf(url)}")
+        view.stopLoading()
+        view.loadUrl("about:blank")
+        return true
+    }
+
     private fun maybeStartCodexNativeCollection(view: WebView, url: String, reason: String): Boolean {
         if (providerId != ProviderId.CODEX || finished || codexNativeCollectionStarted || url == "about:blank") return false
         codexNativeCollectionStarted = true
@@ -845,7 +864,7 @@ open class WebLoginActivity : Activity() {
             observedAccountId = observedCodexAccountId,
             pageText = pageText,
             pageUrl = url,
-            awaitInteractiveLoginUsage = providerId == ProviderId.CODEX || providerId == ProviderId.GEMINI
+            awaitInteractiveLoginUsage = providerId == ProviderId.CODEX || providerId == ProviderId.GEMINI || providerId == ProviderId.COPILOT
         )
         if (script.isBlank()) return
         val injectionKey = "${providerId.storageId}:${hostOf(url)}:${routeKeyOf(url)}"
@@ -865,6 +884,9 @@ open class WebLoginActivity : Activity() {
                 errorKind == "gemini_no_trusted_payload" ||
                     errorKind == "gemini_collector_error" ||
                     errorKind == "gemini_login_required"
+            ProviderId.COPILOT ->
+                errorKind == "copilot_usage_unavailable" ||
+                    errorKind == "copilot_native_usage_unavailable"
             ProviderId.GLM ->
                 errorKind == "glm_no_trusted_payload"
             else -> false

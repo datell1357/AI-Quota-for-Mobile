@@ -79,4 +79,29 @@ class WebLoginActivityNativeBridgeTest {
         assertTrue(source.contains("captureDebugProviderSessionCookies(\"claude_native_collection_start\")"))
         assertTrue(source.contains("provider=claude nativeCollectorStart=aboutblank"))
     }
+
+    @Test
+    fun copilotSignedInSettingsRedirectsToAboutBlankNativeBridge() {
+        val source = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val script = ProviderWebCollectorScripts.build(
+            providerId = ProviderId.COPILOT,
+            cookies = emptyMap(),
+            geminiCollectorAsset = "",
+            pageUrl = "about:blank",
+            awaitInteractiveLoginUsage = true
+        )
+
+        assertTrue(source.contains("private var copilotNativeCollectionStarted = false"))
+        assertTrue(source.contains("maybeStartCopilotNativeCollection(view, effectiveUrl, \"page_finished\")"))
+        assertTrue(source.contains("providerId == ProviderId.COPILOT && effectiveUrl == \"about:blank\""))
+        assertTrue(source.contains("provider=copilot nativeCollectorStart=aboutblank"))
+        assertTrue(source.contains("awaitInteractiveLoginUsage = providerId == ProviderId.CODEX || providerId == ProviderId.GEMINI || providerId == ProviderId.COPILOT"))
+        assertTrue(source.contains("ProviderId.COPILOT ->"))
+        assertTrue(source.contains("copilot_usage_unavailable"))
+        assertTrue(source.contains("copilot_native_usage_unavailable"))
+        assertTrue(script.contains("fetchNativeUsagePayload"))
+        assertFalse(script.contains("fetchCopilotJson("))
+        assertFalse(script.contains("document.documentElement"))
+        assertFalse(script.contains("settings/copilot"))
+    }
 }

@@ -101,6 +101,23 @@ object ProviderLoginStrategy {
         return signedInHome && !text.contains("sign in to github")
     }
 
+    fun shouldStartCopilotNativeCollection(url: String): Boolean {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        if (host != "github.com" && host != "www.github.com") return false
+        val path = uri.path.orEmpty().lowercase(Locale.US)
+        if (path.startsWith("/login") ||
+            path.startsWith("/sessions") ||
+            path.startsWith("/session") ||
+            path.contains("two-factor")
+        ) {
+            return false
+        }
+        return path.startsWith("/settings/copilot") ||
+            path.startsWith("/settings/billing/premium_requests_usage") ||
+            path.startsWith("/github-copilot")
+    }
+
     fun isTransientNavigationError(url: String, errorCode: Int): Boolean {
         val host = runCatching { URI(url).host.orEmpty().lowercase(Locale.US) }.getOrDefault("")
         if (errorCode == 0) return false
