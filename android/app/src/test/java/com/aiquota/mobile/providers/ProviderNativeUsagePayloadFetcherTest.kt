@@ -10,20 +10,6 @@ import org.junit.Test
 
 class ProviderNativeUsagePayloadFetcherTest {
     @Test
-    fun geminiNativeUsageBridgeFailsClosedWithoutUsagePageRpcSession() {
-        GeminiUsagePageRpcSession.clear()
-
-        val payload = ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(
-            providerId = ProviderId.GEMINI,
-            userAgent = "test-agent"
-        )
-
-        assertTrue(payload.contains("\"ok\":false"))
-        assertTrue(payload.contains("\"provider\":\"gemini\""))
-        assertTrue(payload.contains("gemini_usage_rpc_session_unavailable"))
-    }
-
-    @Test
     fun geminiUsagePageBatchExecutePayloadIncludesFiveHourAndWeeklyLimits() {
         val payload = GeminiUsagePageNativeFetcher.usagePayloadFromBatchExecuteForTest(
             """
@@ -58,56 +44,6 @@ class ProviderNativeUsagePayloadFetcherTest {
         assertEquals("100% left", weekly.remainingText)
         assertEquals(1.0f, weekly.remainingPercent ?: 0f, 0.001f)
         assertTrue(weekly.resetsAt.orEmpty().startsWith("2026-07-06"))
-    }
-
-    @Test
-    fun geminiUsagePageRpcSessionCapturesOnlyWizNativeRpcParams() {
-        val script = GeminiUsagePageRpcSession.captureScript()
-        val params = GeminiUsagePageRpcSession.paramsFromJsonForTest(
-            rawJson = """{"at":"AD1_test:1782788577556","fSid":"-2151343215381609210","bl":"boq_assistant-bard-web-server_20260628.03_p0","hl":"ko"}""",
-            pageUrl = "https://gemini.google.com/usage?hl=ko",
-            nowMillis = 1782788577556
-        )
-
-        assertNotNull(params)
-        assertTrue(script.contains("window.WIZ_global_data"))
-        assertTrue(script.contains("SNlM0e"))
-        assertFalse(script.contains("document.querySelector"))
-        assertFalse(script.contains("innerText"))
-        assertFalse(script.contains("textContent"))
-    }
-
-    @Test
-    fun geminiUsagePageRpcSessionClearsInvalidAndExpiredParams() {
-        val capturedAt = 1782788577556L
-        val validJson = """{"at":"AD1_test:1782788577556","fSid":"-2151343215381609210","bl":"boq_assistant-bard-web-server_20260628.03_p0","hl":"ko"}"""
-
-        GeminiUsagePageRpcSession.clear()
-        assertTrue(
-            GeminiUsagePageRpcSession.updateFromJson(
-                rawJson = validJson,
-                pageUrl = "https://gemini.google.com/usage?hl=ko",
-                nowMillis = capturedAt
-            )
-        )
-        assertNotNull(GeminiUsagePageRpcSession.current(capturedAt + GeminiUsagePageRpcSession.sessionTtlMillisForTest()))
-        assertNull(GeminiUsagePageRpcSession.current(capturedAt + GeminiUsagePageRpcSession.sessionTtlMillisForTest() + 1L))
-
-        assertTrue(
-            GeminiUsagePageRpcSession.updateFromJson(
-                rawJson = validJson,
-                pageUrl = "https://gemini.google.com/usage?hl=ko",
-                nowMillis = capturedAt
-            )
-        )
-        assertFalse(
-            GeminiUsagePageRpcSession.updateFromJson(
-                rawJson = """{"at":"","fSid":"","bl":"","hl":"ko"}""",
-                pageUrl = "https://gemini.google.com/usage?hl=ko",
-                nowMillis = capturedAt + 1L
-            )
-        )
-        assertNull(GeminiUsagePageRpcSession.current(capturedAt + 2L))
     }
 
     @Test

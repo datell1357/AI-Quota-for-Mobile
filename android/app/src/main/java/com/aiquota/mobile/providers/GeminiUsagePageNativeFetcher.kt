@@ -7,6 +7,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.time.Instant
+import java.util.Locale
 import org.json.JSONArray
 import org.json.JSONObject
 import org.json.JSONTokener
@@ -18,17 +19,24 @@ internal object GeminiUsagePageNativeFetcher {
         val statuses: List<String> = emptyList()
     )
 
-    fun fetchUsagePayload(userAgent: String): FetchResult {
-        val params = GeminiUsagePageRpcSession.current()
-            ?: return FetchResult(null, "gemini_usage_rpc_session_unavailable")
-        val cookieHeader = CookieManager.getInstance().getCookie(GEMINI_USAGE_PAGE_URL)
+    fun fetchUsagePayload(userAgent: String, sessionCookieHeader: String? = null): FetchResult {
+        val cookieHeader = sessionCookieHeader?.takeIf(String::isNotBlank)
+            ?: CookieManager.getInstance().getCookie(GEMINI_USAGE_PAGE_URL)
             ?: CookieManager.getInstance().getCookie(GEMINI_ORIGIN)
             ?: return FetchResult(null, "gemini_usage_cookie_unavailable")
-        val endpoint = batchExecuteUrl(params)
         val requestUserAgent = userAgent.takeIf { it.isNotBlank() } ?: ProviderWebViewUserAgent.loginUserAgent()
+        val sessionResult = fetchUsagePageParams(cookieHeader, requestUserAgent)
+        val statuses = sessionResult.statuses.toMutableList()
+        val params = sessionResult.params
+            ?: return FetchResult(null, sessionResult.diagnostic, statuses)
+        val endpoint = batchExecuteUrl(params)
         val statusLabel = "gemini_usage_rpc"
         return runCatching {
-            val body = "f.req=${encodeQuery(JSF9QC_REQUEST)}&at=${encodeQuery(params.at)}&"
+            val body = if (params.at.isBlank()) {
+                "f.req=${encodeQuery(JSF9QC_REQUEST)}&"
+            } else {
+                "f.req=${encodeQuery(JSF9QC_REQUEST)}&at=${encodeQuery(params.at)}&"
+            }
             val bodyBytes = body.toByteArray(StandardCharsets.UTF_8)
             val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
                 connectTimeout = NETWORK_TIMEOUT_MS
@@ -50,20 +58,112 @@ internal object GeminiUsagePageNativeFetcher {
             val text = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
             connection.disconnect()
             Log.d(TAG, "geminiUsageRpc status=$status payloadBytes=${text.length}")
+            statuses += "$statusLabel:$status"
             if (status !in 200..299) {
-                return FetchResult(null, "gemini_usage_rpc_http_$status", listOf("$statusLabel:$status"))
+                return FetchResult(null, "gemini_usage_rpc_http_$status", statuses)
             }
             val payload = usagePayloadFromBatchExecute(text)
-                ?: return FetchResult(null, "gemini_usage_rpc_unavailable", listOf("$statusLabel:$status"))
-            FetchResult(payload.toString(), "ok", listOf("$statusLabel:$status"))
+                ?: return FetchResult(null, "gemini_usage_rpc_unavailable", statuses)
+            FetchResult(payload.toString(), "ok", statuses)
         }.getOrElse { error ->
             Log.d(TAG, "geminiUsageRpc error=${error.javaClass.simpleName}")
-            FetchResult(null, "gemini_usage_rpc_${error.javaClass.simpleName}", listOf("$statusLabel:error"))
+            statuses += "$statusLabel:error"
+            FetchResult(null, "gemini_usage_rpc_${error.javaClass.simpleName}", statuses)
         }
     }
 
     internal fun usagePayloadFromBatchExecuteForTest(rawText: String): JSONObject? {
         return usagePayloadFromBatchExecute(rawText)
+    }
+
+    internal fun usagePageParamsFromHtmlForTest(rawText: String, nowMillis: Long): GeminiUsagePageRpcSession.Params? {
+        return usagePageParamsFromHtml(rawText, nowMillis)
+    }
+
+    private fun fetchUsagePageParams(cookieHeader: String, userAgent: String): RpcSessionResult {
+        val statusLabel = "gemini_usage_page_html"
+        return runCatching {
+            val connection = (URL(GEMINI_USAGE_PAGE_URL).openConnection() as HttpURLConnection).apply {
+                connectTimeout = NETWORK_TIMEOUT_MS
+                readTimeout = NETWORK_TIMEOUT_MS
+                requestMethod = "GET"
+                setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                setRequestProperty("Accept-Language", "en-US,en;q=0.8")
+                setRequestProperty("Cookie", cookieHeader)
+                setRequestProperty("Referer", GEMINI_ORIGIN)
+                setRequestProperty("User-Agent", userAgent)
+            }
+            val status = connection.responseCode
+            val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+            val text = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
+            connection.disconnect()
+            Log.d(TAG, "geminiUsagePageHtml status=$status payloadBytes=${text.length}")
+            if (status !in 200..299) {
+                return RpcSessionResult(null, "gemini_usage_page_http_$status", listOf("$statusLabel:$status"))
+            }
+            val params = usagePageParamsFromHtml(text)
+                ?: return RpcSessionResult(null, "gemini_usage_page_rpc_params_unavailable", listOf("$statusLabel:$status"))
+            RpcSessionResult(params, "ok", listOf("$statusLabel:$status"))
+        }.getOrElse { error ->
+            Log.d(TAG, "geminiUsagePageHtml error=${error.javaClass.simpleName}")
+            RpcSessionResult(null, "gemini_usage_page_${error.javaClass.simpleName}", listOf("$statusLabel:error"))
+        }
+    }
+
+    private fun usagePageParamsFromHtml(
+        rawText: String,
+        nowMillis: Long = System.currentTimeMillis()
+    ): GeminiUsagePageRpcSession.Params? {
+        val data = wizGlobalDataFromHtml(rawText) ?: return null
+        val at = data.optString("SNlM0e").takeIf { it.startsWith("AD1_") }.orEmpty()
+        val fSid = data.optString("FdrFJe").takeIf { it.isNotBlank() } ?: return null
+        val bl = data.optString("cfb2h").takeIf { it.isNotBlank() } ?: return null
+        val hl = data.optString("hl")
+            .takeIf { it.isNotBlank() }
+            ?: Locale.getDefault().language.takeIf { it.isNotBlank() }
+            ?: "en"
+        return GeminiUsagePageRpcSession.Params(
+            at = at,
+            fSid = fSid,
+            bl = bl,
+            hl = hl,
+            capturedAtMillis = nowMillis
+        )
+    }
+
+    private fun wizGlobalDataFromHtml(rawText: String): JSONObject? {
+        val marker = rawText.indexOf("WIZ_global_data")
+        if (marker < 0) return null
+        val start = rawText.indexOf('{', marker)
+        if (start < 0) return null
+        val end = balancedJsonObjectEnd(rawText, start) ?: return null
+        return runCatching { JSONObject(rawText.substring(start, end + 1)) }.getOrNull()
+    }
+
+    private fun balancedJsonObjectEnd(value: String, start: Int): Int? {
+        var depth = 0
+        var inString = false
+        var escaped = false
+        for (index in start until value.length) {
+            val char = value[index]
+            if (inString) {
+                when {
+                    escaped -> escaped = false
+                    char == '\\' -> escaped = true
+                    char == '"' -> inString = false
+                }
+                continue
+            }
+            when (char) {
+                '"' -> inString = true
+                '{' -> depth += 1
+                '}' -> {
+                    depth -= 1
+                    if (depth == 0) return index
+                }
+            }
+        }
+        return null
     }
 
     private fun usagePayloadFromBatchExecute(rawText: String): JSONObject? {
@@ -160,6 +260,12 @@ internal object GeminiUsagePageNativeFetcher {
     private fun encodeQuery(value: String): String {
         return java.net.URLEncoder.encode(value, StandardCharsets.UTF_8.name())
     }
+
+    private data class RpcSessionResult(
+        val params: GeminiUsagePageRpcSession.Params?,
+        val diagnostic: String,
+        val statuses: List<String>
+    )
 
     private const val TAG = "AIQuotaGeminiUsageRpc"
     private const val GEMINI_ORIGIN = "https://gemini.google.com"

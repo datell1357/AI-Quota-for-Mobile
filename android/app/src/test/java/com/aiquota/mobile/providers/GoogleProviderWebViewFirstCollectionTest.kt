@@ -7,7 +7,7 @@ import org.junit.Test
 
 class GoogleProviderWebViewFirstCollectionTest {
     @Test
-    fun geminiKeepsWebViewProfileAndRefreshesThroughUsageDomCollector() {
+    fun geminiKeepsWebViewProfileAndRefreshesThroughProviderCollector() {
         val definitions = File("src/main/java/com/aiquota/mobile/providers/ProviderDefinitions.kt").readText()
         val gemini = definitions.substringAfter("providerId = ProviderId.GEMINI,")
             .substringBefore("ProviderDefinition(")

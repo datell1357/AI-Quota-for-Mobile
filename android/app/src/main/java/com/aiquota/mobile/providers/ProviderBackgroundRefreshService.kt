@@ -292,6 +292,7 @@ class ProviderBackgroundRefreshService : Service() {
                     effectiveJob.providerId,
                     CookieManager.getInstance(),
                     "background_native_snapshot",
+                    exportExternal = shouldExportBackgroundDebugSnapshot(effectiveJob.providerId),
                     nativeAuthContext = debugNativeAuthContextForSnapshot(effectiveJob.providerId)
                 )
                 repository.saveSnapshot(outcome.snapshot)
@@ -313,6 +314,7 @@ class ProviderBackgroundRefreshService : Service() {
                         effectiveJob.providerId,
                         CookieManager.getInstance(),
                         "background_webview_snapshot",
+                        exportExternal = shouldExportBackgroundDebugSnapshot(effectiveJob.providerId),
                         nativeAuthContext = debugNativeAuthContextForSnapshot(effectiveJob.providerId)
                     )
                     repository.saveSnapshot(snapshot)
@@ -578,7 +580,7 @@ class ProviderBackgroundRefreshService : Service() {
                 webViewClient = ServiceCollectorWebViewClient(job.providerId)
             }
         }
-        val initialUrl = active.warmUpUrl ?: geminiRpcSessionWarmUpUrl(job) ?: job.startUrl
+        val initialUrl = active.warmUpUrl ?: job.startUrl
         webJobLastUrls[active.requestId] = initialUrl
         prepareSharedWebSessionForCollection(webView, job.providerId)
         Log.d(
@@ -651,12 +653,6 @@ class ProviderBackgroundRefreshService : Service() {
         ProviderScopedStateRepository(applicationContext).saveOpenCodeUsageUrl(url)
     }
 
-    private fun geminiRpcSessionWarmUpUrl(job: ProviderRefreshJob): String? {
-        if (job.providerId != ProviderId.GEMINI) return null
-        if (job.startUrl != "about:blank") return null
-        return GeminiUsagePageRoutes.USAGE_URL
-    }
-
     private fun injectCollectorIfReady(providerId: ProviderId, view: WebView, url: String, pageText: String) {
         val active = currentWebJobFor(providerId) ?: return
         if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && url != "about:blank") return
@@ -690,72 +686,6 @@ class ProviderBackgroundRefreshService : Service() {
                 "provider=${providerId.storageId} url=${hostOf(url)}${pathOf(url)}"
         )
         view.evaluateJavascript(script, null)
-    }
-
-    private fun maybeCaptureGeminiRpcSessionAndLoadAboutBlank(
-        active: ServiceWebRefreshJob,
-        view: WebView,
-        url: String,
-        pageText: String,
-        reason: String
-    ): Boolean {
-        if (active.job.providerId != ProviderId.GEMINI) return false
-        if (active.geminiRpcSessionCaptureStarted) return false
-        if (!GeminiUsagePageRoutes.isUsageUrl(url)) return false
-        if (ProviderWebCollectorScripts.isRefreshLoginPage(ProviderId.GEMINI, url, pageText)) return false
-        active.geminiRpcSessionCaptureStarted = true
-        GeminiUsagePageRpcSession.clear()
-        collectorInjectionKeys.removeAll { it.contains(":${ProviderId.GEMINI.storageId}:") }
-        captureGeminiRpcSessionForRefresh(active, view, url, reason, attempt = 0)
-        return true
-    }
-
-    private fun captureGeminiRpcSessionForRefresh(
-        active: ServiceWebRefreshJob,
-        view: WebView,
-        url: String,
-        reason: String,
-        attempt: Int
-    ) {
-        val requestId = active.requestId
-        view.evaluateJavascript(GeminiUsagePageRpcSession.captureScript()) { encoded ->
-            val current = currentWebJobFor(ProviderId.GEMINI) ?: return@evaluateJavascript
-            if (current.requestId != requestId) return@evaluateJavascript
-            val captured = GeminiUsagePageRpcSession.updateFromJson(decodeJsString(encoded), url)
-            if (!captured && attempt < GEMINI_RPC_SESSION_CAPTURE_MAX_ATTEMPTS) {
-                view.postDelayed(
-                    { captureGeminiRpcSessionForRefresh(active, view, url, reason, attempt + 1) },
-                    GEMINI_RPC_SESSION_CAPTURE_RETRY_MS
-                )
-                return@evaluateJavascript
-            }
-            if (!captured) {
-                GeminiUsagePageRpcSession.clear()
-                Log.w(
-                    TAG,
-                    "nativeCollectorBlocked provider=gemini reason=missingRpcSession " +
-                        "attempt=${attempt + 1} from=${hostOf(url)}${pathOf(url)}"
-                )
-                completeWebJob(
-                    requestId,
-                    ServiceRefreshOutcome.Failure(
-                        ProviderRefreshFailure(
-                            ProviderRefreshFailureKind.NO_TRUSTED_PAYLOAD,
-                            GoogleUsagePendingRetryPolicy.PENDING_MESSAGE
-                        )
-                    )
-                )
-                return@evaluateJavascript
-            }
-            CookieManager.getInstance().flush()
-            Log.d(
-                TAG,
-                "nativeCollectorStart provider=gemini url=about:blank reason=$reason " +
-                    "rpcSession=$captured attempt=${attempt + 1} from=${hostOf(url)}${pathOf(url)}"
-            )
-            view.stopLoading()
-            view.loadUrl("about:blank")
-        }
     }
 
     private fun maybeRedirectGeminiRefreshToUsage(active: ServiceWebRefreshJob, view: WebView, url: String): Boolean {
@@ -799,7 +729,7 @@ class ProviderBackgroundRefreshService : Service() {
         if (!isWebSessionWarmUpPage(active, url)) return false
         active.warmUpPending = false
         collectorInjectionKeys.removeAll { it.contains(":${active.job.providerId.storageId}:") }
-        val nextUrl = geminiRpcSessionWarmUpUrl(active.job) ?: active.job.startUrl
+        val nextUrl = active.job.startUrl
         Log.d(
             TAG,
             "warmUpComplete provider=${active.job.providerId.storageId} from=${hostOf(url)}${pathOf(url)} " +
@@ -1017,9 +947,6 @@ class ProviderBackgroundRefreshService : Service() {
                     completeWebJob(requestId, ServiceRefreshOutcome.Failure(ProviderRefreshFailure.interactiveAuthRequired(LOGIN_PAGE_REACHED_MESSAGE)))
                     return@evaluateJavascript
                 }
-                if (maybeCaptureGeminiRpcSessionAndLoadAboutBlank(active, view, url, pageText, "page_finished")) {
-                    return@evaluateJavascript
-                }
                 if (ownerProviderId == ProviderId.CODEX && url != "about:blank") return@evaluateJavascript
                 injectCollectorIfReady(ownerProviderId, view, url, pageText)
                 maybeScheduleGeminiTerminalCheck(active, view, url)
@@ -1191,9 +1118,20 @@ class ProviderBackgroundRefreshService : Service() {
             if (!isNativeFetchBridgePageAllowed(ownerProviderId)) {
                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
             }
-            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(ownerProviderId, collectorUserAgent) { url ->
-                if (ownerProviderId == ProviderId.CODEX) codexNativeFetchHeadersFor(url) else emptyMap()
-            }
+            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(
+                providerId = ownerProviderId,
+                userAgent = collectorUserAgent,
+                requestHeadersForUrl = { url ->
+                    if (ownerProviderId == ProviderId.CODEX) codexNativeFetchHeadersFor(url) else emptyMap()
+                },
+                cookieHeaderForUrl = { url ->
+                    if (ownerProviderId == ProviderId.GEMINI) {
+                        DebugProviderSessionCookieStore.restorableCookieHeader(applicationContext, ownerProviderId, url)
+                    } else {
+                        null
+                    }
+                }
+            )
         }
 
         @JavascriptInterface
@@ -1262,6 +1200,10 @@ class ProviderBackgroundRefreshService : Service() {
     private fun debugNativeAuthContextForSnapshot(providerId: ProviderId): Map<String, Map<String, String>> {
         if (providerId != ProviderId.CODEX) return emptyMap()
         return CodexNativeHeaderStore.snapshotAuthContext(codexNativeFetchHeaders)
+    }
+
+    private fun shouldExportBackgroundDebugSnapshot(providerId: ProviderId): Boolean {
+        return providerId != ProviderId.GEMINI
     }
 
     private fun hasCodexNativeFetchAuthContext(url: String): Boolean {
@@ -1391,8 +1333,7 @@ class ProviderBackgroundRefreshService : Service() {
         var lastGeminiRefreshRedirectAtMs: Long = 0L,
         var geminiUsageRedirectAttempts: Int = 0,
         var geminiTerminalCheckScheduled: Boolean = false,
-        var geminiSignInClickAttempts: Int = 0,
-        var geminiRpcSessionCaptureStarted: Boolean = false
+        var geminiSignInClickAttempts: Int = 0
     )
 
     private sealed class ServiceRefreshOutcome {
@@ -1408,8 +1349,6 @@ class ProviderBackgroundRefreshService : Service() {
         const val ACTION_REFRESH = "com.aiquota.mobile.action.REFRESH"
         const val ACTION_PROVIDER_SESSION_RESET = "com.aiquota.mobile.action.PROVIDER_SESSION_RESET"
         const val EXTRA_PROVIDER_ID = "provider_id"
-        private const val GEMINI_RPC_SESSION_CAPTURE_MAX_ATTEMPTS = 3
-        private const val GEMINI_RPC_SESSION_CAPTURE_RETRY_MS = 500L
         fun createRefreshIntent(
             context: Context,
             providerId: ProviderId?,
@@ -1463,7 +1402,6 @@ class ProviderBackgroundRefreshService : Service() {
 
     private fun webSessionWarmUpUrl(job: ProviderRefreshJob): String? {
         return when (job.providerId) {
-            ProviderId.GEMINI -> "https://gemini.google.com/"
             ProviderId.COPILOT -> "https://github.com/"
             ProviderId.OPENCODE -> "https://opencode.ai/"
             ProviderId.CURSOR -> "https://cursor.com/"

@@ -86,10 +86,28 @@ class DebugProviderSessionCookieStoreTest {
     }
 
     @Test
+    fun debugSnapshotCanRestoreRawCookieHeaderForSameOriginNativeFetch() {
+        val payload = DebugProviderSessionCookieStore.snapshotPayloadForTest(
+            providerId = "gemini",
+            reason = "trusted_usage_payload",
+            cookies = listOf(
+                "https://gemini.google.com" to "__Secure-1PSID=session; NID=browser",
+                "https://accounts.google.com" to "SID=account"
+            ),
+            nativeAuthContext = emptyMap()
+        )
+
+        assertEquals(
+            "__Secure-1PSID=session; NID=browser",
+            DebugProviderSessionCookieStore.cookieHeaderForUrlForTest(payload, "https://gemini.google.com/usage")
+        )
+    }
+
+    @Test
     fun webLoginActivityCapturesDebugCookiesAtSessionReachedBoundaries() {
         val source = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
 
-        assertTrue(source.contains("DebugProviderSessionCookieStore.restore(applicationContext, providerId, cookieManager, \"login_start\")"))
+        assertFalse(source.contains("DebugProviderSessionCookieStore.restore(applicationContext, providerId, cookieManager, \"login_start\")"))
         assertTrue(source.contains("captureDebugProviderSessionCookies(\"trusted_usage_payload\", includeNativeAuthContext = true)"))
         assertTrue(source.contains("captureDebugProviderSessionCookies(\"login_complete_navigation\")"))
         assertTrue(source.contains("captureDebugProviderSessionCookies(\"codex_post_login_redirect\")"))
@@ -102,10 +120,13 @@ class DebugProviderSessionCookieStoreTest {
         val storeSource = File("src/main/java/com/aiquota/mobile/providers/DebugProviderSessionCookieStore.kt").readText()
 
         assertTrue(source.contains("DebugProviderSessionCookieStore.restore(applicationContext, providerId, cookieManager, \"background_collection\")"))
+        assertTrue(source.contains("DebugProviderSessionCookieStore.restorableCookieHeader(applicationContext, ownerProviderId, url)"))
         assertTrue(source.contains("restoreCodexDebugNativeAuthContext(providerId)"))
         assertTrue(source.contains("DebugProviderSessionCookieStore.restoreNativeAuthContext(applicationContext, providerId)"))
         assertTrue(source.contains("codexNativeFetchHeaders.putAll(restoredHeaders)"))
         assertTrue(source.contains("DebugProviderSessionCookieStore.capture("))
+        assertTrue(source.contains("shouldExportBackgroundDebugSnapshot(effectiveJob.providerId)"))
+        assertTrue(source.contains("return providerId != ProviderId.GEMINI"))
         assertTrue(storeSource.contains("exportExternal: Boolean = true"))
         assertTrue(storeSource.contains("val shouldExportExternal = exportExternal && isRestorableSnapshotReason(reason)"))
         assertTrue(storeSource.contains("if (shouldExportExternal)"))

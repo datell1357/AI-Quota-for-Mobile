@@ -100,7 +100,6 @@ open class WebLoginActivity : Activity() {
         if (ProviderWebSessionClearPolicy.shouldClearBeforeLogin(providerId, previousConnectionState)) {
             clearProviderWebSession(cookieManager, providerId)
         }
-        DebugProviderSessionCookieStore.restore(applicationContext, providerId, cookieManager, "login_start")
         webView = createConfiguredWebView(cookieManager, capabilities)
         rootContainer = FrameLayout(this).apply {
             addView(webView, loginWebViewLayoutParams())
@@ -631,52 +630,17 @@ open class WebLoginActivity : Activity() {
         if (!GeminiUsagePageRoutes.isUsageUrl(url)) return false
         if (ProviderWebCollectorScripts.isRefreshLoginPage(ProviderId.GEMINI, url, pageText)) return false
         geminiNativeCollectionStarted = true
-        GeminiUsagePageRpcSession.clear()
         CookieManager.getInstance().flush()
         captureDebugProviderSessionCookies("gemini_native_collection_start")
         collectorInjectionKeys.clear()
-        captureGeminiRpcSessionThenLoadAboutBlank(view, url, reason, attempt = 0)
+        noteBridgePageUrl("about:blank")
+        Log.i(
+            "AIQuotaLogin",
+            "provider=gemini nativeCollectorStart=aboutblank reason=$reason from=${hostOf(url)}${pathOf(url)}"
+        )
+        view.stopLoading()
+        view.loadUrl("about:blank")
         return true
-    }
-
-    private fun captureGeminiRpcSessionThenLoadAboutBlank(
-        view: WebView,
-        url: String,
-        reason: String,
-        attempt: Int
-    ) {
-        view.evaluateJavascript(GeminiUsagePageRpcSession.captureScript()) { encoded ->
-            if (finished) return@evaluateJavascript
-            val captured = GeminiUsagePageRpcSession.updateFromJson(decodeJsString(encoded), url)
-            if (!captured && attempt < GEMINI_RPC_SESSION_CAPTURE_MAX_ATTEMPTS) {
-                view.postDelayed(
-                    { captureGeminiRpcSessionThenLoadAboutBlank(view, url, reason, attempt + 1) },
-                    GEMINI_RPC_SESSION_CAPTURE_RETRY_MS
-                )
-                return@evaluateJavascript
-            }
-            if (!captured) {
-                GeminiUsagePageRpcSession.clear()
-                Log.w(
-                    "AIQuotaLogin",
-                    "provider=gemini nativeCollectorBlocked=missingRpcSession attempt=${attempt + 1} " +
-                        "from=${hostOf(url)}${pathOf(url)}"
-                )
-                finishGoogleUsagePending(
-                    GoogleUsagePendingRetryPolicy.PENDING_MESSAGE,
-                    "gemini_usage_rpc_session_unavailable"
-                )
-                return@evaluateJavascript
-            }
-            noteBridgePageUrl("about:blank")
-            Log.i(
-                "AIQuotaLogin",
-                "provider=gemini nativeCollectorStart=aboutblank reason=$reason " +
-                    "rpcSession=$captured attempt=${attempt + 1} from=${hostOf(url)}${pathOf(url)}"
-            )
-            view.stopLoading()
-            view.loadUrl("about:blank")
-        }
     }
 
     private fun maybeRedirectOpenCodeToGo(view: WebView, url: String): Boolean {
@@ -1186,8 +1150,6 @@ open class WebLoginActivity : Activity() {
         private const val CODEX_NATIVE_HEADER_FALLBACK_KEY = "*"
         private const val PAGE_CAPTURE_SCRIPT =
             "(function(){return (document.documentElement.innerText||document.title||'').slice(0,12000);})()"
-        private const val GEMINI_RPC_SESSION_CAPTURE_MAX_ATTEMPTS = 3
-        private const val GEMINI_RPC_SESSION_CAPTURE_RETRY_MS = 500L
 
         fun createIntent(context: Context, providerId: ProviderId): Intent {
             val definition = ProviderDefinitionRegistry.definitionFor(providerId)

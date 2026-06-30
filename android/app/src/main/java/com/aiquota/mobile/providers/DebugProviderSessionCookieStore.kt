@@ -6,6 +6,7 @@ import android.webkit.CookieManager
 import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.local.ProviderId
 import java.io.File
+import java.net.URI
 import java.time.Instant
 import org.json.JSONArray
 import org.json.JSONObject
@@ -101,6 +102,18 @@ internal object DebugProviderSessionCookieStore {
         return nativeAuthContext
     }
 
+    fun restorableCookieHeader(
+        context: Context,
+        providerId: ProviderId,
+        url: String
+    ): String? {
+        if (!BuildConfig.DEBUG) return null
+        val (payload, source) = readRestorableSnapshotPayload(context, providerId) ?: return null
+        val header = cookieHeaderFromPayload(payload, url) ?: return null
+        Log.i(TAG, "provider=${providerId.storageId} debugCookieHeaderRestore=true source=$source url=${originOf(url).orEmpty()}")
+        return header
+    }
+
     internal fun cookiePairsForTest(cookieHeader: String): List<String> = cookiePairs(cookieHeader)
 
     internal fun restorableCookieHeadersForTest(cookieHeader: String, url: String): List<String> {
@@ -126,6 +139,10 @@ internal object DebugProviderSessionCookieStore {
 
     internal fun nativeAuthContextForTest(payload: String): Map<String, Map<String, String>> {
         return nativeAuthContextFromPayload(payload)
+    }
+
+    internal fun cookieHeaderForUrlForTest(payload: String, url: String): String? {
+        return cookieHeaderFromPayload(payload, url)
     }
 
     private fun exportSnapshot(context: Context, providerId: ProviderId, payload: String) {
@@ -217,6 +234,20 @@ internal object DebugProviderSessionCookieStore {
         return restorableNativeAuthContext(restored)
     }
 
+    private fun cookieHeaderFromPayload(payload: String, url: String): String? {
+        val targetOrigin = originOf(url) ?: return null
+        val cookies = runCatching { JSONObject(payload).optJSONArray("cookies") }.getOrNull() ?: return null
+        var originMatch: String? = null
+        for (index in 0 until cookies.length()) {
+            val entry = cookies.optJSONObject(index) ?: continue
+            val entryUrl = entry.optString("url").takeIf(String::isNotBlank) ?: continue
+            val header = entry.optString("cookieHeader").takeIf(String::isNotBlank) ?: continue
+            if (entryUrl == url) return header
+            if (originOf(entryUrl) == targetOrigin && originMatch == null) originMatch = header
+        }
+        return originMatch
+    }
+
     private fun restorableNativeAuthContext(
         nativeAuthContext: Map<String, Map<String, String>>
     ): Map<String, Map<String, String>> {
@@ -244,6 +275,13 @@ internal object DebugProviderSessionCookieStore {
                 append("; Path=/")
             }
         }
+    }
+
+    private fun originOf(url: String): String? {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return null
+        val scheme = uri.scheme?.takeIf(String::isNotBlank) ?: return null
+        val host = uri.host?.takeIf(String::isNotBlank) ?: return null
+        return "$scheme://$host"
     }
 
     private data class CookieEntry(val url: String, val cookieHeader: String)

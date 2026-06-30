@@ -15,9 +15,10 @@ object ProviderNativeUsagePayloadFetcher {
     fun bridgeUsagePayload(
         providerId: ProviderId,
         userAgent: String = ProviderWebViewUserAgent.loginUserAgent(),
+        cookieHeaderForUrl: (String) -> String? = { null },
         requestHeadersForUrl: (String) -> Map<String, String> = { emptyMap() }
     ): String {
-        return bridgeUsagePayload(providerId, userAgent, requestHeadersForUrl, ProviderNativeJsonBridge::fetchJson)
+        return bridgeUsagePayload(providerId, userAgent, requestHeadersForUrl, cookieHeaderForUrl, ProviderNativeJsonBridge::fetchJson)
     }
 
     internal fun codexUsagePayloadForTest(
@@ -32,6 +33,7 @@ object ProviderNativeUsagePayloadFetcher {
         providerId: ProviderId,
         userAgent: String,
         requestHeadersForUrl: (String) -> Map<String, String>,
+        cookieHeaderForUrl: (String) -> String?,
         fetchJson: NativeJsonFetcher
     ): String {
         if (!ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
@@ -40,7 +42,7 @@ object ProviderNativeUsagePayloadFetcher {
         val result = when (providerId) {
             ProviderId.CLAUDE -> fetchClaudePayload(userAgent)
             ProviderId.CODEX -> fetchCodexPayload(userAgent, requestHeadersForUrl, fetchJson)
-            ProviderId.GEMINI -> fetchGeminiPayload(userAgent)
+            ProviderId.GEMINI -> fetchGeminiPayload(userAgent, cookieHeaderForUrl(GEMINI_USAGE_PAGE_URL))
             ProviderId.COPILOT -> NativePayloadResult(
                 payload = CopilotNativeUsageFetcher.fetchUsagePayload(),
                 diagnostic = "copilot_usage_unavailable"
@@ -159,8 +161,8 @@ object ProviderNativeUsagePayloadFetcher {
         return verifiedPayload(ProviderId.CODEX, payload, "codex_usage_unavailable", statuses)
     }
 
-    private fun fetchGeminiPayload(userAgent: String): NativePayloadResult {
-        val result = GeminiUsagePageNativeFetcher.fetchUsagePayload(userAgent)
+    private fun fetchGeminiPayload(userAgent: String, cookieHeader: String?): NativePayloadResult {
+        val result = GeminiUsagePageNativeFetcher.fetchUsagePayload(userAgent, cookieHeader)
         val payload = result.payload
             ?: return NativePayloadResult(
                 payload = null,
@@ -352,6 +354,7 @@ object ProviderNativeUsagePayloadFetcher {
     private const val CODEX_ACCOUNT_CHECK_URL = "https://chatgpt.com/backend-api/accounts/check/v4-2023-04-27"
     private const val CODEX_SUBSCRIPTIONS_URL = "https://chatgpt.com/backend-api/subscriptions"
     private const val CODEX_WHAM_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage"
+    private const val GEMINI_USAGE_PAGE_URL = "https://gemini.google.com/usage"
 
     private val CLAUDE_ORG_ID_KEYS = setOf(
         "uuid",
