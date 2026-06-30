@@ -18,6 +18,16 @@ class ProviderWebSessionClearPolicyTest {
     }
 
     @Test
+    fun geminiClearsWebSessionBeforeInteractiveReauth() {
+        assertTrue(
+            ProviderWebSessionClearPolicy.shouldClearBeforeLogin(
+                ProviderId.GEMINI,
+                ProviderConnectionState.INTERACTIVE_AUTH_REQUIRED
+            )
+        )
+    }
+
+    @Test
     fun codexPreservesWebSessionBeforeLoginAttempts() {
         listOf(
             null,

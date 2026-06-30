@@ -6,6 +6,7 @@ import android.content.Intent
 import android.util.Log
 import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.local.ProviderId
+import com.aiquota.mobile.providers.DebugProviderSessionCookieStore
 import com.aiquota.mobile.widget.WidgetRefreshActions
 
 class ProviderStateDebugReceiver : BroadcastReceiver() {
@@ -19,6 +20,9 @@ class ProviderStateDebugReceiver : BroadcastReceiver() {
         val providers = requestedProvider?.let(::listOf) ?: listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT)
         providers.forEach { providerId ->
             LocalUsageRepository(appContext).markSessionExpired(providerId, "Debug QA provider reset.")
+            if (providerId == ProviderId.GEMINI) {
+                DebugProviderSessionCookieStore.clear(appContext, providerId)
+            }
         }
         Log.i(TAG, "debugProviderReset=true providers=${providers.joinToString(",") { it.storageId }}")
     }

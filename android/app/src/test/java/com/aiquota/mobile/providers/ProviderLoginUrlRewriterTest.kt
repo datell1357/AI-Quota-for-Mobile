@@ -3,6 +3,7 @@ package com.aiquota.mobile.providers
 import com.aiquota.mobile.local.ProviderId
 import java.io.File
 import java.net.URI
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -51,28 +52,24 @@ class ProviderLoginUrlRewriterTest {
     }
 
     @Test
-    fun addsAuthuserMinusOneToGeminiGoogleAccountUrls() {
+    fun doesNotRewriteGeminiGoogleAccountUrls() {
         val original = "https://accounts.google.com/AccountChooser" +
             "?continue=https%3A%2F%2Fgemini.google.com%2Fusage"
 
         val rewritten = ProviderLoginUrlRewriter.rewriteMainFrameUrl(ProviderId.GEMINI, original)
 
-        assertNotNull(rewritten)
-        val uri = URI(rewritten!!)
-        assertTrue(uri.toString().startsWith("https://accounts.google.com/AccountChooser"))
-        assertTrue(uri.rawQuery.contains("continue=https%3A%2F%2Fgemini.google.com%2Fusage"))
-        assertTrue(uri.rawQuery.contains("authuser=-1"))
+        assertNull(rewritten)
     }
 
     @Test
-    fun geminiLoginStartsWithGoogleAccountChooser() {
+    fun geminiLoginStartsWithUsagePage() {
         val definitions = File("src/main/java/com/aiquota/mobile/providers/ProviderDefinitions.kt").readText()
         val geminiDefinition = definitions.substringAfter("providerId = ProviderId.GEMINI,")
             .substringBefore("ProviderDefinition(")
 
-        assertTrue(geminiDefinition.contains("https://accounts.google.com/AccountChooser"))
-        assertTrue(geminiDefinition.contains("continue=https%3A%2F%2Fgemini.google.com%2Fusage"))
-        assertTrue(geminiDefinition.contains("authuser=-1"))
+        assertTrue(geminiDefinition.contains("loginStartUrl = \"https://gemini.google.com/usage\""))
+        assertFalse(geminiDefinition.contains("https://accounts.google.com/AccountChooser"))
+        assertFalse(geminiDefinition.contains("authuser=-1"))
     }
 
     @Test

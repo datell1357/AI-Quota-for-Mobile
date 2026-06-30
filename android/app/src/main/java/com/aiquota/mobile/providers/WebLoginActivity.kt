@@ -659,7 +659,6 @@ open class WebLoginActivity : Activity() {
         if (ProviderWebCollectorScripts.isRefreshLoginPage(ProviderId.GEMINI, url, pageText)) return false
         geminiNativeCollectionStarted = true
         CookieManager.getInstance().flush()
-        captureDebugProviderSessionCookies("gemini_native_collection_start")
         collectorInjectionKeys.clear()
         noteBridgePageUrl("about:blank")
         Log.i(
@@ -1017,6 +1016,7 @@ open class WebLoginActivity : Activity() {
     }
 
     private fun captureDebugProviderSessionCookies(reason: String, includeNativeAuthContext: Boolean = false) {
+        if (providerId == ProviderId.GEMINI) return
         val nativeAuthContext = if (includeNativeAuthContext && providerId == ProviderId.CODEX) {
             CodexNativeHeaderStore.snapshotAuthContext(codexNativeFetchHeaders)
         } else {

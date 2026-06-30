@@ -114,6 +114,13 @@ internal object DebugProviderSessionCookieStore {
         return header
     }
 
+    fun clear(context: Context, providerId: ProviderId) {
+        if (!BuildConfig.DEBUG) return
+        SecureStringStore(context, PREFS).remove(providerId.storageId)
+        externalSnapshotFile(context, providerId)?.delete()
+        Log.i(TAG, "provider=${providerId.storageId} debugCookieSnapshotCleared=true")
+    }
+
     internal fun cookiePairsForTest(cookieHeader: String): List<String> = cookiePairs(cookieHeader)
 
     internal fun restorableCookieHeadersForTest(cookieHeader: String, url: String): List<String> {

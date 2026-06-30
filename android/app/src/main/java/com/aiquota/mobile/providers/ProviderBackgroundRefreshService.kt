@@ -597,11 +597,16 @@ class ProviderBackgroundRefreshService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             cookieManager.setAcceptThirdPartyCookies(webView, true)
         }
-        DebugProviderSessionCookieStore.restore(applicationContext, providerId, cookieManager, "background_collection")
+        restoreDebugProviderSessionCookies(providerId, cookieManager)
         restoreCodexDebugNativeAuthContext(providerId)
         CookieManager.getInstance().flush()
         webView.onResume()
         webView.resumeTimers()
+    }
+
+    private fun restoreDebugProviderSessionCookies(providerId: ProviderId, cookieManager: CookieManager) {
+        if (providerId == ProviderId.GEMINI) return
+        DebugProviderSessionCookieStore.restore(applicationContext, providerId, cookieManager, "background_collection")
     }
 
     private fun restoreCodexDebugNativeAuthContext(providerId: ProviderId) {
@@ -1123,13 +1128,6 @@ class ProviderBackgroundRefreshService : Service() {
                 userAgent = collectorUserAgent,
                 requestHeadersForUrl = { url ->
                     if (ownerProviderId == ProviderId.CODEX) codexNativeFetchHeadersFor(url) else emptyMap()
-                },
-                cookieHeaderForUrl = { url ->
-                    if (ownerProviderId == ProviderId.GEMINI) {
-                        DebugProviderSessionCookieStore.restorableCookieHeader(applicationContext, ownerProviderId, url)
-                    } else {
-                        null
-                    }
                 }
             )
         }

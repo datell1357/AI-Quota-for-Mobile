@@ -16,6 +16,7 @@ class DebugProviderSessionCookieStoreTest {
         assertTrue(source.contains("getExternalFilesDir(EXTERNAL_DIR)"))
         assertTrue(source.contains("debug-session-cookies"))
         assertTrue(source.contains("debugCookieRestore=true"))
+        assertTrue(source.contains("debugCookieSnapshotCleared=true"))
         assertFalse(source.contains("Log.i(TAG, payload.toString())"))
         assertFalse(source.contains("Log.d(TAG, payload.toString())"))
     }
@@ -88,18 +89,18 @@ class DebugProviderSessionCookieStoreTest {
     @Test
     fun debugSnapshotCanRestoreRawCookieHeaderForSameOriginNativeFetch() {
         val payload = DebugProviderSessionCookieStore.snapshotPayloadForTest(
-            providerId = "gemini",
+            providerId = "codex",
             reason = "trusted_usage_payload",
             cookies = listOf(
-                "https://gemini.google.com" to "__Secure-1PSID=session; NID=browser",
-                "https://accounts.google.com" to "SID=account"
+                "https://chatgpt.com" to "__Secure-next-auth.session-token=session; oai-did=device",
+                "https://auth.openai.com" to "state=browser"
             ),
             nativeAuthContext = emptyMap()
         )
 
         assertEquals(
-            "__Secure-1PSID=session; NID=browser",
-            DebugProviderSessionCookieStore.cookieHeaderForUrlForTest(payload, "https://gemini.google.com/usage")
+            "__Secure-next-auth.session-token=session; oai-did=device",
+            DebugProviderSessionCookieStore.cookieHeaderForUrlForTest(payload, "https://chatgpt.com/backend-api/me")
         )
     }
 
@@ -112,6 +113,8 @@ class DebugProviderSessionCookieStoreTest {
         assertTrue(source.contains("captureDebugProviderSessionCookies(\"login_complete_navigation\")"))
         assertTrue(source.contains("captureDebugProviderSessionCookies(\"codex_post_login_redirect\")"))
         assertTrue(source.contains("captureDebugProviderSessionCookies(\"google_usage_pending\")"))
+        assertTrue(source.contains("if (providerId == ProviderId.GEMINI) return"))
+        assertFalse(source.contains("captureDebugProviderSessionCookies(\"gemini_native_collection_start\")"))
     }
 
     @Test
@@ -119,8 +122,10 @@ class DebugProviderSessionCookieStoreTest {
         val source = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val storeSource = File("src/main/java/com/aiquota/mobile/providers/DebugProviderSessionCookieStore.kt").readText()
 
+        assertTrue(source.contains("restoreDebugProviderSessionCookies(providerId, cookieManager)"))
+        assertTrue(source.contains("if (providerId == ProviderId.GEMINI) return"))
         assertTrue(source.contains("DebugProviderSessionCookieStore.restore(applicationContext, providerId, cookieManager, \"background_collection\")"))
-        assertTrue(source.contains("DebugProviderSessionCookieStore.restorableCookieHeader(applicationContext, ownerProviderId, url)"))
+        assertFalse(source.contains("DebugProviderSessionCookieStore.restorableCookieHeader(applicationContext, ownerProviderId, url)"))
         assertTrue(source.contains("restoreCodexDebugNativeAuthContext(providerId)"))
         assertTrue(source.contains("DebugProviderSessionCookieStore.restoreNativeAuthContext(applicationContext, providerId)"))
         assertTrue(source.contains("codexNativeFetchHeaders.putAll(restoredHeaders)"))
@@ -166,6 +171,8 @@ class DebugProviderSessionCookieStoreTest {
         assertFalse(mainManifest.contains("ProviderStateDebugReceiver"))
         assertTrue(resetSource.contains("ACTION_RESET_PROVIDER"))
         assertTrue(resetSource.contains("LocalUsageRepository(appContext).markSessionExpired"))
+        assertTrue(resetSource.contains("if (providerId == ProviderId.GEMINI)"))
+        assertTrue(resetSource.contains("DebugProviderSessionCookieStore.clear(appContext, providerId)"))
         assertTrue(resetSource.contains("listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT)"))
         assertFalse(resetSource.contains("pm clear"))
         assertFalse(resetSource.contains("clearProviderWebSession"))
