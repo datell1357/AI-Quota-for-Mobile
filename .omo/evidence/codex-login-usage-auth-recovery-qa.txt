@@ -1,0 +1,2001 @@
+manualQa evidence: codex-login-usage-auth-recovery
+started: 2026-06-29T22:07:16.5958487+09:00
+workspace: D:\Vibe Project\AI Usage for Mobile
+role: QA verification only; no product edits; no commits/staging
+
+== Environment commands ==
+
+$ pwd
+/d/Vibe Project/AI Usage for Mobile
+[exit=0]
+
+
+$ git status --short
+ M .idea/misc.xml
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/WebLoginActivityNativeBridgeTest.kt
+?? .omo/boulder.json
+?? .omo/codex-now.png
+?? .omo/evidence/codex-login-root-cause-code-review.md
+?? .omo/evidence/codex-login-usage-auth-recovery-adb-devices-qa.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-adb-devices.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-artifact-sizes-qa.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-artifact-sizes.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-assemble-debug.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-build-install.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-cleanup-qa.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-cleanup.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-code-review.md
+?? .omo/evidence/codex-login-usage-auth-recovery-continuation-assemble.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-continuation-status.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-continuation-tests.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-diff-check.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-diff.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-emulator-connect-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-emulator-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-emulator-main-launch.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-emulator-main-route.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-final-git-status.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-focused-tests-rerun.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-focused-tests.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-green.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-implementation.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-after.xml
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-before.xml
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-full-log-after.xml
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-full-log-runtime.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-full-log-screen.png
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-full-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-runtime.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-screen.png
+?? .omo/evidence/codex-login-usage-auth-recovery-package.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-qa.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-red.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-requested-filter.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-runtime.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-screen.png
+?? .omo/evidence/codex-login-usage-auth-recovery-status.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-tmux.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-ui.xml
+?? .omo/plans/codex-login-usage-auth-recovery.md
+?? .omo/start-work/
+?? .omo/ultraresearch/20260629-104317/
+?? .omo/ulw-loop/brief.md
+?? .omo/ulw-loop/goals.json
+?? .omo/ulw-loop/ledger.jsonl
+?? android/app/src/main/java/com/aiquota/mobile/providers/CodexNativeHeaderSelector.kt
+?? android/app/src/test/java/com/aiquota/mobile/providers/CodexNativeHeaderSelectorTest.kt
+[exit=0]
+
+
+$ ls -la android/gradlew android/settings.gradle.kts android/app/build.gradle.kts
+bash.exe : ls: cannot access 'android/gradlew': No such file or directory
+At line:9 char:10
++   $out = & $bash -lc "cd '/d/Vibe Project/AI Usage for Mobile' && $cm ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ls: cannot acce...le or directory:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+-rw-r--r-- 1 datell1357 197121 7551  6월 28 22:26 android/app/build.gradle.kts
+-rw-r--r-- 1 datell1357 197121  356  6월  9 14:55 android/settings.gradle.kts
+[exit=2]
+
+
+$ cd android && ./gradlew --version --console=plain
+bash.exe : /usr/bin/bash: line 1: ./gradlew: No such file or directory
+At line:9 char:10
++   $out = & $bash -lc "cd '/d/Vibe Project/AI Usage for Mobile' && $cm ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (/usr/bin/bash: ...le or directory:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[exit=127]
+
+== Gradle launcher discovery ==
+
+$ find . -maxdepth 3 -iname "gradlew*" -o -iname "gradle.bat"
+[exit=0]
+
+
+$ command -v gradle || true
+/c/Users/datell1357/Tools/gradle/current/bin/gradle
+[exit=0]
+
+
+$ gradle --version --console=plain
+
+------------------------------------------------------------
+Gradle 9.6.0
+------------------------------------------------------------
+
+Build time:    2026-06-18 23:19:03 UTC
+Revision:      3f750f03d77e42327c5f9fcb9992110088330a32
+
+Kotlin:        2.3.21
+Groovy:        4.0.32
+Ant:           Apache Ant(TM) version 1.10.17 compiled on April 6 2026
+Launcher JVM:  17.0.19 (Eclipse Adoptium 17.0.19+10)
+Daemon JVM:    C:\Users\datell1357\Tools\android-reversing\jdk-17 (no Daemon JVM specified, using current Java home)
+OS:            Windows 10 10.0 amd64
+
+[exit=0]
+
+== Focused unit tests ==
+
+$ gradle -p android :app:testDebugUnitTest --tests 'com.aiquota.mobile.providers.CodexNativeHeaderSelectorTest' --tests 'com.aiquota.mobile.providers.WebLoginActivityNativeBridgeTest' --tests 'com.aiquota.mobile.providers.ProviderNativeUsagePayloadFetcherTest' --console=plain --no-daemon
+
+
+$ cd '/d/Vibe Project/AI Usage for Mobile' && gradle -p android :app:testDebugUnitTest --tests 'com.aiquota.mobile.providers.CodexNativeHeaderSelectorTest' --tests 'com.aiquota.mobile.providers.WebLoginActivityNativeBridgeTest' --tests 'com.aiquota.mobile.providers.ProviderNativeUsagePayloadFetcherTest' --console=plain --no-daemon
+[background pid follows; stdout=D:\Vibe Project\AI Usage for Mobile\.omo\evidence\codex-login-usage-auth-recovery-focused-tests.stdout.txt stderr=D:\Vibe Project\AI Usage for Mobile\.omo\evidence\codex-login-usage-auth-recovery-focused-tests.stderr.txt]
+[pid=32888]
+
+
+$ C:/Program Files/Git/bin/bash.exe .omo/evidence/codex-login-usage-auth-recovery-run-focused-tests.sh
+[background stdout=D:\Vibe Project\AI Usage for Mobile\.omo\evidence\codex-login-usage-auth-recovery-focused-tests.stdout.txt stderr=D:\Vibe Project\AI Usage for Mobile\.omo\evidence\codex-login-usage-auth-recovery-focused-tests.stderr.txt exitFile=D:\Vibe Project\AI Usage for Mobile\.omo\evidence\codex-login-usage-auth-recovery-focused-tests.exit.txt]
+[pid=38036]
+
+[PowerShell quoting parse error occurred while preparing prior launch; no product command executed]
+
+
+$ C:/Program Files/Git/bin/bash.exe -lc "cd '/d/Vibe Project/AI Usage for Mobile' && bash .omo/evidence/codex-login-usage-auth-recovery-run-focused-tests.sh"
+[background stdout=D:\Vibe Project\AI Usage for Mobile\.omo\evidence\codex-login-usage-auth-recovery-focused-tests.stdout.txt stderr=D:\Vibe Project\AI Usage for Mobile\.omo\evidence\codex-login-usage-auth-recovery-focused-tests.stderr.txt exitFile=D:\Vibe Project\AI Usage for Mobile\.omo\evidence\codex-login-usage-auth-recovery-focused-tests.exit.txt]
+[pid=38432]
+
+[focused test stdout appended]
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.6.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:processDebugGoogleServices UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:compileDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac UP-TO-DATE
+> Task :app:bundleDebugClassesToRuntimeJar UP-TO-DATE
+> Task :app:bundleDebugClassesToCompileJar UP-TO-DATE
+> Task :app:compileDebugUnitTestKotlin UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :app:testDebugUnitTest UP-TO-DATE
+
+[Incubating] Problems report is available at: file:///D:/Vibe%20Project/AI%20Usage%20for%20Mobile/android/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.6.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 12s
+25 actionable tasks: 25 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.6.0/userguide/configuration_cache_enabling.html
+
+[focused test stderr appended]
+
+[focused test exit=0
+]
+
+== Debug APK build ==
+
+$ C:/Program Files/Git/bin/bash.exe -lc "cd '/d/Vibe Project/AI Usage for Mobile' && bash .omo/evidence/codex-login-usage-auth-recovery-run-assemble-debug.sh"
+[background stdout=D:\Vibe Project\AI Usage for Mobile\.omo\evidence\codex-login-usage-auth-recovery-assemble-debug.stdout.txt stderr=D:\Vibe Project\AI Usage for Mobile\.omo\evidence\codex-login-usage-auth-recovery-assemble-debug.stderr.txt exitFile=D:\Vibe Project\AI Usage for Mobile\.omo\evidence\codex-login-usage-auth-recovery-assemble-debug.exit.txt]
+[pid=18628]
+
+[assemble stdout appended]
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.6.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:processDebugGoogleServices UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:compileDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugGlobalSynthetics UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:mergeDebugJavaResource UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:mergeProjectDexDebug
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect UP-TO-DATE
+> Task :app:assembleDebug
+
+[Incubating] Problems report is available at: file:///D:/Vibe%20Project/AI%20Usage%20for%20Mobile/android/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.6.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 22s
+38 actionable tasks: 3 executed, 35 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.6.0/userguide/configuration_cache_enabling.html
+
+[assemble stderr appended]
+
+[assemble exit=0
+]
+
+== APK and adb ==
+
+$ ls -lh android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/output-metadata.json
+-rw-r--r-- 1 datell1357 197121 20M  6월 29 22:13 android/app/build/outputs/apk/debug/app-debug.apk
+-rw-r--r-- 1 datell1357 197121 403  6월 29 22:13 android/app/build/outputs/apk/debug/output-metadata.json
+[exit=0]
+
+
+$ command -v adb || true
+/c/Users/datell1357/Tools/android-reversing/android-sdk/platform-tools/adb
+[exit=0]
+
+
+$ adb version
+Android Debug Bridge version 1.0.41
+Version 37.0.0-14910828
+Installed as C:\Users\datell1357\Tools\android-reversing\android-sdk\platform-tools\adb.exe
+Running on Windows 10.0.19044
+[exit=0]
+
+
+$ adb devices -l
+List of devices attached
+emulator-5554          device product:sdk_gphone16k_x86_64 model:sdk_gphone16k_x86_64 device:emu64xa16k transport_id:1
+
+[exit=0]
+
+== Install and launch runtime QA ==
+
+$ adb -s emulator-5554 install -r android/app/build/outputs/apk/debug/app-debug.apk
+Performing Streamed Install
+Success
+[exit=0]
+
+
+$ adb -s emulator-5554 shell pm list packages | grep aiquota || true
+package:com.aiquota.mobile
+[exit=0]
+
+
+$ adb -s emulator-5554 shell cmd package resolve-activity --brief com.aiquota.mobile
+priority=0 preferredOrder=0 match=0x108000 specificIndex=-1 isDefault=false
+com.aiquota.mobile/.MainActivity
+[exit=0]
+
+
+$ adb -s emulator-5554 logcat -c
+[exit=0]
+
+
+$ adb -s emulator-5554 shell monkey -p com.aiquota.mobile -c android.intent.category.LAUNCHER 1
+  bash arg: -p
+  bash arg: com.aiquota.mobile
+  bash arg: -c
+  bash arg: android.intent.category.LAUNCHER
+  bash arg: 1
+bash.exe : args: [-p, com.aiquota.mobile, -c, android.intent.category.LAUNCHER, 1]
+At line:8 char:10
++   $out = & 'C:\Program Files\Git\bin\bash.exe' -lc "cd '/d/Vibe Proje ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (args: [-p, com....ry.LAUNCHER, 1]:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ arg: "-p"
+ arg: "com.aiquota.mobile"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="com.aiquota.mobile"
+data="android.intent.category.LAUNCHER"
+Events injected: 1
+## Network stats: elapsed time=35ms (0ms mobile, 0ms wifi, 35ms not connected)
+[exit=0]
+
+
+$ adb -s emulator-5554 shell pidof -s com.aiquota.mobile || true
+6003
+[exit=0]
+
+
+$ adb -s emulator-5554 shell dumpsys window | grep -E "mCurrentFocus|mFocusedApp|topResumedActivity" || true
+bash.exe : /usr/bin/bash: line 1: mFocusedApp: command not found
+At line:8 char:10
++   $out = & 'C:\Program Files\Git\bin\bash.exe' -lc "cd '/d/Vibe Proje ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (/usr/bin/bash: ...mmand not found:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+/usr/bin/bash: line 1: topResumedActivity: command not found
+[exit=0]
+
+
+$ adb -s emulator-5554 exec-out uiautomator dump /dev/tty > .omo/evidence/codex-login-usage-auth-recovery-ui.xml
+[exit=0]
+
+
+$ adb -s emulator-5554 exec-out screencap -p > .omo/evidence/codex-login-usage-auth-recovery-screen.png
+[exit=0]
+
+
+$ adb -s emulator-5554 logcat -d | grep -iE "codex|weblogin|native|aiquota|login|auth" > .omo/evidence/codex-login-usage-auth-recovery-logcat-filtered.txt || true
+bash.exe : /usr/bin/bash: line 1: weblogin: command not found
+At line:8 char:10
++   $out = & 'C:\Program Files\Git\bin\bash.exe' -lc "cd '/d/Vibe Proje ...
++          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (/usr/bin/bash: ...mmand not found:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+/usr/bin/bash: line 1: native: command not found
+/usr/bin/bash: line 1: aiquota: command not found
+/usr/bin/bash: line 1: login: command not found
+/usr/bin/bash: line 1: auth: command not found
+[exit=0]
+
+
+$ wc -c .omo/evidence/codex-login-usage-auth-recovery-ui.xml .omo/evidence/codex-login-usage-auth-recovery-screen.png .omo/evidence/codex-login-usage-auth-recovery-logcat-filtered.txt
+ 31908 .omo/evidence/codex-login-usage-auth-recovery-ui.xml
+152223 .omo/evidence/codex-login-usage-auth-recovery-screen.png
+     0 .omo/evidence/codex-login-usage-auth-recovery-logcat-filtered.txt
+184131 total
+[exit=0]
+
+== Runtime reruns without shell pipes ==
+
+$ adb -s emulator-5554 shell dumpsys window
+
+WINDOW MANAGER LAST ANR (dumpsys window lastanr)
+  <no ANR has occurred since boot>
+
+WINDOW MANAGER POLICY STATE (dumpsys window policy)
+    mSafeMode=false mSystemReady=true mSystemBooted=true
+    mCameraLensCoverState=CAMERA_LENS_COVER_ABSENT
+    mWakeGestureEnabledSetting=true
+    mUiMode=UI_MODE_TYPE_NORMALmEnableCarDockHomeCapture=false
+    mLidKeyboardAccessibility=0 mLidNavigationAccessibility=0 getLidBehavior=LID_BEHAVIOR_NONE
+    mLongPressOnBackBehavior=LONG_PRESS_BACK_NOTHING
+    mLongPressOnHomeBehavior=LONG_PRESS_HOME_ASSIST
+    mDoubleTapOnHomeBehavior=DOUBLE_TAP_HOME_NOTHING
+    mShortPressOnPowerBehavior=SHORT_PRESS_POWER_GO_TO_SLEEP
+    mLongPressOnPowerBehavior=LONG_PRESS_POWER_ASSISTANT
+    mLongPressOnPowerAssistantTimeoutMs=500
+    mVeryLongPressOnPowerBehavior=VERY_LONG_PRESS_POWER_NOTHING
+    mDoublePressOnPowerBehavior=MULTI_PRESS_POWER_NOTHING
+    mTriplePressOnPowerBehavior=MULTI_PRESS_POWER_NOTHING
+    mSupportShortPressPowerWhenDefaultDisplayOn=false
+        mShortPressOnSleepBehavior=SHORT_PRESS_SLEEP_GO_TO_SLEEP
+    mShortPressOnWindowBehavior=SHORT_PRESS_WINDOW_PICTURE_IN_PICTURE
+    mShortPressOnStemPrimaryBehavior=SHORT_PRESS_PRIMARY_NOTHING
+    mDoublePressOnStemPrimaryBehavior=DOUBLE_PRESS_PRIMARY_NOTHING
+    mTriplePressOnStemPrimaryBehavior=TRIPLE_PRESS_PRIMARY_NOTHING
+    mLongPressOnStemPrimaryBehavior=LONG_PRESS_PRIMARY_NOTHING
+    mAllowStartActivityForLongPressOnPowerDuringSetup=false
+    mHasSoftInput=true
+    mDismissImeOnBackKeyPressed=false mIncallPowerBehavior=sleep
+    mIncallBackBehavior=<nothing> mEndcallBehavior=sleep
+    mDisplayHomeButtonHandlers=
+    mKeyguardOccluded=false mPendingKeyguardOccluded=false
+    mAllowLockscreenWhenOnDisplays=false mLockScreenTimeout=2147483647 mLockScreenTimerActive=false
+    mKidsModeEnabled=false
+    mKeyMapping.size=0
+    SingleKey rules:
+      KeyCode=KEYCODE_POWER, LongPress=true, VeryLongPress=false, MaxMultiPressCount=1
+      KeyCode=KEYCODE_STYLUS_BUTTON_TAIL, LongPress=false, VeryLongPress=false, MaxMultiPressCount=2
+    Deferred key action executor:
+      empty
+    WakeGestureListener
+      mTriggerRequested=false
+      mSensor=null
+    KeyguardServiceDelegate
+      showing=false
+      inputRestricted=false
+      occluded=false
+      trusted=false
+      simSecure=false
+      dreaming=false
+      systemReady=true
+      deviceHasKeyguard=true
+      enabled=true
+      userId=0
+      bootCompleted=true
+      screenState=SCREEN_STATE_ON
+      interactiveState=INTERACTIVE_STATE_AWAKE
+    Looper state:
+      Looper (android.ui, tid 22) {970c164}
+        (MessageQueue is using DeliQueue implementation)
+        (Total messages: 0, polling=true, quitting=false)
+
+WINDOW MANAGER ANIMATOR STATE (dumpsys window animator)
+    Display{#0 state=ON size=1080x2400 ROTATION_0}:
+      Window #0: WindowStateAnimator{804d1b0 com.android.systemui.wallpapers.ImageWallpaper}
+      Window #1: WindowStateAnimator{111829 com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}
+      Window #2: WindowStateAnimator{559f7ae com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+      Window #3: WindowStateAnimator{f59a94f InputMethod}
+      Window #4: WindowStateAnimator{cdd58dc ShellDropTarget}
+      Window #5: WindowStateAnimator{17a0de5 StatusBar}
+      Window #6: WindowStateAnimator{551e0ba NotificationShade}
+      Window #7: WindowStateAnimator{318b6b Taskbar}
+      Window #8: WindowStateAnimator{d5526c8 DisplayBackGestureHandler 0}
+      Window #9: WindowStateAnimator{5c2a361 ScreenDecorOverlay}
+      Window #10: WindowStateAnimator{fad4e86 ScreenDecorOverlayBottom}
+
+
+
+WINDOW MANAGER SESSIONS (dumpsys window sessions)
+  Session Session{4edafd9 6003:u0a10233}:
+    numWindow=1 mCanAddInternalSystemWindow=false mAlertWindows={} mClientDead=false    mPackageName=com.aiquota.mobile
+  Session Session{4f4a879 1493:u0a10167}:
+    numWindow=1 mCanAddInternalSystemWindow=false mAlertWindows={} mClientDead=false    mPackageName=com.google.android.inputmethod.latin
+  Session Session{6cdfc29 1155:u0a10192}:
+    numWindow=2 mCanAddInternalSystemWindow=true mAlertWindows={} mClientDead=false    mPackageName=com.google.android.apps.nexuslauncher
+  Session Session{8229918 989:u0a10195}:
+    numWindow=7 mCanAddInternalSystemWindow=true mAlertWindows={} mClientDead=false    mPackageName=com.android.systemui
+
+WINDOW MANAGER DISPLAY CONTENTS (dumpsys window displays)
+  Display: mDisplayId=0 (organized)
+    init=1080x2400 420dpi mMinSizeOfResizeableTaskDp=220 cur=1080x2400 app=1080x2400 rng=1080x1080-2400x2400
+    deferred=false mLayoutNeeded=false
+  mLastOrientationSource=WindowedMagnification:0:31@74549106
+  deepestLastOrientationSource=ActivityRecord{43358531 u0 com.aiquota.mobile/.MainActivity t448}
+  overrideConfig={1.0 310mcc260mnc [ko_KR] ldltr sw411dp w411dp h914dp 420dpi nrml long compactNeeded port finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 0 - 1080, 2400) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.49 fontWeightAdjustment=0}
+  mHasSetIgnoreOrientationRequest=false ignoreOrientationRequest=false
+  mSleeping=false mAllSleepTokens=[]
+  mLayoutSeq=157
+  mImeWindow=Window{4edf0a3 u0 InputMethod}
+  mImeLayeringTarget=Window{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+  mImeInputTarget=Window{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+  mImeControlTarget=Window{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+  ImeContainer
+    mNeedsLayer=false
+    mImeWindowToken=ImeWindowToken{1cc5ee u0 android.os.Binder@e813769}
+  mImeParent=ActivityRecord{43358531 u0 com.aiquota.mobile/.MainActivity t448}
+  mRemoteInsetsControlTarget=RemoteInsetsControlTarget{531dd35 displayId=0 requestedVisibleTypes=503 animatingTypes=0}
+  mCurrentFocus=Window{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+  mFocusedApp=ActivityRecord{43358531 u0 com.aiquota.mobile/.MainActivity t448}
+  mFixedRotationLaunchingApp=null
+
+  mHoldScreenWindow=null
+  mObscuringWindow=Window{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+  mLastWakeLockHoldingWindow=null
+  mLastWakeLockObscuringWindow=null
+
+  mIsHardwareRendererOutputDisabled=false
+  mAreClientRenderingLimitationsEnabled=false
+
+  displayId=0
+  mWallpaperTarget=null
+  mLastWallpaperZoomOut=0.0
+  token WallpaperWindowToken{359a280 showWhenLocked=true}:
+    mWallpaperX=0.0
+    mWallpaperY=0.5
+    mWallpaperXStep=0.33333334
+    mWallpaperYStep=1.0
+    mWallpaperDisplayOffsetX=NA
+    mWallpaperDisplayOffsetY=NA
+
+  mSystemGestureExclusion=SkRegion()
+
+  Display areas in top down Z order:
+    * Leaf:36:36
+    * OneHanded:34:35
+      * Leaf:34:35
+    * Leaf:33:33
+    * OneHanded:32:32
+      * Leaf:32:32
+    * WindowedMagnification:0:31 (organized)
+      * OneHanded:26:31
+        * Leaf:26:31
+      * Leaf:24:25
+      * OneHanded:0:23
+        * Leaf:23:23
+        * AppZoomOut:20:22 (organized)
+          * Leaf:20:22
+        * Leaf:17:19
+        * AppZoomOut:16:16 (organized)
+          * Leaf:16:16
+        * Leaf:15:15
+        * AppZoomOut:2:14 (organized)
+          * ImePlaceholder:13:14
+            * ImeContainer
+          * Leaf:3:12
+          * DefaultTaskDisplayArea (organized)
+        * Leaf:1:1
+        * AppZoomOut:0:0 (organized)
+          * Leaf:0:0
+
+  Task display areas in top down Z order:
+    TaskDisplayArea DefaultTaskDisplayArea
+      overrideConfig={0.0 ?mcc0mnc ?localeList ?layoutDir ?swdp ?wdp ?hdp ?density ?lsize ?long ?round ?ldr ?wideColorGamut ?orien ?uimode ?night ?touch ?keyb/?/? ?nav/? winConfig={ mBounds=Rect(0, 0 - 0, 0) mAppBounds=null mMaxBounds=Rect(0, 0 - 0, 0) mDisplayRotation=undefined mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=undefined} ?fontWeightAdjustment}
+      mPreferredTopFocusableRootTask=Task{b36dbc0 #448 type=standard A=10233:com.aiquota.mobile}
+      mLastFocusedRootTask=Task{b36dbc0 #448 type=standard A=10233:com.aiquota.mobile}
+      Application tokens in top down Z order:
+      * Task{b36dbc0 #448 type=standard A=10233:com.aiquota.mobile U=0 visible=true visibleRequested=true mode=fullscreen translucent=false sz=1}
+        bounds=[0,0][1080,2400]
+        * ActivityRecord{43358531 u0 com.aiquota.mobile/.MainActivity t448}
+      * Task{bd80d87 #1 type=home U=0 visible=false visibleRequested=false mode=fullscreen translucent=true sz=1}
+        bounds=[0,0][1080,2400]
+        * Task{5aee9c6 #2 type=home I=com.google.android.apps.nexuslauncher/.NexusLauncherActivity U=0 rootTaskId=1 visible=false visibleRequested=false mode=fullscreen translucent=true sz=2}
+          bounds=[0,0][1080,2400]
+          * ActivityRecord{161364879 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t2}
+          * TaskFragment{10e7a20 mode=multi-window organizerUid=10192 organizerProc=com.google.android.apps.nexuslauncher}
+            bounds=[0,0][1080,2400]
+      * Task{34b8d1 #3 name=Bubbles type=undefined U=0 visible=false visibleRequested=false mode=multi-window translucent=true sz=1}
+        bounds=[0,0][1080,2400]
+        * Task{9688f36 #0 name=Bubbles-visibility-barrier type=undefined U=0 rootTaskId=3 visible=false visibleRequested=false mode=multi-window translucent=true sz=0}
+          bounds=[0,0][1080,2400]
+      * Task{6eb9e37 #4 name=SplitRoot type=undefined U=0 visible=false visibleRequested=false mode=fullscreen translucent=true sz=2}
+        bounds=[0,0][1080,2400]
+        * Task{47b110d #6 name=side type=undefined U=0 rootTaskId=4 visible=false visibleRequested=false mode=multi-window translucent=true sz=0}
+          bounds=[0,2400][1080,3600]
+        * Task{2114fa4 #5 name=main type=undefined U=0 rootTaskId=4 visible=false visibleRequested=false mode=multi-window translucent=true sz=0}
+          bounds=[0,0][1080,2400]
+
+  rootHomeTask=Task=1
+
+  PinnedTaskController
+    mIsImeShowing=false
+    mImeHeight=0
+    mMinAspectRatio=0.41841003
+    mMaxAspectRatio=2.39
+
+  DisplayFrames w=1080 h=2400 r=0
+
+  DisplayPolicy
+    mCarDockEnablesAccelerometer=true mDeskDockEnablesAccelerometer=true
+    mDockMode=EXTRA_DOCK_STATE_UNDOCKED mLidState=LID_OPEN
+    mAwake=true mScreenOnEarly=true mScreenOnFully=true
+    mKeyguardDrawComplete=true mWindowManagerDrawComplete=true
+    mHdmiPlugged=false
+    mLastAppearance=LIGHT_NAVIGATION_BARS FORCE_LIGHT_NAVIGATION_BARS
+    mLastBehavior=DEFAULT
+    mShowingDream=false mDreamingLockscreen=false
+    mStatusBar=Window{7d54c23 u0 StatusBar}
+    mExpandedPanel=Window{abafc75 u0 NotificationShade}
+    isKeyguardShowing=false
+    mNavigationBar=Window{74984a3 u0 Taskbar}
+    mNavBarOpacityMode=2
+    mNavigationBarCanMove=false
+    mHasBottomNavigationBar=true
+    mLeftGestureHost=Window{74984a3 u0 Taskbar}
+    mTopGestureHost=Window{7d54c23 u0 StatusBar}
+    mRightGestureHost=Window{74984a3 u0 Taskbar}
+    mBottomGestureHost=Window{74984a3 u0 Taskbar}
+    mFocusedWindow=Window{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+    mTopFullscreenOpaqueWindowState=Window{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+    mSystemUiControllingWindow=Window{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+    mSystemBarColorApps={ActivityRecord{43358531 u0 com.aiquota.mobile/.MainActivity t448}}
+    mNavBarColorWindowCandidate=Window{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+    mNavBarBackgroundWindowCandidate=Window{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+    mLastStatusBarAppearanceRegions=
+      AppearanceRegion{ bounds=[0,0][1080,2400]}
+    mLastLetterboxDetails=
+    mStatusBarBackgroundWindows=
+      Window{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+    mImeInsetsConsumed=false
+    mForceShowNavigationBarEnabled=false mAllowLockscreenWhenOn=false
+    mAllowsSystemBarRemoteInsetsController=false
+    mDecorInsetsInfo:
+      ROTATION_0={overrideNonDecorInsets=[0,132][0,63], overrideConfigInsets=[0,132][0,63], overrideNonDecorFrame=[0,132][1080,2337], overrideConfigFrame=[0,132][1080,2337]}
+      ROTATION_90={overrideNonDecorInsets=[132,0][0,63], overrideConfigInsets=[132,0][0,63], overrideNonDecorFrame=[132,0][2400,1017], overrideConfigFrame=[132,0][2400,1017]}
+      ROTATION_180={overrideNonDecorInsets=[0,0][0,0], overrideConfigInsets=[0,0][0,0], overrideNonDecorFrame=[0,0][0,0], overrideConfigFrame=[0,0][0,0]}
+      ROTATION_270={overrideNonDecorInsets=[0,0][0,0], overrideConfigInsets=[0,0][0,0], overrideNonDecorFrame=[0,0][0,0], overrideConfigFrame=[0,0][0,0]}
+    SystemGestures:
+      mDisplayCutoutTouchableRegionSize=32
+      mSwipeStartThreshold=Rect(63, 164 - 63, 63)
+      mSwipeDistanceThreshold=63
+
+  DisplayRotation
+    mCurrentAppOrientation=SCREEN_ORIENTATION_UNSPECIFIED
+    mLastOrientation=-1
+    mRotation=0 mDeferredRotationPauseCount=0
+    mLandscapeRotation=ROTATION_90 mSeascapeRotation=ROTATION_270
+    mPortraitRotation=ROTATION_0 mUpsideDownRotation=ROTATION_180
+    mSupportAutoRotation=true
+    WindowOrientationListener
+      mEnabled=true
+      mCurrentRotation=ROTATION_0
+      mSensorType=null
+      mSensor={Sensor name="Goldfish 3-axis Accelerometer", vendor="The Android Open Source Project", version=1, type=1, maxRange=39.300102, resolution=2.480159E-4, power=3.0, minDelay=10000}
+      mRate=2
+      AccelSensorJudge
+        mProposedRotation=0
+        mPredictedRotation=0
+        mLastFilteredX=0.0
+        mLastFilteredY=9.776321
+        mLastFilteredZ=0.812345
+        mLastFilteredTimestampNanos=1435062027700 (18.4386ms ago)
+        mTiltHistory={last: 5.0}
+        mFlat=false
+        mSwinging=false
+        mAccelerating=false
+        mOverhead=false
+        mTouched=false
+        mTiltToleranceConfig=[[-25, 70], [-25, 65], [-25, 60], [-25, 65]]
+
+    mCarDockRotation=-1 mDeskDockRotation=-1
+    mUserRotationMode=USER_ROTATION_FREE mUserRotation=ROTATION_0 mCameraRotationMode=0 mAllowAllRotations=unknown
+    mDemoHdmiRotation=ROTATION_90 mDemoHdmiRotationLock=false mUndockedHdmiRotation=-1
+    mLidOpenRotation=-1
+    mFixedToUserRotation=false
+
+    RotationLockHistory
+      06-29 12:58:04.297: mode=USER_ROTATION_FREE, rotation=ROTATION_0, caller=UiAutomationConnection#restoreRotationStateLocked
+      06-29 12:59:21.385: mode=USER_ROTATION_FREE, rotation=ROTATION_0, caller=UiAutomationConnection#restoreRotationStateLocked
+      06-29 12:59:48.835: mode=USER_ROTATION_FREE, rotation=ROTATION_0, caller=UiAutomationConnection#restoreRotationStateLocked
+      06-29 13:01:49.529: mode=USER_ROTATION_FREE, rotation=ROTATION_0, caller=UiAutomationConnection#restoreRotationStateLocked
+      06-29 13:02:07.010: mode=USER_ROTATION_FREE, rotation=ROTATION_0, caller=UiAutomationConnection#restoreRotationStateLocked
+      06-29 13:13:44.984: mode=USER_ROTATION_LOCKED, rotation=ROTATION_0, caller=MonkeyRotationEven#injectEvent
+      06-29 13:13:44.994: mode=USER_ROTATION_FREE, rotation=ROTATION_0, caller=MonkeyRotationEven#injectEvent
+      06-29 13:13:52.332: mode=USER_ROTATION_FREE, rotation=ROTATION_0, caller=UiAutomationConnection#restoreRotationStateLocked
+
+  InputConsumers:
+    name=recents_animation_input_consumer pid=1155 user=UserHandle{0}
+
+  WindowInsetsStateController
+    InsetsState
+      mDisplayFrame=Rect(0, 0 - 1080, 2400)
+      mDisplayCutout=DisplayCutout{insets=Rect(0, 132 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(480, 0 - 625, 132), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2400 physicalDisplayWidth=1080 physicalDisplayHeight=2400 density={2.625} cutoutSpec={M 507,66 a 33,33 0 1 0 66,0 33,33 0 1 0 -66,0 Z @left} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}} sideOverrides={}}
+      mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=47, center=Point(47, 47)}, RoundedCorner{position=TopRight, radius=47, center=Point(1033, 47)}, RoundedCorner{position=BottomRight, radius=48, center=Point(1032, 2352)}, RoundedCorner{position=BottomLeft, radius=48, center=Point(48, 2352)}]}
+      mRoundedCornerFrame=Rect(0, 0 - 0, 0)
+      mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(827, 0 - 1043, 132) rotation=0}
+      mDisplayShape=DisplayShape{type=2, displayWidth=1080, displayHeight=2400, physicalPixelDisplaySizeRatio=1.0, rotation=0, offsetX=0, offsetY=0, scale=1.0}
+        InsetsSource id=d4920001 type=navigationBars frame=[0,2337][1080,2400] visible=true flags=SUPPRESS_SCRIM|ANIMATE_RESIZING sideHint=BOTTOM
+        InsetsSource id=d4920004 type=systemGestures frame=[0,0][78,2400] visible=true flags= sideHint=LEFT
+        InsetsSource id=d4920005 type=mandatorySystemGestures frame=[0,2316][1080,2400] visible=true flags= sideHint=BOTTOM
+        InsetsSource id=d4920006 type=tappableElement frame=[0,0][0,0] visible=true flags= sideHint=NONE
+        InsetsSource id=d4920024 type=systemGestures frame=[1002,0][1080,2400] visible=true flags= sideHint=RIGHT
+        InsetsSource id=3 type=ime frame=[0,0][0,0] visible=false flags=INVALID sideHint=NONE
+        InsetsSource id=27 type=displayCutout frame=[0,0][1080,132] visible=true flags= sideHint=TOP
+        InsetsSource id=db0000 type=statusBars frame=[0,0][1080,132] visible=true flags= sideHint=TOP
+        InsetsSource id=db0005 type=mandatorySystemGestures frame=[0,0][1080,164] visible=true flags= sideHint=TOP
+        InsetsSource id=db0006 type=tappableElement frame=[0,0][1080,132] visible=true flags= sideHint=TOP
+    Control map:
+      Window{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}:
+        InsetsSourceControl: {3 mType=ime mSurfacePosition=Point(289, 2274) mInsetsHint=Insets{left=0, top=0, right=0, bottom=0} mLeash=null}
+        InsetsSourceControl: {d4920001 mType=navigationBars initiallyVisible mSurfacePosition=Point(0, 2337) mInsetsHint=Insets{left=0, top=0, right=0, bottom=63} mLeash=Surface(name=Surface(name=74984a3 Taskbar#66)/@0x9c88415 - animation-leash of insets_animation#174)/@0xc5b7347}
+        InsetsSourceControl: {db0000 mType=statusBars initiallyVisible mSurfacePosition=Point(0, 0) mInsetsHint=Insets{left=0, top=132, right=0, bottom=0} mLeash=Surface(name=Surface(name=7d54c23 StatusBar#74)/@0xe4b5ed9 - animation-leash of insets_animation#173)/@0xff9e774}
+    InsetsSourceProviders:
+      InsetsSourceProvider
+        mSource=InsetsSource id=db0006 type=tappableElement frame=[0,0][1080,132] visible=true flags= sideHint=TOP
+        mSourceFrame=Rect(0, 0 - 1080, 132)
+        mIsLeashInitialized=false mHasPendingPosition=false
+        mWin=Window{7d54c23 u0 StatusBar}
+      InsetsSourceProvider
+        mSource=InsetsSource id=db0005 type=mandatorySystemGestures frame=[0,0][1080,164] visible=true flags= sideHint=TOP
+        mSourceFrame=Rect(0, 0 - 1080, 164)
+        mIsLeashInitialized=false mHasPendingPosition=false
+        mWin=Window{7d54c23 u0 StatusBar}
+      InsetsSourceProvider
+        mSource=InsetsSource id=db0000 type=statusBars frame=[0,0][1080,132] visible=true flags= sideHint=TOP
+        mSourceFrame=Rect(0, 0 - 1080, 132)
+        mControl=InsetsSourceControl mId=db0000 mType=statusBars mLeash=Surface(name=Surface(name=7d54c23 StatusBar#74)/@0xe4b5ed9 - animation-leash of insets_animation#173)/@0xff9e774 mInitiallyVisible=true mSurfacePosition=Point(0, 0) mInsetsHint=Insets{left=0, top=132, right=0, bottom=0} mSkipAnimationOnce=false mImeStatsToken=null
+        mInsetsHint=Insets{left=0, top=132, right=0, bottom=0}
+        mIsLeashInitialized=true mHasPendingPosition=false
+        mWin=Window{7d54c23 u0 StatusBar}
+        mAdapter=ControlAdapter mCapturedLeash=Surface(name=Surface(name=7d54c23 StatusBar#74)/@0xe4b5ed9 - animation-leash of insets_animation#173)/@0xff9e774
+        mControlTarget=Window{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+      ImeInsetsSourceProvider
+        mSource=InsetsSource id=3 type=ime frame=[0,0][0,0] visible=false flags=INVALID sideHint=NONE
+        mSourceFrame=Rect(289, 2274 - 791, 2400)
+        mControl=InsetsSourceControl mId=3 mType=ime mLeash=Surface(name=Surface(name=4edf0a3 InputMethod#88)/@0x73f633d - animation-leash of insets_animation#176)/@0x9a5149d mInitiallyVisible=false mSurfacePosition=Point(289, 2274) mInsetsHint=Insets{left=0, top=0, right=0, bottom=0} mSkipAnimationOnce=false mImeStatsToken=null
+        mInsetsHint=Insets{left=0, top=0, right=0, bottom=0} stale
+        mIsLeashInitialized=true mHasPendingPosition=false
+        mWin=Window{4edf0a3 u0 InputMethod}
+        mAdapter=ControlAdapter mCapturedLeash=Surface(name=Surface(name=4edf0a3 InputMethod#88)/@0x73f633d - animation-leash of insets_animation#176)/@0x9a5149d
+        mControlTarget=Window{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+        mImeShowing=false mLastDrawn=false
+      InsetsSourceProvider
+        mSource=InsetsSource id=d4920024 type=systemGestures frame=[1002,0][1080,2400] visible=true flags= sideHint=RIGHT
+        mSourceFrame=Rect(1002, 0 - 1080, 2400)
+        mIsLeashInitialized=false mHasPendingPosition=false
+        mWin=Window{74984a3 u0 Taskbar}
+      InsetsSourceProvider
+        mSource=InsetsSource id=d4920006 type=tappableElement frame=[0,0][0,0] visible=true flags= sideHint=NONE
+        mSourceFrame=Rect(0, 0 - 0, 0)
+        mOverrideFrames={2031=Rect(0, 0 - 0, 0)}
+        mIsLeashInitialized=false mHasPendingPosition=false
+        mWin=Window{74984a3 u0 Taskbar}
+      InsetsSourceProvider
+        mSource=InsetsSource id=d4920005 type=mandatorySystemGestures frame=[0,2316][1080,2400] visible=true flags= sideHint=BOTTOM
+        mSourceFrame=Rect(0, 2316 - 1080, 2400)
+        mIsLeashInitialized=false mHasPendingPosition=false
+        mWin=Window{74984a3 u0 Taskbar}
+      InsetsSourceProvider
+        mSource=InsetsSource id=d4920004 type=systemGestures frame=[0,0][78,2400] visible=true flags= sideHint=LEFT
+        mSourceFrame=Rect(0, 0 - 78, 2400)
+        mIsLeashInitialized=false mHasPendingPosition=false
+        mWin=Window{74984a3 u0 Taskbar}
+      InsetsSourceProvider
+        mSource=InsetsSource id=d4920001 type=navigationBars frame=[0,2337][1080,2400] visible=true flags=SUPPRESS_SCRIM|ANIMATE_RESIZING sideHint=BOTTOM
+        mSourceFrame=Rect(0, 2337 - 1080, 2400)
+        mControl=InsetsSourceControl mId=d4920001 mType=navigationBars mLeash=Surface(name=Surface(name=74984a3 Taskbar#66)/@0x9c88415 - animation-leash of insets_animation#174)/@0xc5b7347 mInitiallyVisible=true mSurfacePosition=Point(0, 2337) mInsetsHint=Insets{left=0, top=0, right=0, bottom=63} mSkipAnimationOnce=false mImeStatsToken=null
+        mInsetsHint=Insets{left=0, top=0, right=0, bottom=63}
+        mIsLeashInitialized=true mHasPendingPosition=false
+        mWin=Window{74984a3 u0 Taskbar}
+        mAdapter=ControlAdapter mCapturedLeash=Surface(name=Surface(name=74984a3 Taskbar#66)/@0x9c88415 - animation-leash of insets_animation#174)/@0xc5b7347
+        mControlTarget=Window{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+  InsetsPolicy
+    status: WINDOW_STATE_SHOWING
+    nav: WINDOW_STATE_SHOWING
+
+  DisplayWindowSettingsProvider
+    SettingsEntry{mWindowingMode=0, mUserRotationMode=null, mUserRotation=null, mForcedWidth=0, mForcedHeight=0, mForcedDensity=0, mForcedDensityRatio=0.0, mForcedScalingMode=null, mRemoveContentMode=0, mShouldShowWithInsecureKeyguard=null, mShouldShowSystemDecors=null, mIsHomeSupported=null, mShouldShowIme=null, mFixedToUserRotation=null, mIgnoreOrientationRequest=null, mIgnoreDisplayCutout=null, mDontMoveToTop=null, mForceAppsUniversalResizable=null, mCanStealTopFocus=null}
+
+
+WINDOW MANAGER TOKENS (dumpsys window tokens)
+  All tokens:
+  Display #0
+    mInTouchMode=true
+  WindowToken{fcdd152 type=2000 android.os.BinderProxy@314c1b4}
+  WindowToken{406f935 type=2038 android.os.BinderProxy@cc0d7b2}
+  WindowToken{276047b type=2040 android.os.BinderProxy@6fdb15f}
+  WallpaperWindowToken{359a280 showWhenLocked=true}
+  ActivityRecord{161364879 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t2}
+  ImeWindowToken{1cc5ee u0 android.os.Binder@e813769}
+  WindowToken{3e7c7de type=2024 android.os.BinderProxy@ed04b19}
+  ActivityRecord{43358531 u0 com.aiquota.mobile/.MainActivity t448}
+  WindowToken{30009cc type=2019 android.os.BinderProxy@23f8cb5}
+  WindowToken{b9ad48d type=2024 android.os.BinderProxy@18ff124}
+  WindowToken{28afff0 type=2024 android.os.BinderProxy@aaff033}
+
+WINDOW MANAGER WINDOWS (dumpsys window windows)
+  Window #0 Window{c6d2c89 u0 ScreenDecorOverlayBottom}:
+    mDisplayId=0 mSession=Session{8229918 989:u0a10195} mClient=android.os.BinderProxy@18ff124
+    mOwnerUid=10195 showForAllUsers=true package=com.android.systemui appop=NONE
+    mAttrs={(0,0)(fillxwrap) gr=BOTTOM CENTER_VERTICAL sim={adjust=pan} layoutInDisplayCutoutMode=always ty=NAVIGATION_BAR_PANEL fmt=TRANSLUCENT
+      fl=NOT_FOCUSABLE NOT_TOUCH_MODAL LAYOUT_IN_SCREEN FLAG_SLIPPERY
+      pfl=SHOW_FOR_ALL_USERS NO_MOVE_ANIMATION IS_ROUNDED_CORNERS_OVERLAY COLOR_SPACE_AGNOSTIC FIT_INSETS_CONTROLLED TRUSTED_OVERLAY
+      vsysui=LAYOUT_STABLE
+      bhv=DEFAULT
+      frameRateBoostOnTouch=true
+      dvrrWindowFrameRateHint=true}
+    Requested w=1080 h=74 mLayoutSeq=157
+    mHasSurface=true isReadyForDisplay()=true mWindowRemovalAllowed=false
+    WindowStateAnimator{fad4e86 ScreenDecorOverlayBottom}:
+      Surface: shown=true    isOnScreen=true
+    isVisible=true
+    keepClearAreas: restricted=[], unrestricted=[]
+    mPrepareSyncSeqId=0
+    mBufferSeqId=0
+  Window #1 Window{c49edbf u0 ScreenDecorOverlay}:
+    mDisplayId=0 mSession=Session{8229918 989:u0a10195} mClient=android.os.BinderProxy@ed04b19
+    mOwnerUid=10195 showForAllUsers=true package=com.android.systemui appop=NONE
+    mAttrs={(0,0)(fillxwrap) gr=TOP CENTER_VERTICAL sim={adjust=pan} layoutInDisplayCutoutMode=always ty=NAVIGATION_BAR_PANEL fmt=TRANSLUCENT
+      fl=NOT_FOCUSABLE NOT_TOUCH_MODAL LAYOUT_IN_SCREEN FLAG_SLIPPERY
+      pfl=SHOW_FOR_ALL_USERS NO_MOVE_ANIMATION IS_ROUNDED_CORNERS_OVERLAY COLOR_SPACE_AGNOSTIC FIT_INSETS_CONTROLLED TRUSTED_OVERLAY
+      vsysui=LAYOUT_STABLE
+      bhv=DEFAULT
+      frameRateBoostOnTouch=true
+      dvrrWindowFrameRateHint=true}
+    Requested w=1080 h=132 mLayoutSeq=157
+    mHasSurface=true isReadyForDisplay()=true mWindowRemovalAllowed=false
+    WindowStateAnimator{5c2a361 ScreenDecorOverlay}:
+      Surface: shown=true    isOnScreen=true
+    isVisible=true
+    keepClearAreas: restricted=[], unrestricted=[]
+    mPrepareSyncSeqId=0
+    mBufferSeqId=0
+  Window #2 Window{2ca4969 u0 DisplayBackGestureHandler 0}:
+    mDisplayId=0 mSession=Session{8229918 989:u0a10195} mClient=android.os.BinderProxy@aaff033
+    mOwnerUid=10195 showForAllUsers=true package=com.android.systemui appop=NONE
+    mAttrs={(0,0)(276x704) sim={adjust=pan} ty=NAVIGATION_BAR_PANEL fmt=TRANSLUCENT
+      fl=NOT_FOCUSABLE NOT_TOUCHABLE LAYOUT_IN_SCREEN HARDWARE_ACCELERATED
+      pfl=SHOW_FOR_ALL_USERS EXCLUDE_FROM_SCREEN_MAGNIFICATION FIT_INSETS_CONTROLLED TRUSTED_OVERLAY
+      bhv=DEFAULT
+      frameRateBoostOnTouch=true
+      dvrrWindowFrameRateHint=true}
+    Requested w=-1 h=-1 mLayoutSeq=33
+    mHasSurface=false isReadyForDisplay()=false mWindowRemovalAllowed=false
+    WindowStateAnimator{d5526c8 DisplayBackGestureHandler 0}:
+      mShownAlpha=0.0 mAlpha=1.0 mLastAlpha=0.0
+    isOnScreen=false
+    isVisible=false
+    keepClearAreas: restricted=[], unrestricted=[]
+    mPrepareSyncSeqId=0
+    mBufferSeqId=0
+  Window #3 Window{74984a3 u0 Taskbar}:
+    mDisplayId=0 mSession=Session{6cdfc29 1155:u0a10192} mClient=android.os.BinderProxy@d059bd2
+    mOwnerUid=10192 showForAllUsers=true package=com.google.android.apps.nexuslauncher appop=NONE
+    mAttrs={(0,0)(fillx63) gr=BOTTOM CENTER_VERTICAL sim={adjust=nothing} layoutInDisplayCutoutMode=always ty=NAVIGATION_BAR fmt=TRANSLUCENT receive insets ignoring z-order
+      fl=NOT_FOCUSABLE FLAG_SLIPPERY
+      pfl=NO_MOVE_ANIMATION
+      bhv=DEFAULT
+      providedInsets:
+        InsetsFrameProvider: {id=#d4920001, index=0, type=navigationBars, source=FRAME, flags=[SUPPRESS_SCRIM], insetsSize=Insets{left=0, top=0, right=0, bottom=63}}
+        InsetsFrameProvider: {id=#d4920006, index=0, type=tappableElement, source=FRAME, flags=[], insetsSize=Insets{left=0, top=0, right=0, bottom=0}, insetsSizeOverrides=[TypedInsetsSize: {windowType=VOICE_INTERACTION, insetsSize=Insets{left=0, top=0, right=0, bottom=0}}]}
+        InsetsFrameProvider: {id=#d4920005, index=0, type=mandatorySystemGestures, source=FRAME, flags=[], insetsSize=Insets{left=0, top=0, right=0, bottom=84}}
+        InsetsFrameProvider: {id=#d4920004, index=0, type=systemGestures, source=DISPLAY, flags=[], insetsSize=Insets{left=78, top=0, right=0, bottom=0}}
+        InsetsFrameProvider: {id=#d4920024, index=1, type=systemGestures, source=DISPLAY, flags=[], insetsSize=Insets{left=0, top=0, right=78, bottom=0}}
+      frameRateBoostOnTouch=true
+      dvrrWindowFrameRateHint=true
+      paramsForRotation:
+        ROTATION_0={(0,0)(fillx63) gr=BOTTOM CENTER_VERTICAL sim={adjust=nothing} layoutInDisplayCutoutMode=always ty=NAVIGATION_BAR fmt=TRANSLUCENT receive insets ignoring z-order
+          fl=NOT_FOCUSABLE FLAG_SLIPPERY
+          pfl=NO_MOVE_ANIMATION
+          bhv=DEFAULT
+          providedInsets:
+            InsetsFrameProvider: {id=#79e70001, index=0, type=navigationBars, source=FRAME, flags=[SUPPRESS_SCRIM|ANIMATE_RESIZING], insetsSize=Insets{left=0, top=0, right=0, bottom=63}}
+            InsetsFrameProvider: {id=#79e70006, index=0, type=tappableElement, source=FRAME, flags=[], insetsSize=Insets{left=0, top=0, right=0, bottom=0}, insetsSizeOverrides=[TypedInsetsSize: {windowType=VOICE_INTERACTION, insetsSize=Insets{left=0, top=0, right=0, bottom=0}}]}
+            InsetsFrameProvider: {id=#79e70005, index=0, type=mandatorySystemGestures, source=FRAME, flags=[], insetsSize=Insets{left=0, top=0, right=0, bottom=84}}
+            InsetsFrameProvider: {id=#79e70004, index=0, type=systemGestures, source=DISPLAY, flags=[], insetsSize=Insets{left=78, top=0, right=0, bottom=0}}
+            InsetsFrameProvider: {id=#79e70024, index=1, type=systemGestures, source=DISPLAY, flags=[], insetsSize=Insets{left=0, top=0, right=78, bottom=0}}
+          frameRateBoostOnTouch=true
+          dvrrWindowFrameRateHint=true}
+        ROTATION_90={(0,0)(fillx63) gr=BOTTOM CENTER_VERTICAL sim={adjust=nothing} layoutInDisplayCutoutMode=always ty=NAVIGATION_BAR fmt=TRANSLUCENT receive insets ignoring z-order
+          fl=NOT_FOCUSABLE FLAG_SLIPPERY
+          pfl=NO_MOVE_ANIMATION
+          bhv=DEFAULT
+          providedInsets:
+            InsetsFrameProvider: {id=#79e70001, index=0, type=navigationBars, source=FRAME, flags=[SUPPRESS_SCRIM|ANIMATE_RESIZING], insetsSize=Insets{left=0, top=0, right=0, bottom=63}}
+            InsetsFrameProvider: {id=#79e70006, index=0, type=tappableElement, source=FRAME, flags=[], insetsSize=Insets{left=0, top=0, right=0, bottom=0}, insetsSizeOverrides=[TypedInsetsSize: {windowType=VOICE_INTERACTION, insetsSize=Insets{left=0, top=0, right=0, bottom=0}}]}
+            InsetsFrameProvider: {id=#79e70005, index=0, type=mandatorySystemGestures, source=FRAME, flags=[], insetsSize=Insets{left=0, top=0, right=0, bottom=84}}
+            InsetsFrameProvider: {id=#79e70004, index=0, type=systemGestures, source=DISPLAY, flags=[], insetsSize=Insets{left=78, top=0, right=0, bottom=0}}
+            InsetsFrameProvider: {id=#79e70024, index=1, type=systemGestures, source=DISPLAY, flags=[], insetsSize=Insets{left=0, top=0, right=78, bottom=0}}
+          frameRateBoostOnTouch=true
+          dvrrWindowFrameRateHint=true}
+        ROTATION_180={(0,0)(fillx63) gr=BOTTOM CENTER_VERTICAL sim={adjust=nothing} layoutInDisplayCutoutMode=always ty=NAVIGATION_BAR fmt=TRANSLUCENT receive insets ignoring z-order
+          fl=NOT_FOCUSABLE FLAG_SLIPPERY
+          pfl=NO_MOVE_ANIMATION
+          bhv=DEFAULT
+          providedInsets:
+            InsetsFrameProvider: {id=#79e70001, index=0, type=navigationBars, source=FRAME, flags=[SUPPRESS_SCRIM|ANIMATE_RESIZING], insetsSize=Insets{left=0, top=0, right=0, bottom=132}}
+            InsetsFrameProvider: {id=#79e70006, index=0, type=tappableElement, source=FRAME, flags=[], insetsSize=Insets{left=0, top=0, right=0, bottom=0}, insetsSizeOverrides=[TypedInsetsSize: {windowType=VOICE_INTERACTION, insetsSize=Insets{left=0, top=0, right=0, bottom=0}}]}
+            InsetsFrameProvider: {id=#79e70005, index=0, type=mandatorySystemGestures, source=FRAME, flags=[], insetsSize=Insets{left=0, top=0, right=0, bottom=132}}
+            InsetsFrameProvider: {id=#79e70004, index=0, type=systemGestures, source=DISPLAY, flags=[], insetsSize=Insets{left=78, top=0, right=0, bottom=0}}
+            InsetsFrameProvider: {id=#79e70024, index=1, type=systemGestures, source=DISPLAY, flags=[], insetsSize=Insets{left=0, top=0, right=78, bottom=0}}
+          frameRateBoostOnTouch=true
+          dvrrWindowFrameRateHint=true}
+        ROTATION_270={(0,0)(fillx63) gr=BOTTOM CENTER_VERTICAL sim={adjust=nothing} layoutInDisplayCutoutMode=always ty=NAVIGATION_BAR fmt=TRANSLUCENT receive insets ignoring z-order
+          fl=NOT_FOCUSABLE FLAG_SLIPPERY
+          pfl=NO_MOVE_ANIMATION
+          bhv=DEFAULT
+          providedInsets:
+            InsetsFrameProvider: {id=#79e70001, index=0, type=navigationBars, source=FRAME, flags=[SUPPRESS_SCRIM|ANIMATE_RESIZING], insetsSize=Insets{left=0, top=0, right=0, bottom=63}}
+            InsetsFrameProvider: {id=#79e70006, index=0, type=tappableElement, source=FRAME, flags=[], insetsSize=Insets{left=0, top=0, right=0, bottom=0}, insetsSizeOverrides=[TypedInsetsSize: {windowType=VOICE_INTERACTION, insetsSize=Insets{left=0, top=0, right=0, bottom=0}}]}
+            InsetsFrameProvider: {id=#79e70005, index=0, type=mandatorySystemGestures, source=FRAME, flags=[], insetsSize=Insets{left=0, top=0, right=0, bottom=84}}
+            InsetsFrameProvider: {id=#79e70004, index=0, type=systemGestures, source=DISPLAY, flags=[], insetsSize=Insets{left=78, top=0, right=0, bottom=0}}
+            InsetsFrameProvider: {id=#79e70024, index=1, type=systemGestures, source=DISPLAY, flags=[], insetsSize=Insets{left=0, top=0, right=78, bottom=0}}
+          frameRateBoostOnTouch=true
+          dvrrWindowFrameRateHint=true}}
+    Requested w=1080 h=63 mLayoutSeq=157
+    mHasSurface=true isReadyForDisplay()=true mWindowRemovalAllowed=false
+    ContainerAnimator:
+      mLeash=Surface(name=Surface(name=74984a3 Taskbar#66)/@0x9c88415 - animation-leash of insets_animation#174)/@0xc5b7347 mAnimationType=insets_animation
+      Animation: com.android.server.wm.InsetsSourceProvider$ControlAdapter@48806e0
+        ControlAdapter mCapturedLeash=Surface(name=Surface(name=74984a3 Taskbar#66)/@0x9c88415 - animation-leash of insets_animation#174)/@0xc5b7347
+    WindowStateAnimator{318b6b Taskbar}:
+      Surface: shown=true    isOnScreen=true
+    isVisible=true
+    keepClearAreas: restricted=[], unrestricted=[]
+    mPrepareSyncSeqId=0
+    mBufferSeqId=0
+  Window #4 Window{abafc75 u0 NotificationShade}:
+    mDisplayId=0 mSession=Session{8229918 989:u0a10195} mClient=android.os.BinderProxy@489a7ac
+    mOwnerUid=10195 showForAllUsers=true package=com.android.systemui appop=NONE
+    mAttrs={(0,0)(fillxfill) gr=TOP CENTER_VERTICAL sim={adjust=pan} layoutInDisplayCutoutMode=always ty=NOTIFICATION_SHADE fmt=TRANSLUCENT
+      fl=NOT_FOCUSABLE TOUCHABLE_WHEN_WAKING WATCH_OUTSIDE_TOUCH HARDWARE_ACCELERATED DRAWS_SYSTEM_BAR_BACKGROUNDS
+      pfl=OPTIMIZE_MEASURE COLOR_SPACE_AGNOSTIC FIT_INSETS_CONTROLLED
+      bhv=SHOW_TRANSIENT_BARS_BY_SWIPE
+      frameRateBoostOnTouch=true
+      dvrrWindowFrameRateHint=true}
+    Requested w=1080 h=2400 mLayoutSeq=62
+    mHasSurface=false isReadyForDisplay()=false mWindowRemovalAllowed=false
+    WindowStateAnimator{551e0ba NotificationShade}:
+    isOnScreen=false
+    isVisible=false
+    keepClearAreas: restricted=[], unrestricted=[]
+    mPrepareSyncSeqId=0
+    mBufferSeqId=0
+  Window #5 Window{7d54c23 u0 StatusBar}:
+    mDisplayId=0 mSession=Session{8229918 989:u0a10195} mClient=android.os.BinderProxy@81381dd
+    mOwnerUid=10195 showForAllUsers=true package=com.android.systemui appop=NONE
+    mAttrs={(0,0)(fillx132) gr=TOP CENTER_VERTICAL sim={adjust=pan} layoutInDisplayCutoutMode=always ty=STATUS_BAR fmt=TRANSLUCENT
+      fl=NOT_FOCUSABLE HARDWARE_ACCELERATED DRAWS_SYSTEM_BAR_BACKGROUNDS
+      pfl=COLOR_SPACE_AGNOSTIC FIT_INSETS_CONTROLLED
+      bhv=DEFAULT
+      providedInsets:
+        InsetsFrameProvider: {id=#db0000, index=0, type=statusBars, source=FRAME, flags=[], insetsSize=Insets{left=0, top=132, right=0, bottom=0}}
+        InsetsFrameProvider: {id=#db0006, index=0, type=tappableElement, source=FRAME, flags=[], insetsSize=Insets{left=0, top=132, right=0, bottom=0}}
+        InsetsFrameProvider: {id=#db0005, index=0, type=mandatorySystemGestures, source=FRAME, flags=[], mMinimalInsetsSizeInDisplayCutoutSafe=Insets{left=0, top=32, right=0, bottom=0}}
+      frameRateBoostOnTouch=true
+      dvrrWindowFrameRateHint=true
+      paramsForRotation:
+        ROTATION_0={(0,0)(fillx132) gr=TOP CENTER_VERTICAL layoutInDisplayCutoutMode=always ty=STATUS_BAR fmt=TRANSLUCENT
+          fl=NOT_FOCUSABLE DRAWS_SYSTEM_BAR_BACKGROUNDS
+          pfl=COLOR_SPACE_AGNOSTIC FIT_INSETS_CONTROLLED
+          bhv=DEFAULT
+          providedInsets:
+            InsetsFrameProvider: {id=#db0000, index=0, type=statusBars, source=FRAME, flags=[], insetsSize=Insets{left=0, top=132, right=0, bottom=0}}
+            InsetsFrameProvider: {id=#db0006, index=0, type=tappableElement, source=FRAME, flags=[], insetsSize=Insets{left=0, top=132, right=0, bottom=0}}
+            InsetsFrameProvider: {id=#db0005, index=0, type=mandatorySystemGestures, source=FRAME, flags=[], insetsSize=Insets{left=0, top=132, right=0, bottom=0}, mMinimalInsetsSizeInDisplayCutoutSafe=Insets{left=0, top=32, right=0, bottom=0}}
+          frameRateBoostOnTouch=true
+          dvrrWindowFrameRateHint=true}
+        ROTATION_90={(0,0)(fillx74) gr=TOP CENTER_VERTICAL layoutInDisplayCutoutMode=always ty=STATUS_BAR fmt=TRANSLUCENT
+          fl=NOT_FOCUSABLE DRAWS_SYSTEM_BAR_BACKGROUNDS
+          pfl=COLOR_SPACE_AGNOSTIC FIT_INSETS_CONTROLLED
+          bhv=DEFAULT
+          providedInsets:
+            InsetsFrameProvider: {id=#db0000, index=0, type=statusBars, source=FRAME, flags=[], insetsSize=Insets{left=0, top=74, right=0, bottom=0}}
+            InsetsFrameProvider: {id=#db0006, index=0, type=tappableElement, source=FRAME, flags=[], insetsSize=Insets{left=0, top=74, right=0, bottom=0}}
+            InsetsFrameProvider: {id=#db0005, index=0, type=mandatorySystemGestures, source=FRAME, flags=[], insetsSize=Insets{left=0, top=74, right=0, bottom=0}, mMinimalInsetsSizeInDisplayCutoutSafe=Insets{left=0, top=32, right=0, bottom=0}}
+          frameRateBoostOnTouch=true
+          dvrrWindowFrameRateHint=true}
+        ROTATION_180={(0,0)(fillx74) gr=TOP CENTER_VERTICAL layoutInDisplayCutoutMode=always ty=STATUS_BAR fmt=TRANSLUCENT
+          fl=NOT_FOCUSABLE DRAWS_SYSTEM_BAR_BACKGROUNDS
+          pfl=COLOR_SPACE_AGNOSTIC FIT_INSETS_CONTROLLED
+          bhv=DEFAULT
+          providedInsets:
+            InsetsFrameProvider: {id=#db0000, index=0, type=statusBars, source=FRAME, flags=[], insetsSize=Insets{left=0, top=74, right=0, bottom=0}}
+            InsetsFrameProvider: {id=#db0006, index=0, type=tappableElement, source=FRAME, flags=[], insetsSize=Insets{left=0, top=74, right=0, bottom=0}}
+            InsetsFrameProvider: {id=#db0005, index=0, type=mandatorySystemGestures, source=FRAME, flags=[], insetsSize=Insets{left=0, top=74, right=0, bottom=0}, mMinimalInsetsSizeInDisplayCutoutSafe=Insets{left=0, top=32, right=0, bottom=0}}
+          frameRateBoostOnTouch=true
+          dvrrWindowFrameRateHint=true}
+        ROTATION_270={(0,0)(fillx74) gr=TOP CENTER_VERTICAL layoutInDisplayCutoutMode=always ty=STATUS_BAR fmt=TRANSLUCENT
+          fl=NOT_FOCUSABLE DRAWS_SYSTEM_BAR_BACKGROUNDS
+          pfl=COLOR_SPACE_AGNOSTIC FIT_INSETS_CONTROLLED
+          bhv=DEFAULT
+          providedInsets:
+            InsetsFrameProvider: {id=#db0000, index=0, type=statusBars, source=FRAME, flags=[], insetsSize=Insets{left=0, top=74, right=0, bottom=0}}
+            InsetsFrameProvider: {id=#db0006, index=0, type=tappableElement, source=FRAME, flags=[], insetsSize=Insets{left=0, top=74, right=0, bottom=0}}
+            InsetsFrameProvider: {id=#db0005, index=0, type=mandatorySystemGestures, source=FRAME, flags=[], insetsSize=Insets{left=0, top=74, right=0, bottom=0}, mMinimalInsetsSizeInDisplayCutoutSafe=Insets{left=0, top=32, right=0, bottom=0}}
+          frameRateBoostOnTouch=true
+          dvrrWindowFrameRateHint=true}}
+    Requested w=1080 h=132 mLayoutSeq=157
+    mHasSurface=true isReadyForDisplay()=true mWindowRemovalAllowed=false
+    ContainerAnimator:
+      mLeash=Surface(name=Surface(name=7d54c23 StatusBar#74)/@0xe4b5ed9 - animation-leash of insets_animation#173)/@0xff9e774 mAnimationType=insets_animation
+      Animation: com.android.server.wm.InsetsSourceProvider$ControlAdapter@1435d99
+        ControlAdapter mCapturedLeash=Surface(name=Surface(name=7d54c23 StatusBar#74)/@0xe4b5ed9 - animation-leash of insets_animation#173)/@0xff9e774
+    WindowStateAnimator{17a0de5 StatusBar}:
+      Surface: shown=true    isOnScreen=true
+    isVisible=true
+    keepClearAreas: restricted=[], unrestricted=[]
+    mPrepareSyncSeqId=0
+    mBufferSeqId=0
+  Window #6 Window{f1a97be u0 ShellDropTarget}:
+    mDisplayId=0 mSession=Session{8229918 989:u0a10195} mClient=android.os.BinderProxy@c322ac3
+    mOwnerUid=10195 showForAllUsers=true package=com.android.systemui appop=SYSTEM_ALERT_WINDOW
+    mAttrs={(0,0)(fillxfill) sim={adjust=pan} layoutInDisplayCutoutMode=always ty=APPLICATION_OVERLAY fmt=TRANSLUCENT
+      fl=NOT_FOCUSABLE HARDWARE_ACCELERATED
+      pfl=SHOW_FOR_ALL_USERS NO_MOVE_ANIMATION FIT_INSETS_CONTROLLED INTERCEPT_GLOBAL_DRAG_AND_DROP
+      bhv=DEFAULT
+      frameRateBoostOnTouch=true
+      dvrrWindowFrameRateHint=true}
+    Requested w=1080 h=2400 mLayoutSeq=18
+    mHasSurface=false isReadyForDisplay()=false mWindowRemovalAllowed=false
+    WindowStateAnimator{cdd58dc ShellDropTarget}:
+      mShownAlpha=0.0 mAlpha=1.0 mLastAlpha=0.0
+    isOnScreen=false
+    isVisible=false
+    keepClearAreas: restricted=[], unrestricted=[]
+    mPrepareSyncSeqId=0
+    mBufferSeqId=0
+  Window #7 Window{4edf0a3 u0 InputMethod}:
+    mDisplayId=0 mSession=Session{4f4a879 1493:u0a10167} mClient=android.os.BinderProxy@a0837d2
+    mOwnerUid=10167 showForAllUsers=false package=com.google.android.inputmethod.latin appop=NONE
+    mAttrs={(0,0)(wrapxwrap) gr=BOTTOM CENTER_VERTICAL sim={adjust=pan forwardNavigation} ty=INPUT_METHOD fmt=TRANSPARENT wanim=0x1030056 receive insets ignoring z-order
+      fl=NOT_FOCUSABLE LAYOUT_IN_SCREEN SPLIT_TOUCH HARDWARE_ACCELERATED DRAWS_SYSTEM_BAR_BACKGROUNDS
+      pfl=EDGE_TO_EDGE_ENFORCED FIT_INSETS_CONTROLLED
+      bhv=DEFAULT
+      fitTypes=statusBars navigationBars
+      fitSides=LEFT TOP RIGHT
+      frameRateBoostOnTouch=true
+      dvrrWindowFrameRateHint=true}
+    Requested w=502 h=126 mLayoutSeq=56
+    mIsImWindow=true mIsWallpaper=false mIsFloatingLayer=true
+    mHasSurface=false isReadyForDisplay()=false mWindowRemovalAllowed=false
+    ContainerAnimator:
+      mLeash=Surface(name=Surface(name=4edf0a3 InputMethod#88)/@0x73f633d - animation-leash of insets_animation#176)/@0x9a5149d mAnimationType=insets_animation
+      Animation: com.android.server.wm.InsetsSourceProvider$ControlAdapter@d89a85e
+        ControlAdapter mCapturedLeash=Surface(name=Surface(name=4edf0a3 InputMethod#88)/@0x73f633d - animation-leash of insets_animation#176)/@0x9a5149d
+    WindowStateAnimator{f59a94f InputMethod}:
+      mShownAlpha=0.0 mAlpha=1.0 mLastAlpha=0.0
+    isOnScreen=false
+    isVisible=false
+    keepClearAreas: restricted=[], unrestricted=[]
+    mPrepareSyncSeqId=0
+    mBufferSeqId=0
+  Window #8 Window{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}:
+    mDisplayId=0 taskId=448 mSession=Session{4edafd9 6003:u0a10233} mClient=android.os.BinderProxy@e73c07f
+    mOwnerUid=10233 showForAllUsers=false package=com.aiquota.mobile appop=NONE
+    mAttrs={(0,0)(fillxfill) sim={adjust=pan forwardNavigation} layoutInDisplayCutoutMode=always ty=BASE_APPLICATION wanim=0x103030d
+      fl=LAYOUT_IN_SCREEN LAYOUT_INSET_DECOR SPLIT_TOUCH HARDWARE_ACCELERATED DRAWS_SYSTEM_BAR_BACKGROUNDS
+      pfl=NO_MOVE_ANIMATION EDGE_TO_EDGE_ENFORCED FIT_INSETS_CONTROLLED
+      rh=4
+      apr=LIGHT_NAVIGATION_BARS FORCE_LIGHT_NAVIGATION_BARS
+      bhv=DEFAULT
+      fitSides=
+      frameRateBoostOnTouch=true
+      dvrrWindowFrameRateHint=true}
+    Requested w=1080 h=2400 mLayoutSeq=157
+    mHasSurface=true isReadyForDisplay()=true mWindowRemovalAllowed=false
+    WindowStateAnimator{559f7ae com.aiquota.mobile/com.aiquota.mobile.MainActivity}:
+      Surface: shown=true    isOnScreen=true
+    isVisible=true
+    keepClearAreas: restricted=[], unrestricted=[]
+    mPrepareSyncSeqId=0
+    mBufferSeqId=0
+  Window #9 Window{cd6ea67 u0 com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}:
+    mDisplayId=0 taskId=2 mSession=Session{6cdfc29 1155:u0a10192} mClient=android.os.BinderProxy@cddae26
+    mOwnerUid=10192 showForAllUsers=false package=com.google.android.apps.nexuslauncher appop=NONE
+    mAttrs={(0,0)(fillxfill) sim={adjust=nothing} layoutInDisplayCutoutMode=always ty=BASE_APPLICATION fmt=TRANSPARENT wanim=0x1030301
+      fl=LAYOUT_IN_SCREEN LAYOUT_INSET_DECOR SHOW_WALLPAPER SPLIT_TOUCH DRAWS_SYSTEM_BAR_BACKGROUNDS
+      pfl=NO_MOVE_ANIMATION OPTIMIZE_MEASURE EDGE_TO_EDGE_ENFORCED FIT_INSETS_CONTROLLED
+      rh=4
+      vsysui=LAYOUT_STABLE LAYOUT_HIDE_NAVIGATION LAYOUT_FULLSCREEN
+      bhv=DEFAULT
+      fitSides=
+      frameRateBoostOnTouch=true
+      dvrrWindowFrameRateHint=true}
+    Requested w=1080 h=2400 mLayoutSeq=145
+    mHasSurface=false isReadyForDisplay()=false mWindowRemovalAllowed=false
+    WindowStateAnimator{111829 com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}:
+    mWallpaperX=0.0 mWallpaperY=0.5
+    mWallpaperXStep=0.33333334 mWallpaperYStep=1.0
+    mWallpaperZoomOut=0.0
+    isOnScreen=false
+    isVisible=false
+    keepClearAreas: restricted=[], unrestricted=[]
+    mPrepareSyncSeqId=0
+    mBufferSeqId=0
+  Window #10 Window{e54c5 u0 com.android.systemui.wallpapers.ImageWallpaper}:
+    mDisplayId=0 mSession=Session{8229918 989:u0a10195} mClient=android.os.BinderProxy@eca1d2f
+    mOwnerUid=10195 showForAllUsers=true package=com.android.systemui appop=NONE
+    mAttrs={(0,0)(2161x2400) gr=TOP START CENTER layoutInDisplayCutoutMode=always ty=WALLPAPER fmt=RGBX_8888 wanim=0x103031d
+      fl=NOT_FOCUSABLE NOT_TOUCHABLE LAYOUT_IN_SCREEN LAYOUT_NO_LIMITS SCALED LAYOUT_INSET_DECOR
+      pfl=WANTS_OFFSET_NOTIFICATIONS SHOW_FOR_ALL_USERS
+      bhv=DEFAULT
+      frameRateBoostOnTouch=true
+      dvrrWindowFrameRateHint=true}
+    Requested w=922 h=1024 mLayoutSeq=149
+    mIsImWindow=false mIsWallpaper=true mIsFloatingLayer=true
+    mHasSurface=true isReadyForDisplay()=false mWindowRemovalAllowed=false
+    WindowStateAnimator{804d1b0 com.android.systemui.wallpapers.ImageWallpaper}:
+      Surface: shown=false    mHScale=2.3438177 mVScale=2.34375
+    mWallpaperX=0.0 mWallpaperY=0.5
+    mWallpaperXStep=0.33333334 mWallpaperYStep=1.0
+    mWallpaperZoomOut=0.0
+    isOnScreen=false
+    isVisible=false
+    keepClearAreas: restricted=[], unrestricted=[]
+    mPrepareSyncSeqId=0
+    mBufferSeqId=0
+
+  mGlobalConfiguration={1.0 310mcc260mnc [ko_KR] ldltr sw411dp w411dp h914dp 420dpi nrml long compactNeeded port finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 0 - 1080, 2400) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.49 fontWeightAdjustment=0}
+  mHasPermanentDpad=false
+  mTopFocusedDisplayId=0
+  Minimum task size of display#0 220
+  mBlurEnabled=true
+  mDisableSecureWindows=false
+ mHighResSnapshotScale=0.8
+ mSnapshotEnabled=true
+ SnapshotCache Task
+ mHighResSnapshotScale=0.6
+ mSnapshotEnabled=true
+ SnapshotCache Activity
+   UserSavedFile userId=0
+WINDOW MANAGER TRACE (dumpsys window trace)
+Status: Disabled
+Sessions logging 'on frame': 0
+Sessions logging 'on transaction': 0
+
+Deprecated legacy command. Use Perfetto commands instead.
+WINDOW MANAGER HIGH REFRESH RATE BLACKLIST (dumpsys window refresh)
+High Refresh Rate Denylist
+  Packages:
+INSTALLED PACKAGES HAVING APP-SPECIFIC CONFIGURATIONS
+Current user ID : 0
+
+    PackageName : com.google.android.gm
+        NightMode : null
+        Locales : null
+WINDOW MANAGER CONSTANTS (dumpsys window constants):
+  system_gesture_exclusion_log_debounce_millis=1500
+  system_gesture_exclusion_limit_dp=200
+  system_gestures_excluded_by_pre_q_sticky_immersive=false
+  ignore_activity_orientation_request_screens=none
+
+SystemPerformanceHinter:
+  Active sessions (0):
+TrustedPresentationListenerController:
+  Active unique listeners (0):
+SensitiveContentPackages:
+  Packages that should block screen capture (0):
+ScreenRecordingCallbackController:
+  Registered callbacks:
+  Last invoked states:
+[exit=0]
+
+
+$ adb -s emulator-5554 logcat -d > .omo/evidence/codex-login-usage-auth-recovery-logcat-full.txt
+[exit=0]
+
+
+$ wc -c .omo/evidence/codex-login-usage-auth-recovery-logcat-full.txt
+142921 .omo/evidence/codex-login-usage-auth-recovery-logcat-full.txt
+[exit=0]
+
+$ Select-String -Path .omo/evidence/codex-login-usage-auth-recovery-logcat-full.txt -Pattern 'codex','weblogin','native','aiquota','login','auth' -CaseSensitive:False
+
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:23:06-29 13:13:44.607   711   916 D AppWidgetServiceImpl:
+ Trying to notify widget update for package com.aiquota.mobile with widget id: 22
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:35:06-29 13:13:44.693   711   916 D AppWidgetServiceImpl:
+ Trying to notify widget update for package com.aiquota.mobile with widget id: 24
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:37:06-29 13:13:44.695   711   916 D AppWidgetServiceImpl:
+ Trying to notify widget update for package com.aiquota.mobile with widget id: 20
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:39:06-29 13:13:44.696   711   916 D AppWidgetServiceImpl:
+ Trying to notify widget update for package com.aiquota.mobile with widget id: 21
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:41:06-29 13:13:44.705   536   536 I adbd    : adbd servic
+e requested 'shell,v2,TERM=xterm-256color,raw:monkey -p com.aiquota.mobile -c android.intent.category.LAUNCHER 1'
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:69:06-29 13:13:44.829   711   916 D AppWidgetServiceImpl:
+ Trying to notify widget update for package com.aiquota.mobile with widget id: 22
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:72:06-29 13:13:44.836   711   916 D AppWidgetServiceImpl:
+ Trying to notify widget update for package com.aiquota.mobile with widget id: 24
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:73:06-29 13:13:44.837   711   916 D AppWidgetServiceImpl:
+ Trying to notify widget update for package com.aiquota.mobile with widget id: 20
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:74:06-29 13:13:44.839   711   916 D AppWidgetServiceImpl:
+ Trying to notify widget update for package com.aiquota.mobile with widget id: 21
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:75:06-29 13:13:44.879  6102  6102 D nativeloader: InitDef
+aultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:lib
+dl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.
+so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:li
+bsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:76:06-29 13:13:44.888  6102  6102 D nativeloader: Load li
+bicu_jni.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:79:06-29 13:13:44.889  6102  6102 D nativeloader: Load li
+bjavacore.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:80:06-29 13:13:44.890  6102  6102 D nativeloader: Load li
+bopenjdk.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:84:06-29 13:13:44.909  6102  6102 D nativeloader: Load li
+bframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/java
+lib/framework-connectivity-t.jar: ok
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:86:06-29 13:13:44.912  6102  6102 D nativeloader: Load /s
+ystem/lib64/libmonkey_jni.so using ns default for caller /system/framework/monkey.jar in same partition (is_bridged=0):
+ ok
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:87:06-29 13:13:44.912  6102  6102 W Monkey  : args: [-p, 
+com.aiquota.mobile, -c, android.intent.category.LAUNCHER, 1]
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:149:06-29 13:13:44.922  6102  6102 W Monkey  :  arg: "com
+.aiquota.mobile"
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:153:06-29 13:13:44.922  6102  6102 W Monkey  : data="com.
+aiquota.mobile"
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:191:06-29 13:13:44.976   989  1066 V WindowManagerShell: 
+Transition requested (#20): android.os.BinderProxy@a442915 TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{
+userId=0 taskId=448 effectiveUid=10233 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN ca
+t=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.aiquota.mobile/.MainActivity } baseActivity=ComponentInfo{c
+om.aiquota.mobile/com.aiquota.mobile.MainActivity} topActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.Main
+Activity} origActivity=null realActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.MainActivity} realActivity
+IsAppLockEnabled=false numActivities=1 lastActiveTime=1406091 supportsMultiWindow=true supportsMultiWindowWithoutConstr
+aints=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.os.BinderProxy@
+ec8142a} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParen
+tTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 132 - 0, 0) topActivityInfo=ActivityInfo{3d1921b com.aiquota.mobile
+.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isInteractive=false isVisi
+ble=false isVisibleRequested=false isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 is
+TopActivityTransparent=false isActivityStackTransparent=false lastNonFullscreenBounds=null leafTaskBoundsFromOptions= f
+alse capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=503 topActivityRequestOpenInBrowserEducationTimest
+amp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false isLeafTask= true eligibleForLetterboxEducatio
+n= false isLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false t
+opActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivity
+LetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0,
+ 0 - 1080, 2400) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverrid
+e=false topActivityLetterboxBounds=null topNonResizableActivityAspectRatio=-1.0} topActivityMainWindowFrame=null isAppB
+ubble=false}, pipChange = null, remoteTransitionInfo = null, displayChanges = null, requestedLocation = null, userChang
+e = null, windowingLayerChange = null, fullscreenRequestChange = null, flags = 0, debugId = 20 }
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:193:06-29 13:13:44.976   711  1892 V ActivityTaskManager:
+ TaskLaunchParamsModifier: phase=3 task=Task{b36dbc0 #448 type=standard A=10233:com.aiquota.mobile} activity=ActivityRe
+cord{43358531 u0 com.aiquota.mobile/.MainActivity t-1} display-from-task=0 display-id=0 task-display-area-windowing-mod
+e=1 suggested-display-area=DefaultTaskDisplayArea@173453602 inherit-from-task=fullscreen non-freeform-task-display-area
+ display-area=DefaultTaskDisplayArea@173453602 skip-bounds-fullscreen
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:194:06-29 13:13:44.976   711  1892 I ActivityTaskManager:
+ START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.aiquota.mobile/
+.MainActivity} with LAUNCH_MULTIPLE from uid 2000 (com.android.shell) (BAL_ALLOW_PERMISSION) result code=0
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:225:06-29 13:13:45.048   711  1229 D CoreBackPreview: Win
+dow{d5c62d8 u0 Splash Screen com.aiquota.mobile}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.win
+dow.IOnBackInvokedCallback$Stub$Proxy@43f5933, mPriority=0, mIsAnimationCallback=false, mOverrideBehavior=0}
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:230:06-29 13:13:45.051   711  1892 D WindowManager: setCl
+ientSurface Surface(name=VRI-Splash Screen com.aiquota.mobile#166)/@0x5c65a69 for d5c62d8 Splash Screen com.aiquota.mob
+ile
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:256:06-29 13:13:45.168   711   729 V WindowManager: Sent 
+Transition (#20) createdAt=06-29 13:13:44.968 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{u
+serId=0 taskId=448 effectiveUid=10233 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat
+=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.aiquota.mobile/.MainActivity } baseActivity=ComponentInfo{co
+m.aiquota.mobile/com.aiquota.mobile.MainActivity} topActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.MainA
+ctivity} origActivity=null realActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.MainActivity} realActivityI
+sAppLockEnabled=false numActivities=1 lastActiveTime=1406091 supportsMultiWindow=true supportsMultiWindowWithoutConstra
+ints=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{602bbab Task
+{b36dbc0 #448 type=standard A=10233:com.aiquota.mobile}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOv
+erlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 132 - 0, 0) topAct
+ivityInfo=ActivityInfo{59a3208 com.aiquota.mobile.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTas
+kId=-1 isFocused=false isInteractive=false isVisible=false isVisibleRequested=false isTopActivityNoDisplay=false isSlee
+ping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false isActivityStackTransparent=false lastNonF
+ullscreenBounds=null leafTaskBoundsFromOptions= false capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=5
+03 topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=fa
+lse isLeafTask= true eligibleForLetterboxEducation= false isLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled
+= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false top
+ActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivi
+tyLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 1080, 2400) isUserFullscreenOverrideEnabled=false isSystemFullscr
+eenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null topNonResizableActivityAspectR
+atio=-1.0} topActivityMainWindowFrame=null isAppBubble=false}, pipChange = null, remoteTransitionInfo = null, displayCh
+anges = null, requestedLocation = null, userChange = null, windowingLayerChange = null, fullscreenRequestChange = null,
+ flags = 0, debugId = 20 }
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:259:06-29 13:13:45.168   711   729 V WindowManager:      
+   {WCT{RemoteToken{602bbab Task{b36dbc0 #448 type=standard A=10233:com.aiquota.mobile}}} m=OPEN f=MOVE_TO_TOP|FLAG_CHA
+NGED_INTERACTIVE leash=Surface(name=Task=448#163)/@0xbe13425 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=
+Point(1080, 2400) d=0 taskParent=-1 winMode=1 userId=0},
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:324:06-29 13:13:45.526  6003  6007 I .aiquota.mobile: Com
+piler allocated 5250KB to compile void android.view.ViewRootImpl.performTraversals(long)
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:328:06-29 13:13:45.708   711  1290 D CoreBackPreview: Win
+dow{d29d84c u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCa
+llback=android.window.IOnBackInvokedCallback$Stub$Proxy@2422d38, mPriority=0, mIsAnimationCallback=false, mOverrideBeha
+vior=0}
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:330:06-29 13:13:45.898  6003  6003 W .aiquota.mobile: Met
+hod java.lang.Object androidx.compose.runtime.snapshots.SnapshotStateMap.mutate(kotlin.jvm.functions.Function1) failed 
+lock verification and will run slower.
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:331:06-29 13:13:45.898  6003  6003 W .aiquota.mobile: Com
+mon causes for lock verification issues are non-optimized dex code
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:332:06-29 13:13:45.898  6003  6003 W .aiquota.mobile: and
+ incorrect proguard optimizations.
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:333:06-29 13:13:45.898  6003  6003 W .aiquota.mobile: Met
+hod void androidx.compose.runtime.snapshots.SnapshotStateMap.update(kotlin.jvm.functions.Function1) failed lock verific
+ation and will run slower.
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:334:06-29 13:13:45.899  6003  6003 W .aiquota.mobile: Met
+hod boolean androidx.compose.runtime.snapshots.SnapshotStateMap.removeIf$runtime_release(kotlin.jvm.functions.Function1
+) failed lock verification and will run slower.
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:335:06-29 13:13:45.927  6003  6003 W .aiquota.mobile: Met
+hod boolean androidx.compose.runtime.snapshots.SnapshotStateList.conditionalUpdate(boolean, kotlin.jvm.functions.Functi
+on1) failed lock verification and will run slower.
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:336:06-29 13:13:45.927  6003  6003 W .aiquota.mobile: Met
+hod boolean androidx.compose.runtime.snapshots.SnapshotStateList.conditionalUpdate$default(androidx.compose.runtime.sna
+pshots.SnapshotStateList, boolean, kotlin.jvm.functions.Function1, int, java.lang.Object) failed lock verification and 
+will run slower.
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:337:06-29 13:13:45.927  6003  6003 W .aiquota.mobile: Met
+hod java.lang.Object androidx.compose.runtime.snapshots.SnapshotStateList.mutate(kotlin.jvm.functions.Function1) failed
+ lock verification and will run slower.
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:338:06-29 13:13:45.928  6003  6003 W .aiquota.mobile: Met
+hod void androidx.compose.runtime.snapshots.SnapshotStateList.update(boolean, kotlin.jvm.functions.Function1) failed lo
+ck verification and will run slower.
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:339:06-29 13:13:45.928  6003  6003 W .aiquota.mobile: Met
+hod void androidx.compose.runtime.snapshots.SnapshotStateList.update$default(androidx.compose.runtime.snapshots.Snapsho
+tStateList, boolean, kotlin.jvm.functions.Function1, int, java.lang.Object) failed lock verification and will run slowe
+r.
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:340:06-29 13:13:46.107   711  1290 D WindowManager: setCl
+ientSurface Surface(name=VRI-com.aiquota.mobile/com.aiquota.mobile.MainActivity#172)/@0x1448111 for d29d84c com.aiquota
+.mobile/com.aiquota.mobile.MainActivity
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:345:06-29 13:13:46.326   711   729 I ActivityTaskManager:
+ Displayed com.aiquota.mobile/.MainActivity for user 0: +1s362ms
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:349:06-29 13:13:46.377   711   916 D AppWidgetServiceImpl
+: Trying to notify widget update for package com.aiquota.mobile with widget id: 22
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:350:06-29 13:13:46.385   711   916 D AppWidgetServiceImpl
+: Trying to notify widget update for package com.aiquota.mobile with widget id: 24
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:351:06-29 13:13:46.387   711   916 D AppWidgetServiceImpl
+: Trying to notify widget update for package com.aiquota.mobile with widget id: 20
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:352:06-29 13:13:46.387   711   916 D AppWidgetServiceImpl
+: Trying to notify widget update for package com.aiquota.mobile with widget id: 21
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:360:06-29 13:13:46.495   711   840 I ImeTracker: com.aiqu
+ota.mobile:152ff155: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false userId 0 displayId 0
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:363:06-29 13:13:46.500   711  1290 I ImeTracker: com.aiqu
+ota.mobile:a63609a5: onRequestHide at ORIGIN_SERVER reason HIDE_SOFT_INPUT fromUser false userId 0 displayId 0
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:364:06-29 13:13:46.500   711  1290 I ImeTracker: com.aiqu
+ota.mobile:a63609a5: onCancelled at PHASE_SERVER_SHOULD_HIDE
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:367:06-29 13:13:46.502  6003  6003 I ImeTracker: com.aiqu
+ota.mobile:152ff155: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:370:06-29 13:13:46.504  1493  1493 I GoogleInputMethodSer
+vice: GoogleInputMethodService.onStartInput():1459 onStartInput(EditorInfo{EditorInfo{packageName=com.aiquota.mobile, i
+nputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, private
+ImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, lab
+el=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:378:06-29 13:13:46.507   711  1892 W PackageConfigPersist
+er: App-specific configuration not found for packageName: com.aiquota.mobile and userId: 0
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:392:06-29 13:13:46.625   711   916 D AppWidgetServiceImpl
+: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:397:06-29 13:13:46.706   711  1742 D CoreBackPreview: Win
+dow{d5c62d8 u0 Splash Screen com.aiquota.mobile EXITING}: Setting back callback null
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:398:06-29 13:13:46.727   711   916 D AppWidgetServiceImpl
+: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:429:06-29 13:13:49.259  6003  6133 D ProfileInstaller: In
+stalling profile for com.aiquota.mobile
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:431:06-29 13:13:50.163  6003  6003 I PlayCore: UID: [1023
+3]  PID: [6003] AppUpdateService : requestUpdateInfo(com.aiquota.mobile)
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:435:06-29 13:13:50.175  3620  6135 I Finsky  : [188] com.
+aiquota.mobile is installed but certificate mismatch
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:465:06-29 13:13:50.399   536   536 I adbd    : adbd servi
+ce requested 'shell,v2,TERM=xterm-256color,raw:pidof -s com.aiquota.mobile'
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:475:06-29 13:13:51.161  6149  6149 D nativeloader: InitDe
+faultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:li
+bdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog
+.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:l
+ibsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:476:06-29 13:13:51.170  6149  6149 D nativeloader: Load l
+ibicu_jni.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:479:06-29 13:13:51.170  6149  6149 D nativeloader: Load l
+ibjavacore.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:480:06-29 13:13:51.171  6149  6149 D nativeloader: Load l
+ibopenjdk.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:486:06-29 13:13:51.189  6149  6149 D nativeloader: Load l
+ibframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/jav
+alib/framework-connectivity-t.jar: ok
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:845:06-29 13:14:08.395  3620  3620 W Finsky  : [2] STU: F
+ailed to get storage stats for package 'com.android.hardware.authsecret' (1601: Error getting stats: android.content.pm
+.PackageManager.NameNotFoundException)
+.omo\evidence\codex-login-usage-auth-recovery-logcat-full.txt:959:06-29 13:14:13.343  6003  6008 I .aiquota.mobile: Bac
+kground concurrent mark compact GC freed 7607KB AllocSpace bytes, 34(1408KB) LOS objects, 49% free, 7166KB/13MB, paused
+ 714us,6.711ms total 18.907ms
+
+
+[powershell-select-string-exit=0]
+
+== Codex login tap from UI-tree coordinates ==
+UI source: .omo/evidence/codex-login-usage-auth-recovery-ui.xml Codex connect bounds [815,1358][1009,1463], center 912,1410
+
+
+$ adb -s emulator-5554 logcat -c
+[exit=0]
+
+
+$ adb -s emulator-5554 shell input tap 912 1410
+[exit=0]
+
+
+$ adb -s emulator-5554 shell pidof -s com.aiquota.mobile || true
+6003
+[exit=0]
+
+
+$ adb -s emulator-5554 shell cmd package resolve-activity --brief com.aiquota.mobile
+priority=0 preferredOrder=0 match=0x108000 specificIndex=-1 isDefault=false
+com.aiquota.mobile/.MainActivity
+[exit=0]
+
+
+$ adb -s emulator-5554 exec-out uiautomator dump /dev/tty > .omo/evidence/codex-login-usage-auth-recovery-codex-login-ui.xml
+[exit=0]
+
+
+$ adb -s emulator-5554 exec-out screencap -p > .omo/evidence/codex-login-usage-auth-recovery-codex-login-screen.png
+[exit=0]
+
+
+$ adb -s emulator-5554 logcat -d > .omo/evidence/codex-login-usage-auth-recovery-codex-login-logcat.txt
+[exit=0]
+
+
+$ wc -c .omo/evidence/codex-login-usage-auth-recovery-codex-login-ui.xml .omo/evidence/codex-login-usage-auth-recovery-codex-login-screen.png .omo/evidence/codex-login-usage-auth-recovery-codex-login-logcat.txt
+  2281 .omo/evidence/codex-login-usage-auth-recovery-codex-login-ui.xml
+164947 .omo/evidence/codex-login-usage-auth-recovery-codex-login-screen.png
+127472 .omo/evidence/codex-login-usage-auth-recovery-codex-login-logcat.txt
+294700 total
+[exit=0]
+
+$ Select-String -Path .omo/evidence/codex-login-usage-auth-recovery-codex-login-ui.xml -Pattern 'Codex','Login','로그인','OpenAI','ChatGPT','Continue','Email','Sign','auth','browser','WebView' -CaseSensitive:False
+
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-ui.xml:1:<?xml version='1.0' encoding='UTF-8' standalone='yes
+' ?><hierarchy rotation="0"><node index="0" text="" resource-id="" class="android.widget.FrameLayout" package="com.aiqu
+ota.mobile" content-desc="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focuse
+d="false" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[0,0][1080,2400]" drawing
+-order="0" hint=""><node index="0" text="" resource-id="" class="android.widget.LinearLayout" package="com.aiquota.mobi
+le" content-desc="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false
+" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[0,0][1080,2400]" drawing-order="
+1" hint=""><node index="0" text="" resource-id="android:id/content" class="android.widget.FrameLayout" package="com.aiq
+uota.mobile" content-desc="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focus
+ed="false" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[0,0][1080,2400]" drawin
+g-order="2" hint=""><node index="0" text="" resource-id="" class="android.widget.FrameLayout" package="com.aiquota.mobi
+le" content-desc="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false
+" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[0,0][1080,2400]" drawing-order="
+1" hint=""><node index="0" text="Sign in to Codex" resource-id="" class="android.widget.TextView" package="com.aiquota.
+mobile" content-desc="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="f
+alse" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[0,0][1080,96]" drawing-order
+="2" hint="" /><node NAF="true" index="1" text="" resource-id="" class="android.webkit.WebView" package="com.aiquota.mo
+bile" content-desc="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false
+" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[0,96][1080,2400]" drawing-order=
+"1" hint="" /></node></node></node></node></hierarchy>UI hierchary dumped to: /dev/tty
+
+
+[powershell-select-string-exit=0]
+
+$ Select-String -Path .omo/evidence/codex-login-usage-auth-recovery-codex-login-logcat.txt -Pattern 'codex','weblogin','native','aiquota','login','auth','openai','chatgpt','webview' -CaseSensitive:False
+
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:34:06-29 13:14:40.761   711  1970 V ActivityTaskMa
+nager: TaskLaunchParamsModifier: phase=3 task=Task{b36dbc0 #448 type=standard A=10233:com.aiquota.mobile} activity=Acti
+vityRecord{55151943 u0 com.aiquota.mobile/.providers.WebLoginActivity t-1} display-area-from-source=DefaultTaskDisplayA
+rea@173453602 display-id=0 task-display-area-windowing-mode=1 suggested-display-area=DefaultTaskDisplayArea@173453602 i
+nherit-from-source=fullscreen non-freeform-task-display-area display-area=DefaultTaskDisplayArea@173453602 skip-bounds-
+fullscreen
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:35:06-29 13:14:40.761   711  1970 I ActivityTaskMa
+nager: START u0 {xflg=0x4 cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras)} with LAUNCH_MULTIPLE from ui
+d 10233 (com.aiquota.mobile) (sr=43358531) (BAL_ALLOW_VISIBLE_WINDOW) result code=0
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:36:06-29 13:14:40.761   989  1066 V WindowManagerS
+hell: Transition requested (#22): android.os.BinderProxy@364d6ce TransitionRequestInfo { type = OPEN, triggerTask = Tas
+kInfo{userId=0 taskId=448 effectiveUid=10233 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.M
+AIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.aiquota.mobile/.MainActivity } baseActivity=Component
+Info{com.aiquota.mobile/com.aiquota.mobile.MainActivity} topActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobil
+e.providers.WebLoginActivity} origActivity=null realActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.MainAc
+tivity} realActivityIsAppLockEnabled=false numActivities=2 lastActiveTime=1461874 supportsMultiWindow=true supportsMult
+iWindowWithoutConstraints=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{and
+roid.os.BinderProxy@ec8142a} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHos
+tTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 0 - 0, 0) topActivityInfo=ActivityInfo{cb669ef 
+com.aiquota.mobile.providers.WebLoginActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=
+true isInteractive=true isVisible=true isVisibleRequested=true isTopActivityNoDisplay=false isSleeping=false locusId=nu
+ll displayAreaFeatureId=1 isTopActivityTransparent=false isActivityStackTransparent=false lastNonFullscreenBounds=null 
+leafTaskBoundsFromOptions= false capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=503 topActivityRequest
+OpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false isLeafTask= true 
+eligibleForLetterboxEducation= false isLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false eligibleForUs
+erAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVert
+icalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 
+topActivityAppBounds=Rect(0, 0 - 1080, 2400) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=fa
+lse hasMinAspectRatioOverride=false topActivityLetterboxBounds=null topNonResizableActivityAspectRatio=-1.0} topActivit
+yMainWindowFrame=null isAppBubble=false}, pipChange = null, remoteTransitionInfo = null, displayChanges = null, request
+edLocation = null, userChange = null, windowingLayerChange = null, fullscreenRequestChange = null, flags = 0, debugId =
+ 22 }
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:41:06-29 13:14:41.136  6003  6003 I WebViewFactory
+: Loading com.google.android.webview version 148.0.7778.215 (code 777821508)
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:43:06-29 13:14:41.139  6003  6003 V ResourcesManag
+er: The following library key has been added: ResourcesKey{ mHash=aa554488 mResDir=null mSplitDirs=[] mOverlayDirs=[] m
+LibDirs=[/data/app/~~gRZDsxlqZCLB7oCd7TOaUA==/com.google.android.webview-YT9iMlxeDceFosa4dJznZw==/base.apk,/system/fram
+ework/android.test.base.jar,/system_ext/framework/androidx.window.extensions.jar] mDisplayId=0 mOverrideConfig=v37 mCom
+patInfo={420dpi always-compat} mLoaders=[]}
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:46:06-29 13:14:41.144  6003  6003 W .aiquota.mobil
+e: Loading /data/app/~~gRZDsxlqZCLB7oCd7TOaUA==/com.google.android.webview-YT9iMlxeDceFosa4dJznZw==/oat/x86_64/base.ode
+x non-executable as it requires an image which we failed to load
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:47:06-29 13:14:41.147  6003  6003 D nativeloader: 
+Configuring clns-10 for other apk /data/app/~~gRZDsxlqZCLB7oCd7TOaUA==/com.google.android.webview-YT9iMlxeDceFosa4dJznZ
+w==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~gRZDsxlqZCLB7oCd7TOaUA==/com.google.andr
+oid.webview-YT9iMlxeDceFosa4dJznZw==/lib/x86_64:/data/app/~~gRZDsxlqZCLB7oCd7TOaUA==/com.google.android.webview-YT9iMlx
+eDceFosa4dJznZw==/base.apk!/lib/x86_64, permitted_path=/data:/mnt/expand
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:61:06-29 13:14:41.210  6003  6003 D nativeloader: 
+Load /data/app/~~gRZDsxlqZCLB7oCd7TOaUA==/com.google.android.webview-YT9iMlxeDceFosa4dJznZw==/base.apk!/lib/x86_64/libw
+ebviewchromium.so using class loader ns clns-10 (caller=/data/app/~~gRZDsxlqZCLB7oCd7TOaUA==/com.google.android.webview
+-YT9iMlxeDceFosa4dJznZw==/base.apk): ok
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:62:06-29 13:14:41.214  6003  6003 D nativeloader: 
+Load /system/lib64/libwebviewchromium_plat_support.so using class loader ns clns-10 (caller=/data/app/~~gRZDsxlqZCLB7oC
+d7TOaUA==/com.google.android.webview-YT9iMlxeDceFosa4dJznZw==/base.apk): ok
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:63:06-29 13:14:41.218  6003  6220 E chromium: [062
+9/131441.218297:ERROR:android_webview/browser/variations/variations_seed_loader.cc:39] Seed missing signature.
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:64:06-29 13:14:41.219  6003  6220 I chromium: [062
+9/131441.218976:INFO:android_webview/browser/variations/variations_seed_loader.cc:67] Failed to open file for reading.:
+ No such file or directory (2)
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:65:06-29 13:14:41.225  6003  6003 I cr_LibraryLoad
+er: Successfully loaded native library
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:74:06-29 13:14:41.270  6226  6226 I Zygote  : Proc
+ess 6226 created for com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:79:06-29 13:14:41.285  6226  6226 D nativeloader: 
+Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tetheri
+ng/javalib/framework-connectivity-t.jar: ok
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:82:06-29 13:14:41.287  6003  6003 I cr_CombinedPPr
+ovider: #linkNativeInternal() 1
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:87:06-29 13:14:41.293   711  1229 I ActivityManage
+r: Start proc 6226:com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0
+i1 for bound-service {com.aiquota.mobile/org.chromium.content.app.SandboxedProcessService0:0}
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:89:06-29 13:14:41.309   711  1742 W ProcessStats: 
+Tracking association SourceState{49c9e72 com.aiquota.mobile/10233 BTop #2828} whose proc state 2 is better than process
+ ProcessState{87a5200 com.google.android.gms/10203 pkg=com.google.android.gms} proc state 14 (9 skipped)
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:94:06-29 13:14:41.336  6226  6226 I cr_WebViewApkA
+pp: version=148.0.7778.215 (777821508) minSdkVersion=29 processName=com.google.android.webview:sandboxed_process0:org.c
+hromium.content.app.SandboxedProcessService0:0 splits=<none>
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:95:06-29 13:14:41.345  6003  6003 W chromium: [WAR
+NING:android_webview/browser/network_service/net_helpers.cc:137] HTTP Cache size is: 20971520
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:99:06-29 13:14:41.392   711  1970 D ConnectivitySe
+rvice: requestNetwork for uid/pid:10233/6003 activeRequest: null callbackRequest: 359 [NetworkRequest [ REQUEST id=360,
+ [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10233 RequestorUid: 102
+33 RequestorPkg: com.aiquota.mobile UnderlyingNetworks: Null] ]] callback flags: 0 order: 2147483647 isUidTracked: fals
+e declaredMethods: AVAIL|LOST|NC|LP
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:101:06-29 13:14:41.395   711   875 D WifiNetworkFa
+ctory: got request NetworkRequest [ REQUEST id=360, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT
+_BANDWIDTH_CONSTRAINED Uid: 10233 RequestorUid: 10233 RequestorPkg: com.aiquota.mobile UnderlyingNetworks: Null] ]
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:102:06-29 13:14:41.395   711   875 D UntrustedWifi
+NetworkFactory: got request NetworkRequest [ REQUEST id=360, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MA
+NAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10233 RequestorUid: 10233 RequestorPkg: com.aiquota.mobile UnderlyingNetworks: Nul
+l] ]
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:103:06-29 13:14:41.396   711   875 D OemPaidWifiNe
+tworkFactory: got request NetworkRequest [ REQUEST id=360, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANA
+GED&NOT_BANDWIDTH_CONSTRAINED Uid: 10233 RequestorUid: 10233 RequestorPkg: com.aiquota.mobile UnderlyingNetworks: Null]
+ ]
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:104:06-29 13:14:41.396   711   875 D MultiInternet
+WifiNetworkFactory: got request NetworkRequest [ REQUEST id=360, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VC
+N_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10233 RequestorUid: 10233 RequestorPkg: com.aiquota.mobile UnderlyingNetworks:
+ Null] ]
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:122:06-29 13:14:41.469  6003  6254 D vulkan  : sea
+rching for layers in '/data/app/~~Y_rQYZ0X40l7YQAB5195hg==/com.aiquota.mobile-03Thmz_wb6ZXWL7tb-Dc-Q==/lib/x86_64'
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:123:06-29 13:14:41.470  6003  6254 D vulkan  : sea
+rching for layers in '/data/app/~~Y_rQYZ0X40l7YQAB5195hg==/com.aiquota.mobile-03Thmz_wb6ZXWL7tb-Dc-Q==/base.apk!/lib/x8
+6_64'
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:136:06-29 13:14:41.485  6226  6251 I cr_LibraryLoa
+der: Successfully loaded native library
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:138:06-29 13:14:41.489  6003  6247 D AIQuotaLogin:
+ provider=codex capturedNativeHeaders path=/codex/cloud/settings/analytics names=Accept|Upgrade-Insecure-Requests|User-
+Agent|sec-ch-ua|sec-ch-ua-arch|sec-ch-ua-bitness|sec-ch-ua-full-version|sec-ch-ua-mobile|sec-ch-ua-model|sec-ch-ua-plat
+form|sec-ch-ua-platform-version
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:139:06-29 13:14:41.495  6003  6247 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/codex/cloud/settings/analytics
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:148:06-29 13:14:41.594  6003  6003 D VRI[WebLoginA
+ctivity]: WindowInsets changed: 1080x2400 statusBars:[0,132,0,0] navigationBars:[0,0,0,63] mandatorySystemGestures:[0,1
+64,0,84] 
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:152:06-29 13:14:41.600   711  1229 D CoreBackPrevi
+ew: Window{af7ae15 u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}: Setting back callback OnBackIn
+vokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@5d9f9f6, mPriority=0, mIsAnimationCallback
+=false, mOverrideBehavior=0}
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:153:06-29 13:14:41.605   711  1229 D WindowManager
+: setClientSurface Surface(name=VRI-com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity#181)/@0x23c91f7 fo
+r af7ae15 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:171:06-29 13:14:41.688  6003  6003 I Surface : Cre
+ating surface for consumer VRI[WebLoginActivity]#1(BLAST Consumer)1 with slotExpansion=1 for 64 slots
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:177:06-29 13:14:41.769   711   729 I ActivityTaskM
+anager: Displayed com.aiquota.mobile/.providers.WebLoginActivity for user 0: +1s14ms
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:178:06-29 13:14:41.769   711   729 V WindowManager
+: Sent Transition (#22) createdAt=06-29 13:14:40.752 via request=TransitionRequestInfo { type = OPEN, triggerTask = Tas
+kInfo{userId=0 taskId=448 effectiveUid=10233 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.M
+AIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.aiquota.mobile/.MainActivity } baseActivity=Component
+Info{com.aiquota.mobile/com.aiquota.mobile.MainActivity} topActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobil
+e.providers.WebLoginActivity} origActivity=null realActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.MainAc
+tivity} realActivityIsAppLockEnabled=false numActivities=2 lastActiveTime=1461874 supportsMultiWindow=true supportsMult
+iWindowWithoutConstraints=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{Rem
+oteToken{602bbab Task{b36dbc0 #448 type=standard A=10233:com.aiquota.mobile}}} topActivityType=1 pictureInPictureParams
+=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(
+0, 0 - 0, 0) topActivityInfo=ActivityInfo{87dd6d0 com.aiquota.mobile.providers.WebLoginActivity} launchCookies=[] posit
+ionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isInteractive=true isVisible=true isVisibleRequested=true isTopA
+ctivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false isActivitySt
+ackTransparent=false lastNonFullscreenBounds=null leafTaskBoundsFromOptions= false capturedLink=null capturedLinkTimest
+amp=0 requestedVisibleTypes=503 topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo
+ { topActivityInSizeCompat=false isLeafTask= true eligibleForLetterboxEducation= false isLetterboxEducationEnabled= tru
+e isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFrom
+LetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivi
+tyLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 1080, 2400) isUserFullscreenOverride
+Enabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null t
+opNonResizableActivityAspectRatio=-1.0} topActivityMainWindowFrame=null isAppBubble=false}, pipChange = null, remoteTra
+nsitionInfo = null, displayChanges = null, requestedLocation = null, userChange = null, windowingLayerChange = null, fu
+llscreenRequestChange = null, flags = 0, debugId = 22 }
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:181:06-29 13:14:41.769   711   729 V WindowManager
+:         {m=OPEN f=FILLS_TASK leash=Surface(name=ActivityRecord{55151943 u0 com.aiquota.mobile/.providers.WebLoginActi
+vity t448}#179)/@0xca3bf82 sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=-1->0 r=-1->0:-1 bc=
+fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.We
+bLoginActivity}, taskId = 448, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:182:06-29 13:14:41.769   711   729 V WindowManager
+:         {m=TO_BACK f=FILLS_TASK leash=Surface(name=ActivityRecord{43358531 u0 com.aiquota.mobile/.MainActivity t448}#
+164)/@0xad08acd sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=Ac
+tivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.MainActivity}, taskId = 448, app
+CompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}}
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:186:06-29 13:14:41.772   989  1066 V WindowManager
+Shell:         {m=OPEN f=FILLS_TASK leash=Surface(name=ActivityRecord{55151943 u0 com.aiquota.mobile/.providers.WebLogi
+nActivity t448}#179)/@0xbcc1cfc sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=-1->0 r=-1->0:-
+1 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.provide
+rs.WebLoginActivity}, taskId = 448, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:187:06-29 13:14:41.772   989  1066 V WindowManager
+Shell:         {m=TO_BACK f=FILLS_TASK leash=Surface(name=ActivityRecord{43358531 u0 com.aiquota.mobile/.MainActivity t
+448}#164)/@0xda54f85 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activi
+ty=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.MainActivity}, taskId = 448
+, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}}
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:193:06-29 13:14:41.773   989  1066 V WindowManager
+Shell: Transition doesn't have explicit remote, search filters for match for {id=22 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)
+] c=[{m=OPEN f=FILLS_TASK leash=Surface(name=ActivityRecord{55151943 u0 com.aiquota.mobile/.providers.WebLoginActivity 
+t448}#179)/@0xbcc1cfc sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=-1->0 r=-1->0:-1 bc=fffaf
+afa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLogi
+nActivity}, taskId = 448, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},{m=TO_BACK f=FILLS_TASK leash=
+Surface(name=ActivityRecord{43358531 u0 com.aiquota.mobile/.MainActivity t448}#164)/@0xda54f85 sb=Rect(0, 0 - 1080, 240
+0) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = Compo
+nentInfo{com.aiquota.mobile/com.aiquota.mobile.MainActivity}, taskId = 448, appCompatTransitionInfo = null } opt={t=FRO
+M_STYLE mUserId=0}}]}
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:200:06-29 13:14:41.773   989  1066 V WindowManager
+Shell: start default transition animation, info = {id=22 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=OPEN f=FILLS_TASK l
+eash=Surface(name=ActivityRecord{55151943 u0 com.aiquota.mobile/.providers.WebLoginActivity t448}#179)/@0xbcc1cfc sb=Re
+ct(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=-1->0 r=-1->0:-1 bc=fffafafa activity=ActivityTransi
+tionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}, taskId = 448, a
+ppCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},{m=TO_BACK f=FILLS_TASK leash=Surface(name=ActivityRecord
+{43358531 u0 com.aiquota.mobile/.MainActivity t448}#164)/@0xda54f85 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 240
+0) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile
+/com.aiquota.mobile.MainActivity}, taskId = 448, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}}]}
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:242:06-29 13:14:41.873   711   840 I ImeTracker: c
+om.aiquota.mobile:252bf10: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false userId 0 displa
+yId 0
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:245:06-29 13:14:41.874  6003  6003 I ImeTracker: c
+om.aiquota.mobile:252bf10: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:250:06-29 13:14:41.880  1493  1493 I GoogleInputMe
+thodService: GoogleInputMethodService.onStartInput():1459 onStartInput(EditorInfo{EditorInfo{packageName=com.aiquota.mo
+bile, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, 
+privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode
+=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:259:06-29 13:14:41.888   711  1229 W PackageConfig
+Persister: App-specific configuration not found for packageName: com.aiquota.mobile and userId: 0
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:427:06-29 13:14:43.056  6003  6003 D AIQuotaLogin:
+ provider=codex navigate=https://chatgpt.com/
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:428:06-29 13:14:43.120   711   916 D AppWidgetServ
+iceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 22
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:429:06-29 13:14:43.125  6003  6003 I .aiquota.mobi
+le: hiddenapi: Accessing hidden field Landroid/graphics/Bitmap;->mNativePtr:J (runtime_flags=0, domain=platform, api=un
+supported) from Lcom/android/webview/chromium/WebViewChromium; (domain=app, TargetSdkVersion=35) using JNI: allowed
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:430:06-29 13:14:43.132  6003  6239 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/assets/client-CH2DCQWp.js?keys=worker_version
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:431:06-29 13:14:43.132  6003  6240 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/assets/client-BgI73up8.js?keys=worker_version
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:432:06-29 13:14:43.132  6003  6244 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/assets/app-CGw-yMgf.css?keys=worker_version
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:433:06-29 13:14:43.135  6003  6243 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/assets/react-stable-Bzq9cI-a.js?keys=worker_version
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:437:06-29 13:14:43.140  6003  6239 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/assets/rolldown-runtime-QTnfLwEv.js?keys=worker_version
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:438:06-29 13:14:43.148  6003  6243 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/assets/ko-KR-CUSx9lTO.js?keys=worker_version
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:439:06-29 13:14:43.148  6003  6244 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/assets/client-shared-CJY0rkyW.js?keys=worker_version
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:440:06-29 13:14:43.151   711   916 D AppWidgetServ
+iceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 24
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:441:06-29 13:14:43.154   711   916 D AppWidgetServ
+iceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 20
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:442:06-29 13:14:43.157   711   916 D AppWidgetServ
+iceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 21
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:443:06-29 13:14:43.197  6003  6008 I .aiquota.mobi
+le: Background young concurrent mark compact GC freed 4602KB AllocSpace bytes, 32(1808KB) LOS objects, 43% free, 8161KB
+/13MB, paused 927us,8.370ms total 45.986ms
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:444:06-29 13:14:43.197  6003  6238 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/scripts/declarative-partial-updates-c9a8e7b1b6de.js?keys=worke
+r_version
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:451:06-29 13:14:43.275  6003  6238 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/sentinel/chat-requirements/prepare
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:452:06-29 13:14:43.286  6003  6238 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/conversation/prepare
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:453:06-29 13:14:43.291  6003  6238 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/assets/vendor-stable-Dfq6nK2i.js?keys=worker_version
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:454:06-29 13:14:43.298  6003  6240 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/images/chatgpt-icon-48x48.png
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:455:06-29 13:14:43.317  6003  6238 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/favicon.ico
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:457:06-29 13:14:43.330  6003  6238 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/assets/mobile-prompt-typeahead-CODpjJW-.js?keys=worker_version
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:458:06-29 13:14:43.337  6003  6238 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/assets/mobile-sidebar-BSU2ib7L.js?keys=worker_version
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:459:06-29 13:14:43.442  6003  6238 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/events/page-view
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:460:06-29 13:14:43.445  6003  6003 I AIQuotaLoginT
+iming: codex pageFinished=2323ms host=chatgpt.com
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:462:06-29 13:14:43.478  6003  6238 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/events/statsc/flush
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:463:06-29 13:14:43.478  6003  6240 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/events/performance
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:464:06-29 13:14:43.503   711   916 D AppWidgetServ
+iceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:472:06-29 13:14:43.780   711   739 I ActivityManag
+er: Start proc 6287:com.google.android.webview:webview_service/u0a181 for bound-service {com.google.android.webview/org
+.chromium.android_webview.services.VariationsSeedServer}
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:475:06-29 13:14:43.798  6287  6287 I Zygote  : Pro
+cess 6287 created for com.google.android.webview:webview_service
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:476:06-29 13:14:43.799  6287  6287 I webview_servi
+ce: Using generational CollectorTypeCMC GC.
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:477:06-29 13:14:43.799  6287  6287 W webview_servi
+ce: Unexpected CPU variant for x86: x86_64.
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:478:06-29 13:14:43.799  6287  6287 W webview_servi
+ce: Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, goldmont-without-sha-xsaves, tremont, kabyl
+ake, alderlake, pantherlake, default
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:479:06-29 13:14:43.803  6287  6287 D nativeloader:
+ Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tether
+ing/javalib/framework-connectivity-t.jar: ok
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:482:06-29 13:14:43.815  6287  6287 D nativeloader:
+ Configuring clns-9 for other apk /data/app/~~gRZDsxlqZCLB7oCd7TOaUA==/com.google.android.webview-YT9iMlxeDceFosa4dJznZ
+w==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~gRZDsxlqZCLB7oCd7TOaUA==/com.google.andr
+oid.webview-YT9iMlxeDceFosa4dJznZw==/lib/x86_64:/data/app/~~gRZDsxlqZCLB7oCd7TOaUA==/com.google.android.webview-YT9iMlx
+eDceFosa4dJznZw==/base.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.webview
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:486:06-29 13:14:43.824  6287  6287 V GraphicsEnvir
+onment: com.google.android.webview is not listed in per-application setting
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:489:06-29 13:14:43.828  6287  6287 I cr_WebViewApk
+App: version=148.0.7778.215 (777821508) minSdkVersion=29 processName=com.google.android.webview:webview_service splits=
+<none>
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:496:06-29 13:14:44.176  6003  6100 I PlayCore: UID
+: [10233]  PID: [6003] AppUpdateService : requestUpdateInfo(com.aiquota.mobile)
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:500:06-29 13:14:44.185  3620  6305 I Finsky  : [19
+8] com.aiquota.mobile is installed but certificate mismatch
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:503:06-29 13:14:44.192  6003  6091 I WM-WorkerWrap
+per: Worker result SUCCESS for Work [ id=592e651c-7061-457a-a3cc-eb4387c55d76, tags={ com.aiquota.mobile.update.AppUpda
+teCheckWorker } ]
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:506:06-29 13:14:46.161   711   883 E Nl80211Native
+: getChannelsMhzForBand: Wiphy index not recorded for band 8
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:507:06-29 13:14:46.161   711   883 E Nl80211Native
+: getChannelsMhzForBand: Wiphy index not recorded for band 16
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:508:06-29 13:14:46.161   711   883 D Nl80211Native
+: Ignoring unsupported scan type 2
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:511:06-29 13:14:46.205   711   875 D WifiNative: S
+can result ready event
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:520:06-29 13:14:46.540  6003  6003 D AIQuotaLoginC
+onsole: provider=codex consoleLevel=WARNING line=0 message=The resource https://chatgpt.com/cdn/assets/root-gffcwtjf.cs
+s was preloaded using link preload in Early Hints but not used within a few seconds from the window's load event.
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:521:06-29 13:14:46.540  6003  6003 D AIQuotaLoginC
+onsole: provider=codex consoleLevel=WARNING line=0 message=The resource https://chatgpt.com/cdn/assets/global-modals-5n
+50n0lo.css was preloaded using link preload in Early Hints but not used within a few seconds from the window's load eve
+nt.
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:522:06-29 13:14:46.540  6003  6003 D AIQuotaLoginC
+onsole: provider=codex consoleLevel=WARNING line=0 message=The resource https://chatgpt.com/cdn/assets/conversation-sma
+ll-bnwwp2d9.css was preloaded using link preload in Early Hints but not used within a few seconds from the window's loa
+d event.
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:523:06-29 13:14:46.541  6003  6003 D AIQuotaLoginC
+onsole: provider=codex consoleLevel=WARNING line=0 message=The resource https://chatgpt.com/cdn/assets/codex-analytics-
+tabs-jfs725i2.css was preloaded using link preload in Early Hints but not used within a few seconds from the window's l
+oad event.
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:528:06-29 13:14:48.333  6003  6238 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/events/business
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:535:06-29 13:14:49.126   536   536 I adbd    : adb
+d service requested 'shell,v2,TERM=xterm-256color,raw:pidof -s com.aiquota.mobile'
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:536:06-29 13:14:49.417   536   536 I adbd    : adb
+d service requested 'shell,v2,TERM=xterm-256color,raw:cmd package resolve-activity --brief com.aiquota.mobile'
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:543:06-29 13:14:49.819  6320  6320 D nativeloader:
+ InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2nd
+k.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so
+:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc
+++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:544:06-29 13:14:49.827  6320  6320 D nativeloader:
+ Load libicu_jni.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:547:06-29 13:14:49.828  6320  6320 D nativeloader:
+ Load libjavacore.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:548:06-29 13:14:49.829  6320  6320 D nativeloader:
+ Load libopenjdk.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:554:06-29 13:14:49.848  6320  6320 D nativeloader:
+ Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tether
+ing/javalib/framework-connectivity-t.jar: ok
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:851:06-29 13:14:53.478  6003  6238 D AIQuotaLogin:
+ provider=codex resource=https://chatgpt.com/unauth-mweb/events/performance
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:855:06-29 13:14:53.881   711   822 D ActivityManag
+er: freezing 6287 com.google.android.webview:webview_service
+.omo\evidence\codex-login-usage-auth-recovery-codex-login-logcat.txt:882:06-29 13:14:56.851   711  1742 W ProcessStats:
+ Tracking association SourceState{49c9e72 com.aiquota.mobile/10233 BTop #2864} whose proc state 2 is better than proces
+s ProcessState{87a5200 com.google.android.gms/10203 pkg=com.google.android.gms} proc state 14 (9 skipped)
+
+
+[powershell-select-string-exit=0]
+
+== Cleanup ==
+
+$ gradle --stop --console=plain
+No Gradle daemons are running.
+[exit=0]
+
+
+$ adb -s emulator-5554 shell am force-stop com.aiquota.mobile
+[exit=0]
+
+$ PowerShell process cleanup check: Gradle/logcat/tmux created by QA
+
+ProcessId CommandLine                                                                                                  
+--------- -----------                                                                                                  
+    21644 "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -Command "$ErrorActionPreference='Continue'...   
+
+
+[cleanup-check-exit=0]
+
+== manualQa matrix ==
+surfaceEvidence:
+- scenarioId: unit-focused-tests
+  criterionRef: VERIFY.1
+  surface: Android JVM unit tests via Gradle
+  exactInvocation: C:/Program Files/Git/bin/bash.exe -lc "cd '/d/Vibe Project/AI Usage for Mobile' && bash .omo/evidence/codex-login-usage-auth-recovery-run-focused-tests.sh"
+  verdict: PASS
+  artifactRefs: [A1, A2, A3]
+- scenarioId: debug-apk-build
+  criterionRef: VERIFY.2
+  surface: Android Gradle debug APK build
+  exactInvocation: C:/Program Files/Git/bin/bash.exe -lc "cd '/d/Vibe Project/AI Usage for Mobile' && bash .omo/evidence/codex-login-usage-auth-recovery-run-assemble-debug.sh"
+  verdict: PASS
+  artifactRefs: [A1, A4, A5]
+- scenarioId: install-launch-main
+  criterionRef: VERIFY.3
+  surface: adb/emulator install and launch
+  exactInvocation: adb -s emulator-5554 install -r android/app/build/outputs/apk/debug/app-debug.apk; adb -s emulator-5554 shell monkey -p com.aiquota.mobile -c android.intent.category.LAUNCHER 1
+  verdict: PASS
+  artifactRefs: [A1, A6, A7, A8]
+- scenarioId: codex-login-surface
+  criterionRef: VERIFY.3
+  surface: adb UI-tree tap into Codex login WebLoginActivity
+  exactInvocation: adb -s emulator-5554 shell input tap 912 1410
+  verdict: BLOCKED_BY_HUMAN_AUTH
+  artifactRefs: [A1, A9, A10, A11]
+
+adversarialCases:
+- scenarioId: broad-filter-risk
+  criterionRef: VERIFY.1
+  adversarialClass: unrelated Codex tests included by broad wildcard
+  expectedBehavior: use three explicit --tests selectors instead of broad *Codex* filter
+  verdict: PASS
+  artifactRefs: [A1, A2, A3]
+- scenarioId: missing-wrapper
+  criterionRef: VERIFY.1
+  adversarialClass: absent project Gradle wrapper
+  expectedBehavior: record missing wrapper and use installed gradle only after discovery
+  verdict: PASS
+  artifactRefs: [A1]
+- scenarioId: human-auth-boundary
+  criterionRef: VERIFY.3
+  adversarialClass: login requires private human ChatGPT/OpenAI authentication
+  expectedBehavior: stop at login surface; do not fake authenticated usage pass
+  verdict: PASS_BLOCKED_AT_AUTH
+  artifactRefs: [A1, A9, A10, A11]
+
+artifactRefs:
+- id: A1
+  kind: qa-transcript
+  description: Main UTF-8 transcript with commands, exit codes, manualQa matrix, cleanup receipt
+  path: .omo/evidence/codex-login-usage-auth-recovery-qa.txt
+- id: A2
+  kind: stdout
+  description: Focused Gradle unit-test stdout, BUILD SUCCESSFUL, exit 0
+  path: .omo/evidence/codex-login-usage-auth-recovery-focused-tests.stdout.txt
+- id: A3
+  kind: exit-code
+  description: Focused Gradle unit-test exit code
+  path: .omo/evidence/codex-login-usage-auth-recovery-focused-tests.exit.txt
+- id: A4
+  kind: stdout
+  description: assembleDebug stdout, BUILD SUCCESSFUL, exit 0
+  path: .omo/evidence/codex-login-usage-auth-recovery-assemble-debug.stdout.txt
+- id: A5
+  kind: apk
+  description: Built debug APK, 20M
+  path: android/app/build/outputs/apk/debug/app-debug.apk
+- id: A6
+  kind: ui-tree
+  description: Main dashboard UI tree after launch, includes Codex card and connect bounds
+  path: .omo/evidence/codex-login-usage-auth-recovery-ui.xml
+- id: A7
+  kind: screenshot
+  description: Main dashboard screenshot after launch
+  path: .omo/evidence/codex-login-usage-auth-recovery-screen.png
+- id: A8
+  kind: logcat
+  description: Full launch logcat
+  path: .omo/evidence/codex-login-usage-auth-recovery-logcat-full.txt
+- id: A9
+  kind: ui-tree
+  description: Post-tap Codex login UI tree, Sign in to Codex plus WebView
+  path: .omo/evidence/codex-login-usage-auth-recovery-codex-login-ui.xml
+- id: A10
+  kind: screenshot
+  description: Post-tap Codex login screenshot showing ChatGPT login/cookie prompt
+  path: .omo/evidence/codex-login-usage-auth-recovery-codex-login-screen.png
+- id: A11
+  kind: logcat
+  description: Post-tap Codex login logcat showing WebLoginActivity and chatgpt.com navigation/resources
+  path: .omo/evidence/codex-login-usage-auth-recovery-codex-login-logcat.txt
+finished: 2026-06-29T22:16:27.9754492+09:00
+finalVerdict: PASS with runtime QA blocked at human-auth boundary
+
+
+$ wc -c .omo/evidence/codex-login-usage-auth-recovery-qa.txt .omo/evidence/codex-login-usage-auth-recovery-focused-tests.stdout.txt .omo/evidence/codex-login-usage-auth-recovery-assemble-debug.stdout.txt .omo/evidence/codex-login-usage-auth-recovery-ui.xml .omo/evidence/codex-login-usage-auth-recovery-screen.png .omo/evidence/codex-login-usage-auth-recovery-codex-login-ui.xml .omo/evidence/codex-login-usage-auth-recovery-codex-login-screen.png .omo/evidence/codex-login-usage-auth-recovery-codex-login-logcat.txt
+135653 .omo/evidence/codex-login-usage-auth-recovery-qa.txt
+  2480 .omo/evidence/codex-login-usage-auth-recovery-focused-tests.stdout.txt
+  3094 .omo/evidence/codex-login-usage-auth-recovery-assemble-debug.stdout.txt
+ 31908 .omo/evidence/codex-login-usage-auth-recovery-ui.xml
+152223 .omo/evidence/codex-login-usage-auth-recovery-screen.png
+  2281 .omo/evidence/codex-login-usage-auth-recovery-codex-login-ui.xml
+164947 .omo/evidence/codex-login-usage-auth-recovery-codex-login-screen.png
+127472 .omo/evidence/codex-login-usage-auth-recovery-codex-login-logcat.txt
+620058 total
+[exit=0]
+
+== Final receipts ==
+$ PowerShell lingering process check excluding current command
+No lingering QA-created Gradle/logcat/tmux processes found.
+[cleanup-final-exit=0]
+
+
+$ git status --short
+ M .idea/misc.xml
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/WebLoginActivityNativeBridgeTest.kt
+?? .omo/boulder.json
+?? .omo/codex-now.png
+?? .omo/evidence/codex-login-root-cause-code-review.md
+?? .omo/evidence/codex-login-usage-auth-recovery-adb-devices-qa.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-adb-devices.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-artifact-sizes-qa.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-artifact-sizes.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-assemble-debug.exit.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-assemble-debug.stderr.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-assemble-debug.stdout.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-assemble-debug.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-build-install.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-cleanup-qa.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-cleanup.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-code-review.md
+?? .omo/evidence/codex-login-usage-auth-recovery-codex-login-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-codex-login-screen.png
+?? .omo/evidence/codex-login-usage-auth-recovery-codex-login-ui.xml
+?? .omo/evidence/codex-login-usage-auth-recovery-continuation-assemble.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-continuation-status.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-continuation-tests.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-diff-check.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-diff.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-emulator-connect-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-emulator-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-emulator-main-launch.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-emulator-main-route.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-final-git-status.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-focused-tests-rerun.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-focused-tests.exit.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-focused-tests.stderr.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-focused-tests.stdout.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-focused-tests.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-green.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-implementation.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-logcat-filtered.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-logcat-full.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-after.xml
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-before.xml
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-full-log-after.xml
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-full-log-runtime.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-full-log-screen.png
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-full-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-runtime.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-screen.png
+?? .omo/evidence/codex-login-usage-auth-recovery-package.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-qa.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-red.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-requested-filter.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-run-assemble-debug.sh
+?? .omo/evidence/codex-login-usage-auth-recovery-run-focused-tests.sh
+?? .omo/evidence/codex-login-usage-auth-recovery-runtime.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-screen.png
+?? .omo/evidence/codex-login-usage-auth-recovery-status.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-tmux.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-ui.xml
+?? .omo/plans/codex-login-usage-auth-recovery.md
+?? .omo/start-work/
+?? .omo/ultraresearch/20260629-104317/
+?? .omo/ulw-loop/brief.md
+?? .omo/ulw-loop/goals.json
+?? .omo/ulw-loop/ledger.jsonl
+?? android/app/src/main/java/com/aiquota/mobile/providers/CodexNativeHeaderSelector.kt
+?? android/app/src/test/java/com/aiquota/mobile/providers/CodexNativeHeaderSelectorTest.kt
+[exit=0]
+
+
+$ wc -c .omo/evidence/codex-login-usage-auth-recovery-qa.txt
+141271 .omo/evidence/codex-login-usage-auth-recovery-qa.txt
+[exit=0]

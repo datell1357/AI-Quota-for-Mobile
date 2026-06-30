@@ -1,0 +1,309 @@
+==== 2026-06-30T14:45:14.5473764+09:00 ====
+-- activity --
+>   * Task{f305892 #475 type=standard A=10233:com.aiquota.mobile U=0 visible=true visibleRequested=true mode=fullscreen translucent=false sz=2}
+      fullscreenRequestAllowMode=NONE
+>     mLastPausedActivity: ActivityRecord{156933661 u0 com.aiquota.mobile/.MainActivity t475}
+      isSleeping=false
+>     topResumedActivity=ActivityRecord{208348830 u0 com.aiquota.mobile/.providers.WebLoginActivity t475}
+>     * Hist  #1: ActivityRecord{208348830 u0 com.aiquota.mobile/.providers.WebLoginActivity t475}
+>       packageName=com.aiquota.mobile processName=com.aiquota.mobile
+>       launchedFromUid=10233 launchedFromPackage=com.aiquota.mobile launchedFromFeature=null userId=0
+>       app=ProcessRecord{e81d9f2 29469:com.aiquota.mobile/u0a233}
+>       Intent { xflg=0x4 cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras) }
+>       rootOfTask=false task=Task{f305892 #475 type=standard A=10233:com.aiquota.mobile}
+>       taskAffinity=10233:com.aiquota.mobile
+>       mActivityComponent=com.aiquota.mobile/.providers.WebLoginActivity
+>       baseDir=/data/app/~~ZIb4O9ymERv2RWCysqU5BQ==/com.aiquota.mobile-LBSUDQEnw9azhRLSjYSiwA==/base.apk
+>       dataDir=/data/user/0/com.aiquota.mobile
+        stateNotNeeded=false componentSpecified=true mActivityType=standard
+>       windows=[Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}]
+        windowType=2
+>     * Hist  #0: ActivityRecord{156933661 u0 com.aiquota.mobile/.MainActivity t475}
+>       packageName=com.aiquota.mobile processName=com.aiquota.mobile
+        launchedFromUid=10192 launchedFromPackage=com.google.android.apps.nexuslauncher launchedFromFeature=null userId=0
+>       app=ProcessRecord{e81d9f2 29469:com.aiquota.mobile/u0a233}
+>       Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 xflg=0x4 pkg=com.aiquota.mobile cmp=com.aiquota.mobile/.MainActivity bnds=[836,1905][1009,2100] }
+>       rootOfTask=true task=Task{f305892 #475 type=standard A=10233:com.aiquota.mobile}
+>       taskAffinity=10233:com.aiquota.mobile
+>       mActivityComponent=com.aiquota.mobile/.MainActivity
+>       baseDir=/data/app/~~ZIb4O9ymERv2RWCysqU5BQ==/com.aiquota.mobile-LBSUDQEnw9azhRLSjYSiwA==/base.apk
+>       dataDir=/data/user/0/com.aiquota.mobile
+        stateNotNeeded=false componentSpecified=true mActivityType=standard
+>       windows=[Window{b0929b7 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}]
+        windowType=2
+>     Resumed: ActivityRecord{208348830 u0 com.aiquota.mobile/.providers.WebLoginActivity t475}
+  
+>   ResumedActivity: ActivityRecord{208348830 u0 com.aiquota.mobile/.providers.WebLoginActivity t475}
+  
+>   topDisplayFocusedRootTask=Task{f305892 #475 type=standard A=10233:com.aiquota.mobile}
+    Display: mDisplayId=0 (organized)
+>   deepestLastOrientationSource=ActivityRecord{208348830 u0 com.aiquota.mobile/.providers.WebLoginActivity t475}
+    overrideConfig={1.0 310mcc260mnc [ko_KR] ldltr sw411dp w411dp h914dp 420dpi nrml long compactNeeded port finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 0 - 1080, 2400) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.56 fontWeightAdjustment=0}
+>   mImeLayeringTarget=Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>   mImeInputTarget=Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>   mImeControlTarget=Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+    ImeContainer
+>   mImeParent=ActivityRecord{208348830 u0 com.aiquota.mobile/.providers.WebLoginActivity t475}
+    mRemoteInsetsControlTarget=RemoteInsetsControlTarget{330955f displayId=0 requestedVisibleTypes=503 animatingTypes=0}
+>   mCurrentFocus=Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>   mFocusedApp=ActivityRecord{208348830 u0 com.aiquota.mobile/.providers.WebLoginActivity t475}
+    mFixedRotationLaunchingApp=null
+>   mObscuringWindow=Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+    mLastWakeLockHoldingWindow=null
+>       mPreferredTopFocusableRootTask=Task{f305892 #475 type=standard A=10233:com.aiquota.mobile}
+>       mLastFocusedRootTask=Task{f305892 #475 type=standard A=10233:com.aiquota.mobile}
+        Application tokens in top down Z order:
+>       * Task{f305892 #475 type=standard A=10233:com.aiquota.mobile U=0 visible=true visibleRequested=true mode=fullscreen translucent=false sz=2}
+          bounds=[0,0][1080,2400]
+>         * ActivityRecord{208348830 u0 com.aiquota.mobile/.providers.WebLoginActivity t475}
+>         * ActivityRecord{156933661 u0 com.aiquota.mobile/.MainActivity t475}
+        * Task{dcdaf6f #1 type=home U=0 visible=false visibleRequested=false mode=fullscreen translucent=true sz=1}
+>     mFocusedWindow=Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>     mTopFullscreenOpaqueWindowState=Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>     mSystemUiControllingWindow=Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>     mSystemBarColorApps={ActivityRecord{208348830 u0 com.aiquota.mobile/.providers.WebLoginActivity t475}}
+>     mNavBarColorWindowCandidate=Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>     mNavBarBackgroundWindowCandidate=Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+      mLastStatusBarAppearanceRegions=
+>       Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+      mImeInsetsConsumed=false
+>       Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}:
+          InsetsSourceControl: {3 mType=ime mSurfacePosition=Point(0, 132) mInsetsHint=Insets{left=0, top=0, right=0, bottom=0} mLeash=null}
+>         mControlTarget=Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+          mImeShowing=false mLastDrawn=false
+>         mControlTarget=Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+        InsetsSourceProvider
+>         mControlTarget=Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+    InsetsPolicy
+>         (fullscreen) Task{f305892 #475 type=standard A=10233:com.aiquota.mobile}
+  
+>   VisibleActivityProcess:[ ProcessRecord{e81d9f2 29469:com.aiquota.mobile/u0a233}]
+    NumNonAppVisibleWindowUidMap:[ 10195:3 10192:1]
+-- codex snapshot --
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="updated_at">2026-06-30T05:42:42.332872Z</string>
+    <string name="provider_id">codex</string>
+    <string name="snapshot">{&quot;providers&quot;:[{&quot;providerId&quot;:&quot;codex&quot;,&quot;displayName&quot;:&quot;Codex&quot;,&quot;connectionState&quot;:&quot;CONNECTING&quot;,&quot;refreshState&quot;:&quot;REFRESHING&quot;,&quot;planLabel&quot;:null,&quot;account&quot;:null,&quot;updatedAt&quot;:&quot;2026-06-30T05:42:42.332872Z&quot;,&quot;statusUpdatedAt&quot;:&quot;2026-06-30T05:42:42.332872Z&quot;,&quot;message&quot;:&quot;Opening provider login&quot;,&quot;lines&quot;:[]}]}</string>
+</map>
+-- recent logs --
+06-30 05:42:44.761 E/AIQuotaLogin(29469): provider=codex http status=401 url=https://chatgpt.com/backend-api/wham/usage
+06-30 05:42:44.776 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/ces/v1/rgstr?keys=k|st|sv|t|sid|ec|gz
+06-30 05:42:44.800 E/AIQuotaLogin(29469): provider=codex http status=401 url=https://chatgpt.com/backend-api/subscriptions?keys=account_id
+06-30 05:42:44.926 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/user_system_messages
+06-30 05:42:44.926 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/settings/is_adult
+06-30 05:42:44.927 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/settings/user
+06-30 05:42:44.931 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/root-jrecj1h9.css
+06-30 05:42:44.935 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/conversation-small-bnwwp2d9.css
+06-30 05:42:44.935 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/global-modals-5n50n0lo.css
+06-30 05:42:44.936 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/codex-analytics-tabs-jfs725i2.css
+06-30 05:42:44.937 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/04f8add6-o1yeev4p66uaehvi.js
+06-30 05:42:44.960 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailycodereviewpriority.series.p0" for locale "ko-KR", using default message (P0 issues) as fallback.
+06-30 05:42:44.968 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailycodereviewpriority.series.p1" for locale "ko-KR", using default message (P1 issues) as fallback.
+06-30 05:42:44.968 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailycodereviewpriority.series.p2" for locale "ko-KR", using default message (P2 issues) as fallback.
+06-30 05:42:44.970 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailycodereviewreactions.series.plus1" for locale "ko-KR", using default message (?? reactions) as fallback.
+06-30 05:42:44.976 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailycodereviewreactions.series.minus1" for locale "ko-KR", using default message (?? reactions) as fallback.
+06-30 05:42:44.977 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailycodereviewreactions.series.other" for locale "ko-KR", using default message (Other reactions) as fallback.
+06-30 05:42:44.982 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.absoluteUsers" for locale "ko-KR", using default message (Users) as fallback.
+06-30 05:42:44.982 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.desktop" for locale "ko-KR", using default message (Desktop) as fallback.
+06-30 05:42:44.982 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.cli" for locale "ko-KR", using default message (CLI) as fallback.
+06-30 05:42:44.983 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.vscode" for locale "ko-KR", using default message (Extension) as fallback.
+06-30 05:42:44.983 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.cloud" for locale "ko-KR", using default message (Cloud) as fallback.
+06-30 05:42:44.983 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.codeReview" for locale "ko-KR", using default message (Code Review) as fallback.
+06-30 05:42:44.985 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailyproductusageoverview.codeReviewSeriesLabel" for locale "ko-KR", using default message (Code review) as fallback.
+06-30 05:42:44.986 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailyproductusageoverview.webSeriesLabel" for locale "ko-KR", using default message (Cloud) as fallback.
+06-30 05:42:44.986 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailyproductusageoverview.desktopSeriesLabel" for locale "ko-KR", using default message (Desktop) as fallback.
+06-30 05:42:44.987 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailyproductusageoverview.vscodeSeriesLabel" for locale "ko-KR", using default message (Extension) as fallback.
+06-30 05:42:44.987 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailyproductusageoverview.cliSeriesLabel" for locale "ko-KR", using default message (CLI) as fallback.
+06-30 05:42:44.988 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.codeReviewPanel.prsReviewed.redesign" for locale "ko-KR", using default message (PRs reviewed) as fallback.
+06-30 05:42:44.988 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.codeReviewPanel.issuesFound.redesign" for locale "ko-KR", using default message (Issues found) as fallback.
+06-30 05:42:44.989 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.threads" for locale "ko-KR", using default message (threads) as fallback.
+06-30 05:42:44.989 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.threads" for locale "ko-KR", using default message (threads) as fallback.
+06-30 05:42:44.989 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.metricPerInterval.redesign" for locale "ko-KR", using default message ({metric}/{groupBy, select, week {week} other {day}}) as fallback.
+06-30 05:42:44.991 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.turns" for locale "ko-KR", using default message (turns) as fallback.
+06-30 05:42:44.991 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.turns" for locale "ko-KR", using default message (turns) as fallback.
+06-30 05:42:44.992 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.metricPerInterval.redesign" for locale "ko-KR", using default message ({metric}/{groupBy, select, week {week} other {day}}) as fallback.
+06-30 05:42:45.151 D/AIQuotaNativeUsage(29469): nativeUsage provider=codex ok=false diagnostic=codex_usage_unavailable
+06-30 05:42:45.153 W/AIQuotaCollector(29469): provider=codex collectorMode=webview-js errorKind=codex_usage_unavailable keptPreviousSnapshot=true
+06-30 05:42:45.153 I/AIQuotaCollector(29469): provider=codex awaitingUsagePayload=true errorKind=codex_usage_unavailable
+06-30 05:42:45.275 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/ces/v1/projects/oai/settings
+06-30 05:42:45.307 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/aip/connectors/list_accessible?keys=skip_actions|external_logos
+06-30 05:42:45.524 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/bcf56d39-j2pnalw8l9xlphdf.js
+06-30 05:42:45.524 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/9289140b-nqrvlcelvtox66nt.js
+06-30 05:42:45.525 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/e6fa0362-g0n3mua2thjid4on.js
+06-30 05:42:45.527 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/4e18e912-bqa09wl3ne1fd5h1.js
+06-30 05:42:45.568 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/silk-hq-jrmbfqt7.css
+06-30 05:42:45.568 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/f4e264a1-nzelrxeo30v85ls9.js
+06-30 05:42:45.572 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/ae144ef6-lp68l23td891s0g8.js
+06-30 05:42:45.634 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/70b3f499-c69grs2v3kseaek6.js
+06-30 05:42:45.635 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/63173ebb-g9k4xhjwhmo8nl88.js
+06-30 05:42:45.635 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/dfa96487-lsn3h2ab625o063n.js
+06-30 05:42:45.636 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/57f03fcb-og7kx1q3eso1xz3w.js
+06-30 05:42:45.666 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.breakdown.model.redesign" for locale "ko-KR", using default message (By model) as fallback.
+06-30 05:42:45.667 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.breakdown.surface.redesign" for locale "ko-KR", using default message (By surface) as fallback.
+06-30 05:42:45.669 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.chart.summaryValueUnavailable" for locale "ko-KR", using default message (-) as fallback.
+06-30 05:42:45.670 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailypluginusage.tooltipTotalLabel" for locale "ko-KR", using default message (Total) as fallback.
+06-30 05:42:45.670 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailypluginusage.summaryLabel.redesign" for locale "ko-KR", using default message (Plugins calls) as fallback.
+06-30 05:42:45.671 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.chart.summaryValueUnavailable" for locale "ko-KR", using default message (-) as fallback.
+06-30 05:42:45.672 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailyskillusage.tooltipTotalLabel" for locale "ko-KR", using default message (Total) as fallback.
+06-30 05:42:45.672 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailyskillusage.summaryLabel.redesign" for locale "ko-KR", using default message (Skills used) as fallback.
+06-30 05:42:45.675 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/conversation-small-bnwwp2d9.css
+06-30 05:42:45.676 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/global-modals-5n50n0lo.css
+06-30 05:42:45.807 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/compliance
+06-30 05:42:45.810 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/wham/settings/user
+06-30 05:42:45.811 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/aip/connectors/links/list_accessible
+06-30 05:42:45.813 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/aip/connectors/oauth_clients?keys=service
+06-30 05:42:45.818 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/students/refresh_enrollment_status
+06-30 05:42:45.818 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/wham/analytics/daily-skill-usage-metrics?keys=start_date|end_date|group_by|workspace_user|top_skill_limit
+06-30 05:42:45.818 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/wham/analytics/daily-plugin-usage-metrics?keys=start_date|end_date|group_by|workspace_user|top_plugin_limit
+06-30 05:42:45.819 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/wham/analytics/daily-workspace-usage-counts?keys=start_date|end_date|group_by|workspace_user
+06-30 05:42:45.825 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/amphora/notifications?keys=limit
+06-30 05:42:45.825 D/AIQuotaLogin(29469): provider=codex capturedNativeHeaders path=/backend-api/wham/usage names=Accept|Authorization|ChatGPT-Account-ID|OAI-Client-Build-Number|OAI-Client-Version|OAI-Device-Id|OAI-Language|OAI-Session-Id|Referer|User-Agent|X-OpenAI-Target-Path|X-OpenAI-Target-Route|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 05:42:45.825 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/wham/usage
+06-30 05:42:45.825 I/AIQuotaLogin(29469): provider=codex observedAccountId=true
+06-30 05:42:45.825 D/AIQuotaLogin(29469): provider=codex capturedNativeHeaders path=/backend-api/subscriptions names=Accept|Authorization|ChatGPT-Account-ID|OAI-Client-Build-Number|OAI-Client-Version|OAI-Device-Id|OAI-Language|OAI-Session-Id|Referer|User-Agent|X-OpenAI-Target-Path|X-OpenAI-Target-Route|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 05:42:45.825 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/subscriptions?keys=account_id
+06-30 05:42:45.826 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/wham/usage/credit-usage-events
+06-30 05:42:45.826 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/wham/usage/daily-token-usage-breakdown?keys=start_date|end_date|group_by
+06-30 05:42:45.905 I/AIQuotaLogin(29469): provider=codex nativeCollectorStart=aboutblank reason=resource from=chatgpt.com/codex/cloud/settings/analytics
+06-30 05:42:45.940 I/AIQuotaCollector(29469): provider=codex collectorMode=webview-js inject host=aboutblank-frame
+06-30 05:42:45.958 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/celsius/ws/user
+06-30 05:42:46.017 D/AIQuotaLogin(29469): provider=codex capturedNativeHeaders path=/api/auth/session names=Referer|User-Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 05:42:46.017 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/api/auth/session
+06-30 05:42:46.018 D/AIQuotaLogin(29469): provider=codex capturedNativeHeaders path=/backend-api/me names=Referer|User-Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 05:42:46.018 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/me
+06-30 05:42:46.018 D/AIQuotaLogin(29469): provider=codex capturedNativeHeaders path=/backend-api/accounts/check/v4-2023-04-27 names=Referer|User-Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 05:42:46.020 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/accounts/check/v4-2023-04-27
+06-30 05:42:46.070 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/root-jrecj1h9.css
+06-30 05:42:46.302 I/AIQuotaLogin(29469): provider=codex observedAccountId=true
+06-30 05:42:46.302 D/AIQuotaLogin(29469): provider=codex capturedNativeHeaders path=/backend-api/subscriptions names=Referer|User-Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 05:42:46.303 D/AIQuotaLogin(29469): provider=codex capturedNativeHeaders path=/codex/cloud/settings/analytics names=Referer|User-Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 05:42:46.304 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/codex/cloud/settings/analytics
+06-30 05:42:46.304 D/AIQuotaLogin(29469): provider=codex capturedNativeHeaders path=/backend-api/wham/usage names=Referer|User-Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 05:42:46.304 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/subscriptions?keys=account_id
+06-30 05:42:46.304 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/wham/usage
+06-30 05:42:46.314 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.chart.summaryValueUnavailable" for locale "ko-KR", using default message (-) as fallback.
+06-30 05:42:46.314 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.chart.summaryValueUnavailable" for locale "ko-KR", using default message (-) as fallback.
+06-30 05:42:46.392 E/AIQuotaLogin(29469): provider=codex http status=401 url=https://chatgpt.com/backend-api/subscriptions?keys=account_id
+06-30 05:42:46.457 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/ba0ab623-hys9zt7beajd51dl.js
+06-30 05:42:46.470 E/AIQuotaLogin(29469): provider=codex http status=401 url=https://chatgpt.com/backend-api/wham/usage
+06-30 05:42:46.498 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/ces/v1/i
+06-30 05:42:46.547 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/ces/v1/t
+06-30 05:42:46.590 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/ces/v1/p
+06-30 05:42:46.590 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/5f339043-kewbwxbo3ly13ghq.js
+06-30 05:42:46.592 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/147d70af-fzgadq2vq3lg90ey.js
+06-30 05:42:46.593 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/root-jrecj1h9.css
+06-30 05:42:46.593 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/conversation-small-bnwwp2d9.css
+06-30 05:42:46.596 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/global-modals-5n50n0lo.css
+06-30 05:42:46.603 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/cdn/assets/codex-analytics-tabs-jfs725i2.css
+06-30 05:42:46.731 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/checkout_pricing_config/countries
+06-30 05:42:46.833 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/subscriptions/auto_top_up/settings?keys=include_payment_method
+06-30 05:42:46.882 D/AIQuotaNativeUsage(29469): nativeUsage provider=codex ok=false diagnostic=codex_usage_unavailable
+06-30 05:42:46.883 W/AIQuotaCollector(29469): provider=codex collectorMode=webview-js errorKind=codex_usage_unavailable keptPreviousSnapshot=true
+06-30 05:42:46.883 I/AIQuotaCollector(29469): provider=codex awaitingUsagePayload=true errorKind=codex_usage_unavailable
+06-30 05:42:47.119 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.absoluteUsers" for locale "ko-KR", using default message (Users) as fallback.
+06-30 05:42:47.120 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.desktop" for locale "ko-KR", using default message (Desktop) as fallback.
+06-30 05:42:47.122 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.cli" for locale "ko-KR", using default message (CLI) as fallback.
+06-30 05:42:47.122 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.vscode" for locale "ko-KR", using default message (Extension) as fallback.
+06-30 05:42:47.122 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.cloud" for locale "ko-KR", using default message (Cloud) as fallback.
+06-30 05:42:47.122 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.codeReview" for locale "ko-KR", using default message (Code Review) as fallback.
+06-30 05:42:47.123 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.threads" for locale "ko-KR", using default message (threads) as fallback.
+06-30 05:42:47.123 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.threads" for locale "ko-KR", using default message (threads) as fallback.
+06-30 05:42:47.123 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.metricPerInterval.redesign" for locale "ko-KR", using default message ({metric}/{groupBy, select, week {week} other {day}}) as fallback.
+06-30 05:42:47.123 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.turns" for locale "ko-KR", using default message (turns) as fallback.
+06-30 05:42:47.123 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.turns" for locale "ko-KR", using default message (turns) as fallback.
+06-30 05:42:47.123 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/intl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.metricPerInterval.redesign" for locale "ko-KR", using default message ({metric}/{groupBy, select, week {week} other {day}}) as fallback.
+06-30 05:42:47.754 D/CoreBackPreview(  691): startBackNavigation currentTask=Task{f305892 #475 type=standard A=10233:com.aiquota.mobile}, topRunningActivity=ActivityRecord{208348830 u0 com.aiquota.mobile/.providers.WebLoginActivity t475}, callbackInfo=OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@9a825e4, mPriority=0, mIsAnimationCallback=false, mOverrideBehavior=0}, currentFocus=Window{96d3a9b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}, embedded=false
+06-30 05:42:47.809 D/ShellBackPreview(  994): Finishing gesture with event action: 1
+06-30 05:42:47.809 D/ShellBackPreview(  994): onGestureFinished() mTriggerBack == false
+06-30 05:42:47.809 D/ShellBackPreview(  994): BackAnimationController: finishBackNavigation()
+06-30 05:42:47.845 I/GoogleInputMethodService( 4498): GoogleInputMethodService.onFinishInput():2274 
+06-30 05:42:47.928 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
+06-30 05:42:47.928 D/AIQuotaLoginConsole(29469): 
+06-30 05:42:47.928 D/AIQuotaLoginConsole(29469): If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
+06-30 05:42:47.928 D/AIQuotaLoginConsole(29469): 
+06-30 05:42:47.928 D/AIQuotaLoginConsole(29469): For more information, see https://radix-ui.com/
+06-30 05:42:47.929 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=WARNING line=150 message=Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+06-30 05:42:48.191 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/checkout_pricing_config/configs/KR
+06-30 05:42:48.352 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=ERROR line=61 message=[object QuotaExceededError] [object Object]
+06-30 05:42:48.859 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:42:49.357 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:42:49.768 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=WARNING line=0 message=The resource https://chatgpt.com/cdn/assets/global-modals-5n50n0lo.css# was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded i
+06-30 05:42:49.769 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=WARNING line=0 message=The resource https://chatgpt.com/cdn/assets/conversation-small-bnwwp2d9.css# was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloa
+06-30 05:42:49.769 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=WARNING line=0 message=The resource https://chatgpt.com/cdn/assets/codex-analytics-tabs-jfs725i2.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is prelo
+06-30 05:42:49.769 D/AIQuotaLoginConsole(29469): provider=codex consoleLevel=WARNING line=0 message=The resource https://chatgpt.com/cdn/assets/root-jrecj1h9.css# was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentiona
+06-30 05:42:51.866 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:42:52.366 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:42:57.879 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:42:58.378 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:43:00.894 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:43:01.393 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:43:06.904 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:43:07.402 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:43:09.912 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:43:10.413 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:43:13.625 I/AIQuotaDebugCookie(29469): provider=copilot debugCookieRestore=true reason=background_collection source=external urlCount=3 cookieCount=32
+06-30 05:43:14.757 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/ces/statsc/flush
+06-30 05:43:15.249 D/AIQuotaBgRefreshService(29469): pageFinished provider=copilot url=github.com/
+06-30 05:43:15.467 D/AIQuotaBgRefreshService(29469): pageFinished provider=copilot url=github.com/
+06-30 05:43:15.590 D/AIQuotaBgRefreshService(29469): pageFinished provider=copilot url=
+06-30 05:43:15.642 D/AIQuotaBgRefreshService(29469): skipInject provider=copilot url=github.com/ reason=host=github.com path=/ page=len=0,signIn=false,usage=false,limit=false,quota=false,error=false
+06-30 05:43:17.375 E/GmsContextWrapper(30548): 	at android.app.usage.UsageStatsManager.whitelistAppTemporarily(UsageStatsManager.java:1474)
+06-30 05:43:17.411 W/IdentityKeyContactSync( 4450): 	at dwta.onConnected(PG:15)
+06-30 05:43:21.105 D/AIQuotaNativeUsage(29469): nativeUsage provider=copilot ok=true diagnostic=copilot_usage_unavailable
+06-30 05:43:21.111 D/AIQuotaBgRefreshService(29469): payload provider=copilot url= summary=root=provider|plan|quotas|collectorMode,provider=copilot,collectorMode=webview-js,lineCount=0,hasUsage=false,hasData=false,hasError=false
+06-30 05:43:21.129 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/ces/v1/m
+06-30 05:43:21.146 I/AIQuotaDebugCookie(29469): provider=copilot debugCookieSnapshot=true reason=background_webview_snapshot urlCount=3 cookieCount=3
+06-30 05:43:21.171 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/ces/v1/telemetry/intake?keys=ddforward
+06-30 05:43:24.960 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:43:25.457 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:43:27.972 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:43:28.466 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:43:33.987 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:43:34.487 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:43:40.003 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:43:40.502 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:43:44.345 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/ces/v1/rgstr?keys=k|st|sv|t|sid|ec|gz
+06-30 05:43:47.867 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/sentinel/heartbeat
+06-30 05:43:49.026 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:43:49.525 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:43:52.038 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:43:52.537 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:43:58.051 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:43:58.550 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:44:04.067 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:44:04.566 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:44:13.735 I/AIQuotaDebugCookie(29469): provider=gemini debugCookieRestore=true reason=background_collection source=external urlCount=7 cookieCount=121
+06-30 05:44:15.223 D/AIQuotaBgRefreshService(29469): pageFinished provider=gemini url=gemini.google.com/app
+06-30 05:44:15.223 D/AIQuotaBgRefreshService(29469): warmUpComplete provider=gemini from=gemini.google.com/app to=gemini.google.com/usage
+06-30 05:44:15.702 D/AIQuotaBgRefreshService(29469): skipInject provider=gemini url=gemini.google.com/usage reason=host=gemini.google.com path=/usage usageUrl=true appUrl=false page=len=0,signIn=false,usage=false,limit=false,quota=false,error=false
+06-30 05:44:16.976 D/AIQuotaBgRefreshService(29469): pageFinished provider=gemini url=gemini.google.com/app
+06-30 05:44:16.976 D/AIQuotaBgRefreshService(29469): redirectUsage provider=gemini from=gemini.google.com/app
+06-30 05:44:17.396 D/AIQuotaBgRefreshService(29469): skipInject provider=gemini url=gemini.google.com/usage reason=host=gemini.google.com path=/usage usageUrl=true appUrl=false page=len=0,signIn=false,usage=false,limit=false,quota=false,error=false
+06-30 05:44:18.203 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/ces/statsc/flush
+06-30 05:44:18.828 D/AIQuotaBgRefreshService(29469): pageFinished provider=gemini url=gemini.google.com/app
+06-30 05:44:18.829 D/AIQuotaBgRefreshService(29469): redirectUsage provider=gemini from=gemini.google.com/app
+06-30 05:44:19.115 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:44:19.268 D/AIQuotaBgRefreshService(29469): skipInject provider=gemini url=gemini.google.com/usage reason=host=gemini.google.com path=/usage usageUrl=true appUrl=false page=len=0,signIn=false,usage=false,limit=false,quota=false,error=false
+06-30 05:44:19.611 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:44:20.389 D/AIQuotaBgRefreshService(29469): pageFinished provider=gemini url=gemini.google.com/app
+06-30 05:44:20.401 D/AIQuotaBgRefreshService(29469): skipInject provider=gemini url=gemini.google.com/app reason=host=gemini.google.com path=/app usageUrl=false appUrl=true page=len=162,signIn=false,usage=false,limit=false,quota=false,error=false
+06-30 05:44:22.122 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:44:22.616 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:44:24.406 D/AIQuotaBgRefreshService(29469): terminalCheck provider=gemini kind=INTERACTIVE_AUTH_REQUIRED url=gemini.google.com/app page=len=183,signIn=true,usage=false,limit=false,quota=false,error=false
+06-30 05:44:24.535 I/AIQuotaDebugCookie(29469): provider=copilot debugCookieRestore=true reason=background_collection source=external urlCount=3 cookieCount=32
+06-30 05:44:25.774 D/AIQuotaBgRefreshService(29469): pageFinished provider=copilot url=github.com/
+06-30 05:44:25.802 D/AIQuotaBgRefreshService(29469): pageFinished provider=copilot url=github.com/
+06-30 05:44:25.829 D/AIQuotaBgRefreshService(29469): pageFinished provider=copilot url=
+06-30 05:44:25.833 D/AIQuotaBgRefreshService(29469): skipInject provider=copilot url=github.com/ reason=host=github.com path=/ page=len=0,signIn=false,usage=false,limit=false,quota=false,error=false
+06-30 05:44:28.138 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:44:28.633 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:44:29.142 D/AIQuotaNativeUsage(29469): nativeUsage provider=copilot ok=true diagnostic=copilot_usage_unavailable
+06-30 05:44:29.145 D/AIQuotaBgRefreshService(29469): payload provider=copilot url= summary=root=provider|plan|quotas|collectorMode,provider=copilot,collectorMode=webview-js,lineCount=0,hasUsage=false,hasData=false,hasError=false
+06-30 05:44:29.172 I/AIQuotaDebugCookie(29469): provider=copilot debugCookieSnapshot=true reason=background_webview_snapshot urlCount=3 cookieCount=3
+06-30 05:44:31.147 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:44:31.646 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:44:47.889 D/AIQuotaLogin(29469): provider=codex resource=https://chatgpt.com/backend-api/sentinel/heartbeat
+06-30 05:44:52.186 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:44:52.687 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:44:53.505 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'

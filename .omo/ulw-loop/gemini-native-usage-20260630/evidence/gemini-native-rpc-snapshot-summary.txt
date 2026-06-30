@@ -1,0 +1,2 @@
+﻿provider=gemini state=CONNECTED refresh=IDLE lineCount=1
+line label=Gemini Deep Research remainingText=100% left remaining= limit= unit=percent resetsAt=

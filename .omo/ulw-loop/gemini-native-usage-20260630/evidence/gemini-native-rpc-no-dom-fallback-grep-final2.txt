@@ -1,0 +1,7 @@
+﻿asset_exists=False
+gemini_collector_native_only=True
+fetch_gemini_uses_usage_page_rpc=True
+rpc_param_capture_no_dom_text=True
+native_fetcher_no_html_dom_fallback=True
+network_codeassist_fallback_rejected=True
+background_gemini_oauth_fallback_removed=True

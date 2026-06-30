@@ -1,0 +1,160 @@
+COMMAND adb logcat -c
+COMMAND adb shell input tap 854 508
+COMMAND sleep 35
+COMMAND MSYS_NO_PATHCONV=1 adb shell uiautomator dump /sdcard/window.xml
+UI hierchary dumped to: /sdcard/window.xml
+COMMAND MSYS_NO_PATHCONV=1 adb exec-out cat /sdcard/window.xml
+<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><hierarchy rotation="0"><node index="0" text="" resource-id="" class="android.widget.FrameLayout" package="com.aiquota.mobile" content-desc="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[0,0][1080,2400]" drawing-order="0" hint=""><node index="0" text="" resource-id="" class="android.widget.LinearLayout" package="com.aiquota.mobile" content-desc="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[0,0][1080,2400]" drawing-order="1" hint=""><node index="0" text="" resource-id="android:id/content" class="android.widget.FrameLayout" package="com.aiquota.mobile" content-desc="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[0,0][1080,2400]" drawing-order="2" hint=""><node index="0" text="" resource-id="" class="android.widget.FrameLayout" package="com.aiquota.mobile" content-desc="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[0,0][1080,2400]" drawing-order="1" hint=""><node index="0" text="Sign in to Codex" resource-id="" class="android.widget.TextView" package="com.aiquota.mobile" content-desc="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[0,0][1080,96]" drawing-order="2" hint="" /><node NAF="true" index="1" text="" resource-id="" class="android.webkit.WebView" package="com.aiquota.mobile" content-desc="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[0,96][1080,2400]" drawing-order="1" hint="" /></node></node></node></node></hierarchy>COMMAND adb logcat -d -v time AIQuotaLogin:D AIQuotaCollector:D AIQuotaNativeJson:D *:S
+--------- beginning of main
+06-29 12:47:01.847 D/AIQuotaLogin( 5352): provider=codex capturedNativeHeaders path=/codex/cloud/settings/analytics names=Accept|Upgrade-Insecure-Requests|User-Agent|sec-ch-ua|sec-ch-ua-arch|sec-ch-ua-bitness|sec-ch-ua-full-version|sec-ch-ua-mobile|sec-ch-ua-model|sec-ch-ua-platform|sec-ch-ua-platform-version
+06-29 12:47:01.875 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/codex/cloud/settings/analytics
+06-29 12:47:03.427 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/root-gffcwtjf.css
+06-29 12:47:03.428 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/conversation-small-bnwwp2d9.css
+06-29 12:47:03.429 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/global-modals-5n50n0lo.css
+06-29 12:47:03.430 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/codex-analytics-tabs-jfs725i2.css
+06-29 12:47:03.431 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/04f8add6-o1yeev4p66uaehvi.js
+06-29 12:47:03.435 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/manifest-6b282b9c.js
+06-29 12:47:03.454 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/entry.client-m7kumvb1.js
+06-29 12:47:03.471 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/2340486e-cujl6rtgtlvfi845.js
+06-29 12:47:03.472 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/f025431a-k9k2urgxtm157sx7.js
+06-29 12:47:03.472 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/4813494d-kjy6reo1ow16bgfp.js
+06-29 12:47:03.475 I/AIQuotaCollector( 5352): provider=codex collectorMode=webview-js inject host=chatgpt.com
+06-29 12:47:03.475 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/root-bilw9jdm.js
+06-29 12:47:03.477 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/codex.cloud.settings.analytics-ch3p2m0f.js
+06-29 12:47:03.477 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/d942f648-li7y9y8l6qjqeo4i.js
+06-29 12:47:03.478 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/3d9e424f-ot7wo7zw7oobsm2r.js
+06-29 12:47:03.479 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/ef50f9ea-gqrhbbmlcdypas6a.js
+06-29 12:47:03.480 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/b0c2397c-cg161to1tlmy150w.js
+06-29 12:47:03.480 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/c2675c8c-jfgk7xsmngz9i7eu.js
+06-29 12:47:03.482 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/a0344e44-np1wjhramwymsbfh.js
+06-29 12:47:03.482 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/conversation-small-o25cb6vqc5q6ggcs.js
+06-29 12:47:03.482 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/3e72bb91-kjyzfynmt5mu9hl7.js
+06-29 12:47:03.483 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/e0dd6841-mgtzckgk5omfth4v.js
+06-29 12:47:03.484 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/dbe1f625-j1qam52ldxkuejip.js
+06-29 12:47:03.485 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/fab52ad7-k4yt47dnqm4690nv.js
+06-29 12:47:03.485 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/05d28061-fgozj80y5quz7lfh.js
+06-29 12:47:03.485 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/9688073a-ej7trsrm2n0fftcv.js
+06-29 12:47:03.485 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/94ac5276-fh9vm7b26ut9qc3k.js
+06-29 12:47:03.486 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/c470f5ab-em6fhodbnh486d7h.js
+06-29 12:47:03.487 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/0e5afe53-3g190qgb6ntgvu7i.js
+06-29 12:47:03.488 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/25a66342-lwm198mbjyhsygd3.js
+06-29 12:47:03.488 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/25a66342-oslw88jlcp7wrph8.js
+06-29 12:47:03.488 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/30901919-kg2f100xjawb643w.js
+06-29 12:47:03.489 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/ab333bf7-ivez0c1zusi3391t.js
+06-29 12:47:03.489 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/8eb03965-k5calgmvkpwftqgb.js
+06-29 12:47:03.493 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/82782bc9-fhwaymlv9g02wo8z.js
+06-29 12:47:03.493 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/8b34dbc2-bmfzr15s9z361ozn.js
+06-29 12:47:03.494 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/9e18a103-i1xp1gt7q2kr4rlg.js
+06-29 12:47:03.494 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/e19f3910-opmem4hay8fz4oyl.js
+06-29 12:47:03.495 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/673c0d9b-mllg1wzteoo3i6ph.js
+06-29 12:47:03.495 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/dd81d43b-drf94obx4xu1vw4g.js
+06-29 12:47:03.497 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/5f4d7fa0-lm38b3x4oif9bxw9.js
+06-29 12:47:03.497 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/e9df0b0e-iug82kkksn2co6vi.js
+06-29 12:47:03.498 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/aaa2d182-o90zaec8nxh5dj4d.js
+06-29 12:47:03.499 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/19189336-hglmnws6q3kcgdca.js
+06-29 12:47:03.501 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/1361132d-ajiruz6mq2h8065e.js
+06-29 12:47:03.504 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/ab4d12c6-gpare7d4m50n8zfk.js
+06-29 12:47:03.510 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/9ac7a75a-glhpmrxggwvuus8u.js
+06-29 12:47:03.516 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/b453068a-hzy65lntu5dchluz.js
+06-29 12:47:03.516 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/af004db9-m574qjm3zdg6qx6m.js
+06-29 12:47:03.517 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/e8b55dd1-g5izywyz3bnvu884.js
+06-29 12:47:03.517 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/0b9bc04d-lbijezz86ttm78yj.js
+06-29 12:47:03.517 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/620167af-cskot3fpumr5oer9.js
+06-29 12:47:03.518 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/cf64444f-gjgyzkqyo8yyiyyq.js
+06-29 12:47:03.518 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/9371a995-ismaxerr7xo2lxfc.js
+06-29 12:47:03.518 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/1f8ec761-c8hmq3nrw4gekcn9.js
+06-29 12:47:03.538 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/b4c3a217-kueh31eu3v8xbb5g.js
+06-29 12:47:03.539 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/e12c8cf3-m5hxd01d0jusya45.js
+06-29 12:47:03.540 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/35fc21ca-n9zqrvi969qvnech.js
+06-29 12:47:03.541 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/ec72420d-b0xew83gac3o3zb6.js
+06-29 12:47:03.566 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/bb20f959-jxbky2u7r2gxegti.js
+06-29 12:47:04.391 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/sprites-core-16f983c9.svg
+06-29 12:47:04.393 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/sprites-wham-69c294bb.svg
+06-29 12:47:04.583 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/eec4c631-os0j18neabcxhw2j.js
+06-29 12:47:04.584 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/5ab42519-i1lna5tlqcr0yms3.js
+06-29 12:47:04.586 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/be58453f-hrir5xapnmuo10uy.js
+06-29 12:47:04.588 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/fd7f274b-lqqx5rcfygjmpvp4.js
+06-29 12:47:04.589 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/88605b43-hl70lstm4q0fshsv.js
+06-29 12:47:04.589 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/e6911992-oy72ez94r8h4pla1.js
+06-29 12:47:04.762 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/noise-watercolor-m3j88gni.webp
+06-29 12:47:04.806 I/AIQuotaLogin( 5352): provider=codex nativeCollectorStart=aboutblank reason=page_finished from=chatgpt.com/codex/cloud/settings/analytics
+06-29 12:47:04.828 I/AIQuotaCollector( 5352): provider=codex collectorMode=webview-js inject host=aboutblank-frame
+06-29 12:47:04.903 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/user_granular_consent
+06-29 12:47:04.923 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/ces/v1/projects/oai/settings
+06-29 12:47:04.939 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/ces/v1/rgstr?keys=k|st|sv|t|sid|ec|gz
+06-29 12:47:04.940 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/codex-favicon-hem6sxfy.ico
+06-29 12:47:04.949 D/AIQuotaLogin( 5352): provider=codex capturedNativeHeaders path=/api/auth/session names=Referer|User-Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-29 12:47:04.949 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/api/auth/session
+06-29 12:47:04.951 D/AIQuotaLogin( 5352): provider=codex capturedNativeHeaders path=/backend-api/me names=Referer|User-Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-29 12:47:04.951 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/me
+06-29 12:47:04.952 D/AIQuotaLogin( 5352): provider=codex capturedNativeHeaders path=/backend-api/accounts/check/v4-2023-04-27 names=Referer|User-Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-29 12:47:04.953 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/accounts/check/v4-2023-04-27
+06-29 12:47:04.965 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/codex-favicon-hem6sxfy.ico
+06-29 12:47:04.977 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/70025534-nqw2s0x0vqh7gtmr.js
+06-29 12:47:05.057 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/settings/user
+06-29 12:47:05.057 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/user_system_messages
+06-29 12:47:05.058 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/settings/is_adult
+06-29 12:47:05.072 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/root-gffcwtjf.css
+06-29 12:47:05.088 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/ces/v1/rgstr?keys=k|st|sv|t|sid|ec|gz
+06-29 12:47:05.211 I/AIQuotaLogin( 5352): provider=codex observedAccountId=true
+06-29 12:47:05.211 D/AIQuotaLogin( 5352): provider=codex capturedNativeHeaders path=/backend-api/subscriptions names=Referer|User-Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-29 12:47:05.212 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/subscriptions?keys=account_id
+06-29 12:47:05.213 D/AIQuotaLogin( 5352): provider=codex capturedNativeHeaders path=/codex/cloud/settings/analytics names=Referer|User-Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-29 12:47:05.213 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/wham/usage
+06-29 12:47:05.214 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/codex/cloud/settings/analytics
+06-29 12:47:05.255 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/aip/connectors/list_accessible?keys=skip_actions|external_logos
+06-29 12:47:05.267 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/ces/v1/i
+06-29 12:47:05.298 E/AIQuotaLogin( 5352): provider=codex http status=401 url=https://chatgpt.com/backend-api/subscriptions?keys=account_id
+06-29 12:47:05.389 E/AIQuotaLogin( 5352): provider=codex http status=401 url=https://chatgpt.com/backend-api/wham/usage
+06-29 12:47:05.397 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/bcf56d39-g31akdr9piuhsjts.js
+06-29 12:47:05.399 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/9289140b-nqrvlcelvtox66nt.js
+06-29 12:47:05.399 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/e6fa0362-o7tmfi1y3acg6cc9.js
+06-29 12:47:05.400 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/4e18e912-mjy6ql7hci1o0mck.js
+06-29 12:47:05.427 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/silk-hq-jrmbfqt7.css
+06-29 12:47:05.427 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/f4e264a1-nzelrxeo30v85ls9.js
+06-29 12:47:05.429 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/ae144ef6-lp68l23td891s0g8.js
+06-29 12:47:05.458 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/70b3f499-c69grs2v3kseaek6.js
+06-29 12:47:05.458 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/63173ebb-f5yu228b9aapfpyx.js
+06-29 12:47:05.459 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/dfa96487-lsn3h2ab625o063n.js
+06-29 12:47:05.459 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/57f03fcb-crdolneu6iwvkaxd.js
+06-29 12:47:05.495 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/conversation-small-bnwwp2d9.css
+06-29 12:47:05.495 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/global-modals-5n50n0lo.css
+06-29 12:47:05.605 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/compliance
+06-29 12:47:05.610 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/aip/connectors/links/list_accessible
+06-29 12:47:05.611 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/wham/settings/user
+06-29 12:47:05.613 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/students/refresh_enrollment_status
+06-29 12:47:05.613 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/aip/connectors/oauth_clients?keys=service
+06-29 12:47:05.614 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/wham/analytics/daily-skill-usage-metrics?keys=start_date|end_date|group_by|workspace_user|top_skill_limit
+06-29 12:47:05.618 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/wham/analytics/daily-plugin-usage-metrics?keys=start_date|end_date|group_by|workspace_user|top_plugin_limit
+06-29 12:47:05.621 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/wham/analytics/daily-workspace-usage-counts?keys=start_date|end_date|group_by|workspace_user
+06-29 12:47:05.638 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/amphora/notifications?keys=limit
+06-29 12:47:05.647 I/AIQuotaLogin( 5352): provider=codex observedAccountId=true
+06-29 12:47:05.648 D/AIQuotaLogin( 5352): provider=codex capturedNativeHeaders path=/backend-api/subscriptions names=Accept|Authorization|OAI-Client-Build-Number|OAI-Client-Version|OAI-Device-Id|OAI-Language|OAI-Session-Id|Referer|User-Agent|X-OpenAI-Target-Path|X-OpenAI-Target-Route|sec-ch-ua|sec-ch-ua-arch|sec-ch-ua-bitness|sec-ch-ua-full-version|sec-ch-ua-mobile|sec-ch-ua-model|sec-ch-ua-platform|sec-ch-ua-platform-version
+06-29 12:47:05.648 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/subscriptions?keys=account_id
+06-29 12:47:05.648 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/wham/usage
+06-29 12:47:05.649 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/wham/usage/daily-token-usage-breakdown?keys=start_date|end_date|group_by
+06-29 12:47:05.649 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/wham/usage/credit-usage-events
+06-29 12:47:05.684 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/root-gffcwtjf.css
+06-29 12:47:05.685 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/conversation-small-bnwwp2d9.css
+06-29 12:47:05.686 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/global-modals-5n50n0lo.css
+06-29 12:47:05.686 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/codex-analytics-tabs-jfs725i2.css
+06-29 12:47:05.687 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/04f8add6-o1yeev4p66uaehvi.js
+06-29 12:47:05.713 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/celsius/ws/user
+06-29 12:47:05.741 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/ces/v1/t
+06-29 12:47:05.751 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/ces/v1/p
+06-29 12:47:05.774 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/accounts/optimized/check
+06-29 12:47:05.790 D/AIQuotaLogin( 5352): provider=codex capturedNativeHeaders path=/backend-api/accounts/check/v4-2023-04-27 names=Accept|Authorization|OAI-Client-Build-Number|OAI-Client-Version|OAI-Device-Id|OAI-Language|OAI-Session-Id|Referer|User-Agent|X-OpenAI-Target-Path|X-OpenAI-Target-Route|sec-ch-ua|sec-ch-ua-arch|sec-ch-ua-bitness|sec-ch-ua-full-version|sec-ch-ua-mobile|sec-ch-ua-model|sec-ch-ua-platform|sec-ch-ua-platform-version
+06-29 12:47:05.790 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/accounts/check/v4-2023-04-27?keys=timezone_offset_min
+06-29 12:47:05.818 D/AIQuotaLogin( 5352): provider=codex capturedNativeHeaders path=/backend-api/me names=Accept|Authorization|OAI-Client-Build-Number|OAI-Client-Version|OAI-Device-Id|OAI-Language|OAI-Session-Id|Referer|User-Agent|X-OpenAI-Target-Path|X-OpenAI-Target-Route|sec-ch-ua|sec-ch-ua-arch|sec-ch-ua-bitness|sec-ch-ua-full-version|sec-ch-ua-mobile|sec-ch-ua-model|sec-ch-ua-platform|sec-ch-ua-platform-version
+06-29 12:47:05.818 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/me
+06-29 12:47:05.942 W/AIQuotaCollector( 5352): provider=codex collectorMode=webview-js errorKind=codex_usage_unavailable keptPreviousSnapshot=true
+06-29 12:47:05.942 I/AIQuotaCollector( 5352): provider=codex awaitingUsagePayload=true errorKind=codex_usage_unavailable
+06-29 12:47:06.053 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/ba0ab623-jcj5neelihasj3gj.js
+06-29 12:47:06.065 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/5f339043-lphuexo58tpke55d.js
+06-29 12:47:06.066 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/cdn/assets/147d70af-n4i7azdpyyt4aw0d.js
+06-29 12:47:06.338 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/checkout_pricing_config/countries
+06-29 12:47:06.465 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/subscriptions/auto_top_up/settings?keys=include_payment_method
+06-29 12:47:06.725 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/backend-api/checkout_pricing_config/configs/KR
+06-29 12:47:34.918 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/ces/statsc/flush
+06-29 12:47:35.072 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/ces/v1/m
+06-29 12:47:35.607 D/AIQuotaLogin( 5352): provider=codex resource=https://chatgpt.com/ces/v1/telemetry/intake?keys=ddforward

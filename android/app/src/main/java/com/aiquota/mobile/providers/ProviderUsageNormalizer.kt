@@ -637,11 +637,15 @@ object ProviderUsageNormalizer {
                 for (index in 0 until limits.length()) {
                     val item = limits.optJSONObject(index) ?: continue
                     val label = geminiLineLabel(item.optionalString("l")) ?: continue
-                    item.toLine("gemini:${geminiLineKey(label)}", label, source)?.let(::add)
+                    item.toGeminiUsagePageLine("gemini:${geminiLineKey(label)}", label, source)?.let(::add)
                 }
             }
         }.ifEmpty {
-            geminiCodeAssistLines(json.optJSONArray("limits") ?: usage.optJSONArray("limits") ?: usage.optJSONArray("quotaBuckets"), source)
+            if (source == ProviderPayloadSource.PROVIDER_API) {
+                geminiCodeAssistLines(json.optJSONArray("limits") ?: usage.optJSONArray("limits") ?: usage.optJSONArray("quotaBuckets"), source)
+            } else {
+                emptyList()
+            }
         }.filterNot { isUnavailableFreeGeminiProLine(plan, it) }
         return snapshot(
             providerId = ProviderId.GEMINI,
@@ -649,6 +653,39 @@ object ProviderUsageNormalizer {
             account = account?.optionalString("e") ?: json.optionalString("account"),
             fetchedAt = fetchedAt,
             lines = lines
+        )
+    }
+
+    private fun JSONObject.toGeminiUsagePageLine(
+        key: String,
+        label: String,
+        source: ProviderPayloadSource
+    ): ProviderUsageLine? {
+        val copy = JSONObject(toString())
+        val remaining = firstOptionalNumber("remaining", "remainingAmount", "remaining_amount")
+        val used = firstOptionalNumber("used", "usage", "usedAmount", "used_amount")
+        val limit = firstOptionalNumber("limit", "total", "limitAmount", "limit_amount")
+        if (!copy.hasAny(
+                "remaining_percent",
+                "remainingPercent",
+                "remainingPercentage",
+                "remaining_percentage",
+                "remainingFraction",
+                "remaining_fraction"
+            ) &&
+            remaining != null &&
+            limit != null &&
+            limit > 0.0
+        ) {
+            copy.put("remaining_percent", (remaining / limit) * 100.0)
+        }
+        val line = copy.toLine(key, label, source, preferRemainingPercent = true) ?: return null
+        val unit = copy.optionalString("unit") ?: "requests"
+        return line.copy(
+            usedAmount = used,
+            limitAmount = limit,
+            remainingAmount = remaining,
+            unit = unit
         )
     }
 

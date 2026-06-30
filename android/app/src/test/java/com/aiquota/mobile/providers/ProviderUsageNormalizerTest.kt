@@ -1101,7 +1101,7 @@ class ProviderUsageNormalizerTest {
     }
 
     @Test
-    fun geminiCodeAssistQuotaBucketsNormalizeByModelId() {
+    fun geminiNetworkCodeAssistQuotaBucketsAreRejected() {
         val snapshot = ProviderUsageNormalizer.normalize(
             ProviderId.GEMINI,
             """
@@ -1116,19 +1116,13 @@ class ProviderUsageNormalizerTest {
             }
             """.trimIndent(),
             ProviderPayloadSource.NETWORK_RESPONSE
-        )!!
+        )
 
-        assertEquals("Paid", snapshot.plan)
-        assertEquals("user@gmail.com", snapshot.account)
-        assertEquals(listOf("2.5 pro", "2.5 pro-pre", "2.5 flash"), snapshot.lines.map { it.label })
-        assertEquals(0.98f, snapshot.lines[0].remainingPercent ?: 0f, 0.001f)
-        assertEquals("2026-05-19T12:00:00Z", snapshot.lines[0].resetsAt)
-        assertEquals(0.75f, snapshot.lines[1].remainingPercent ?: 0f, 0.001f)
-        assertEquals(0.99f, snapshot.lines[2].remainingPercent ?: 0f, 0.001f)
+        assertNull(snapshot)
     }
 
     @Test
-    fun geminiCodeAssistRemainingPercentOneMeansOnePercentNotOneHundredPercent() {
+    fun geminiNetworkCodeAssistPercentBucketsAreRejected() {
         val snapshot = ProviderUsageNormalizer.normalize(
             ProviderId.GEMINI,
             """
@@ -1141,10 +1135,9 @@ class ProviderUsageNormalizerTest {
             }
             """.trimIndent(),
             ProviderPayloadSource.NETWORK_RESPONSE
-        )!!
+        )
 
-        assertEquals(0.01f, snapshot.lines.single { it.label == "2.5 pro" }.remainingPercent ?: 0f, 0.001f)
-        assertEquals(0.01f, snapshot.lines.single { it.label == "2.5 flash" }.remainingPercent ?: 0f, 0.001f)
+        assertNull(snapshot)
     }
 
     @Test

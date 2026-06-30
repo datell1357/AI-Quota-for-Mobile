@@ -125,4 +125,35 @@ class ProviderSnapshotCodecTest {
         assertEquals("2026-06-18T04:00:00Z", decoded.updatedAt)
         assertEquals("2026-06-18T07:00:00Z", decoded.statusUpdatedAt)
     }
+
+    @Test
+    fun encodePersistsGeminiUsagePageAmounts() {
+        val snapshot = ProviderUsageSnapshot(
+            providerId = ProviderId.GEMINI,
+            connectionState = ProviderConnectionState.CONNECTED,
+            lines = listOf(
+                ProviderUsageLine(
+                    key = "gemini:5_hour_limit",
+                    label = "5-hour limit",
+                    remainingPercent = 1.0f,
+                    remainingText = "600 of 600 requests left",
+                    usedAmount = 0.0,
+                    limitAmount = 600.0,
+                    remainingAmount = 600.0,
+                    unit = "requests",
+                    resetsAt = "2026-06-30T03:07:53.919Z"
+                )
+            )
+        )
+
+        val decoded = ProviderSnapshotCodec.decode(ProviderSnapshotCodec.encode(listOf(snapshot))).single()
+        val line = decoded.lines.single()
+
+        assertEquals("requests", line.unit)
+        assertEquals(0.0, line.usedAmount ?: -1.0, 0.001)
+        assertEquals(600.0, line.limitAmount ?: 0.0, 0.001)
+        assertEquals(600.0, line.remainingAmount ?: 0.0, 0.001)
+        assertEquals("100% left", line.remainingText)
+        assertEquals("2026-06-30T03:07:53.919Z", line.resetsAt)
+    }
 }

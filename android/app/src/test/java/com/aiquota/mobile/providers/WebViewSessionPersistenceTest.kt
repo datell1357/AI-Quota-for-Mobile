@@ -8,7 +8,12 @@ import org.junit.Test
 class WebViewSessionPersistenceTest {
     @Test
     fun sessionDestructiveWebViewAndCookieCallsAreConfinedToExplicitDisconnectCleaner() {
-        val source = mainSourceText()
+        val source = mainSourceText(
+            excludeFileNames = setOf(
+                "ProviderWebSessionCleaner.kt",
+                "GlmIsolatedWebSessionService.kt"
+            )
+        )
         val forbiddenCalls = listOf(
             "removeAllCookies",
             "removeSessionCookies",

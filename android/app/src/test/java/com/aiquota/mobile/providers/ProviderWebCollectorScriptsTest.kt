@@ -11,16 +11,14 @@ import org.junit.Test
 class ProviderWebCollectorScriptsTest {
     @Test
     fun collectorRunsOnlyAfterProviderShellsAreReached() {
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CLAUDE, "https://claude.ai/new", mapOf("lastActiveOrg" to "org_123"), ""))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CLAUDE, "https://claude.ai/new", mapOf("lastActiveOrg" to "org_123"), ""))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CLAUDE, "about:blank", emptyMap(), ""))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CODEX, "https://chatgpt.com/", emptyMap(), "ChatGPT"))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CODEX, "https://chatgpt.com/", emptyMap(), "ChatGPT"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CODEX, "about:blank", emptyMap(), ""))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "https://gemini.google.com/app", emptyMap(), "Gemini"))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "https://gemini.google.com/usage", emptyMap(), "Gemini usage"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "about:blank", emptyMap(), ""))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "about:blank", emptyMap(), ""))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "https://github.com/settings/copilot", emptyMap(), ""))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "https://github.com/settings/billing/premium_requests_usage", emptyMap(), ""))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "https://github.com/settings/copilot", emptyMap(), ""))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "https://github.com/settings/billing/premium_requests_usage", emptyMap(), ""))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CURSOR, "https://cursor.com/dashboard", emptyMap(), ""))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "https://z.ai/manage-apikey/coding-plan/personal/my-plan", emptyMap(), ""))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "https://chat.z.ai/", emptyMap(), "Coding Plan Usage"))
@@ -36,6 +34,8 @@ class ProviderWebCollectorScriptsTest {
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CODEX, "https://chatgpt.com/", emptyMap(), "ChatGPT\n로그인\n무료로 회원 가입\n지금 무슨 생각을 하시나요?"))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CODEX, "https://admin.openai.com/analytics/codex", emptyMap(), "Codex token usage"))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "https://accounts.google.com/signin", emptyMap(), ""))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "https://gemini.google.com/app", emptyMap(), "Gemini"))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "https://gemini.google.com/usage", emptyMap(), "Gemini usage"))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "https://github.com/login", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "https://github.com/", mapOf("logged_in" to "yes"), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.ANTIGRAVITY, "about:blank", emptyMap(), ""))
@@ -87,6 +87,9 @@ class ProviderWebCollectorScriptsTest {
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CODEX, "about:blank"))
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GEMINI, "about:blank"))
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.COPILOT, "about:blank"))
+        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CLAUDE, "https://claude.ai/new"))
+        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CODEX, "https://chatgpt.com/codex/settings/usage"))
+        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.COPILOT, "https://github.com/settings/copilot/features"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.ANTIGRAVITY, "about:blank"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GLM, "about:blank"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.OPENCODE, "about:blank"))
@@ -106,20 +109,59 @@ class ProviderWebCollectorScriptsTest {
     @Test
     fun scopedProvidersBuildOnlyNativeUsagePayloadCollector() {
         mapOf(
-            ProviderId.CLAUDE to "https://claude.ai/new",
+            ProviderId.CLAUDE to "about:blank",
             ProviderId.CODEX to "about:blank",
-            ProviderId.GEMINI to "https://gemini.google.com/usage",
-            ProviderId.COPILOT to "https://github.com/settings/copilot/features"
+            ProviderId.GEMINI to "about:blank",
+            ProviderId.COPILOT to "about:blank"
         ).forEach { (providerId, pageUrl) ->
             val script = ProviderWebCollectorScripts.build(providerId, emptyMap(), "", pageUrl = pageUrl)
 
             assertTrue(script.contains("fetchNativeUsagePayload"))
+            assertTrue(script.contains("collectorMode"))
+            assertTrue(script.contains("native-bridge"))
             assertFalse(script.contains("parseCodexUsagePayload"))
             assertFalse(script.contains("extractCodexVisibleDomUsage"))
             assertFalse(script.contains("scanClaudePageState"))
             assertFalse(script.contains("AIQuotaCodex collector started"))
-            assertFalse(script.contains("postGeminiObservedPayload"))
             assertFalse(script.contains("AIQuotaCopilot collector_start"))
+            assertFalse(script.contains("document.documentElement"))
+            assertFalse(script.contains("document.scripts"))
+            assertFalse(script.contains("localStorage"))
+            assertFalse(script.contains("sessionStorage"))
+            assertFalse(script.contains("rawText"))
+        }
+    }
+
+    @Test
+    fun scopedProvidersRejectNonAboutBlankCollectorPages() {
+        mapOf(
+            ProviderId.CLAUDE to "https://claude.ai/new",
+            ProviderId.CODEX to "https://chatgpt.com/codex/settings/usage",
+            ProviderId.GEMINI to "https://gemini.google.com/usage",
+            ProviderId.COPILOT to "https://github.com/settings/copilot/features"
+        ).forEach { (providerId, pageUrl) ->
+            assertFalse(ProviderWebCollectorScripts.shouldRunCollector(providerId, pageUrl, mapOf("lastActiveOrg" to "org"), "Claude usage"))
+            val script = ProviderWebCollectorScripts.build(providerId, emptyMap(), "", pageUrl = pageUrl)
+
+            assertFalse(script.contains("fetchNativeUsagePayload"))
+            assertFalse(script.contains("scanClaudePageState"))
+            assertFalse(script.contains("extractCodexVisibleDomUsage"))
+            assertFalse(script.contains("AIQuotaCopilot collector_start"))
+        }
+    }
+
+    @Test
+    fun scopedProvidersDoNotFallBackToLegacyCollectorsWhenPageUrlIsMissing() {
+        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT).forEach { providerId ->
+            val script = ProviderWebCollectorScripts.build(providerId, emptyMap(), "", pageUrl = "")
+
+            assertFalse(script.contains("fetchNativeUsagePayload"))
+            assertFalse(script.contains("scanClaudePageState"))
+            assertFalse(script.contains("extractCodexVisibleDomUsage"))
+            assertFalse(script.contains("parseCodexUsagePayload"))
+            assertFalse(script.contains("AIQuotaCopilot collector_start"))
+            assertFalse(script.contains("window.fetch"))
+            assertFalse(script.contains("XMLHttpRequest"))
         }
     }
 
@@ -168,7 +210,7 @@ class ProviderWebCollectorScriptsTest {
         assertFalse(glm.contains("aiquota_sensitive_cookie_name"))
         assertFalse(glm.contains("\"lastActiveOrg\":\"org_123\""))
 
-        val claude = ProviderWebCollectorScripts.build(ProviderId.CLAUDE, cookies, "")
+        val claude = ProviderWebCollectorScripts.build(ProviderId.CLAUDE, cookies, "", pageUrl = "about:blank")
         assertTrue(claude.contains("\"lastActiveOrg\":\"org_123\""))
         assertFalse(claude.contains("cookie_secret_xyz"))
         assertFalse(claude.contains("aiquota_sensitive_cookie_name"))
@@ -852,16 +894,18 @@ class ProviderWebCollectorScriptsTest {
     }
 
     @Test
-    fun geminiCollectorRunsOnUsagePageOrAuthenticatedAppShell() {
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "https://gemini.google.com/app", emptyMap(), "Gemini"))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "https://gemini.google.com/usage", emptyMap(), "Gemini usage"))
+    fun geminiCollectorRunsOnlyOnAboutBlankNativeBridge() {
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "about:blank", emptyMap(), ""))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "https://gemini.google.com/app", emptyMap(), "Gemini"))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "https://gemini.google.com/usage", emptyMap(), "Gemini usage"))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.GEMINI, "https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota"))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.GEMINI, "https://gemini.google.com/app"))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.GEMINI, "https://gemini.google.com/usage"))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.GEMINI, "https://gemini.google.com/app"))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.GEMINI, "https://gemini.google.com/usage"))
 
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "https://accounts.google.com/signin", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GEMINI, "https://accounts.google.com/signin"))
-        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GEMINI, "https://gemini.google.com/app"))
+        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GEMINI, "https://gemini.google.com/app"))
+        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GEMINI, "about:blank"))
     }
 
     @Test
@@ -877,212 +921,10 @@ class ProviderWebCollectorScriptsTest {
     }
 
     @Test
-    fun geminiCollectorStopsWithNoTrustedPayloadInsteadOfWaitingForOuterTimeout() {
-        val script = ProviderWebCollectorScripts.build(ProviderId.GEMINI, emptyMap(), "")
-
-        assertTrue(script.contains("collectorStartTtlMs = 30000"))
-        assertTrue(script.contains("state.href === href"))
-        assertTrue(script.contains("collectAttempts < 6"))
-        assertTrue(script.contains("gemini_no_trusted_payload"))
-        assertTrue(script.contains("function clickGeminiSignIn()"))
-        assertTrue(script.contains("c.awaitInteractiveLoginUsage && clickGeminiSignIn()"))
-        assertTrue(script.contains("function(provider, force)"))
-        assertTrue(script.contains("!force && state.provider === provider"))
-        assertTrue(script.contains("__AIQuotaStartProviderCollector(\"gemini\", window.__AIQuotaCollector && window.__AIQuotaCollector.awaitInteractiveLoginUsage)"))
-        assertTrue(script.indexOf("setTimeout(collectGeminiUsage, 5000)") < script.indexOf("gemini_no_trusted_payload"))
-    }
-
-    @Test
-    fun geminiUsagePageCollectorUsesNativePayloadWhenInjectedWithPageUrl() {
-        val script = ProviderWebCollectorScripts.build(
-            ProviderId.GEMINI,
-            emptyMap(),
-            "",
-            pageUrl = "https://gemini.google.com/usage"
-        )
-
-        assertTrue(script.contains("fetchNativeUsagePayload"))
-        assertFalse(script.contains("isGeminiUsagePageUrl(c.pageUrl)"))
-    }
-
-    @Test
-    fun geminiCollectorReportsLoginRequiredOnMarketingShell() {
-        val node = nodeCommandOrNull()
-        assumeTrue("node is required for injected Gemini runtime checks", node != null)
-
-        val asset = java.io.File("src/main/assets/gemini_collector.js").readText()
-        val gemini = ProviderWebCollectorScripts.build(ProviderId.GEMINI, emptyMap(), asset)
-        val path = Files.createTempFile("ai-quota-gemini-login-required-runtime", ".js")
-        val runtime = """
-            const posted = [];
-            const errors = [];
-            const timers = [];
-            global.window = global;
-            global.location = {
-              hostname: "gemini.google.com",
-              pathname: "/app",
-              href: "https://gemini.google.com/app"
-            };
-            const pageText = "Gemini\n3.5 Flash\n로그인\nGemini와의 대화\n개인 AI 어시스턴트인 Gemini를 만나 보세요";
-            global.document = {
-              title: "Google Gemini",
-              body: { innerText: pageText },
-              documentElement: { innerText: pageText },
-              scripts: [],
-              querySelectorAll: () => []
-            };
-            class StorageMock {
-              constructor(values) { this.values = values || {}; this.keys = Object.keys(this.values); this.length = this.keys.length; }
-              key(index) { return this.keys[index] || null; }
-              getItem(key) { return this.values[key] || ""; }
-            }
-            global.localStorage = new StorageMock({});
-            global.sessionStorage = new StorageMock({});
-            global.AIQuotaCollectorBridge = {
-              postUsagePayload: (value) => posted.push(JSON.parse(value)),
-              postCollectorError: (value) => errors.push(JSON.parse(value))
-            };
-            global.fetch = async function() {
-              return {
-                ok: true,
-                status: 200,
-                clone() { return { text: async () => "" }; },
-                text: async () => ""
-              };
-            };
-            global.XMLHttpRequest = function() {};
-            global.XMLHttpRequest.prototype = {
-              open() {},
-              send() {},
-              addEventListener() {}
-            };
-            global.setTimeout = function(fn) {
-              timers.push(fn);
-              return timers.length;
-            };
-            global.clearTimeout = function() {};
-            $gemini
-            (async function() {
-              for (let i = 0; i < 4 && posted.length === 0 && errors.length === 0; i += 1) {
-                while (timers.length > 0) timers.shift()();
-                await Promise.resolve();
-                await new Promise((resolve) => setImmediate(resolve));
-              }
-              if (posted.length !== 0 || errors.length === 0 || errors[0].errorKind !== "gemini_login_required") {
-                console.error(JSON.stringify({ posted, errors }));
-                process.exit(1);
-              }
-            })();
-        """.trimIndent()
-        try {
-            Files.write(path, runtime.toByteArray(StandardCharsets.UTF_8))
-            val process = ProcessBuilder(node!!, path.toString()).redirectErrorStream(true).start()
-            val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-            assertTrue("Gemini marketing shell was not reported as login-required:\n$output", process.waitFor() == 0)
-        } finally {
-            Files.deleteIfExists(path)
-        }
-    }
-
-    @Test
-    fun geminiInteractiveCollectorClicksMarketingShellSignIn() {
-        val node = nodeCommandOrNull()
-        assumeTrue("node is required for injected Gemini runtime checks", node != null)
-
-        val gemini = ProviderWebCollectorScripts.build(
-            providerId = ProviderId.GEMINI,
-            cookies = emptyMap(),
-            geminiCollectorAsset = "",
-            awaitInteractiveLoginUsage = true
-        )
-        val path = Files.createTempFile("ai-quota-gemini-login-click-runtime", ".js")
-        val runtime = """
-            const posted = [];
-            const errors = [];
-            const timers = [];
-            let clicked = false;
-            global.window = global;
-            global.location = {
-              hostname: "gemini.google.com",
-              pathname: "/app",
-              href: "https://gemini.google.com/app"
-            };
-            const pageText = "Gemini\n3.5 Flash\n로그인\nGemini와의 대화\n개인 AI 어시스턴트인 Gemini를 만나 보세요";
-            const loginElement = {
-              innerText: "로그인",
-              textContent: "로그인",
-              href: "https://accounts.google.com/ServiceLogin?continue=https://gemini.google.com/usage",
-              getAttribute: () => "",
-              click: () => { clicked = true; }
-            };
-            global.document = {
-              title: "Google Gemini",
-              body: { innerText: pageText },
-              documentElement: { innerText: pageText },
-              scripts: [],
-              querySelectorAll: () => [loginElement]
-            };
-            global.localStorage = { length: 0, key: () => null, getItem: () => "" };
-            global.sessionStorage = { length: 0, key: () => null, getItem: () => "" };
-            global.AIQuotaCollectorBridge = {
-              postUsagePayload: (value) => posted.push(JSON.parse(value)),
-              postCollectorError: (value) => errors.push(JSON.parse(value))
-            };
-            global.fetch = async function() {
-              return {
-                ok: true,
-                status: 200,
-                clone() { return { text: async () => "" }; },
-                text: async () => ""
-              };
-            };
-            global.XMLHttpRequest = function() {};
-            global.XMLHttpRequest.prototype = {
-              open() {},
-              send() {},
-              addEventListener() {}
-            };
-            global.setTimeout = function(fn) {
-              timers.push(fn);
-              return timers.length;
-            };
-            global.clearTimeout = function() {};
-            $gemini
-            (async function() {
-              for (let i = 0; i < 4 && !clicked && location.href.indexOf("accounts.google.com/ServiceLogin") < 0 && errors.length === 0; i += 1) {
-                while (timers.length > 0) timers.shift()();
-                await Promise.resolve();
-                await new Promise((resolve) => setImmediate(resolve));
-              }
-              if ((!clicked && location.href.indexOf("accounts.google.com/ServiceLogin") < 0) || posted.length !== 0 || errors.length !== 0) {
-                console.error(JSON.stringify({ clicked, href: location.href, posted, errors }));
-                process.exit(1);
-              }
-            })();
-        """.trimIndent()
-        try {
-            Files.write(path, runtime.toByteArray(StandardCharsets.UTF_8))
-            val process = ProcessBuilder(node!!, path.toString()).redirectErrorStream(true).start()
-            val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-            assertTrue("Gemini marketing shell sign-in was not clicked:\n$output", process.waitFor() == 0)
-        } finally {
-            Files.deleteIfExists(path)
-        }
-    }
-
-    @Test
-    fun googleCollectorsUseObservedWebViewDataWithoutSyntheticCodeAssistGate() {
-        val gemini = ProviderWebCollectorScripts.build(ProviderId.GEMINI, emptyMap(), "")
+    fun antigravityCollectorUsesObservedWebViewDataWithoutSyntheticCodeAssistGate() {
         val antigravity = ProviderWebCollectorScripts.build(ProviderId.ANTIGRAVITY, emptyMap(), "")
-        val geminiCollect = gemini.substringAfter("function collectGeminiUsage() {")
-            .substringBefore("setTimeout(collectGeminiUsage, 1800)")
         val antigravityCollect = antigravity.substringAfter("function collectAntigravityUsage")
             .substringBefore("installAntigravityNetworkHook")
-
-        assertTrue(gemini.contains("function postGeminiObservedPayload()"))
-        assertTrue(geminiCollect.contains("if (postGeminiObservedPayload()) return;"))
-        assertFalse(geminiCollect.contains("postGeminiWebFetchPayload"))
-        assertFalse(geminiCollect.contains("postGeminiBridgePayload"))
 
         assertTrue(antigravity.contains("function postAntigravityObservedPayload()"))
         assertTrue(antigravityCollect.contains("if (postAntigravityObservedPayload()) return;"))
@@ -1102,418 +944,6 @@ class ProviderWebCollectorScriptsTest {
     }
 
     @Test
-    fun geminiUsagePageTextIsConvertedToTrustedPayload() {
-        val node = nodeCommandOrNull()
-        assumeTrue("node is required for injected Gemini runtime checks", node != null)
-
-        val asset = java.io.File("src/main/assets/gemini_collector.js").readText()
-        val gemini = ProviderWebCollectorScripts.build(ProviderId.GEMINI, emptyMap(), asset)
-        val path = Files.createTempFile("ai-quota-gemini-usage-runtime", ".js")
-        val runtime = """
-            const posted = [];
-            const errors = [];
-            const timers = [];
-            const pageText = [
-              "Gemini",
-              "사용량 한도",
-              "PRO",
-              "",
-              "요금제의 한도에 따라 Gemini를 사용할 수 있는 시간이 결정됩니다.",
-              "",
-              "방금 업데이트됨",
-              "",
-              "현재 사용량",
-              "",
-              "4% 사용됨",
-              "",
-              "오전 12:26에 초기화",
-              "",
-              "주간 한도",
-              "",
-              "6월 2일 오후 12:26에 초기화",
-              "",
-              "0% 사용됨",
-              "",
-              "AI Pro보다 20배 더 많은 사용량 제공"
-            ].join("\n");
-            global.window = global;
-            global.location = {
-              hostname: "gemini.google.com",
-              pathname: "/usage",
-              href: "https://gemini.google.com/usage"
-            };
-            global.document = {
-              title: "사용",
-              body: { innerText: pageText },
-              documentElement: { innerText: pageText },
-              scripts: [{ textContent: "Google AI Plus legacy hidden state" }],
-              querySelectorAll: () => []
-            };
-            class StorageMock {
-              constructor(values) { this.values = values || {}; this.keys = Object.keys(this.values); this.length = this.keys.length; }
-              key(index) { return this.keys[index] || null; }
-              getItem(key) { return this.values[key] || ""; }
-            }
-            global.localStorage = new StorageMock({
-              stale: JSON.stringify({
-                usage: {
-                  x: [
-                    { l: "5-hour limit", u: 0, t: "오후 5:09에 초기화" },
-                    { l: "Weekly limit", u: 0, t: "6월 4일 오후 12:09에 초기화" }
-                  ]
-                }
-              })
-            });
-            global.sessionStorage = new StorageMock({});
-            global.AIQuotaCollectorBridge = {
-              postUsagePayload: (value) => posted.push(JSON.parse(value)),
-              postCollectorError: (value) => errors.push(JSON.parse(value))
-            };
-            global.fetch = async function() {
-              return {
-                ok: true,
-                status: 200,
-                clone() { return { text: async () => "" }; },
-                text: async () => ""
-              };
-            };
-            global.XMLHttpRequest = function() {};
-            global.XMLHttpRequest.prototype = {
-              open() {},
-              send() {},
-              addEventListener() {}
-            };
-            global.setTimeout = function(fn) {
-              timers.push(fn);
-              return timers.length;
-            };
-            global.clearTimeout = function() {};
-            $gemini
-            (async function() {
-              for (let i = 0; i < 8 && posted.length === 0 && errors.length === 0; i += 1) {
-                while (timers.length > 0) timers.shift()();
-                await Promise.resolve();
-                await new Promise((resolve) => setImmediate(resolve));
-              }
-              if (posted.length === 0) {
-                console.error(JSON.stringify({ posted, errors }));
-                process.exit(1);
-              }
-              const payload = posted[0];
-              const rows = payload && payload.usage && payload.usage.x;
-              if (!payload.account || payload.account.p !== "GEMINI_PRO") {
-                console.error(JSON.stringify(payload.account));
-                process.exit(1);
-              }
-              if (payload.provider !== "gemini" || !Array.isArray(rows) || rows.length !== 2) {
-                console.error(JSON.stringify(payload));
-                process.exit(1);
-              }
-              if (rows[0].l !== "5-hour limit" || rows[0].u !== 0.04 || rows[0].t !== "오전 12:26에 초기화") {
-                console.error(JSON.stringify(rows[0]));
-                process.exit(1);
-              }
-              if (rows[1].l !== "Weekly limit" || rows[1].u !== 0 || rows[1].t !== "6월 2일 오후 12:26에 초기화") {
-                console.error(JSON.stringify(rows[1]));
-                process.exit(1);
-              }
-            })();
-        """.trimIndent()
-        try {
-            Files.write(path, runtime.toByteArray(StandardCharsets.UTF_8))
-            val process = ProcessBuilder(node!!, path.toString()).redirectErrorStream(true).start()
-            val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-            assertTrue("Gemini usage page text was not converted to usage payload:\n$output", process.waitFor() == 0)
-        } finally {
-            Files.deleteIfExists(path)
-        }
-    }
-
-    @Test
-    fun geminiCollectorTreatsUsedPercentOneAsOnePercent() {
-        val node = nodeCommandOrNull()
-        assumeTrue("node is required for injected Gemini runtime checks", node != null)
-
-        val asset = java.io.File("src/main/assets/gemini_collector.js").readText()
-        val gemini = ProviderWebCollectorScripts.build(ProviderId.GEMINI, emptyMap(), asset)
-        val path = Files.createTempFile("ai-quota-gemini-used-percent-runtime", ".js")
-        val runtime = """
-            const posted = [];
-            const errors = [];
-            const timers = [];
-            global.window = global;
-            global.location = {
-              hostname: "gemini.google.com",
-              pathname: "/usage",
-              href: "https://gemini.google.com/usage"
-            };
-            global.document = {
-              title: "Gemini",
-              body: { innerText: "Gemini" },
-              documentElement: { innerText: "Gemini" },
-              scripts: [],
-              querySelectorAll: () => []
-            };
-            class StorageMock {
-              constructor(values) { this.values = values || {}; this.keys = Object.keys(this.values); this.length = this.keys.length; }
-              key(index) { return this.keys[index] || null; }
-              getItem(key) { return this.values[key] || ""; }
-            }
-            global.localStorage = new StorageMock({
-              quota: JSON.stringify({ modelId: "gemini-2.5-pro", usedPercent: 1, resetTime: "2026-06-10T00:00:00Z" })
-            });
-            global.sessionStorage = new StorageMock({});
-            global.AIQuotaCollectorBridge = {
-              postUsagePayload: (value) => posted.push(JSON.parse(value)),
-              postCollectorError: (value) => errors.push(JSON.parse(value))
-            };
-            global.fetch = async function(url) {
-              return {
-                ok: true,
-                status: 200,
-                clone() { return { text: async () => "" }; },
-                text: async () => ""
-              };
-            };
-            global.XMLHttpRequest = function() {};
-            global.XMLHttpRequest.prototype = {
-              open() {},
-              send() {},
-              addEventListener() {}
-            };
-            global.setTimeout = function(fn) {
-              timers.push(fn);
-              return timers.length;
-            };
-            global.clearTimeout = function() {};
-            $gemini
-            (async function() {
-              for (let i = 0; i < 8 && posted.length === 0 && errors.length === 0; i += 1) {
-                while (timers.length > 0) timers.shift()();
-                await Promise.resolve();
-                await new Promise((resolve) => setImmediate(resolve));
-              }
-              const rows = posted[0] && posted[0].usage && posted[0].usage.x;
-              if (!Array.isArray(rows) || rows.length === 0) {
-                console.error(JSON.stringify({ posted, errors }));
-                process.exit(1);
-              }
-              if (rows[0].u !== 0.01) {
-                console.error(JSON.stringify(rows[0]));
-                process.exit(1);
-              }
-            })();
-        """.trimIndent()
-        try {
-            Files.write(path, runtime.toByteArray(StandardCharsets.UTF_8))
-            val process = ProcessBuilder(node!!, path.toString()).redirectErrorStream(true).start()
-            val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-            assertTrue("Gemini collector treated usedPercent=1 as 100% used:\n$output", process.waitFor() == 0)
-        } finally {
-            Files.deleteIfExists(path)
-        }
-    }
-
-    @Test
-    fun geminiUsagePageDoesNotBorrowWeeklyResetForIdleFiveHourLimit() {
-        val node = nodeCommandOrNull()
-        assumeTrue("node is required for injected Gemini runtime checks", node != null)
-
-        val asset = java.io.File("src/main/assets/gemini_collector.js").readText()
-        val gemini = ProviderWebCollectorScripts.build(ProviderId.GEMINI, emptyMap(), asset)
-        val path = Files.createTempFile("ai-quota-gemini-idle-reset-runtime", ".js")
-        val runtime = """
-            const posted = [];
-            const errors = [];
-            const timers = [];
-            global.window = global;
-            global.location = {
-              hostname: "gemini.google.com",
-              pathname: "/usage",
-              href: "https://gemini.google.com/usage"
-            };
-            global.document = {
-              title: "Gemini",
-              body: { innerText: "Gemini" },
-              documentElement: { innerText: "Gemini" },
-              scripts: [],
-              querySelectorAll: () => []
-            };
-            class StorageMock {
-              constructor(values) { this.values = values || {}; this.keys = Object.keys(this.values); this.length = this.keys.length; }
-              key(index) { return this.keys[index] || null; }
-              getItem(key) { return this.values[key] || ""; }
-            }
-            global.localStorage = new StorageMock({});
-            global.sessionStorage = new StorageMock({});
-            global.AIQuotaCollectorBridge = {
-              postUsagePayload: (value) => posted.push(JSON.parse(value)),
-              postCollectorError: (value) => errors.push(JSON.parse(value))
-            };
-            global.fetch = async function(url) {
-              return {
-                ok: true,
-                status: 200,
-                clone() { return { text: async () => "" }; },
-                text: async () => ""
-              };
-            };
-            global.XMLHttpRequest = function() {};
-            global.XMLHttpRequest.prototype = {
-              open() {},
-              send() {},
-              addEventListener() {}
-            };
-            global.setTimeout = function(fn) {
-              timers.push(fn);
-              return timers.length;
-            };
-            global.clearTimeout = function() {};
-            $gemini
-            const payload = window.SAGE_USAGE_EXTRACTOR.buildGeminiUsagePayload({
-              usagePage: true,
-              pageText: [
-                "Gemini",
-                "사용량 한도",
-                "PRO",
-                "현재 사용량",
-                "0% 사용됨",
-                "주간 한도",
-                "6월 4일 오후 12:36에 초기화",
-                "0% 사용됨"
-              ].join("\n"),
-              combinedText: "Gemini Google AI Pro hidden state",
-              limits: []
-            });
-            const rows = payload && payload.usage && payload.usage.x;
-            if (!payload.account || payload.account.p !== "GEMINI_PRO") {
-              console.error(JSON.stringify(payload.account));
-              process.exit(1);
-            }
-            if (!Array.isArray(rows) || rows.length !== 2) {
-              console.error(JSON.stringify(payload));
-              process.exit(1);
-            }
-            if (rows[0].l !== "5-hour limit" || rows[0].u !== 0 || Object.prototype.hasOwnProperty.call(rows[0], "t")) {
-              console.error(JSON.stringify(rows[0]));
-              process.exit(1);
-            }
-            if (rows[1].l !== "Weekly limit" || rows[1].u !== 0 || rows[1].t !== "6월 4일 오후 12:36에 초기화") {
-              console.error(JSON.stringify(rows[1]));
-              process.exit(1);
-            }
-        """.trimIndent()
-        try {
-            Files.write(path, runtime.toByteArray(StandardCharsets.UTF_8))
-            val process = ProcessBuilder(node!!, path.toString()).redirectErrorStream(true).start()
-            val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-            assertTrue("Gemini usage page should not borrow weekly reset for idle 5-hour limit:\n$output", process.waitFor() == 0)
-        } finally {
-            Files.deleteIfExists(path)
-        }
-    }
-
-    @Test
-    fun geminiUsagePageCanUseObservedRowsBeforeAllVisibleUsageTextLoads() {
-        val node = nodeCommandOrNull()
-        assumeTrue("node is required for injected Gemini runtime checks", node != null)
-
-        val asset = java.io.File("src/main/assets/gemini_collector.js").readText()
-        val path = Files.createTempFile("ai-quota-gemini-visible-gate", ".js")
-        val runtime = """
-            global.window = global;
-            global.PROVIDER_ID = "gemini";
-            global.safeText = function(value) { return value === null || value === undefined ? "" : String(value); };
-            global.parseNumber = function(value) { var n = Number(value); return Number.isFinite(n) ? n : null; };
-            global.isNumber = function(value) { return typeof value === "number" && Number.isFinite(value); };
-            $asset
-            const payload = window.SAGE_USAGE_EXTRACTOR.buildGeminiUsagePayload({
-              usagePage: true,
-              pageText: "Gemini\n사용량 한도\nPRO\n현재 사용량\n4% 사용됨\n오전 12:26에 초기화",
-              combinedText: "Google AI Plus hidden state",
-              limits: [
-                { l: "5-hour limit", u: 0, t: "오후 5:09에 초기화" },
-                { l: "Weekly limit", u: 0, t: "6월 4일 오후 12:09에 초기화" }
-              ]
-            });
-            const rows = payload && payload.usage && payload.usage.x;
-            if (!payload || payload.account.p !== "GEMINI_PRO" || !Array.isArray(rows) || rows.length !== 2) {
-              console.error(JSON.stringify(payload));
-              process.exit(1);
-            }
-            if (rows[0].l !== "5-hour limit" || rows[0].u !== 0.04 || rows[0].t !== "오전 12:26에 초기화") {
-              console.error(JSON.stringify(rows[0]));
-              process.exit(1);
-            }
-            if (rows[1].l !== "Weekly limit" || rows[1].u !== 0 || rows[1].t !== "6월 4일 오후 12:09에 초기화") {
-              console.error(JSON.stringify(rows[1]));
-              process.exit(1);
-            }
-        """.trimIndent()
-        try {
-            Files.write(path, runtime.toByteArray(StandardCharsets.UTF_8))
-            val process = ProcessBuilder(node!!, path.toString()).redirectErrorStream(true).start()
-            val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-            assertTrue("Gemini usage page did not use observed rows before all visible usage text loaded:\n$output", process.waitFor() == 0)
-        } finally {
-            Files.deleteIfExists(path)
-        }
-    }
-
-    @Test
-    fun geminiUsagePageDefaultsToFreeWithoutPaidPlanBadge() {
-        val node = nodeCommandOrNull()
-        assumeTrue("node is required for injected Gemini runtime checks", node != null)
-
-        val asset = java.io.File("src/main/assets/gemini_collector.js").readText()
-        val path = Files.createTempFile("ai-quota-gemini-plan-gate", ".js")
-        val runtime = """
-            global.window = global;
-            global.PROVIDER_ID = "gemini";
-            global.safeText = function(value) { return value === null || value === undefined ? "" : String(value); };
-            global.parseNumber = function(value) { var n = Number(value); return Number.isFinite(n) ? n : null; };
-            global.isNumber = function(value) { return typeof value === "number" && Number.isFinite(value); };
-            $asset
-            const payload = window.SAGE_USAGE_EXTRACTOR.buildGeminiUsagePayload({
-              usagePage: true,
-              pageText: [
-                "사용량 한도",
-                "방금 업데이트됨",
-                "현재 사용량",
-                "0% 사용됨",
-                "오후 5:36에 초기화",
-                "주간 한도",
-                "6월 4일 오후 12:36에 초기화",
-                "0% 사용됨"
-              ].join("\n"),
-              combinedText: "Google AI Plus hidden state",
-              limits: []
-            });
-            const rows = payload && payload.usage && payload.usage.x;
-            if (!payload || payload.account.p !== "GEMINI_FREE" || !Array.isArray(rows) || rows.length !== 2) {
-              console.error(JSON.stringify(payload));
-              process.exit(1);
-            }
-            if (rows[0].l !== "5-hour limit" || rows[0].u !== 0 || rows[0].t !== "오후 5:36에 초기화") {
-              console.error(JSON.stringify(rows[0]));
-              process.exit(1);
-            }
-            if (rows[1].l !== "Weekly limit" || rows[1].u !== 0 || rows[1].t !== "6월 4일 오후 12:36에 초기화") {
-              console.error(JSON.stringify(rows[1]));
-              process.exit(1);
-            }
-        """.trimIndent()
-        try {
-            Files.write(path, runtime.toByteArray(StandardCharsets.UTF_8))
-            val process = ProcessBuilder(node!!, path.toString()).redirectErrorStream(true).start()
-            val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-            assertTrue("Gemini usage page did not default missing paid plan badge to Free:\n$output", process.waitFor() == 0)
-        } finally {
-            Files.deleteIfExists(path)
-        }
-    }
-
-    @Test
     fun claudeCollectorCanStartFromAuthenticatedSpaApiResources() {
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CLAUDE, "https://claude.ai/api/account_profile"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CLAUDE, "https://claude.ai/api/organizations/org_123/subscription_details?cached=true"))
@@ -1527,14 +957,14 @@ class ProviderWebCollectorScriptsTest {
     fun codexCollectorCanStartFromAuthenticatedChatGptResources() {
         assertFalse(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CODEX, "https://chatgpt.com/backend-api/codex/api/codex/usage"))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CODEX, "https://chatgpt.com/backend-api/api/codex/usage"))
-        assertFalse(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CODEX, "https://chatgpt.com/backend-api/wham/usage"))
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CODEX, "https://chatgpt.com/backend-api/wham/usage"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CODEX, "https://chatgpt.com/backend-api/me"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CODEX, "https://chatgpt.com/backend-api/accounts/check/v4-2023-04-27"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CODEX, "https://chatgpt.com/backend-api/subscriptions?account_id=301d47ae-f627-4ddc-b2c2-330419bdc6ba"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CODEX, "https://chatgpt.com/codex/cloud/settings/analytics"))
 
         assertFalse(ProviderWebCollectorScripts.shouldRunCollectorFromResource(ProviderId.CODEX, "https://chatgpt.com/auth/login", "https://chatgpt.com/backend-api/me"))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollectorFromResource(ProviderId.CODEX, "https://chatgpt.com/", "https://chatgpt.com/backend-api/me"))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollectorFromResource(ProviderId.CODEX, "https://chatgpt.com/", "https://chatgpt.com/backend-api/me"))
     }
 
     @Test
@@ -1549,8 +979,8 @@ class ProviderWebCollectorScriptsTest {
     fun copilotCollectorCanStartFromBillingResources() {
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.COPILOT, "https://github.com/github-copilot/chat/entitlement"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.COPILOT, "https://github.com/github-copilot/chat/token"))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.COPILOT, "https://github.com/settings/billing/premium_requests_usage"))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.COPILOT, "https://github.com/settings/billing/copilot_usage_card?customer_id=abc123&period=3&query="))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.COPILOT, "https://github.com/settings/billing/premium_requests_usage"))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.COPILOT, "https://github.com/settings/billing/copilot_usage_card?customer_id=abc123&period=3&query="))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.COPILOT, "https://github.com/copilot_internal/user"))
         assertTrue(
             ProviderWebCollectorScripts.shouldRunCollectorFromResource(
@@ -1559,7 +989,7 @@ class ProviderWebCollectorScriptsTest {
                 "https://github.com/github-copilot/chat/entitlement"
             )
         )
-        assertTrue(
+        assertFalse(
             ProviderWebCollectorScripts.shouldRunCollectorFromResource(
                 ProviderId.COPILOT,
                 "https://github.com/settings/billing/premium_requests_usage",
@@ -1584,7 +1014,7 @@ class ProviderWebCollectorScriptsTest {
                 "https://claude.ai/api/bootstrap/org_123/current_user_access"
             )
         )
-        assertTrue(
+        assertFalse(
             ProviderWebCollectorScripts.shouldRunCollectorFromResource(
                 ProviderId.CLAUDE,
                 "https://claude.ai/new",
@@ -1597,12 +1027,12 @@ class ProviderWebCollectorScriptsTest {
     fun claudeCollectorPayloadIsIgnoredOnLoginOrGooglePages() {
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CLAUDE, "https://claude.ai/login"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CLAUDE, "https://accounts.google.com/signin/v2/challenge/sms"))
-        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CLAUDE, "https://claude.ai/new"))
+        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CLAUDE, "https://claude.ai/new"))
     }
 
     @Test
     fun collectorBridgePayloadsAndErrorsAreAcceptedOnlyFromTrustedProviderPages() {
-        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CODEX, "https://chatgpt.com/", """{"provider":"codex"}"""))
+        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CODEX, "https://chatgpt.com/", """{"provider":"codex"}"""))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CODEX, "https://chatgpt.com/", """{"provider":"claude"}"""))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CODEX, "https://example.com/", """{"provider":"codex"}"""))
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorError(ProviderId.CODEX, "https://chatgpt.com/", """{"provider":"codex","errorKind":"codex_auth_required"}"""))
@@ -1610,7 +1040,7 @@ class ProviderWebCollectorScriptsTest {
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorError(ProviderId.CODEX, "https://chatgpt.com/", """{"provider":"claude","errorKind":"codex_usage_unavailable"}"""))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorError(ProviderId.CODEX, "https://chatgpt.com/", """{"provider":"codex","errorKind":"collector_error"}"""))
 
-        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorError(ProviderId.CLAUDE, "https://claude.ai/new"))
+        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorError(ProviderId.CLAUDE, "https://claude.ai/new"))
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorError(ProviderId.CLAUDE, "https://claude.ai/login"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorError(ProviderId.CLAUDE, "https://example.com/login"))
     }
@@ -1620,7 +1050,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Claude runtime checks", node != null)
 
-        val claude = ProviderWebCollectorScripts.build(ProviderId.CLAUDE, mapOf("lastActiveOrg" to "org_test"), "")
+        val claude = legacyScopedProviderCollectorForTest(ProviderId.CLAUDE, mapOf("lastActiveOrg" to "org_test"))
         val path = Files.createTempFile("ai-quota-claude-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -1723,7 +1153,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Claude runtime checks", node != null)
 
-        val claude = ProviderWebCollectorScripts.build(ProviderId.CLAUDE, mapOf("lastActiveOrg" to "org_test"), "")
+        val claude = legacyScopedProviderCollectorForTest(ProviderId.CLAUDE, mapOf("lastActiveOrg" to "org_test"))
         val path = Files.createTempFile("ai-quota-claude-extra-buckets-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -1821,7 +1251,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Claude runtime checks", node != null)
 
-        val claude = ProviderWebCollectorScripts.build(ProviderId.CLAUDE, mapOf("lastActiveOrg" to "197643947"), "")
+        val claude = legacyScopedProviderCollectorForTest(ProviderId.CLAUDE, mapOf("lastActiveOrg" to "197643947"))
         val path = Files.createTempFile("ai-quota-claude-merged-usage-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -1946,7 +1376,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Claude runtime checks", node != null)
 
-        val claude = ProviderWebCollectorScripts.build(ProviderId.CLAUDE, mapOf("lastActiveOrg" to "org_test"), "")
+        val claude = legacyScopedProviderCollectorForTest(ProviderId.CLAUDE, mapOf("lastActiveOrg" to "org_test"))
         val path = Files.createTempFile("ai-quota-claude-idle-session-reset-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -2040,7 +1470,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Claude runtime checks", node != null)
 
-        val claude = ProviderWebCollectorScripts.build(ProviderId.CLAUDE, mapOf("lastActiveOrg" to "org_test"), "")
+        val claude = legacyScopedProviderCollectorForTest(ProviderId.CLAUDE, mapOf("lastActiveOrg" to "org_test"))
         val path = Files.createTempFile("ai-quota-claude-visible-plan-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -2125,7 +1555,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Copilot runtime checks", node != null)
 
-        val copilot = ProviderWebCollectorScripts.build(ProviderId.COPILOT, emptyMap(), "")
+        val copilot = legacyScopedProviderCollectorForTest(ProviderId.COPILOT)
         val path = Files.createTempFile("ai-quota-copilot-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -2227,7 +1657,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Copilot runtime checks", node != null)
 
-        val copilot = ProviderWebCollectorScripts.build(ProviderId.COPILOT, emptyMap(), "")
+        val copilot = legacyScopedProviderCollectorForTest(ProviderId.COPILOT)
         val path = Files.createTempFile("ai-quota-copilot-json-first-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -2554,7 +1984,7 @@ class ProviderWebCollectorScriptsTest {
                 claudePayload
             )
         )
-        assertTrue(
+        assertFalse(
             ProviderWebCollectorScripts.shouldAcceptCollectorPayload(
                 ProviderId.CODEX,
                 "https://chatgpt.com/",
@@ -2565,10 +1995,9 @@ class ProviderWebCollectorScriptsTest {
 
     @Test
     fun collectorScriptsUseSameSessionProviderApis() {
-        val claude = ProviderWebCollectorScripts.build(ProviderId.CLAUDE, mapOf("lastActiveOrg" to "org_123"), "")
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
-        val gemini = ProviderWebCollectorScripts.build(ProviderId.GEMINI, emptyMap(), "window.SAGE_USAGE_EXTRACTOR={buildGeminiUsagePayload:function(){return null;}};")
-        val copilot = ProviderWebCollectorScripts.build(ProviderId.COPILOT, emptyMap(), "")
+        val claude = legacyScopedProviderCollectorForTest(ProviderId.CLAUDE, mapOf("lastActiveOrg" to "org_123"))
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
+        val copilot = legacyScopedProviderCollectorForTest(ProviderId.COPILOT)
         val cursor = ProviderWebCollectorScripts.build(ProviderId.CURSOR, emptyMap(), "")
         val antigravity = ProviderWebCollectorScripts.build(ProviderId.ANTIGRAVITY, emptyMap(), "")
 
@@ -2603,23 +2032,6 @@ class ProviderWebCollectorScriptsTest {
         assertFalse(codex.contains("/backend-api/api/codex/usage"))
         assertFalse(codex.contains("/backend-api/wham/usage"))
         assertTrue(codex.contains("https://chatgpt.com/codex/cloud/settings/analytics#usage"))
-        assertTrue(gemini.contains("buildGeminiUsagePayload"))
-        assertFalse(gemini.contains("fetchGeminiWebSessionUsagePayload"))
-        assertFalse(gemini.contains("postGeminiBridgePayload"))
-        assertFalse(gemini.contains("cloudcode-pa.googleapis.com"))
-        assertTrue(gemini.contains("__AIQuotaGeminiNetworkRows"))
-        assertTrue(gemini.contains("XMLHttpRequest"))
-        assertTrue(gemini.contains("remainingFraction"))
-        assertTrue(gemini.contains("modelId"))
-        assertTrue(gemini.contains("extractJsonCandidates"))
-        assertTrue(gemini.contains("c.pageText"))
-        assertTrue(gemini.contains("setTimeout(collectGeminiUsage, 5000)"))
-        assertTrue(gemini.contains("remainingFractionValue <= 1 ? remainingFractionValue : remainingFractionValue / 100"))
-        assertFalse(gemini.contains("100 - remaining"))
-        assertFalse(gemini.contains("Gemini Web Session"))
-        assertFalse(gemini.contains("Quota is not exposed by the current Gemini web page."))
-        assertFalse(gemini.contains("gemini_usage_unavailable"))
-        assertTrue(gemini.contains("건너뛰기"))
         assertTrue(copilot.contains("github-copilot/chat/entitlement"))
         assertTrue(copilot.contains("github-copilot/chat/token"))
         assertTrue(copilot.contains("featuresPageUsageFromText"))
@@ -2683,11 +2095,10 @@ class ProviderWebCollectorScriptsTest {
         assertTrue(antigravity.contains("normalizePlan"))
         assertFalse(antigravity.contains("ANTIGRAVITY_PLUS"))
         assertFalse(antigravity.contains("antigravity_usage_unavailable"))
-        listOf(claude, codex, gemini, copilot, antigravity, cursor).forEach { script ->
+        listOf(claude, codex, copilot, antigravity, cursor).forEach { script ->
             assertTrue(script.contains("__AIQuotaStartProviderCollector"))
             assertTrue(script.contains("__AIQuotaProviderCollectorState"))
             assertTrue(script.contains("collectorStartTtlMs"))
-            assertFalse(script.contains("return true;\n                };"))
             assertFalse(script.contains("__AIQuotaCollectorRunning"))
             assertFalse(script.contains("__AIQuotaProviderCollectorRunning_"))
             assertTrue(script.contains("credentials: \"include\""))
@@ -2697,7 +2108,7 @@ class ProviderWebCollectorScriptsTest {
 
     @Test
     fun codexCollectorUsesChatGptPageStateInsteadOfDirectUsageApi() {
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
 
         assertTrue(codex.contains("buildCodexDiagnostics"))
         assertTrue(codex.contains("codexUsageStatus"))
@@ -2730,8 +2141,23 @@ class ProviderWebCollectorScriptsTest {
     }
 
     @Test
+    fun codexAboutBlankCollectorUsesOnlyNativeUsagePayloadBridge() {
+        val codex = ProviderWebCollectorScripts.build(
+            providerId = ProviderId.CODEX,
+            cookies = emptyMap(),
+            geminiCollectorAsset = "",
+            pageUrl = "about:blank"
+        )
+
+        assertTrue(codex.contains("c.fetchNativeUsagePayload()"))
+        assertFalse(codex.contains("c.fetchJson(\"https://chatgpt.com/backend-api/wham/usage\")"))
+        assertFalse(codex.contains("c.fetchJson(\"https://chatgpt.com/codex/cloud/settings/analytics\")"))
+        assertFalse(codex.contains("parseCodexFetchedPayload"))
+    }
+
+    @Test
     fun codexCollectorDoesNotAttachInternalUsedPercentComparison() {
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
 
         assertFalse(codex.contains("internal_used_percent"))
         assertFalse(codex.contains("attachCodexInternalUsageComparison"))
@@ -2739,7 +2165,7 @@ class ProviderWebCollectorScriptsTest {
 
     @Test
     fun codexSessionProbeFetchesAreTimeoutBounded() {
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
 
         assertTrue(codex.contains("AbortController"))
         assertTrue(codex.contains("timeoutMs"))
@@ -2750,7 +2176,7 @@ class ProviderWebCollectorScriptsTest {
 
     @Test
     fun codexPageStateScanIsBudgetBounded() {
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
 
         assertTrue(codex.contains("codexScanBudget"))
         assertTrue(codex.contains("keys.length && keyIndex < 80"))
@@ -2759,7 +2185,7 @@ class ProviderWebCollectorScriptsTest {
 
     @Test
     fun codexPageStateScanUsesVisibleDomInsteadOfRetainedRows() {
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
         val scan = codex.substringAfter("function scanCodexPageState(accountId)")
             .substringBefore("function buildCodexDiagnostics")
 
@@ -2780,7 +2206,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Codex runtime checks", node != null)
 
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
         val path = Files.createTempFile("ai-quota-codex-stale-network-rows-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -2892,7 +2318,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Codex runtime checks", node != null)
 
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
         val path = Files.createTempFile("ai-quota-codex-visible-dom-missing-reset-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -2982,7 +2408,7 @@ class ProviderWebCollectorScriptsTest {
 
     @Test
     fun codexCollectorDoesNotBlockUsageNavigationOnSubscriptionPlanFetch() {
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
         val probe = codex.substringAfter("async function probeCodexSession()")
             .substringBefore("function looksLikeChatGptApp()")
 
@@ -2999,7 +2425,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Codex runtime checks", node != null)
 
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
         val path = Files.createTempFile("ai-quota-codex-account-plan-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -3102,7 +2528,7 @@ class ProviderWebCollectorScriptsTest {
 
     @Test
     fun codexCollectorReportsUnavailableBeforeAndroidTimeout() {
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
 
         assertTrue(codex.contains("attempts >= 8 && (result.sessionOk || looksLikeChatGptApp())"))
         assertTrue(codex.contains("c.fail(\"codex_usage_unavailable\""))
@@ -3114,20 +2540,21 @@ class ProviderWebCollectorScriptsTest {
             providerId = ProviderId.CODEX,
             cookies = emptyMap(),
             geminiCollectorAsset = "",
+            pageUrl = "about:blank",
             awaitInteractiveLoginUsage = true
         )
 
         assertTrue(codex.contains("awaitInteractiveLoginUsage: true"))
-        assertTrue(codex.contains("continueCodexInteractiveLoginUntilUsagePayload"))
-        assertTrue(codex.contains("AIQuotaCodex awaiting usage payload"))
-        assertTrue(codex.contains("if (continueCodexInteractiveLoginUntilUsagePayload(\"login\"))"))
-        assertTrue(codex.contains("if (continueCodexInteractiveLoginUntilUsagePayload(\"usage_unavailable\"))"))
-        assertTrue(codex.indexOf("continueCodexInteractiveLoginUntilUsagePayload(\"usage_unavailable\")") < codex.indexOf("c.fail(\"codex_usage_unavailable\""))
+        assertTrue(codex.contains("__AIQuotaStartProviderCollector(\"codex\", true)"))
+        assertTrue(codex.contains("fetchNativeUsagePayload"))
+        assertTrue(codex.contains("codex_usage_unavailable"))
+        assertFalse(codex.contains("continueCodexInteractiveLoginUntilUsagePayload"))
+        assertFalse(codex.contains("AIQuotaCodex awaiting usage payload"))
     }
 
     @Test
     fun codexCollectorNavigatesAuthenticatedRootToUsageDashboard() {
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
         val navigation = codex.substringAfter("function navigateCodexUsageDashboardIfNeeded(result)")
             .substringBefore("function continueCodexInteractiveLoginUntilUsagePayload")
         val probe = codex.substringAfter("function runProbe()")
@@ -3150,7 +2577,7 @@ class ProviderWebCollectorScriptsTest {
 
     @Test
     fun codexCollectorNavigatesToUsageDashboardOnFirstAuthenticatedProbe() {
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
 
         assertFalse(codex.contains("attempts < 2"))
         assertTrue(codex.contains("codexInitialProbeDelayMs = 100"))
@@ -3164,7 +2591,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Codex runtime checks", node != null)
 
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
         val path = Files.createTempFile("ai-quota-codex-korean-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -3275,7 +2702,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Codex runtime checks", node != null)
 
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
         val path = Files.createTempFile("ai-quota-codex-prefixless-korean-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -3378,7 +2805,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Codex runtime checks", node != null)
 
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
         val path = Files.createTempFile("ai-quota-codex-prefixless-state-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -3463,7 +2890,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Codex runtime checks", node != null)
 
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
         val path = Files.createTempFile("ai-quota-codex-reset-remaining-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -3547,7 +2974,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Codex runtime checks", node != null)
 
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
         val path = Files.createTempFile("ai-quota-codex-idle-session-reset-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -3657,7 +3084,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Codex runtime checks", node != null)
 
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
         val path = Files.createTempFile("ai-quota-codex-active-five-hour-missing-reset-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -3750,7 +3177,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Codex runtime checks", node != null)
 
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
         val path = Files.createTempFile("ai-quota-codex-visible-usage-limit-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -3905,7 +3332,7 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Codex runtime checks", node != null)
 
-        val codex = ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "")
+        val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
         val path = Files.createTempFile("ai-quota-codex-weekly-time-only-reset-runtime", ".js")
         val runtime = """
             const posted = [];
@@ -4197,16 +3624,22 @@ class ProviderWebCollectorScriptsTest {
         assumeTrue("node is required for injected JavaScript syntax checks", node != null)
 
         val scripts = mapOf(
-            "claude" to ProviderWebCollectorScripts.build(ProviderId.CLAUDE, mapOf("lastActiveOrg" to "org_123"), ""),
-            "codex" to ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), ""),
+            "claude" to ProviderWebCollectorScripts.build(
+                ProviderId.CLAUDE,
+                mapOf("lastActiveOrg" to "org_123"),
+                "",
+                pageUrl = "about:blank"
+            ),
+            "codex" to ProviderWebCollectorScripts.build(ProviderId.CODEX, emptyMap(), "", pageUrl = "about:blank"),
             "glm" to ProviderWebCollectorScripts.build(ProviderId.GLM, emptyMap(), ""),
             "opencode" to ProviderWebCollectorScripts.build(ProviderId.OPENCODE, emptyMap(), ""),
             "gemini" to ProviderWebCollectorScripts.build(
                 ProviderId.GEMINI,
                 emptyMap(),
-                "window.SAGE_USAGE_EXTRACTOR={buildGeminiUsagePayload:function(){return null;}};"
+                "",
+                pageUrl = "about:blank"
             ),
-            "copilot" to ProviderWebCollectorScripts.build(ProviderId.COPILOT, emptyMap(), ""),
+            "copilot" to ProviderWebCollectorScripts.build(ProviderId.COPILOT, emptyMap(), "", pageUrl = "about:blank"),
             "antigravity" to ProviderWebCollectorScripts.build(ProviderId.ANTIGRAVITY, emptyMap(), ""),
             "cursor" to ProviderWebCollectorScripts.build(ProviderId.CURSOR, emptyMap(), "")
         )
@@ -4221,6 +3654,36 @@ class ProviderWebCollectorScriptsTest {
             val process = ProcessBuilder("node", "--version").redirectErrorStream(true).start()
             if (process.waitFor() == 0) "node" else null
         }.getOrNull()
+    }
+
+    private fun legacyScopedProviderCollectorForTest(
+        providerId: ProviderId,
+        cookies: Map<String, String> = emptyMap(),
+        pageText: String = "",
+        pageUrl: String = when (providerId) {
+            ProviderId.CLAUDE -> "https://claude.ai/new"
+            ProviderId.CODEX -> "https://chatgpt.com/codex/settings/usage"
+            ProviderId.COPILOT -> "https://github.com/settings/copilot/features"
+            else -> ""
+        },
+        awaitInteractiveLoginUsage: Boolean = false
+    ): String {
+        val common = ProviderWebCollectorScripts.commonForTest(
+            providerId = providerId,
+            cookies = cookies,
+            observedAccountId = null,
+            pageText = pageText,
+            pageUrl = pageUrl,
+            awaitInteractiveLoginUsage = awaitInteractiveLoginUsage,
+            nativeJsonBridgeEnabled = false
+        )
+        val collector = when (providerId) {
+            ProviderId.CLAUDE -> ProviderWebCollectorScripts.claude()
+            ProviderId.CODEX -> ProviderWebCollectorScripts.codexWebViewState()
+            ProviderId.COPILOT -> ProviderWebCollectorScripts.copilot()
+            else -> error("No legacy scoped collector for $providerId")
+        }
+        return "$common\n$collector"
     }
 
     private fun assertValidJavaScript(node: String, provider: String, script: String) {

@@ -1,0 +1,94 @@
+broadcast_begin
+Broadcasting: Intent { act=com.aiquota.mobile.debug.REFRESH_PROVIDER flg=0x400000 cmp=com.aiquota.mobile/.debug.ProviderRefreshDebugReceiver (has extras) }
+Broadcast completed: result=0
+broadcast_end
+log_begin
+06-30 06:20:47.709 I/adbd    (  539): adbd service requested 'shell,v2,TERM=dumb,raw:am broadcast -a com.aiquota.mobile
+.debug.REFRESH_PROVIDER -n com.aiquota.mobile/.debug.ProviderRefreshDebugReceiver --es provider_id codex'
+06-30 06:20:47.730 I/ActivityManager(  691): Broadcasting: Intent { act=com.aiquota.mobile.debug.REFRESH_PROVIDER flg=0
+x400000 cmp=com.aiquota.mobile/.debug.ProviderRefreshDebugReceiver (has extras) }
+06-30 06:20:47.731 I/ActivityManager(  691): Enqueued broadcast Intent { act=com.aiquota.mobile.debug.REFRESH_PROVIDER 
+flg=0x400000 cmp=com.aiquota.mobile/.debug.ProviderRefreshDebugReceiver (has extras) }: 0
+06-30 06:20:47.732 D/ActivityManager(  691): sync unfroze 2022 com.aiquota.mobile for 3
+06-30 06:20:47.740 W/ActivityManager(  691): startForegroundService() not allowed: service com.aiquota.mobile/.provider
+s.ProviderBackgroundRefreshService; [callingPackage: com.aiquota.mobile; callingUid: 10233; uidState: RCVR; uidBFSL: n/
+a; BFGS denied: true; intent: Intent { act=com.aiquota.mobile.action.REFRESH xflg=0x4 cmp=com.aiquota.mobile/.providers
+.ProviderBackgroundRefreshService (has extras) }; code:DENIED; tempAllowListReason:<null>; allowWiu:-1; targetSdkVersio
+n:35; callerTargetSdkVersion:35; startForegroundCount:0; bindFromPackage:null; isBindService:false]
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): debugProviderRefresh=false provider=codex
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): android.app.ForegroundServiceStartNotAllowedException: startForeground
+Service() not allowed: service com.aiquota.mobile/.providers.ProviderBackgroundRefreshService
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.app.ForegroundServiceStartNotAllowedException$1.createFrom
+Parcel(ForegroundServiceStartNotAllowedException.java:54)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.app.ForegroundServiceStartNotAllowedException$1.createFrom
+Parcel(ForegroundServiceStartNotAllowedException.java:50)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.os.Parcel.readParcelableInternal(Parcel.java:5281)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.os.Parcel.readParcelable(Parcel.java:5262)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3387)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.os.Parcel.createException(Parcel.java:3376)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.os.Parcel.readException(Parcel.java:3359)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.os.Parcel.readException(Parcel.java:3301)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.app.IActivityManager$Stub$Proxy.startService(IActivityMana
+ger.java:6697)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.app.ContextImpl.startServiceCommon(ContextImpl.java:2111)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.app.ContextImpl.startForegroundService(ContextImpl.java:20
+86)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.content.ContextWrapper.startForegroundService(ContextWrapp
+er.java:875)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at androidx.core.content.ContextCompat$Api26Impl.startForegroundServi
+ce(ContextCompat.java:1130)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at androidx.core.content.ContextCompat.startForegroundService(Context
+Compat.java:711)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at com.aiquota.mobile.debug.ProviderRefreshDebugReceiver.onReceive(Pr
+oviderRefreshDebugReceiver.kt:22)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.app.ActivityThread.handleReceiver(ActivityThread.java:5386
+)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.app.ActivityThread.-$$Nest$mhandleReceiver(ActivityThread.
+java:0)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:278
+6)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.os.Handler.dispatchMessageImpl(Handler.java:142)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.os.Handler.dispatchMessage(Handler.java:125)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.os.Looper.loopOnce(Looper.java:296)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.os.Looper.loop(Looper.java:397)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at android.app.ActivityThread.main(ActivityThread.java:9523)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at java.lang.reflect.Method.invoke(Native Method)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(Runtim
+eInit.java:575)
+06-30 06:20:47.740 W/AIQuotaDebugRefresh( 2022): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:939)
+log_end
+services_begin
+ACTIVITY MANAGER SERVICES (dumpsys activity services)
+  User 0 active services:
+  * ServiceRecord{9221fbe u0 com.aiquota.mobile/.providers.ProviderBackgroundRefreshService c:com.aiquota.mobile}
+    intent={act=com.aiquota.mobile.action.REFRESH cmp=com.aiquota.mobile/.providers.ProviderBackgroundRefreshService}
+    packageName=com.aiquota.mobile
+    processName=com.aiquota.mobile
+    targetSdkVersion=35
+    baseDir=/data/app/~~oF-DGrxaE5twJcGYxq7qOQ==/com.aiquota.mobile-3CEATCErRfMucYTVVmuUVA==/base.apk
+    dataDir=/data/user/0/com.aiquota.mobile
+    app=null
+    useNewWiuLogic_forCapabilities()=true
+    useNewWiuLogic_forStart()=true
+    useNewBfslLogic()=true
+    mAllowWiu_noBinding=DENIED
+    mAllowWiu_inBindService=DENIED
+    mAllowWiu_byBindings=DENIED
+    getFgsAllowWiu_legacy=DENIED
+    getFgsAllowWiu_new=DENIED
+    getFgsAllowWiu_forStart=DENIED
+    getFgsAllowWiu_forCapabilities=DENIED
+    allowUiJobScheduling=false
+    recentCallingPackage=com.aiquota.mobile
+    recentCallingUid=10233
+    mAllowStart_noBinding=DENIED
+    mAllowStart_inBindService=DENIED
+    mAllowStart_byBindings=DENIED
+    getFgsAllowStart_legacy=DENIED
+    getFgsAllowStart_new=DENIED
+    getFgsAllowStart=DENIED
+    startForegroundCount=0
+    infoAllowStartForeground=[callingPackage: com.aiquota.mobile; callingUid: 10233; uidState: RCVR; uidBFSL: n/a; BFGS denied: true; intent: Intent { act=com.aiquota.mobile.action.REFRESH xflg=0x4 cmp=com.aiquota.mobile/.providers.ProviderBackgroundRefreshService (has extras) }; code:DENIED; tempAllowListReason:<null>; allowWiu:-1; targetSdkVersion:35; callerTargetSdkVersion:35; startForegroundCount:0; bindFromPackage:null; isBindService:false]
+    createTime=-53s946ms startingBgTimeout=--
+    lastActivity=-53s946ms restartTime=-- createdFromFg=true
+services_end

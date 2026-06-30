@@ -1,0 +1,5 @@
+﻿has_at=True has_prefix=True
+cookie_contains_full_at=False
+cookie_contains_prefix=False
+cookie_contains_AD1=False
+capture_at_len=42 prefix_len=24

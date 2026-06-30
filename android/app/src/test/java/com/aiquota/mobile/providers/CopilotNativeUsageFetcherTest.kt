@@ -1,45 +1,17 @@
 ﻿package com.aiquota.mobile.providers
 
 import com.aiquota.mobile.local.ProviderId
+import java.io.File
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Assert.assertNotNull
 import org.junit.Test
 
 class CopilotNativeUsageFetcherTest {
     @Test
     fun nativeCopilotFetchRequiresTokenBackedAuth() {
         assertEquals(null, CopilotNativeUsageFetcher.fetchUsagePayload(githubAccessToken = null))
-    }
-
-    @Test
-    fun premiumBillingInputIsExtractedFromEmbeddedBillingPageData() {
-        val input = CopilotNativeUsageFetcher.extractPremiumBillingInput(
-            """
-            <html>
-              <script type="application/json" data-target="react-app.embeddedData">
-                {
-                  "payload": {
-                    "customer": {
-                      "customerId": "abc123",
-                      "displayId": "datell1357"
-                    },
-                    "period_selections": [
-                      {"type": 1, "selected": false},
-                      {"type": 3, "selected": true}
-                    ]
-                  }
-                }
-              </script>
-            </html>
-            """.trimIndent()
-        )
-
-        assertNotNull(input)
-        assertEquals("abc123", input!!.customerId)
-        assertEquals("3", input.period)
-        assertEquals("datell1357", input.account)
     }
 
     @Test
@@ -202,5 +174,17 @@ class CopilotNativeUsageFetcherTest {
     fun githubSessionInternalUserEndpointIsAllowed() {
         assertTrue(CopilotNativeUsageFetcher.isInternalUserUrl("https://github.com/copilot_internal/user"))
         assertTrue(CopilotNativeUsageFetcher.isInternalUserUrl("https://api.github.com/copilot_internal/user"))
+    }
+
+    @Test
+    fun productionCopilotFetcherDoesNotUseSettingsOrBillingHtmlFallback() {
+        val source = File("src/main/java/com/aiquota/mobile/providers/CopilotNativeUsageFetcher.kt").readText()
+
+        assertTrue(source.contains("copilot_internal/user"))
+        assertFalse(source.contains("settings/copilot"))
+        assertFalse(source.contains("settings/billing/premium_requests_usage"))
+        assertFalse(source.contains("copilot_usage_card"))
+        assertFalse(source.contains("react-app.embeddedData"))
+        assertFalse(source.contains("extractPremiumBillingInput("))
     }
 }

@@ -1,0 +1,4 @@
+remote_ls=-rw-rw---- 1 u0_a233 ext_data_rw 69574 2026-06-30 06:07 /sdcard/Android/data/com.aiquota.mobile/files/debug-session-cookies/codex.json
+host_backup=D:\Vibe Project\AI Usage for Mobile\System.Management.Automation.Internal.Host.InternalHost\codex.json
+host_size=69574
+host_sha256=5A5E860EBA1E6F95D336FA2439F0CB65BCC1A8A7177664C3DAC227CDFDD7827A

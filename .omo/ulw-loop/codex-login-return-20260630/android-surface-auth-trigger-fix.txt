@@ -1,0 +1,137 @@
+==== start 2026-06-30T14:52:00.7559190+09:00 ====
+Starting: Intent { cmp=com.aiquota.mobile/.debug.ProviderLoginDebugActivity (has extras) }
+-- final snapshot --
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="updated_at">2026-06-30T05:51:40.863738Z</string>
+    <string name="provider_id">codex</string>
+    <string name="snapshot">{&quot;providers&quot;:[{&quot;providerId&quot;:&quot;codex&quot;,&quot;displayName&quot;:&quot;Codex&quot;,&quot;connectionState&quot;:&quot;CONNECTING&quot;,&quot;refreshState&quot;:&quot;REFRESHING&quot;,&quot;planLabel&quot;:null,&quot;account&quot;:null,&quot;updatedAt&quot;:&quot;2026-06-30T05:51:40.863738Z&quot;,&quot;statusUpdatedAt&quot;:&quot;2026-06-30T05:51:40.863738Z&quot;,&quot;message&quot;:&quot;Opening provider login&quot;,&quot;lines&quot;:[]}]}</string>
+</map>
+-- final activity --
+>   * Task{5652bbc #477 type=standard A=10233:com.aiquota.mobile U=0 visible=true visibleRequested=true mode=fullscreen translucent=false sz=1}
+      fullscreenRequestAllowMode=NONE
+>     mLastPausedActivity: ActivityRecord{258177967 u0 com.aiquota.mobile/.debug.ProviderLoginDebugActivity t-1 f}}
+      isSleeping=false
+>     topResumedActivity=ActivityRecord{122083477 u0 com.aiquota.mobile/.providers.WebLoginActivity t477}
+>     * Hist  #0: ActivityRecord{122083477 u0 com.aiquota.mobile/.providers.WebLoginActivity t477}
+>       packageName=com.aiquota.mobile processName=com.aiquota.mobile
+>       launchedFromUid=10233 launchedFromPackage=com.aiquota.mobile launchedFromFeature=null userId=0
+>       app=ProcessRecord{e7623cb 31446:com.aiquota.mobile/u0a233}
+>       Intent { xflg=0x4 cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras) }
+>       rootOfTask=true task=Task{5652bbc #477 type=standard A=10233:com.aiquota.mobile}
+>       taskAffinity=10233:com.aiquota.mobile
+>       mActivityComponent=com.aiquota.mobile/.providers.WebLoginActivity
+>       baseDir=/data/app/~~q64QaG95x6iNmQUeWg2CFA==/com.aiquota.mobile-TfpOlsEBIC89fNTqPfP9qw==/base.apk
+>       dataDir=/data/user/0/com.aiquota.mobile
+        stateNotNeeded=false componentSpecified=true mActivityType=standard
+>       windows=[Window{1c0153b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}]
+        windowType=2
+>     Resumed: ActivityRecord{122083477 u0 com.aiquota.mobile/.providers.WebLoginActivity t477}
+  
+>   ResumedActivity: ActivityRecord{122083477 u0 com.aiquota.mobile/.providers.WebLoginActivity t477}
+  
+>   topDisplayFocusedRootTask=Task{5652bbc #477 type=standard A=10233:com.aiquota.mobile}
+    Display: mDisplayId=0 (organized)
+>   deepestLastOrientationSource=ActivityRecord{122083477 u0 com.aiquota.mobile/.providers.WebLoginActivity t477}
+    overrideConfig={1.0 310mcc260mnc [ko_KR] ldltr sw411dp w411dp h914dp 420dpi nrml long compactNeeded port finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 0 - 1080, 2400) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.56 fontWeightAdjustment=0}
+>   mImeLayeringTarget=Window{1c0153b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>   mImeInputTarget=Window{1c0153b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>   mImeControlTarget=Window{1c0153b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+    ImeContainer
+>   mImeParent=ActivityRecord{122083477 u0 com.aiquota.mobile/.providers.WebLoginActivity t477}
+    mRemoteInsetsControlTarget=RemoteInsetsControlTarget{330955f displayId=0 requestedVisibleTypes=503 animatingTypes=0}
+>   mCurrentFocus=Window{1c0153b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>   mFocusedApp=ActivityRecord{122083477 u0 com.aiquota.mobile/.providers.WebLoginActivity t477}
+    mFixedRotationLaunchingApp=null
+>   mObscuringWindow=Window{1c0153b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+    mLastWakeLockHoldingWindow=null
+>       mPreferredTopFocusableRootTask=Task{5652bbc #477 type=standard A=10233:com.aiquota.mobile}
+>       mLastFocusedRootTask=Task{5652bbc #477 type=standard A=10233:com.aiquota.mobile}
+        Application tokens in top down Z order:
+>       * Task{5652bbc #477 type=standard A=10233:com.aiquota.mobile U=0 visible=true visibleRequested=true mode=fullscreen translucent=false sz=1}
+          bounds=[0,0][1080,2400]
+>         * ActivityRecord{122083477 u0 com.aiquota.mobile/.providers.WebLoginActivity t477}
+        * Task{dcdaf6f #1 type=home U=0 visible=false visibleRequested=false mode=fullscreen translucent=true sz=1}
+>     mFocusedWindow=Window{1c0153b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>     mTopFullscreenOpaqueWindowState=Window{1c0153b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>     mSystemUiControllingWindow=Window{1c0153b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>     mSystemBarColorApps={ActivityRecord{122083477 u0 com.aiquota.mobile/.providers.WebLoginActivity t477}}
+>     mNavBarColorWindowCandidate=Window{1c0153b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>     mNavBarBackgroundWindowCandidate=Window{1c0153b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+      mLastStatusBarAppearanceRegions=
+>       Window{1c0153b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+      mImeInsetsConsumed=false
+>       Window{1c0153b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}:
+          InsetsSourceControl: {3 mType=ime mSurfacePosition=Point(0, 132) mInsetsHint=Insets{left=0, top=0, right=0, bottom=0} mLeash=null}
+>         mControlTarget=Window{1c0153b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+          mImeShowing=false mLastDrawn=false
+>         mControlTarget=Window{1c0153b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+        InsetsSourceProvider
+>         mControlTarget=Window{1c0153b u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+    InsetsPolicy
+>         (fullscreen) Task{5652bbc #477 type=standard A=10233:com.aiquota.mobile}
+  
+>   VisibleActivityProcess:[ ProcessRecord{e7623cb 31446:com.aiquota.mobile/u0a233}]
+    NumNonAppVisibleWindowUidMap:[ 10195:3 10192:1]
+-- logs --
+06-30 05:51:41.407 I/AIQuotaDebugCookie(31446): provider=codex debugCookieRestore=true reason=login_start source=external urlCount=20 cookieCount=397
+06-30 05:51:41.727 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:51:41.727 D/AIQuotaLogin(31446): provider=codex capturedNativeHeaders path=/codex/cloud/settings/analytics names=Accept|Upgrade-Insecure-Requests|User-Agent|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 05:51:41.791 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/codex/cloud/settings/analytics
+06-30 05:51:43.295 D/AIQuotaLogin(31446): provider=codex navigate=https://chatgpt.com/
+06-30 05:51:43.479 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/client-CH2DCQWp.js?keys=worker_version
+06-30 05:51:43.494 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/client-BgI73up8.js?keys=worker_version
+06-30 05:51:43.500 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/react-stable-Bzq9cI-a.js?keys=worker_version
+06-30 05:51:43.504 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/app-CGw-yMgf.css?keys=worker_version
+06-30 05:51:43.504 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/client-shared-CJY0rkyW.js?keys=worker_version
+06-30 05:51:43.511 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/rolldown-runtime-QTnfLwEv.js?keys=worker_version
+06-30 05:51:43.512 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/ko-KR-CUSx9lTO.js?keys=worker_version
+06-30 05:51:43.569 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/scripts/declarative-partial-updates-c9a8e7b1b6de.js?keys=worker_version
+06-30 05:51:43.763 D/installd(  586): Purging /data/data/com.android.vending/cache/store_app_usage_logs_background/com.google.hyunmin.kang27%40gmail.com size=8192 mod=1782790548 from UID=10153 used=397312 quota=18324879 ratio=216
+06-30 05:51:43.763 D/installd(  586): Purging /data/data/com.android.vending/cache/game_usage_database.db.lck size=4096 mod=1782790550 from UID=10153 used=331776 quota=18324879 ratio=181
+06-30 05:51:43.789 D/installd(  586): Purging /data/data/com.android.vending/cache/store_app_usage_logs_background/com.google.hyunmin.kang27%40gmail.com.metalog/logs_upload_attempt.log size=4096 mod=1782798657 from UID=10153 used=151552 quota=18324879 ratio=82
+06-30 05:51:43.789 D/installd(  586): Purging /data/data/com.android.vending/cache/store_app_usage_logs_background/com.google.hyunmin.kang27%40gmail.com.metalog/play_metalog.log size=8192 mod=1782798657 from UID=10153 used=147456 quota=18324879 ratio=80
+06-30 05:51:43.789 D/installd(  586): Purging /data/data/com.android.vending/cache/store_app_usage_logs_background/com.google.hyunmin.kang27%40gmail.com.metalog size=8192 mod=1782798657 from UID=10153 used=139264 quota=18324879 ratio=75
+06-30 05:51:43.789 D/installd(  586): Purging /data/data/com.android.vending/cache/store_app_usage_logs_background size=8192 mod=1782798657 from UID=10153 used=131072 quota=18324879 ratio=71
+06-30 05:51:43.847 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/sentinel/chat-requirements/prepare
+06-30 05:51:43.867 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/conversation/prepare
+06-30 05:51:43.935 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/vendor-stable-Dfq6nK2i.js?keys=worker_version
+06-30 05:51:43.954 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:51:44.069 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/mobile-prompt-typeahead-CODpjJW-.js?keys=worker_version
+06-30 05:51:44.139 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/mobile-sidebar-BSU2ib7L.js?keys=worker_version
+06-30 05:51:44.298 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/images/chatgpt-icon-48x48.png
+06-30 05:51:44.299 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/events/page-view
+06-30 05:51:44.304 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/favicon.ico
+06-30 05:51:44.319 I/AIQuotaLoginTiming(31446): codex pageFinished=3497ms host=chatgpt.com
+06-30 05:51:44.336 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/events/statsc/flush
+06-30 05:51:44.336 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/events/performance
+06-30 05:51:46.253 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:51:47.457 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:51:47.614 D/AIQuotaLoginConsole(31446): provider=codex consoleLevel=WARNING line=0 message=The resource https://chatgpt.com/cdn/assets/global-modals-5n50n0lo.css was preloaded using link preload in Early Hints but not used within a few seconds from the window's load event.
+06-30 05:51:47.614 D/AIQuotaLoginConsole(31446): provider=codex consoleLevel=WARNING line=0 message=The resource https://chatgpt.com/cdn/assets/conversation-small-bnwwp2d9.css was preloaded using link preload in Early Hints but not used within a few seconds from the window's load event.
+06-30 05:51:47.614 D/AIQuotaLoginConsole(31446): provider=codex consoleLevel=WARNING line=0 message=The resource https://chatgpt.com/cdn/assets/root-jrecj1h9.css was preloaded using link preload in Early Hints but not used within a few seconds from the window's load event.
+06-30 05:51:47.614 D/AIQuotaLoginConsole(31446): provider=codex consoleLevel=WARNING line=0 message=The resource https://chatgpt.com/cdn/assets/codex-analytics-tabs-jfs725i2.css was preloaded using link preload in Early Hints but not used within a few seconds from the window's load event.
+06-30 05:51:47.948 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:51:48.461 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:51:49.040 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/events/business
+06-30 05:51:50.659 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:51:52.878 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:51:54.386 D/AIQuotaLogin(31446): provider=codex resource=https://chatgpt.com/unauth-mweb/events/performance
+06-30 05:51:55.073 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:51:56.431 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:51:56.931 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:51:57.274 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:51:59.439 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:51:59.537 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:51:59.939 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:52:01.730 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:52:03.937 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:52:05.455 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:52:05.955 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:52:06.131 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:52:08.338 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:52:10.548 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:52:12.742 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:52:14.478 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:52:14.949 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:52:14.978 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)

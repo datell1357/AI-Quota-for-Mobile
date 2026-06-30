@@ -1,0 +1,147 @@
+=== explicit_debug_login_activity ===
+am start=com.aiquota.mobile/.debug.ProviderLoginDebugActivity provider_id=claude
+=== activity_summary ===
+mLastPausedActivity: ActivityRecord{31390972 u0 com.aiquota.mobile/.debug.ProviderLoginDebugActivity t-1 f}}
+topResumedActivity=ActivityRecord{251984130 u0 com.aiquota.mobile/.providers.WebLoginActivity t459}
+* Hist  #0: ActivityRecord{251984130 u0 com.aiquota.mobile/.providers.WebLoginActivity t459}
+Intent { xflg=0x4 cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras) }
+mActivityComponent=com.aiquota.mobile/.providers.WebLoginActivity
+windows=[Window{5664a5 u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}]
+* Task{7dfc24e #2 type=home I=com.google.android.apps.nexuslauncher/.NexusLauncherActivity U=0 rootTaskId=1 visible=false visibleRequested=false mode=fullscreen translucent=true sz=2}
+mLastPausedActivity: ActivityRecord{167040275 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t2}
+* Hist  #1: ActivityRecord{167040275 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t2}
+packageName=com.google.android.apps.nexuslauncher processName=com.google.android.apps.nexuslauncher
+app=ProcessRecord{e1af46a 1173:com.google.android.apps.nexuslauncher/u0a192}
+Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity (has extras) }
+rootOfTask=true task=Task{7dfc24e #2 type=home I=com.google.android.apps.nexuslauncher/.NexusLauncherActivity}
+mActivityComponent=com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+=== redacted_log_summary ===
+06-30 01:15:19.632   691  1078 I ActivityTaskManager: START u0 {flg=0x10000000 xflg=0x4 cmp=com.aiquota.mobile/.debug.ProviderLoginDebugActivity (has extras)} with LAUNCH_MULTIPLE from uid 2000 (com.android.shell) (BAL_ALLOW_PERMISSION) result code=0
+06-30 01:15:20.720   691  1739 V ActivityTaskManager: TaskLaunchParamsModifier: phase=3 task=Task{282160b #459 type=standard A=10233:com.aiquota.mobile} activity=ActivityRecord{251984130 u0 com.aiquota.mobile/.providers.WebLoginActivity t-1} display-area-from-source=DefaultTaskDisplayArea@152657951 display-id=0 task-display-area-windowing-mode=1 suggested-display-area=DefaultTaskDisplayArea@152657951 inherit-from-source=fullscreen non-freeform-task-display-area display-area=DefaultTaskDisplayArea@152657951 skip-bounds-fullscreen
+06-30 01:15:20.720   691  1739 I ActivityTaskManager: START u0 {xflg=0x4 cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras)} with LAUNCH_MULTIPLE from uid 10233 (com.aiquota.mobile) (sr=31390972) (BAL_ALLOW_VISIBLE_WINDOW) result code=0
+06-30 01:15:21.139  8785  8873 D AIQuotaLogin: provider=claude resource=https://claude.ai/login
+06-30 01:15:21.372   691   730 I ActivityTaskManager: Displayed com.aiquota.mobile/.providers.WebLoginActivity for user 0: +1s752ms
+06-30 01:15:22.735  8785  8884 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/index-B82OgZ56.js
+06-30 01:15:22.736  8785  8886 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-ant-cds-BtKAHr1a.css
+06-30 01:15:22.737  8785  8887 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c4b350ac1-BjS1Z-Ak.css
+06-30 01:15:22.738  8785  8947 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c6a992d55-D6VvAlbr.css
+06-30 01:15:22.740  8785  8949 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cec18ad9a-Dsg00bu0.css
+06-30 01:15:22.740  8785  8946 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/ce169033d-DfR1gHst.css
+06-30 01:15:22.740  8785  8914 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c9f4bb49e-o73uZ2YJ.css
+06-30 01:15:22.741  8785  8950 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c66fc489e-2VcCjn5t.woff2
+06-30 01:15:22.742  8785  8952 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c0f671921-4kflg3DM.woff2
+06-30 01:15:22.746  8785  8948 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cc27851ad-DDVos-BJ.woff2
+06-30 01:15:22.751  8785  8948 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-react-B9b0-tId.js
+06-30 01:15:22.754  8785  8874 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-infra-DayZK7Ds.js
+06-30 01:15:22.755  8785  8953 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-zod-D1-NLVm9.js
+06-30 01:15:22.767  8785  8948 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-virtual-BeVCXfUM.js
+06-30 01:15:22.767  8785  8884 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-radix-U7ZeuT9Q.js
+06-30 01:15:22.768  8785  8887 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-base-ui-BwAGujkA.js
+06-30 01:15:22.769  8785  8914 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-ant-cds-D9VFnKaH.js
+06-30 01:15:22.770  8785  8947 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-intl-mNhrNbcK.js
+06-30 01:15:22.772  8785  8886 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-zustand-jW-g0LZT.js
+06-30 01:15:22.774  8785  8949 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-icons-BrRhV2ic.js
+06-30 01:15:22.776  8785  8950 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-router-CwO9Xc7m.js
+06-30 01:15:22.776  8785  8952 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-query-Dcbhy0F-.js
+06-30 01:15:22.777  8785  8874 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-motion-eWW5mfht.js
+06-30 01:15:22.777  8785  8953 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-luxon-CuMIhNDL.js
+06-30 01:15:22.778  8785  8948 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-ant-icons-BssqglTW.js
+06-30 01:15:22.779  8785  8956 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-growthbook-BCpTXd5u.js
+06-30 01:15:22.779  8785  8955 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c4b350ac1-D1lR-ldq.js
+06-30 01:15:22.779  8785  8951 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/vendor-lodash-CyWU4F8s.js
+06-30 01:15:22.780  8785  8954 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cc2e285cb-CeObzxj2.js
+06-30 01:15:22.780  8785  8957 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c0e977562-S2jBH5i3.js
+06-30 01:15:22.780  8785  8961 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c85adc124-Cs4gPTZr.js
+06-30 01:15:22.782  8785  8960 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c009a87a0-CuoHvZ-z.js
+06-30 01:15:22.786  8785  8963 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c5c6275f4-C-_AyyKx.js
+06-30 01:15:22.786  8785  8884 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c1f96d614-DYMxSo_y.js
+06-30 01:15:22.787  8785  8959 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cff2fc0b5-DQOFa6OA.js
+06-30 01:15:22.793  8785  8887 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c12f02e29-Dm67812M.js
+06-30 01:15:22.794  8785  8947 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c5f4e1303-C1MkvflN.js
+06-30 01:15:22.794  8785  8949 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c40b9b8f5-DPJWqGk_.js
+06-30 01:15:22.795  8785  8964 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cc2dfdfd3-CMGi8ms3.js
+06-30 01:15:22.795  8785  8958 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c26148d62-Hvb93ZQQ.js
+06-30 01:15:22.795  8785  8914 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c8c9a078e-C1TuQCw1.js
+06-30 01:15:22.796  8785  8950 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cab79e57d-6tSe3dRg.js
+06-30 01:15:22.796  8785  8952 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c5669b8e4-u-WKh29k.js
+06-30 01:15:22.796  8785  8962 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cbf215181-DYd12PAP.js
+06-30 01:15:22.798  8785  8968 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c82022b5f-CAu-veWy.js
+06-30 01:15:22.799  8785  8967 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cbf688cef-TgLplV_5.js
+06-30 01:15:22.800  8785  8966 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c627fcdb6-DPHEi1Gx.js
+06-30 01:15:22.801  8785  8969 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c2591c98b-fRTmRkWx.js
+06-30 01:15:22.801  8785  8953 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cdd5b9598-CnaclBmI.js
+06-30 01:15:22.802  8785  8886 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c93f725a0-DF9Tb2zH.js
+06-30 01:15:22.803  8785  8948 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/ce169033d-CXZr5nBX.js
+06-30 01:15:22.804  8785  8971 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c9e81e7b9-Dw0tb3S8.js
+06-30 01:15:22.804  8785  8946 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cac5c74b6-CZ383mD6.js
+06-30 01:15:22.806  8785  8965 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cb3073067-__mruSJO.js
+06-30 01:15:22.808  8785  8874 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cf981200e-BWrEnmaq.js
+06-30 01:15:22.808  8785  8970 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cec18ad9a-Cc6mLKhl.js
+06-30 01:15:22.809  8785  8974 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/ca8998c31-CMMoA4Na.js
+06-30 01:15:22.809  8785  8972 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c6a992d55-CVByrFJX.js
+06-30 01:15:22.810  8785  8976 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c1d7d8319-B6D8NbuI.js
+06-30 01:15:22.810  8785  8975 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c37d47403-DTwuM8Lv.js
+06-30 01:15:22.811  8785  8977 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/ce76f5ee3-DC8OZWBQ.js
+06-30 01:15:22.811  8785  8978 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c5bfbf000-zY2zjtJ6.js
+06-30 01:15:22.822  8785  8982 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c9f4bb49e-B9XqTGOS.js
+06-30 01:15:22.825  8785  8981 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cf393db83-Cwwpefxe.js
+06-30 01:15:22.825  8785  8980 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c9bba154c-BZVVAymJ.js
+06-30 01:15:22.825  8785  8983 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c495d62a5-DaU2Nx7i.js
+06-30 01:15:22.825  8785  8973 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c1d96b207-DbEaHcXX.js
+06-30 01:15:22.826  8785  8979 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c2eed10ca-Cab2Fex9.js
+06-30 01:15:22.827  8785  8984 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cfb3ed62b-BU2wH-WL.js
+06-30 01:15:22.827  8785  8985 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cbaad2c48-hH3WhoR9.js
+06-30 01:15:22.827  8785  8956 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c552078f2-D8DaDl1U.js
+06-30 01:15:23.434  8785  8873 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cf1a02a1a-CnIZRMjU.css
+06-30 01:15:23.524  8785  8873 D AIQuotaLogin: provider=claude resource=https://claude.ai/edge-api/bootstrap?keys=statsig_hashing_algorithm|growthbook_format|include_system_prompts
+06-30 01:15:23.587  8785  8874 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cf1a02a1a-DuoULJQ3.js
+06-30 01:15:23.590  8785  8873 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c6a992d55-BI9ye-si.js
+06-30 01:15:23.592  8785  8874 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c6a992d55-DAVAJ7ow.js
+06-30 01:15:23.771  8785  8873 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cded40f2a-BM99Zec0.css
+06-30 01:15:23.773  8785  8874 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cfcbb3627-BN1_o_ME.css
+06-30 01:15:23.775  8785  8873 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c1306152d-C5vT29Ee.css
+06-30 01:15:23.818  8785  8873 D AIQuotaLogin: provider=claude resource=https://claude.ai/i18n/ko-KR.json
+06-30 01:15:23.819  8785  8874 D AIQuotaLogin: provider=claude resource=https://claude.ai/i18n/dynamic/ko-KR.json
+06-30 01:15:23.819  8785  8881 D AIQuotaLogin: provider=claude resource=https://claude.ai/i18n/ko-KR.overrides.json
+06-30 01:15:23.838  8785  8873 D AIQuotaLogin: provider=claude resource=https://a-cdn.anthropic.com/v1/projects/LKJN8LsLERHEOXkw487o7qCTFOrGPimI/settings
+06-30 01:15:23.856  8785  8874 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c632c9594-WU2ybglb.js
+06-30 01:15:23.912  8785  8874 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c6a992d55-G1KFUvJF.js
+06-30 01:15:23.951  8785  8873 D AIQuotaLogin: provider=claude resource=https://s-cdn.anthropic.com/s.js
+06-30 01:15:23.954  8785  8873 D AIQuotaLogin: provider=claude resource=https://a.claude.ai/isolated-segment.html?keys=v
+06-30 01:15:23.965  8785  8873 D AIQuotaLogin: provider=claude resource=https://claude.ai/api/event_logging/v2/batch
+06-30 01:15:23.997  8785  8874 D AIQuotaLogin: provider=claude resource=https://claude.ai/favicon.ico
+06-30 01:15:24.002  8785  8881 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cc656fb20-CeBBPbt6.js
+06-30 01:15:24.005  8785  8873 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c41323917-f7GpSOVA.js
+06-30 01:15:24.005  8785  8874 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c6a9356e8-BLxgT53I.js
+06-30 01:15:24.006  8785  8886 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c702a4eef-BetwWVwL.js
+06-30 01:15:24.007  8785  8884 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c029a409d-BJw_2ERH.js
+06-30 01:15:24.008  8785  8887 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c8901fcbe-CigHqoOT.js
+06-30 01:15:24.008  8785  8914 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cded40f2a-C0W-6ZYt.js
+06-30 01:15:24.008  8785  8947 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c81dd7232-DsFN8xWz.js
+06-30 01:15:24.009  8785  8946 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c62343a9d-BQAfZ5JE.js
+06-30 01:15:24.009  8785  8948 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c56e0b5dd-H-BasfZo.js
+06-30 01:15:24.009  8785  8949 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c05c5ea16-Cz1C6Ed8.js
+06-30 01:15:24.009  8785  8881 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c1306152d-kezAIYs5.js
+06-30 01:15:24.011  8785  8886 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c70085683-CDuUnh53.js
+06-30 01:15:24.011  8785  8873 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c3a484033-C4N7SMXe.js
+06-30 01:15:24.011  8785  8887 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c32f15cb4-B5T3jN3b.js
+06-30 01:15:24.011  8785  8914 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c0a6ffd1b-BbvZCEI6.js
+06-30 01:15:24.018  8785  8874 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c80d1c97d-6JfvIza2.js
+06-30 01:15:24.031  8785  8946 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/ccc72bfa9-2TM_ZAmv.js
+06-30 01:15:24.032  8785  8886 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cfcbb3627-C2p0UQRe.js
+06-30 01:15:24.032  8785  8884 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c26c22d52-OsqSoaqF.js
+06-30 01:15:24.032  8785  8887 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c03e51811-DebilQLI.png
+06-30 01:15:24.032  8785  8881 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/ce67964e7-CAX1bqSh.png
+06-30 01:15:24.034  8785  8947 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/cd02a42d9-Vq_H3mgS.svg
+06-30 01:15:24.035  8785  8914 D AIQuotaLogin: provider=claude resource=https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/c0826ec51-DOn1EQz_.js
+06-30 01:15:24.180  8785  8881 D AIQuotaLogin: provider=claude resource=https://a-cdn.anthropic.com/analytics.js/v1/LKJN8LsLERHEOXkw487o7qCTFOrGPimI/analytics.min.js
+06-30 01:15:24.181  8785  8886 D AIQuotaLogin: provider=claude resource=https://www.googletagmanager.com/gtag/js?keys=id
+06-30 01:15:24.192  8785  8874 D AIQuotaLogin: provider=claude resource=https://a-cdn.anthropic.com/next-integrations/actions/amplitude-plugins/f12a4347e1080fb88155.js
+06-30 01:15:24.381  8785  8873 D AIQuotaLogin: provider=claude resource=https://js.hcaptcha.com/1/api.js?keys=render|recaptchacompat|onload
+06-30 01:15:24.382  8785  8881 D AIQuotaLogin: provider=claude resource=https://accounts.google.com/gsi/client
+06-30 01:15:24.401  8785  8874 D AIQuotaLogin: provider=claude resource=https://a-cdn.claude.ai/params/sri/EEA5F558-D6AC-4C03-B678-AABF639EE69A
+06-30 01:15:24.440  8785  8881 D AIQuotaLogin: provider=claude resource=https://claude.ai/images/claude_spark_icon_clay_bg.svg
+06-30 01:15:24.442  8785  8884 D AIQuotaLogin: provider=claude resource=https://claude.ai/images/google.svg
+06-30 01:15:24.447  8785  8884 D AIQuotaLogin: provider=claude resource=https://claude.ai/images/home-page-assets/videos/claude_login_v2.mp4
+06-30 01:15:24.701  8785  8873 D AIQuotaLogin: provider=claude resource=https://a-cdn.anthropic.com/v1/projects/LKJN8LsLERHEOXkw487o7qCTFOrGPimI/settings
+06-30 01:15:24.759  8785  8873 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api

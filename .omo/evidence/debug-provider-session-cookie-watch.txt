@@ -1,0 +1,19 @@
+# Debug provider session cookie watch
+timestamp=2026-06-30T09:54:17.4125600+09:00
+## adb devices
+List of devices attached
+emulator-5554	device
+
+## install
+Performing Streamed Install
+Success
+## package
+versionCode=25 minSdk=26 targetSdk=35
+versionName=1.1.0
+lastUpdateTime=2026-06-30 00:53:56
+## launch
+Starting: Intent { cmp=com.aiquota.mobile/.MainActivity }
+## activity
+topResumedActivity=ActivityRecord{265164851 u0 com.aiquota.mobile/.MainActivity t453}
+ResumedActivity: ActivityRecord{265164851 u0 com.aiquota.mobile/.MainActivity t453}
+RESULT=INSTALLED debug cookie watch build; snapshots will be captured on provider session reached events

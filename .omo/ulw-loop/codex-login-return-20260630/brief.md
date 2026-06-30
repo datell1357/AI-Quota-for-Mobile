@@ -1,0 +1,1 @@
+Fix Codex provider login flow so after a user logs in through the app, usage collection runs from the authenticated usage page and the app returns from the login page instead of remaining on ChatGPT. Preserve existing native/about:blank collection constraints and verify with failing-first tests plus Android real-surface evidence.

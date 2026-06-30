@@ -1,0 +1,6 @@
+warning: in the working copy of '.idea/misc.xml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/WebLoginActivityNativeBridgeTest.kt', LF will be replaced by CRLF the next time Git touches it

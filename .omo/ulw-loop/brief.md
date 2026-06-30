@@ -1,0 +1,1 @@
+Investigate without product-code edits why Codex usage collection still fails after ChatGPT login and the app remains on the ChatGPT page; confirm root cause from runtime evidence and report an evidence-bound remediation plan.

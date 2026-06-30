@@ -1,0 +1,13 @@
+{
+  "goal": {
+    "threadId": "019f132b-48a7-7812-8c79-74541e487332",
+    "objective": "Complete the durable ulw-loop plan in .omo/ulw-loop/codex-login-return-20260630/goals.json, including the authenticated Codex usage-page collection and app return fix, under the original brief constraints; use .omo/ulw-loop/codex-login-return-20260630/ledger.jsonl as the audit trail.",
+    "status": "complete",
+    "tokensUsed": 495351,
+    "timeUsedSeconds": 822,
+    "createdAt": 1782798494,
+    "updatedAt": 1782804754
+  },
+  "remainingTokens": null,
+  "completionBudgetReport": "Goal achieved."
+}

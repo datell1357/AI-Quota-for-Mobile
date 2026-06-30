@@ -1,0 +1,10 @@
+﻿artifactVerificationVerdict=APPROVE
+mainChecksPass=True
+artifactFilesPass=True
+gitDiffCheckExit=0
+gitStatusExit=0
+sanitizedMainMatches=D:\Vibe Project\AI Usage for Mobile\.omo\evidence\codex-login-return-20260630-final-qa\sanitized-main-artifact-matches.txt
+artifactFileAudit=D:\Vibe Project\AI Usage for Mobile\.omo\evidence\codex-login-return-20260630-final-qa\artifact-file-audit.txt
+gitDiffCheck=D:\Vibe Project\AI Usage for Mobile\.omo\evidence\codex-login-return-20260630-final-qa\git-diff-check.txt
+gitStatus=D:\Vibe Project\AI Usage for Mobile\.omo\evidence\codex-login-return-20260630-final-qa\git-status-porcelain.txt
+report=D:\Vibe Project\AI Usage for Mobile\.omo\evidence\codex-login-return-20260630-final-qa\qa-report.md

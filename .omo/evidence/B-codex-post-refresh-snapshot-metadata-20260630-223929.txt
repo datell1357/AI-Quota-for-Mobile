@@ -1,0 +1,14 @@
+﻿runStamp=20260630-223418
+postStamp=20260630-223929
+pullExit=0
+deviceSnapshotPath=/sdcard/Android/data/com.aiquota.mobile/files/debug-session-cookies/codex.json
+localPostRefreshSnapshot=.omo/private/provider-session-cookies/codex-post-refresh-20260630-223929.json
+provider=codex
+reason=background_webview_snapshot
+capturedAt=2026-06-30T13:38:49.849443Z
+topLevelKeys=provider,capturedAt,reason,cookies,nativeAuthContext
+cookieUrlEntryCount=14
+nativeAuthContextPresent=True
+nativeAuthContextEntryCount=4
+expectedAuthHeaderNamesPresent=Authorization|ChatGPT-Account-ID|OAI-Session-Id
+metadataResult=True

@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 2,
+  "teamId": "cde26918-31ce-4822-9ad7-ad75b0d95b68",
+  "teamName": "codex-native-auth-context",
+  "sessionName": "codex native auth context restore",
+  "sessionId": "019f132b-48a7-7812-8c79-74541e487332",
+  "threadTitleConvention": "[codex-native-auth-context] <member name>",
+  "status": "archived",
+  "createdAt": "2026-06-30T13:00:07.646Z",
+  "updatedAt": "2026-06-30T13:41:02.039Z",
+  "archivedAt": "2026-06-30T13:41:02.037Z",
+  "leader": {
+    "kind": "main-session",
+    "sessionId": "019f132b-48a7-7812-8c79-74541e487332"
+  },
+  "communication": {
+    "memberLanguage": "english",
+    "replyToUserInUserLanguage": true
+  },
+  "worktree": {
+    "enabled": false,
+    "baseBranch": "dev",
+    "root": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\019f132b-48a7-7812-8c79-74541e487332\\worktrees"
+  },
+  "paths": {
+    "dir": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\019f132b-48a7-7812-8c79-74541e487332",
+    "team": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\019f132b-48a7-7812-8c79-74541e487332\\team.json",
+    "guide": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\019f132b-48a7-7812-8c79-74541e487332\\guide.md",
+    "artifacts": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\019f132b-48a7-7812-8c79-74541e487332\\artifacts"
+  },
+  "members": [
+    {
+      "id": "A",
+      "name": "codex-session-snapshot",
+      "focus": "Codex provider native auth context persistence and restore in provider login/background files",
+      "lens": "area",
+      "deliverable": "Minimal code and tests that save and restore Codex debug native auth context alongside cookies without DOM fallback or secret logging",
+      "threadId": "019f189e-00fd-76f1-888f-81c7d7bddef2",
+      "threadTitle": "[codex-native-auth-context] codex-session-snapshot",
+      "cwd": "D:\\Vibe Project\\AI Usage for Mobile",
+      "worktree": {
+        "path": null,
+        "branch": null
+      },
+      "status": "archived"
+    },
+    {
+      "id": "B",
+      "name": "codex-refresh-qa",
+      "focus": "Codex emulator refresh evidence after reinstall, cookie/header injection, and DOM fallback absence",
+      "lens": "perspective",
+      "deliverable": "Real-device QA evidence plan and execution after implementation: adb install -r only, Codex reset/restore/refresh, 3 minute logcat showing native bridge or exact blocker",
+      "threadId": "019f189e-9736-7431-81d6-ddcb046df96c",
+      "threadTitle": "[codex-native-auth-context] codex-refresh-qa",
+      "cwd": "D:\\Vibe Project\\AI Usage for Mobile",
+      "worktree": {
+        "path": null,
+        "branch": null
+      },
+      "status": "archived"
+    }
+  ],
+  "log": [
+    {
+      "ts": "2026-06-30T13:00:07.646Z",
+      "event": "created",
+      "detail": "team codex-native-auth-context"
+    },
+    {
+      "ts": "2026-06-30T13:00:07.716Z",
+      "event": "add-member",
+      "detail": "member A (area): Codex provider native auth context persistence and restore in provider login/background files"
+    },
+    {
+      "ts": "2026-06-30T13:00:07.779Z",
+      "event": "add-member",
+      "detail": "member B (perspective): Codex emulator refresh evidence after reinstall, cookie/header injection, and DOM fallback absence"
+    },
+    {
+      "ts": "2026-06-30T13:00:51.292Z",
+      "event": "bind-thread",
+      "detail": "member A -> thread 019f189e-00fd-76f1-888f-81c7d7bddef2"
+    },
+    {
+      "ts": "2026-06-30T13:01:31.324Z",
+      "event": "bind-thread",
+      "detail": "member B -> thread 019f189e-9736-7431-81d6-ddcb046df96c"
+    },
+    {
+      "ts": "2026-06-30T13:06:42.807Z",
+      "event": "set-status",
+      "detail": "member B -> reported: Phase 1 QA runbook ready; waiting for A DoneClaim/leader signal for Phase 2."
+    },
+    {
+      "ts": "2026-06-30T13:08:54.243Z",
+      "event": "set-status",
+      "detail": "member A -> reported: Implementation DoneClaim ready; focused/broader tests and diff check passed. B QA signaled."
+    },
+    {
+      "ts": "2026-06-30T13:08:54.313Z",
+      "event": "set-status",
+      "detail": "member B -> active: Leader signaled Phase 2 QA after A DoneClaim."
+    },
+    {
+      "ts": "2026-06-30T13:15:11.453Z",
+      "event": "set-status",
+      "detail": "member B -> blocked: Phase 2 blocked: user Codex login needed; cookie restore works but no auth-context header names captured, 403/401 observed."
+    },
+    {
+      "ts": "2026-06-30T13:40:32.186Z",
+      "event": "set-status",
+      "detail": "member B -> reported: Phase 2 PASS after updated APK + fresh login: nativeAuthContext metadata present, debugNativeAuthRestore=true, nativeUsage ok=true, no DOM fallback."
+    },
+    {
+      "ts": "2026-06-30T13:41:02.039Z",
+      "event": "archive",
+      "detail": "team archived; all members closed"
+    }
+  ]
+}

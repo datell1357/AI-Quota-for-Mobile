@@ -1,0 +1,15 @@
+﻿stamp=20260630-222735
+device=emulator-5554
+pullExit=0
+deviceSnapshotPath=/sdcard/Android/data/com.aiquota.mobile/files/debug-session-cookies/codex.json
+localFreshSnapshot=.omo/private/provider-session-cookies/codex-fresh-20260630-222735.json
+deviceLs=-rw-rw-rw- 1 shell ext_data_rw 83460 2026-06-30 13:25 /sdcard/Android/data/com.aiquota.mobile/files/debug-session-cookies/codex.json
+provider=codex
+reason=trusted_usage_payload
+capturedAt=2026-06-30T13:25:42.209173Z
+topLevelKeys=provider,capturedAt,reason,cookies
+cookieUrlEntryCount=14
+nativeAuthContextPresent=False
+nativeAuthContextEntryCount=0
+expectedAuthHeaderNamesPresent=none
+metadataResult=False

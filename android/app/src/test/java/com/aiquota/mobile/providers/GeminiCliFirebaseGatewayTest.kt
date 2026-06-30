@@ -63,7 +63,7 @@ class GeminiCliFirebaseGatewayTest {
     }
 
     @Test
-    fun googleProvidersRefreshNativeApiUsingStoredTokensAndFirebaseRefresh() {
+    fun antigravityRefreshesNativeApiUsingStoredTokensWhileGeminiUsesWebViewProfile() {
         val definitions = File("src/main/java/com/aiquota/mobile/providers/ProviderDefinitions.kt").readText()
         val refreshPlan = File("src/main/java/com/aiquota/mobile/providers/ProviderRefreshPlan.kt").readText()
         val geminiRepository = File("src/main/java/com/aiquota/mobile/providers/GeminiCliOAuthRepository.kt").readText()
@@ -87,7 +87,6 @@ class GeminiCliFirebaseGatewayTest {
         assertTrue(antigravityRepository.contains("AntigravityFirebaseGateway(appContext).refreshAccessToken(refreshToken)"))
         assertFalse(appShell.contains("GeminiCliOAuthRepository(appContext).fetchUsagePayloadFromStoredCredential()"))
         assertFalse(appShell.contains("AntigravityOAuthRepository(appContext).fetchUsagePayloadFromStoredCredential()"))
-        assertTrue(backgroundService.contains("GeminiCliOAuthRepository(applicationContext).fetchUsagePayloadFromStoredCredential()"))
         assertTrue(backgroundService.contains("AntigravityOAuthRepository(applicationContext).fetchUsagePayloadFromStoredCredential()"))
     }
 

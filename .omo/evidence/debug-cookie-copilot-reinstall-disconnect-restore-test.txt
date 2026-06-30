@@ -1,0 +1,23 @@
+=== reinstall_disconnect_restore_test ===
+provider=copilot
+appDataCleared=false
+disconnectViaUi=true
+appForegroundBeforeRefresh=true
+rawCookieValues=not_printed
+pushedSnapshot=2485 /sdcard/Android/data/com.aiquota.mobile/files/debug-session-cookies/copilot.json
+restoreFromExternal=True
+copilotPayload=True
+copilotSaveSnapshot=True
+copilotFailure=False
+=== redacted_log_summary ===
+06-30 02:15:18.296 13642 13642 I AIQuotaDebugRefresh: debugProviderRefresh=true provider=copilot
+06-30 02:15:18.345 13642 13642 I AIQuotaDebugCookie: provider=copilot debugCookieRestore=true reason=background_collection source=external urlCount=3 cookieCount=28
+06-30 02:15:25.280 13642 13642 D AIQuotaBgRefreshService: outcome provider=copilot type=Payload
+06-30 02:15:25.283 13642 13642 D AIQuotaBgRefreshService: saveSnapshot provider=copilot source=webview lineCount=1 planPresent=true accountPresent=false
+06-30 02:15:25.298 13642 13642 I AIQuotaDebugCookie: provider=copilot debugCookieSnapshot=true reason=background_webview_snapshot urlCount=3 cookieCount=3
+06-30 02:16:18.434 13642 13642 I AIQuotaDebugCookie: provider=gemini debugCookieRestore=true reason=background_collection source=external urlCount=7 cookieCount=103
+06-30 02:16:20.775 13642 13642 I AIQuotaDebugCookie: provider=gemini debugCookieSnapshot=true reason=background_webview_snapshot urlCount=7 cookieCount=7
+06-30 02:16:20.885 13642 13642 I AIQuotaDebugCookie: provider=copilot debugCookieRestore=true reason=background_collection source=external urlCount=3 cookieCount=32
+06-30 02:16:26.604 13642 13642 D AIQuotaBgRefreshService: outcome provider=copilot type=Payload
+06-30 02:16:26.605 13642 13642 D AIQuotaBgRefreshService: saveSnapshot provider=copilot source=webview lineCount=1 planPresent=true accountPresent=false
+06-30 02:16:26.614 13642 13642 I AIQuotaDebugCookie: provider=copilot debugCookieSnapshot=true reason=background_webview_snapshot urlCount=3 cookieCount=3

@@ -16,7 +16,12 @@ object ProviderWebSessionClearPolicy {
 
     fun cookieUrls(providerId: ProviderId): List<String> {
         return when (providerId) {
-            ProviderId.CLAUDE -> listOf("https://claude.ai") + GOOGLE_AUTH_COOKIE_URLS
+            ProviderId.CLAUDE -> listOf(
+                "https://claude.ai",
+                "https://claude.ai/",
+                "https://www.claude.ai",
+                "https://www.claude.ai/"
+            ) + GOOGLE_AUTH_COOKIE_URLS
             ProviderId.CODEX -> listOf(
                 "https://chatgpt.com",
                 "https://chatgpt.com/auth/login",

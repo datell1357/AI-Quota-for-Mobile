@@ -1,0 +1,10 @@
+=== install_and_debug_refresh ===
+apk=app-debug.apk
+broadcast=com.aiquota.mobile.debug.REFRESH_PROVIDER provider_id=claude
+=== external_snapshot_check ===
+MISSING
+=== redacted_log_summary ===
+06-30 01:09:00.403  7998  7998 D AIQuotaBgRefreshService: collectorError provider=claude errorKind=claude_organization_unavailable retry=0 url= summary=root=provider|errorKind|message,provider=claude,collectorMode=none,lineCount=0,hasUsage=false,hasData=false,hasError=true
+06-30 01:09:00.404  7998  7998 D AIQuotaBgRefreshService: outcome provider=claude type=Failure
+06-30 01:09:00.405  7998  7998 W AIQuotaBgRefreshService: failure provider=claude kind=COLLECTOR_ERROR message=Background collector failed: claude_organization_unavailable
+06-30 01:09:00.410  7998  7998 I AIQuotaDebugCookie: provider=claude debugCookieSnapshot=false reason=background_webview_non_auth_failure cookieCount=0

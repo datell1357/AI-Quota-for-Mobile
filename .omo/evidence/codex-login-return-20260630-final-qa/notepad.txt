@@ -1,0 +1,9 @@
+﻿tier=LIGHT read-only artifact QA; no product behavior change under review execution
+skills=none; active manual QA instructions only
+started=2026-06-30T16:26:27.2841067+09:00
+successCriteria=main artifact exact flags; targeted test/build/install artifacts success; git diff --check clean
+scenario.QA-1=PowerShell artifact parser over .omo/ulw-loop/codex-login-return-20260630/android-surface-codex-cookie-restore-login-10.txt; observable all requested key/value matches found
+scenario.QA-2=PowerShell artifact file audit over targeted/build/install logs; observable non-empty and success evidence
+scenario.QA-3=git diff --check; observable exit code 0
+selfReview=Read-only audit avoided raw artifact dumps and inspected only sanitized matches plus file success markers.
+verdict=APPROVE

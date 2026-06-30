@@ -1,0 +1,4 @@
+﻿asset_exists=False
+forbidden_main_matches=none
+gemini_native_dom_matches=none
+gemini_collector_dom_matches=none

@@ -1,0 +1,7 @@
+﻿== install ==
+Performing Streamed Install
+Success
+== push cookie ==
+.omo/private/provider-session-cookies/gemini.json: 1 file pushed, 0 skipped. 56.4 MB/s (14392 bytes in 0.000s)
+== pushed ls ==
+-rw-rw-rw- 1 shell ext_data_rw 14392 2026-06-30 01:48 /sdcard/Android/data/com.aiquota.mobile/files/debug-session-cookies/gemini.json

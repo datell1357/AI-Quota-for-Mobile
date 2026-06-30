@@ -1,0 +1,41 @@
+# Debug cookie reinject Claude check
+timestamp=2026-06-30T10:01:54.0017371+09:00
+## install
+Performing Streamed Install
+Success
+## package
+versionCode=25 minSdk=26 targetSdk=35
+versionName=1.1.0
+lastUpdateTime=2026-06-30 01:01:32
+## clear logcat and launch claude login surface
+Starting: Intent { cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras) }
+System.Management.Automation.RemoteException
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 xflg=0x4 cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras) } from null (pid=7018, uid=2000) not exported from uid 10233
+	at com.android.server.wm.Session$$ExternalSyntheticBUOutline1.m(R8$$SyntheticClass:0)
+	at com.android.server.wm.ActivityTaskSupervisor.checkStartAnyActivityPermission(ActivityTaskSupervisor.java:1253)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:1299)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:911)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1349)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1293)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3854)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:900)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:267)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:39)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:11183)
+	at android.os.Binder.shellCommand(Binder.java:1088)
+	at android.os.Binder.onTransact(Binder.java:946)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5876)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:3288)
+	at android.os.Binder.execTransactInternal(Binder.java:1369)
+	at android.os.Binder.execTransact(Binder.java:1323)
+## activity
+topResumedActivity=ActivityRecord{167040275 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t2}
+ResumedActivity: ActivityRecord{167040275 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t2}
+## debug cookie log redacted
+## external snapshot file check
+/system/bin/sh: syntax error: unexpected 'then'
+## host backup path
+HOST_BACKUP_SKIPPED no external snapshot file
+RESULT=RECORDED no raw cookie values printed

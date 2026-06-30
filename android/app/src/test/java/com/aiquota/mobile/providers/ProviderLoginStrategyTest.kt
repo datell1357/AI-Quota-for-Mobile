@@ -22,7 +22,7 @@ class ProviderLoginStrategyTest {
         assertTrue(ProviderLoginStrategy.shouldRecoverCodexLocalAuthCallback(callbackUrl))
         assertTrue(ProviderLoginStrategy.CODEX_CALLBACK_RECOVERY_URL.startsWith("https://chatgpt.com/"))
         assertTrue(ProviderLoginStrategy.CODEX_CALLBACK_RECOVERY_URL.contains("/codex/cloud/settings/analytics"))
-        assertTrue(
+        assertFalse(
             ProviderWebCollectorScripts.shouldRunCollector(
                 ProviderId.CODEX,
                 ProviderLoginStrategy.CODEX_CALLBACK_RECOVERY_URL,

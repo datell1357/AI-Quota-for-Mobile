@@ -6,6 +6,7 @@ import com.aiquota.mobile.local.ProviderRefreshState
 import com.aiquota.mobile.local.ProviderUsageLine
 import com.aiquota.mobile.local.ProviderUsageSnapshot
 import com.aiquota.mobile.local.UsageSeverity
+import kotlin.math.roundToInt
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -56,6 +57,9 @@ object ProviderSnapshotCodec {
             .put("label", label)
             .putNullable("remainingPercent", remainingPercent)
             .putNullable("usedPercent", usedPercent)
+            .putNullable("usedAmount", usedAmount)
+            .putNullable("limitAmount", limitAmount)
+            .putNullable("remainingAmount", remainingAmount)
             .putNullable("resetsAt", resetsAt)
             .putNullable("resetText", resetText)
             .put("remainingText", remainingText)
@@ -94,24 +98,36 @@ object ProviderSnapshotCodec {
     }
 
     private fun JSONObject.toUsageLine(providerId: ProviderId): ProviderUsageLine {
+        val remainingPercent = optionalFloatRatio("remainingPercent")
+        val unit = optString("unit").ifBlank { "percent" }
         return ProviderUsageLine(
             key = optString("key").ifBlank { "${providerId.storageId}:usage" },
             label = optString("label").ifBlank { "Usage" },
-            remainingPercent = optionalFloatRatio("remainingPercent"),
-            remainingText = optString("remainingText").ifBlank {
-                optionalFloatRatio("remainingPercent")?.let { "${(it * 100f).toInt()}% left" }.orEmpty()
-            },
+            remainingPercent = remainingPercent,
+            remainingText = remainingText(providerId, unit, remainingPercent),
+            usedAmount = optionalDouble("usedAmount"),
+            limitAmount = optionalDouble("limitAmount"),
+            remainingAmount = optionalDouble("remainingAmount"),
             resetsAt = optionalString("resetsAt"),
             resetText = optionalString("resetText"),
             detailText = optionalString("detailText"),
             severity = enumValue(optString("severity"), UsageSeverity.UNKNOWN),
-            unit = optString("unit").ifBlank { "percent" },
+            unit = unit,
             category = optionalString("category"),
             windowText = optionalString("windowText"),
             startsAt = optionalString("startsAt"),
             sourceLabel = optString("source").ifBlank { "provider-api" },
             confidence = optDouble("confidence", 0.0).toFloat().coerceIn(0f, 1f)
         )
+    }
+
+    private fun JSONObject.remainingText(providerId: ProviderId, unit: String, remainingPercent: Float?): String {
+        if (providerId == ProviderId.GEMINI && unit == "requests" && remainingPercent != null) {
+            return "${(remainingPercent.coerceIn(0f, 1f) * 100f).roundToInt()}% left"
+        }
+        return optString("remainingText").ifBlank {
+            remainingPercent?.let { "${(it.coerceIn(0f, 1f) * 100f).roundToInt()}% left" }.orEmpty()
+        }
     }
 
     private fun ProviderUsageSnapshot.requireUsageForConnectedState(): ProviderUsageSnapshot {
@@ -134,6 +150,11 @@ object ProviderSnapshotCodec {
         if (!has(key) || isNull(key)) return null
         val value = opt(key)?.toString()?.toDoubleOrNull() ?: return null
         return (if (value > 1.0) value / 100.0 else value).toFloat().coerceIn(0f, 1f)
+    }
+
+    private fun JSONObject.optionalDouble(key: String): Double? {
+        if (!has(key) || isNull(key)) return null
+        return opt(key)?.toString()?.toDoubleOrNull()
     }
 
     private fun JSONObject.putNullable(key: String, value: Any?): JSONObject {

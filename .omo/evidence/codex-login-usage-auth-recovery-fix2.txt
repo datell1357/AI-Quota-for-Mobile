@@ -1,0 +1,61 @@
+DoneClaim: codex-login-usage-auth-recovery fix2
+
+Scope constraints honored:
+- Did not execute start-work.
+- Did not inspect or modify .omo/boulder or plan checkboxes.
+- Did not stage or commit.
+- Did not revert unrelated dirty/untracked files.
+
+Changed files relevant to the three blockers:
+- android/app/src/main/java/com/aiquota/mobile/providers/CodexNativeCollectionRoutes.kt
+- android/app/src/main/java/com/aiquota/mobile/providers/CodexNativeHeaderSelector.kt
+- android/app/src/main/java/com/aiquota/mobile/providers/CodexNativeHeaderStore.kt
+- android/app/src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt
+- android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt
+- android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt
+- android/app/src/test/java/com/aiquota/mobile/providers/CodexNativeHeaderSelectorTest.kt
+- android/app/src/test/java/com/aiquota/mobile/providers/CodexNativeHeaderStoreTest.kt
+- android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt
+- android/app/src/test/java/com/aiquota/mobile/providers/WebLoginActivityNativeBridgeTest.kt
+
+Blocker coverage:
+1. ProviderBackgroundRefreshService now routes Codex native header capture and lookup through CodexNativeHeaderStore, the same shared retention helper used by WebLoginActivity. The helper preserves existing authenticated stored headers when a later capture lacks Authorization, ChatGPT-Account-ID, or OAI-Session-Id.
+2. Codex page-finished gating uses CodexNativeCollectionRoutes.shouldStartFromPageFinished. Behavior coverage asserts ChatGPT home and /codex are false, while Codex analytics and usage routes are true.
+3. Codex native header forwarding is covered at behavior boundaries: selector/store retention tests and ProviderNativeUsagePayloadFetcher.codexUsagePayloadForTest assert selected headers and WebView user agent reach native JSON fetches.
+
+Verification:
+- Command:
+  cd android; $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'; gradle testDebugUnitTest --tests 'com.aiquota.mobile.providers.CodexNativeHeaderSelectorTest' --tests 'com.aiquota.mobile.providers.WebLoginActivityNativeBridgeTest' --tests 'com.aiquota.mobile.providers.ProviderNativeUsagePayloadFetcherTest'
+- Result:
+  BUILD SUCCESSFUL in 3s
+  25 actionable tasks: 2 executed, 23 up-to-date
+
+- Command:
+  git diff --check
+- Result:
+  Exit 0. Warnings only: LF will be replaced by CRLF for existing dirty files.
+
+Remaining risk:
+- No emulator/manual Codex login QA was performed in this pass.
+- The worktree had pre-existing dirty and untracked files before this pass, including .idea and multiple .omo artifacts.
+
+Runtime follow-up by root:
+- Focused tests rerun:
+  cd android; $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'; gradle testDebugUnitTest --tests 'com.aiquota.mobile.providers.CodexNativeHeaderSelectorTest' --tests 'com.aiquota.mobile.providers.CodexNativeHeaderStoreTest' --tests 'com.aiquota.mobile.providers.WebLoginActivityNativeBridgeTest' --tests 'com.aiquota.mobile.providers.ProviderNativeUsagePayloadFetcherTest'
+  Result: BUILD SUCCESSFUL in 3s.
+- git diff --check: exit 0, line-ending warnings only.
+- assembleDebug: BUILD SUCCESSFUL in 7s.
+- Runtime install/surface evidence:
+  .omo/evidence/codex-login-usage-auth-recovery-runtime-final.txt
+  .omo/evidence/codex-login-usage-auth-recovery-login-surface-final.txt
+- Runtime result:
+  Installed app-debug.apk successfully on emulator-5554, package versionCode=25 versionName=1.1.0 lastUpdateTime=2026-06-29 13:38:41.
+  Opened MainActivity, entered Codex detail, tapped Connect, and reached com.aiquota.mobile/.providers.WebLoginActivity with UI title "Sign in to Codex".
+  WebView loaded chatgpt.com unauth-mweb resources, so full post-login usage collection could not be completed without user authentication.
+  Regression predicate: nativeCollectorStart=aboutblank reason=page_finished from=chatgpt.com/ was NOT_OBSERVED.
+  postLoginRedirect=analytics was NOT_OBSERVED because the session was unauthenticated.
+  wham/usage 401 was NOT_OBSERVED in this unauthenticated pre-login pass.
+
+Runtime QA status:
+- BLOCKED_BY_AUTH for full connected usage verification.
+- PASS for build/install/login-surface reachability and for the specific early page_finished about:blank regression predicate.

@@ -1,0 +1,9 @@
+=== live_watch_result ===
+snapshot=present bytes=19380
+hostPath=.omo\private\provider-session-cookies\claude.json
+rawCookieValues=not_printed
+=== redacted_log_tail ===
+06-30 01:38:34.628  9899  9899 I AIQuotaCollector: provider=claude collectorMode=webview-js inject host=claude.ai
+06-30 01:38:36.740  9899  9899 I AIQuotaCollector: provider=claude collectorMode=webview-js rawPayloadPresent=true
+06-30 01:38:36.780  9899  9899 I AIQuotaDebugCookie: provider=claude debugCookieSnapshot=true reason=trusted_usage_payload urlCount=10 cookieCount=10
+06-30 01:38:36.799  9899  9899 I AIQuotaCollector: provider=claude source=structured-script lineCount=3 planPresent=false accountPresent=false keptPreviousSnapshot=false

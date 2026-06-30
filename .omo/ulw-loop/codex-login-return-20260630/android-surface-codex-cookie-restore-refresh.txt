@@ -1,0 +1,22 @@
+scenario=push saved Codex debug cookie snapshot, trigger debug provider refresh, assert native Wham collection
+backup_exists=true
+cookie_push=true
+broadcast=Broadcasting: Intent { act=com.aiquota.mobile.debug.REFRESH_PROVIDER flg=0x400000 cmp=com.aiquota.mobile/.debug.ProviderRefreshDebugReceiver (has extras) }
+Broadcast completed: result=0
+snapshot_connectionState=missing
+snapshot_refreshState=missing
+snapshot_lines_empty=false
+snapshot_redacted_begin
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="updated_at">2026-06-30T06:06:49.250967Z</string>
+    <string name="provider_id">codex</string>
+    <string name="snapshot">{&quot;providers&quot;:[{&quot;providerId&quot;:&quot;codex&quot;,&quot;displayName&quot;:&quot;Codex&quot;,&quot;connectionState&quot;:&quot;CONNECTING&quot;,&quot;refreshState&quot;:&quot;REFRESHING&quot;,&quot;planLabel&quot;:null,&quot;account&quot;:null,&quot;updatedAt&quot;:&quot;2026-06-30T06:06:49.250967Z&quot;,&quot;statusUpdatedAt&quot;:&quot;2026-06-30T06:06:49.250967Z&quot;,&quot;message&quot;:&quot;Opening provider login&quot;,&quot;lines&quot;:[]}]}</string>
+</map>
+snapshot_redacted_end
+log_filtered_begin
+no_matching_log_lines
+log_filtered_end
+activity_begin
+topResumedActivity=ActivityRecord{167040275 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t2}
+activity_end

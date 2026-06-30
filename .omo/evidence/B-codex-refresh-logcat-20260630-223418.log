@@ -1,0 +1,79 @@
+--------- beginning of main
+06-30 13:34:44.644 I/AIQuotaDebugState(19616): debugProviderReset=true providers=codex
+06-30 13:34:44.762 I/AIQuotaDebugRefresh(19616): debugProviderRefresh=true provider=codex
+06-30 13:34:44.918 D/AIQuotaBgRefreshService(19616): cycleStart providers=codex
+06-30 13:34:45.662 I/AIQuotaDebugCookie(19616): provider=codex debugCookieRestore=true reason=background_collection source=external urlCount=14 cookieCount=373
+06-30 13:34:45.674 I/AIQuotaDebugCookie(19616): provider=codex debugNativeAuthRestore=true source=external nativeAuthContextCount=4 nativeAuthHeaderCount=12
+06-30 13:34:45.677 D/AIQuotaBgRefreshService(19616): load provider=codex start=chatgpt.com/api/auth/session warmUp=false request=1
+06-30 13:34:45.728 D/AIQuotaBgRefreshService(19616): capturedNativeHeaders provider=codex path=/api/auth/session names=Accept|Upgrade-Insecure-Requests|User-Agent|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 13:34:45.860 D/AIQuotaBgRefreshService(19616): redirectUsage provider=codex to=about:blank from=chatgpt.com/api/auth/session
+06-30 13:34:45.872 D/AIQuotaBgRefreshService(19616): pageFinished provider=codex url=chatgpt.com/api/auth/session
+06-30 13:34:45.923 D/AIQuotaBgRefreshService(19616): inject provider=codex url=
+06-30 13:34:46.010 D/AIQuotaBgRefreshService(19616): pageFinished provider=codex url=
+06-30 13:34:47.363 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=403 url=chatgpt.com/api/auth/session cookieHost=chatgpt.com
+06-30 13:34:47.442 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/me cookieHost=chatgpt.com
+06-30 13:34:48.477 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/accounts/check/v4-2023-04-27 cookieHost=chatgpt.com
+06-30 13:34:49.511 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/subscriptions cookieHost=chatgpt.com
+06-30 13:34:51.598 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=200 url=chatgpt.com/backend-api/wham/usage cookieHost=chatgpt.com
+06-30 13:34:51.608 D/AIQuotaNativeUsage(19616): nativeUsage provider=codex ok=true diagnostic=ok statuses=chatgpt.com/api/auth/session:403:|chatgpt.com/backend-api/me:403:|chatgpt.com/backend-api/accounts/check/v4-2023-04-27:403:|chatgpt.com/backend-api/subscriptions:403:|chatgpt.com/backend-api/wham/usage:200:
+06-30 13:34:51.613 D/AIQuotaBgRefreshService(19616): payload provider=codex url= summary=root=provider|usage|collectorMode,provider=codex,collectorMode=native-bridge,lineCount=0,hasUsage=true,hasData=false,hasError=false
+06-30 13:34:51.614 D/AIQuotaBgRefreshService(19616): outcome provider=codex type=Payload
+06-30 13:34:51.617 D/AIQuotaBgRefreshService(19616): saveSnapshot provider=codex source=webview lineCount=2 planPresent=false accountPresent=false
+06-30 13:34:51.664 I/AIQuotaDebugCookie(19616): provider=codex debugCookieSnapshot=true reason=background_webview_snapshot urlCount=14 cookieCount=14 nativeAuthContextCount=4 nativeAuthHeaderCount=12
+06-30 13:35:44.917 D/AIQuotaBgRefreshService(19616): cycleStart providers=codex
+06-30 13:35:45.321 I/AIQuotaDebugCookie(19616): provider=codex debugCookieRestore=true reason=background_collection source=external urlCount=14 cookieCount=373
+06-30 13:35:45.329 I/AIQuotaDebugCookie(19616): provider=codex debugNativeAuthRestore=true source=external nativeAuthContextCount=4 nativeAuthHeaderCount=12
+06-30 13:35:45.331 D/AIQuotaBgRefreshService(19616): load provider=codex start=chatgpt.com/api/auth/session warmUp=false request=2
+06-30 13:35:45.345 D/AIQuotaBgRefreshService(19616): capturedNativeHeaders provider=codex path=/api/auth/session names=Accept|Upgrade-Insecure-Requests|User-Agent|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 13:35:45.390 D/AIQuotaBgRefreshService(19616): redirectUsage provider=codex to=about:blank from=chatgpt.com/api/auth/session
+06-30 13:35:45.402 D/AIQuotaBgRefreshService(19616): pageFinished provider=codex url=chatgpt.com/api/auth/session
+06-30 13:35:45.422 D/AIQuotaBgRefreshService(19616): inject provider=codex url=
+06-30 13:35:45.424 D/AIQuotaBgRefreshService(19616): pageFinished provider=codex url=
+06-30 13:35:45.450 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=403 url=chatgpt.com/api/auth/session cookieHost=chatgpt.com
+06-30 13:35:46.455 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/me cookieHost=chatgpt.com
+06-30 13:35:46.998 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/accounts/check/v4-2023-04-27 cookieHost=chatgpt.com
+06-30 13:35:48.026 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/subscriptions cookieHost=chatgpt.com
+06-30 13:35:49.694 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=200 url=chatgpt.com/backend-api/wham/usage cookieHost=chatgpt.com
+06-30 13:35:49.696 D/AIQuotaNativeUsage(19616): nativeUsage provider=codex ok=true diagnostic=ok statuses=chatgpt.com/api/auth/session:403:|chatgpt.com/backend-api/me:403:|chatgpt.com/backend-api/accounts/check/v4-2023-04-27:403:|chatgpt.com/backend-api/subscriptions:403:|chatgpt.com/backend-api/wham/usage:200:
+06-30 13:35:49.700 D/AIQuotaBgRefreshService(19616): payload provider=codex url= summary=root=provider|usage|collectorMode,provider=codex,collectorMode=native-bridge,lineCount=0,hasUsage=true,hasData=false,hasError=false
+06-30 13:35:49.703 D/AIQuotaBgRefreshService(19616): outcome provider=codex type=Payload
+06-30 13:35:49.705 D/AIQuotaBgRefreshService(19616): saveSnapshot provider=codex source=webview lineCount=2 planPresent=false accountPresent=false
+06-30 13:35:49.763 I/AIQuotaDebugCookie(19616): provider=codex debugCookieSnapshot=true reason=background_webview_snapshot urlCount=14 cookieCount=14 nativeAuthContextCount=4 nativeAuthHeaderCount=12
+06-30 13:36:44.918 D/AIQuotaBgRefreshService(19616): cycleStart providers=codex
+06-30 13:36:45.274 I/AIQuotaDebugCookie(19616): provider=codex debugCookieRestore=true reason=background_collection source=external urlCount=14 cookieCount=373
+06-30 13:36:45.280 I/AIQuotaDebugCookie(19616): provider=codex debugNativeAuthRestore=true source=external nativeAuthContextCount=4 nativeAuthHeaderCount=12
+06-30 13:36:45.281 D/AIQuotaBgRefreshService(19616): load provider=codex start=chatgpt.com/api/auth/session warmUp=false request=3
+06-30 13:36:45.287 D/AIQuotaBgRefreshService(19616): capturedNativeHeaders provider=codex path=/api/auth/session names=Accept|Upgrade-Insecure-Requests|User-Agent|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 13:36:45.336 D/AIQuotaBgRefreshService(19616): redirectUsage provider=codex to=about:blank from=chatgpt.com/api/auth/session
+06-30 13:36:45.344 D/AIQuotaBgRefreshService(19616): pageFinished provider=codex url=chatgpt.com/api/auth/session
+06-30 13:36:45.363 D/AIQuotaBgRefreshService(19616): inject provider=codex url=
+06-30 13:36:45.367 D/AIQuotaBgRefreshService(19616): pageFinished provider=codex url=
+06-30 13:36:45.401 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=403 url=chatgpt.com/api/auth/session cookieHost=chatgpt.com
+06-30 13:36:46.405 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/me cookieHost=chatgpt.com
+06-30 13:36:47.440 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/accounts/check/v4-2023-04-27 cookieHost=chatgpt.com
+06-30 13:36:48.478 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/subscriptions cookieHost=chatgpt.com
+06-30 13:36:50.196 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=200 url=chatgpt.com/backend-api/wham/usage cookieHost=chatgpt.com
+06-30 13:36:50.197 D/AIQuotaNativeUsage(19616): nativeUsage provider=codex ok=true diagnostic=ok statuses=chatgpt.com/api/auth/session:403:|chatgpt.com/backend-api/me:403:|chatgpt.com/backend-api/accounts/check/v4-2023-04-27:403:|chatgpt.com/backend-api/subscriptions:403:|chatgpt.com/backend-api/wham/usage:200:
+06-30 13:36:50.200 D/AIQuotaBgRefreshService(19616): payload provider=codex url= summary=root=provider|usage|collectorMode,provider=codex,collectorMode=native-bridge,lineCount=0,hasUsage=true,hasData=false,hasError=false
+06-30 13:36:50.203 D/AIQuotaBgRefreshService(19616): outcome provider=codex type=Payload
+06-30 13:36:50.207 D/AIQuotaBgRefreshService(19616): saveSnapshot provider=codex source=webview lineCount=2 planPresent=false accountPresent=false
+06-30 13:36:50.264 I/AIQuotaDebugCookie(19616): provider=codex debugCookieSnapshot=true reason=background_webview_snapshot urlCount=14 cookieCount=14 nativeAuthContextCount=4 nativeAuthHeaderCount=12
+06-30 13:37:44.923 D/AIQuotaBgRefreshService(19616): cycleStart providers=codex
+06-30 13:37:45.302 I/AIQuotaDebugCookie(19616): provider=codex debugCookieRestore=true reason=background_collection source=external urlCount=14 cookieCount=373
+06-30 13:37:45.310 I/AIQuotaDebugCookie(19616): provider=codex debugNativeAuthRestore=true source=external nativeAuthContextCount=4 nativeAuthHeaderCount=12
+06-30 13:37:45.312 D/AIQuotaBgRefreshService(19616): load provider=codex start=chatgpt.com/api/auth/session warmUp=false request=4
+06-30 13:37:45.324 D/AIQuotaBgRefreshService(19616): capturedNativeHeaders provider=codex path=/api/auth/session names=Accept|Upgrade-Insecure-Requests|User-Agent|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 13:37:45.375 D/AIQuotaBgRefreshService(19616): redirectUsage provider=codex to=about:blank from=chatgpt.com/api/auth/session
+06-30 13:37:45.394 D/AIQuotaBgRefreshService(19616): pageFinished provider=codex url=chatgpt.com/api/auth/session
+06-30 13:37:45.401 D/AIQuotaBgRefreshService(19616): inject provider=codex url=
+06-30 13:37:45.402 D/AIQuotaBgRefreshService(19616): pageFinished provider=codex url=
+06-30 13:37:45.436 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=403 url=chatgpt.com/api/auth/session cookieHost=chatgpt.com
+06-30 13:37:46.445 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/me cookieHost=chatgpt.com
+06-30 13:37:47.485 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/accounts/check/v4-2023-04-27 cookieHost=chatgpt.com
+06-30 13:37:49.029 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/subscriptions cookieHost=chatgpt.com
+06-30 13:37:50.747 D/AIQuotaNativeJson(19616): nativeJson provider=codex status=200 url=chatgpt.com/backend-api/wham/usage cookieHost=chatgpt.com
+06-30 13:37:50.748 D/AIQuotaNativeUsage(19616): nativeUsage provider=codex ok=true diagnostic=ok statuses=chatgpt.com/api/auth/session:403:|chatgpt.com/backend-api/me:403:|chatgpt.com/backend-api/accounts/check/v4-2023-04-27:403:|chatgpt.com/backend-api/subscriptions:403:|chatgpt.com/backend-api/wham/usage:200:
+06-30 13:37:50.754 D/AIQuotaBgRefreshService(19616): payload provider=codex url= summary=root=provider|usage|collectorMode,provider=codex,collectorMode=native-bridge,lineCount=0,hasUsage=true,hasData=false,hasError=false
+06-30 13:37:50.756 D/AIQuotaBgRefreshService(19616): outcome provider=codex type=Payload
+06-30 13:37:50.759 D/AIQuotaBgRefreshService(19616): saveSnapshot provider=codex source=webview lineCount=2 planPresent=false accountPresent=false
+06-30 13:37:50.817 I/AIQuotaDebugCookie(19616): provider=codex debugCookieSnapshot=true reason=background_webview_snapshot urlCount=14 cookieCount=14 nativeAuthContextCount=4 nativeAuthHeaderCount=12

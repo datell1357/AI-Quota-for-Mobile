@@ -1,0 +1,29 @@
+COMMAND adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+Performing Streamed Install
+Success
+COMMAND adb logcat -c
+COMMAND adb shell am start -n com.aiquota.mobile/.providers.WebLoginActivity --es providerId codex --es startUrl https://chatgpt.com/
+Starting: Intent { cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras) }
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: starting Intent { flg=0x10000000 xflg=0x4 cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras) } from null (pid=5312, uid=2000) not exported from uid 10233
+	at com.android.server.wm.Session$$ExternalSyntheticBUOutline1.m(R8$$SyntheticClass:0)
+	at com.android.server.wm.ActivityTaskSupervisor.checkStartAnyActivityPermission(ActivityTaskSupervisor.java:1253)
+	at com.android.server.wm.ActivityStarter.executeRequest(ActivityStarter.java:1299)
+	at com.android.server.wm.ActivityStarter.execute(ActivityStarter.java:911)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1349)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1293)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3854)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:900)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:267)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:39)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:11183)
+	at android.os.Binder.shellCommand(Binder.java:1088)
+	at android.os.Binder.onTransact(Binder.java:946)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5876)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:3288)
+	at android.os.Binder.execTransactInternal(Binder.java:1369)
+	at android.os.Binder.execTransact(Binder.java:1323)
+COMMAND sleep 25
+COMMAND adb logcat -d -v time AIQuotaLogin:D AIQuotaCollector:D AIQuotaNativeJson:D *:S

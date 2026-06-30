@@ -1,0 +1,144 @@
+ M .idea/caches/deviceStreaming.xml
+ M .idea/misc.xml
+ M android/app/src/debug/AndroidManifest.xml
+ D android/app/src/main/assets/gemini_collector.js
+ M android/app/src/main/java/com/aiquota/mobile/local/LocalUsageRepository.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/CopilotNativeUsageFetcher.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderSnapshotCodec.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderUsageNormalizer.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderWebCollectorScripts.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderWebSessionClearPolicy.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt
+ M android/app/src/test/java/com/aiquota/mobile/local/LocalUsageRepositoryTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/GeminiCliFirebaseGatewayTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/GlmWebSessionClearPolicyTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/GoogleProviderOAuthCallbackHandlingTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshServicePolicyTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderDefinitionRegistryTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeJsonBridgeTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderSnapshotCodecTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderUsageNormalizerTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderWebCollectorScriptsTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderWebSessionClearPolicyTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/WebLoginActivityNativeBridgeTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/WebViewSessionPersistenceTest.kt
+?? .omo/boulder.json
+?? .omo/codex-now.png
+?? .omo/evidence/codex-aboutblank-native-cookie-restore-code-review.md
+?? .omo/evidence/codex-login-return-20260630-code-review.md
+?? .omo/evidence/codex-login-return-20260630-final-qa/
+?? .omo/evidence/codex-login-return-20260630-gate-review.md
+?? .omo/evidence/codex-login-root-cause-code-review.md
+?? .omo/evidence/codex-login-usage-auth-recovery-adb-devices-qa.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-adb-devices.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-artifact-sizes-qa.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-artifact-sizes.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-assemble-debug.exit.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-assemble-debug.stderr.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-assemble-debug.stdout.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-assemble-debug.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-build-install.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-cleanup-qa.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-cleanup.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-code-review.md
+?? .omo/evidence/codex-login-usage-auth-recovery-codex-login-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-codex-login-screen.png
+?? .omo/evidence/codex-login-usage-auth-recovery-codex-login-ui.xml
+?? .omo/evidence/codex-login-usage-auth-recovery-continuation-assemble.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-continuation-status.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-continuation-tests.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-diff-check.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-diff.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-emulator-connect-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-emulator-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-emulator-main-launch.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-emulator-main-route.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-final-git-status.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-fix2.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-focused-tests-rerun.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-focused-tests.exit.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-focused-tests.stderr.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-focused-tests.stdout.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-focused-tests.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-green.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-implementation.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-logcat-filtered.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-logcat-full.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-login-surface-final.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-after.xml
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-before.xml
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-full-log-after.xml
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-full-log-runtime.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-full-log-screen.png
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-full-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-logcat.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-runtime.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-main-ui-screen.png
+?? .omo/evidence/codex-login-usage-auth-recovery-package.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-qa.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-red.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-requested-filter.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-run-assemble-debug.sh
+?? .omo/evidence/codex-login-usage-auth-recovery-run-focused-tests.sh
+?? .omo/evidence/codex-login-usage-auth-recovery-runtime-final.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-runtime.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-screen.png
+?? .omo/evidence/codex-login-usage-auth-recovery-status.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-tmux.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-ui.xml
+?? .omo/evidence/copilot-reinject-after-disconnect-tap-ui.xml
+?? .omo/evidence/copilot-reinject-after-disconnect-tap.png
+?? .omo/evidence/copilot-reinject-after-restore-ui.xml
+?? .omo/evidence/copilot-reinject-after-restore.png
+?? .omo/evidence/copilot-reinject-before-disconnect-ui.xml
+?? .omo/evidence/copilot-reinject-before-disconnect.png
+?? .omo/evidence/copilot-reinject-detail-before-disconnect-ui.xml
+?? .omo/evidence/copilot-reinject-detail-before-disconnect.png
+?? .omo/evidence/copilot-reinject-detail-route-ui.xml
+?? .omo/evidence/copilot-reinject-detail-route.png
+?? .omo/evidence/debug-cookie-claude-live-watch.txt
+?? .omo/evidence/debug-cookie-claude-reinstall-restore-test-foreground.txt
+?? .omo/evidence/debug-cookie-claude-reinstall-restore-test.txt
+?? .omo/evidence/debug-cookie-claude-watch-timeout.txt
+?? .omo/evidence/debug-cookie-copilot-live-watch.txt
+?? .omo/evidence/debug-cookie-copilot-reinstall-disconnect-restore-test.txt
+?? .omo/evidence/debug-cookie-gemini-live-watch.txt
+?? .omo/evidence/debug-cookie-gemini-reinstall-restore-test.txt
+?? .omo/evidence/debug-cookie-login-activity.txt
+?? .omo/evidence/debug-cookie-open-login-action-explicit.txt
+?? .omo/evidence/debug-cookie-open-login-action.txt
+?? .omo/evidence/debug-cookie-reinject-claude-broadcast-after-non-auth-capture.txt
+?? .omo/evidence/debug-cookie-reinject-claude-broadcast-after-url-variants.txt
+?? .omo/evidence/debug-cookie-reinject-claude-broadcast.txt
+?? .omo/evidence/debug-cookie-reinject-claude-ui.txt
+?? .omo/evidence/debug-cookie-reinject-claude.txt
+?? .omo/evidence/debug-provider-session-cookie-watch.txt
+?? .omo/evidence/gemini-native-usage-20260630-code-review.md
+?? .omo/evidence/gemini-native-usage-20260630-gate-review-final6.md
+?? .omo/evidence/gemini-native-usage-20260630-gate-review.md
+?? .omo/evidence/start-work-continuation-blocked-verification-1.txt
+?? .omo/plans/codex-login-auth-loop-bugfix.md
+?? .omo/plans/codex-login-usage-auth-recovery.md
+?? .omo/plans/gemini-native-usage-codeassist.md
+?? .omo/start-work/
+?? .omo/ultraresearch/20260629-104317/
+?? .omo/ulw-loop/brief.md
+?? .omo/ulw-loop/codex-login-return-20260630/
+?? .omo/ulw-loop/gemini-native-usage-20260630/
+?? .omo/ulw-loop/goals.json
+?? .omo/ulw-loop/ledger.jsonl
+?? android/app/src/debug/java/com/aiquota/mobile/debug/ProviderLoginDebugActivity.kt
+?? android/app/src/debug/java/com/aiquota/mobile/debug/ProviderRefreshDebugReceiver.kt
+?? android/app/src/main/java/com/aiquota/mobile/providers/CodexNativeCollectionRoutes.kt
+?? android/app/src/main/java/com/aiquota/mobile/providers/CodexNativeHeaderSelector.kt
+?? android/app/src/main/java/com/aiquota/mobile/providers/CodexNativeHeaderStore.kt
+?? android/app/src/main/java/com/aiquota/mobile/providers/DebugProviderSessionCookieStore.kt
+?? android/app/src/main/java/com/aiquota/mobile/providers/GeminiUsagePageNativeFetcher.kt
+?? android/app/src/main/java/com/aiquota/mobile/providers/GeminiUsagePageRpcSession.kt
+?? android/app/src/test/java/com/aiquota/mobile/providers/CodexNativeHeaderSelectorTest.kt
+?? android/app/src/test/java/com/aiquota/mobile/providers/CodexNativeHeaderStoreTest.kt
+?? android/app/src/test/java/com/aiquota/mobile/providers/DebugProviderSessionCookieStoreTest.kt

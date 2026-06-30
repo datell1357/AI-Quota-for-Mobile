@@ -1,0 +1,11 @@
+﻿# Scenario 4b main UI drive with full logcat
+# Started: 2026-06-29T22:02:09.3324811+09:00
+# Invocation: adb -s emulator-5554 logcat -c; adb -s emulator-5554 shell am force-stop com.aiquota.mobile; adb -s emulator-5554 shell am start -n com.aiquota.mobile/.MainActivity; sleep 8; dump UI; tap Codex if visible; sleep 15; adb -s emulator-5554 logcat -d -v time > .omo/evidence/codex-login-usage-auth-recovery-main-ui-full-logcat.txt
+
+Starting: Intent { cmp=com.aiquota.mobile/.MainActivity }
+# codexVisibleBeforeTap: True
+# BinaryObserved: forbiddenEarlyStart=False; wham401=False; authOrUiBlocker=True; codexVisibleBeforeTap=True; logBytes=284634; nativeStartLines=
+# Verdict: BLOCKED
+# uiBytes: 41146
+# screenshotBytes: 228684
+# Finished: 2026-06-29T22:02:38.2812399+09:00

@@ -1,0 +1,313 @@
+diff --git a/android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt b/android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt
+index 8fe73603..7aebfc7b 100644
+--- a/android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt
++++ b/android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt
+@@ -12,14 +12,15 @@ import org.json.JSONTokener
+ object ProviderNativeUsagePayloadFetcher {
+     fun bridgeUsagePayload(
+         providerId: ProviderId,
+-        userAgent: String = ProviderWebViewUserAgent.loginUserAgent()
++        userAgent: String = ProviderWebViewUserAgent.loginUserAgent(),
++        requestHeadersForUrl: (String) -> Map<String, String> = { emptyMap() }
+     ): String {
+         if (!ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
+             return bridgeError(providerId, "provider_not_allowlisted")
+         }
+         val result = when (providerId) {
+             ProviderId.CLAUDE -> fetchClaudePayload(userAgent)
+-            ProviderId.CODEX -> fetchCodexPayload(userAgent)
++            ProviderId.CODEX -> fetchCodexPayload(userAgent, requestHeadersForUrl)
+             ProviderId.GEMINI -> fetchGeminiPayload(userAgent)
+             ProviderId.COPILOT -> NativePayloadResult(
+                 payload = CopilotNativeUsageFetcher.fetchUsagePayload(),
+@@ -94,21 +95,27 @@ object ProviderNativeUsagePayloadFetcher {
+         return verifiedPayload(ProviderId.CLAUDE, payload, "claude_usage_unavailable", statuses)
+     }
+ 
+-    private fun fetchCodexPayload(userAgent: String): NativePayloadResult {
++    private fun fetchCodexPayload(
++        userAgent: String,
++        requestHeadersForUrl: (String) -> Map<String, String>
++    ): NativePayloadResult {
+         val statuses = mutableListOf<String>()
+-        val session = fetchWrapped(ProviderId.CODEX, CODEX_SESSION_URL, statuses, userAgent)
+-        val me = fetchWrapped(ProviderId.CODEX, CODEX_ME_URL, statuses, userAgent)
+-        val accountCheck = fetchWrapped(ProviderId.CODEX, CODEX_ACCOUNT_CHECK_URL, statuses, userAgent)
++        val session = fetchWrapped(ProviderId.CODEX, CODEX_SESSION_URL, statuses, userAgent, requestHeadersForUrl(CODEX_SESSION_URL))
++        val me = fetchWrapped(ProviderId.CODEX, CODEX_ME_URL, statuses, userAgent, requestHeadersForUrl(CODEX_ME_URL))
++        val accountCheck = fetchWrapped(ProviderId.CODEX, CODEX_ACCOUNT_CHECK_URL, statuses, userAgent, requestHeadersForUrl(CODEX_ACCOUNT_CHECK_URL))
+         val accountId = findFirstString(me.jsonValue(), CODEX_ACCOUNT_ID_KEYS)
+             ?: findFirstString(accountCheck.jsonValue(), CODEX_ACCOUNT_ID_KEYS)
+             ?: findFirstString(session.jsonValue(), CODEX_ACCOUNT_ID_KEYS)
++        val subscriptionsUrl = accountId?.let { "$CODEX_SUBSCRIPTIONS_URL?account_id=${encodeQuery(it)}" } ?: CODEX_SUBSCRIPTIONS_URL
+         val subscriptions = fetchWrapped(
+             ProviderId.CODEX,
+-            accountId?.let { "$CODEX_SUBSCRIPTIONS_URL?account_id=${encodeQuery(it)}" } ?: CODEX_SUBSCRIPTIONS_URL,
++            subscriptionsUrl,
+             statuses,
+-            userAgent
++            userAgent,
++            requestHeadersForUrl(subscriptionsUrl)
+         )
+-        val dashboard = fetchWrapped(ProviderId.CODEX, CODEX_USAGE_DASHBOARD_URL, statuses, userAgent)
++        val dashboardUrl = CODEX_USAGE_DASHBOARD_URL
++        val dashboard = fetchWrapped(ProviderId.CODEX, dashboardUrl, statuses, userAgent, requestHeadersForUrl(dashboardUrl))
+         val usage = codexUsageFromValue(dashboard.jsonValue())
+             ?: codexUsageFromRaw(dashboard.rawText())
+             ?: return NativePayloadResult(null, "codex_usage_unavailable", statuses)
+@@ -140,9 +147,10 @@ object ProviderNativeUsagePayloadFetcher {
+         providerId: ProviderId,
+         url: String,
+         statuses: MutableList<String>,
+-        userAgent: String
++        userAgent: String,
++        requestHeaders: Map<String, String> = emptyMap()
+     ): JSONObject {
+-        val wrapped = runCatching { JSONObject(ProviderNativeJsonBridge.fetchJson(providerId, url, userAgent)) }
++        val wrapped = runCatching { JSONObject(ProviderNativeJsonBridge.fetchJson(providerId, url, userAgent, requestHeaders)) }
+             .getOrElse { JSONObject().put("ok", false).put("url", url).put("error", it.javaClass.simpleName) }
+         statuses += "${urlStatusLabel(url)}:${wrapped.optInt("status", -1)}:${wrapped.optString("error")}"
+         return wrapped
+diff --git a/android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt b/android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt
+index cfe3c0db..b0b06907 100644
+--- a/android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt
++++ b/android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt
+@@ -332,8 +332,12 @@ open class WebLoginActivity : Activity() {
+             if (providerId == ProviderId.CODEX && ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, effectiveUrl)) {
+                 if (effectiveUrl == "about:blank") {
+                     injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
+-                } else {
+-                    maybeStartCodexNativeCollection(view, effectiveUrl, "page_finished")
++                } else if (shouldStartCodexNativeCollectionFromPageFinished(effectiveUrl)) {
++                    maybeStartCodexNativeCollection(
++                        view = view,
++                        url = effectiveUrl,
++                        reason = "page_finished"
++                    )
+                 }
+                 return
+             }
+@@ -516,7 +520,9 @@ open class WebLoginActivity : Activity() {
+             if (!isNativeFetchBridgePageAllowed(providerId)) {
+                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
+             }
+-            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(providerId, currentBridgeUserAgent)
++            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(providerId, currentBridgeUserAgent) { url ->
++                if (providerId == ProviderId.CODEX) codexNativeFetchHeadersFor(url) else emptyMap()
++            }
+         }
+ 
+         @JavascriptInterface
+@@ -728,6 +734,15 @@ open class WebLoginActivity : Activity() {
+         return path == "/backend-api/wham/usage"
+     }
+ 
++    private fun shouldStartCodexNativeCollectionFromPageFinished(url: String): Boolean {
++        if (providerId != ProviderId.CODEX) return false
++        val uri = runCatching { URI(url) }.getOrNull() ?: return false
++        val host = uri.host.orEmpty().lowercase(Locale.US)
++        if (host != "chatgpt.com" && !host.endsWith(".chatgpt.com")) return false
++        val path = uri.path.orEmpty().lowercase(Locale.US)
++        return path.startsWith("/codex/cloud/settings/analytics") || path.startsWith("/codex/settings/usage")
++    }
++
+     private fun isCodexAboutBlankNavigation(url: String): Boolean {
+         if (providerId != ProviderId.CODEX || !codexNativeCollectionStarted) return false
+         if (url == "about:blank") return true
+@@ -882,8 +897,14 @@ open class WebLoginActivity : Activity() {
+             .filterValues(String::isNotBlank)
+         if (headers.isEmpty()) return
+         val key = codexNativeHeaderKey(url) ?: return
+-        codexNativeFetchHeaders[key] = headers
+-        codexNativeFetchHeaders[CODEX_NATIVE_HEADER_FALLBACK_KEY] = headers
++        codexNativeFetchHeaders[key] = CodexNativeHeaderSelector.selectStoredHeaders(
++            codexNativeFetchHeaders[key],
++            headers
++        )
++        codexNativeFetchHeaders[CODEX_NATIVE_HEADER_FALLBACK_KEY] = CodexNativeHeaderSelector.selectStoredHeaders(
++            codexNativeFetchHeaders[CODEX_NATIVE_HEADER_FALLBACK_KEY],
++            headers
++        )
+         Log.d(
+             "AIQuotaLogin",
+             "provider=codex capturedNativeHeaders path=${pathOf(url)} names=${headers.keys.sorted().joinToString("|")}"
+@@ -891,10 +912,11 @@ open class WebLoginActivity : Activity() {
+     }
+ 
+     private fun codexNativeFetchHeadersFor(url: String): Map<String, String> {
+-        val key = codexNativeHeaderKey(url)
+-        return key?.let { codexNativeFetchHeaders[it] }
+-            ?: codexNativeFetchHeaders[CODEX_NATIVE_HEADER_FALLBACK_KEY]
+-            ?: emptyMap()
++        val endpointHeaders = codexNativeHeaderKey(url)
++            ?.let { codexNativeFetchHeaders[it] }
++            .orEmpty()
++        val fallbackHeaders = codexNativeFetchHeaders[CODEX_NATIVE_HEADER_FALLBACK_KEY].orEmpty()
++        return CodexNativeHeaderSelector.selectForFetch(endpointHeaders, fallbackHeaders)
+     }
+ 
+     private fun codexNativeHeaderKey(url: String): String? {
+diff --git a/android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt b/android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt
+index 87d894d3..ee62d6cd 100644
+--- a/android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt
++++ b/android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt
+@@ -86,6 +86,20 @@ class ProviderNativeUsagePayloadFetcherTest {
+         assertTrue(bridgeMethod.contains("ProviderId.GEMINI -> fetchGeminiPayload(userAgent)"))
+     }
+ 
++    @Test
++    fun codexNativeUsagePayloadFetchUsesForwardedWebViewHeaders() {
++        val source = File("src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt").readText()
++        val bridgeMethod = source.substringAfter("fun bridgeUsagePayload")
++            .substringBefore("private fun fetchClaudePayload")
++        val codexFetch = source.substringAfter("private fun fetchCodexPayload")
++            .substringBefore("private fun fetchGeminiPayload")
++
++        assertTrue(bridgeMethod.contains("requestHeadersForUrl: (String) -> Map<String, String> = { emptyMap() }"))
++        assertTrue(bridgeMethod.contains("ProviderId.CODEX -> fetchCodexPayload(userAgent, requestHeadersForUrl)"))
++        assertTrue(codexFetch.contains("fetchWrapped(ProviderId.CODEX, CODEX_SESSION_URL, statuses, userAgent, requestHeadersForUrl(CODEX_SESSION_URL))"))
++        assertTrue(codexFetch.contains("requestHeadersForUrl(dashboardUrl)"))
++    }
++
+     @Test
+     fun codexNativeFetchedPayloadUsesWhamUsageJsonWithoutDomFallback() {
+         val payload = ProviderNativeUsagePayloadFetcher.codexFetchedPayloadForTest(
+diff --git a/android/app/src/test/java/com/aiquota/mobile/providers/WebLoginActivityNativeBridgeTest.kt b/android/app/src/test/java/com/aiquota/mobile/providers/WebLoginActivityNativeBridgeTest.kt
+index 75449e02..aad0304a 100644
+--- a/android/app/src/test/java/com/aiquota/mobile/providers/WebLoginActivityNativeBridgeTest.kt
++++ b/android/app/src/test/java/com/aiquota/mobile/providers/WebLoginActivityNativeBridgeTest.kt
+@@ -29,13 +29,14 @@ class WebLoginActivityNativeBridgeTest {
+         assertTrue(loginSource.contains("currentBridgeUserAgent = loginUserAgent"))
+         assertTrue(
+             loginSource.contains(
+-                "ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(providerId, currentBridgeUserAgent)"
++                "ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(providerId, currentBridgeUserAgent) { url ->"
+             )
+         )
+         assertTrue(nativeJsonSource.contains("url: String,\n        userAgent: String"))
+         assertTrue(nativeJsonSource.contains("setRequestProperty(\"User-Agent\", requestUserAgent)"))
+         assertTrue(nativeUsageSource.contains("fun bridgeUsagePayload(\n        providerId: ProviderId,\n        userAgent: String"))
+-        assertTrue(nativeUsageSource.contains("ProviderNativeJsonBridge.fetchJson(providerId, url, userAgent)"))
++        assertTrue(nativeUsageSource.contains("ProviderNativeJsonBridge.fetchJson(providerId, url, userAgent, requestHeaders)"))
++        assertTrue(loginSource.contains("if (providerId == ProviderId.CODEX) codexNativeFetchHeadersFor(url) else emptyMap()"))
+     }
+ 
+     @Test
+@@ -59,7 +60,10 @@ class WebLoginActivityNativeBridgeTest {
+         assertTrue(onPageFinishedBlock.contains("val effectiveUrl = if (isCodexAboutBlankNavigation(url)) \"about:blank\" else url"))
+         assertTrue(onPageFinishedBlock.contains("providerId == ProviderId.CODEX && ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, effectiveUrl)"))
+         assertTrue(onPageFinishedBlock.contains("if (effectiveUrl == \"about:blank\")"))
+-        assertTrue(onPageFinishedBlock.contains("maybeStartCodexNativeCollection(view, effectiveUrl, \"page_finished\")"))
++        assertTrue(onPageFinishedBlock.contains("shouldStartCodexNativeCollectionFromPageFinished(effectiveUrl)"))
++        assertFalse(onPageFinishedBlock.contains("maybeStartCodexNativeCollection(view, effectiveUrl, \"page_finished\")"))
++        assertTrue(source.contains("private fun shouldStartCodexNativeCollectionFromPageFinished(url: String): Boolean"))
++        assertTrue(source.contains("path.startsWith(\"/codex/cloud/settings/analytics\") || path.startsWith(\"/codex/settings/usage\")"))
+         assertTrue(overrideNavigationBlock.contains("if (isCodexAboutBlankNavigation(url))"))
+         assertTrue(overrideNavigationBlock.contains("noteBridgePageUrl(\"about:blank\")"))
+         assertTrue(interceptRequestBlock.contains("shouldStartCodexNativeCollectionFromResource(url)"))
+diff --git a/android/app/src/main/java/com/aiquota/mobile/providers/CodexNativeHeaderSelector.kt b/android/app/src/main/java/com/aiquota/mobile/providers/CodexNativeHeaderSelector.kt
+new file mode 100644
+index 00000000..4672b5e4
+--- /dev/null
++++ b/android/app/src/main/java/com/aiquota/mobile/providers/CodexNativeHeaderSelector.kt
+@@ -0,0 +1,36 @@
++package com.aiquota.mobile.providers
++
++internal object CodexNativeHeaderSelector {
++    fun selectStoredHeaders(
++        currentHeaders: Map<String, String>?,
++        capturedHeaders: Map<String, String>
++    ): Map<String, String> {
++        val current = currentHeaders.orEmpty()
++        if (hasAuthContext(current) && !hasAuthContext(capturedHeaders)) {
++            return current
++        }
++        return capturedHeaders
++    }
++
++    fun selectForFetch(
++        endpointHeaders: Map<String, String>,
++        fallbackHeaders: Map<String, String>
++    ): Map<String, String> {
++        if (hasAuthContext(fallbackHeaders) && !hasAuthContext(endpointHeaders)) {
++            return fallbackHeaders
++        }
++        return endpointHeaders.ifEmpty { fallbackHeaders }
++    }
++
++    private fun hasAuthContext(headers: Map<String, String>): Boolean {
++        return headers.any { (name, value) ->
++            value.isNotBlank() && AUTH_CONTEXT_HEADERS.any { it.equals(name, ignoreCase = true) }
++        }
++    }
++
++    private val AUTH_CONTEXT_HEADERS = setOf(
++        "Authorization",
++        "ChatGPT-Account-ID",
++        "OAI-Session-Id"
++    )
++}
+diff --git a/android/app/src/test/java/com/aiquota/mobile/providers/CodexNativeHeaderSelectorTest.kt b/android/app/src/test/java/com/aiquota/mobile/providers/CodexNativeHeaderSelectorTest.kt
+new file mode 100644
+index 00000000..25f22a24
+--- /dev/null
++++ b/android/app/src/test/java/com/aiquota/mobile/providers/CodexNativeHeaderSelectorTest.kt
+@@ -0,0 +1,58 @@
++package com.aiquota.mobile.providers
++
++import org.junit.Assert.assertEquals
++import org.junit.Test
++
++class CodexNativeHeaderSelectorTest {
++    @Test
++    fun selectStoredHeadersKeepsAuthenticatedHeadersWhenLaterCaptureHasNoAuthContext() {
++        val authenticated = mapOf(
++            "Authorization" to "Bearer token",
++            "OAI-Session-Id" to "session"
++        )
++        val unauthenticated = mapOf(
++            "Accept" to "application/json",
++            "Referer" to "https://chatgpt.com/"
++        )
++
++        assertEquals(
++            authenticated,
++            CodexNativeHeaderSelector.selectStoredHeaders(authenticated, unauthenticated)
++        )
++    }
++
++    @Test
++    fun selectForFetchPrefersAuthenticatedFallbackOverUnauthenticatedEndpointHeaders() {
++        val endpointHeaders = mapOf(
++            "accept" to "application/json",
++            "Referer" to "https://chatgpt.com/"
++        )
++        val authenticatedFallback = mapOf(
++            "Authorization" to "Bearer token",
++            "OAI-Session-Id" to "session",
++            "Referer" to "https://chatgpt.com/"
++        )
++
++        assertEquals(
++            authenticatedFallback,
++            CodexNativeHeaderSelector.selectForFetch(endpointHeaders, authenticatedFallback)
++        )
++    }
++
++    @Test
++    fun selectForFetchKeepsEndpointHeadersWhenTheyContainAuthContext() {
++        val endpointHeaders = mapOf(
++            "Authorization" to "Bearer endpoint-token",
++            "Referer" to "https://chatgpt.com/codex/cloud/settings/analytics"
++        )
++        val fallback = mapOf(
++            "Authorization" to "Bearer fallback-token",
++            "Referer" to "https://chatgpt.com/"
++        )
++
++        assertEquals(
++            endpointHeaders,
++            CodexNativeHeaderSelector.selectForFetch(endpointHeaders, fallback)
++        )
++    }
++}

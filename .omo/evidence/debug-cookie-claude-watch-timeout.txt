@@ -1,0 +1,43 @@
+=== watch_result ===
+snapshot=missing timeoutSeconds=180
+=== redacted_log_tail ===
+06-30 01:15:24.881  8785  8884 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:15:24.886  8785  8884 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:15:24.893  8785  8884 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:15:25.012  8785  8873 D AIQuotaLogin: provider=claude resource=https://a-cdn.anthropic.com/analytics-next/bundles/ajs-destination.bundle.8e6b895db75187c55313.js
+06-30 01:15:25.370  8785  8873 D AIQuotaLogin: provider=claude resource=https://www.google.com/ccm/collect?keys=rcb|frm|auid|en|dl|top|scrsrc|rnd|navt|npa|gtm|gcs
+06-30 01:15:25.387  8785  8873 D AIQuotaLogin: provider=claude resource=https://a-cdn.anthropic.com/analytics-next/bundles/schemaFilter.bundle.1b218d13fed021531d4e.js
+06-30 01:15:25.395  8785  8874 D AIQuotaLogin: provider=claude resource=https://a-cdn.anthropic.com/next-integrations/actions/3962/1faa179dfb20d0a3f5a0.js
+06-30 01:15:25.523  8785  8873 D AIQuotaLogin: provider=claude resource=https://www.google.com/ccm/collect?keys=rcb|frm|auid|en|dl|top|scrsrc|rnd|navt|npa|gtm|gcs
+06-30 01:15:25.582  8785  8873 D AIQuotaLogin: provider=claude resource=https://s-cdn.anthropic.com/images/589154.gif?keys=bk|r|v|cs|h|l|S|uu|t|u|ua|nm
+06-30 01:15:25.622  8785  8873 D AIQuotaLogin: provider=claude resource=https://cc922a4bf1df.w.hcaptcha.com/logo.png
+06-30 01:15:25.651  8785  8873 D AIQuotaLogin: provider=claude resource=https://newassets.hcaptcha.com/captcha/v1/4c08f46f65aae5ee9db85074d18d7224f7fa3da8/static/i18n/ko.json
+06-30 01:15:25.668  8785  8873 D AIQuotaLogin: provider=claude resource=https://newassets.hcaptcha.com/captcha/v1/4c08f46f65aae5ee9db85074d18d7224f7fa3da8/static/hcaptcha.html
+06-30 01:15:25.672  8785  8874 D AIQuotaLogin: provider=claude resource=https://newassets.hcaptcha.com/captcha/v1/4c08f46f65aae5ee9db85074d18d7224f7fa3da8/static/hcaptcha.html
+06-30 01:15:25.700  8785  8873 D AIQuotaLogin: provider=claude resource=https://accounts.google.com/gsi/style
+06-30 01:15:25.736  8785  8873 D AIQuotaLogin: provider=claude resource=https://accounts.google.com/gsi/status?keys=client_id|cas|bs|is_itp
+06-30 01:15:25.819  8785  8873 D AIQuotaLogin: provider=claude resource=https://f7d0c95f8d73.w.hcaptcha.com/logo.png
+06-30 01:15:25.851  8785  8874 D AIQuotaLogin: provider=claude resource=https://api.hcaptcha.com/checksiteconfig?keys=v|host|sitekey|sc|swa|spst
+06-30 01:15:25.901  8785  8881 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:15:25.910  8785  8881 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:15:25.918  8785  8881 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:15:25.926  8785  8881 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:15:25.928  8785  8881 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:15:26.172  8785  8881 D AIQuotaLogin: provider=claude resource=https://newassets.hcaptcha.com/c/2ebd09a425514b27144e0d7a3c3259b58181901490f8b504f079cd2ad95a3692/hsw.js
+06-30 01:15:26.623  8785  8873 D AIQuotaLogin: provider=claude resource=https://a-cdn.claude.ai/v2/EEA5F558-D6AC-4C03-B678-AABF639EE69A/api.js
+06-30 01:15:26.649  8785  8873 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:15:26.652  8785  8881 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:15:26.661  8785  8873 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:15:26.779  8785  8873 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:15:26.786  8785  8873 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:15:26.901  8785  8873 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:15:26.924  8785  8873 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:15:26.946  8785  8873 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:15:30.731  8785  8873 D AIQuotaLogin: provider=claude resource=https://a-cdn.claude.ai/v2/EEA5F558-D6AC-4C03-B678-AABF639EE69A/settings
+06-30 01:15:30.847  8785  8873 D AIQuotaLogin: provider=claude resource=https://a-cdn.claude.ai/metrics/ui
+06-30 01:15:30.970  8785  8873 D AIQuotaLogin: provider=claude resource=https://a-api.anthropic.com/v1/b
+06-30 01:15:33.968  8785  8873 D AIQuotaLogin: provider=claude resource=https://claude.ai/api/event_logging/v2/batch
+06-30 01:15:34.213  8785  8873 D AIQuotaLogin: provider=claude resource=https://claude.ai/api/event_logging/v2/batch
+06-30 01:15:56.867  8785  8873 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api
+06-30 01:16:25.974  8785  8873 D AIQuotaLogin: provider=claude resource=https://claude.ai/api/event_logging/v2/batch
+06-30 01:16:57.350  8785  8873 D AIQuotaLogin: provider=claude resource=https://browser-intake-us5-datadoghq.com/api/v2/rum?keys=ddsource|dd-api-key|dd-evp-origin-version|dd-evp-origin|dd-request-id|batch_time|_dd.api

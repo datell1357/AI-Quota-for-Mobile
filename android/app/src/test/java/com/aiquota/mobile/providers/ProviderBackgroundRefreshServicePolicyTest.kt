@@ -43,7 +43,7 @@ class ProviderBackgroundRefreshServicePolicyTest {
         val sessionPreparation = service.substringAfter("private fun prepareSharedWebSessionForCollection")
             .substringBefore("private fun destroyProviderWebView")
 
-        assertTrue(startWebCollection.contains("prepareSharedWebSessionForCollection(webView)"))
+        assertTrue(startWebCollection.contains("prepareSharedWebSessionForCollection(webView, job.providerId)"))
         assertTrue(sessionPreparation.contains("cookieManager.setAcceptCookie(true)"))
         assertTrue(sessionPreparation.contains("cookieManager.setAcceptThirdPartyCookies(webView, true)"))
         assertTrue(sessionPreparation.contains("CookieManager.getInstance().flush()"))
@@ -204,48 +204,6 @@ class ProviderBackgroundRefreshServicePolicyTest {
     }
 
     @Test
-    fun geminiBackgroundRefreshRedirectsAppShellBackToUsagePage() {
-        val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
-        val redirect = service.substringAfter("private fun maybeRedirectGeminiRefreshToUsage")
-            .substringBefore("private inner class ServiceCollectorWebViewClient")
-        val pageStarted = service.substringAfter("override fun onPageStarted")
-            .substringBefore("override fun shouldOverrideUrlLoading")
-        val shouldOverride = service.substringAfter("override fun shouldOverrideUrlLoading")
-            .substringBefore("override fun shouldInterceptRequest")
-        val pageFinished = service.substringAfter("override fun onPageFinished")
-            .substringBefore("override fun onReceivedError")
-
-        assertTrue(redirect.contains("providerId != ProviderId.GEMINI"))
-        assertTrue(redirect.contains("GeminiUsagePageRoutes.isUsageUrl(url)"))
-        assertTrue(redirect.contains("GeminiUsagePageRoutes.usageUrlFrom(url)"))
-        assertTrue(redirect.contains("view.loadUrl(usageUrl)"))
-        assertTrue(redirect.contains("active.geminiUsageRedirectAttempts >= GEMINI_USAGE_REDIRECT_MAX_ATTEMPTS"))
-        assertTrue(service.contains("private fun maybeScheduleGeminiTerminalCheck"))
-        assertTrue(service.contains("GeminiUsagePageRoutes.isLoginLandingUrl(url)"))
-        assertTrue(service.contains("GeminiUsagePageRoutes.isUsageUrl(url)"))
-        assertTrue(service.contains("GEMINI_TERMINAL_CHECK_DELAY_MS"))
-        assertTrue(service.contains("GEMINI_TERMINAL_CHECK_FALLBACK_DELAY_MS"))
-        assertTrue(service.contains("private const val GEMINI_TERMINAL_CHECK_DELAY_MS = 4_000L"))
-        assertTrue(service.contains("private const val GEMINI_TERMINAL_CHECK_FALLBACK_DELAY_MS = 24_000L"))
-        assertTrue(service.contains("ProviderRefreshFailureKind.NO_TRUSTED_PAYLOAD"))
-        assertTrue(service.contains("if (ProviderWebCollectorScripts.isRefreshLoginPage(ProviderId.GEMINI, pageUrl, pageText))"))
-        assertTrue(pageStarted.contains("maybeRedirectGeminiRefreshToUsage(active, view, url)"))
-        assertTrue(pageFinished.contains("maybeRedirectGeminiRefreshToUsage(active, view, url)"))
-        assertTrue(pageFinished.contains("maybeScheduleGeminiTerminalCheck(active, view, url)"))
-        assertTrue(shouldOverride.contains("shouldWaitForGeminiRefreshSignInRedirect(active, url)"))
-        assertTrue(shouldOverride.contains("allowSignInRedirect provider=gemini"))
-        assertTrue(shouldOverride.contains("return false"))
-        assertTrue(service.contains("awaitInteractiveLoginUsage = providerId == ProviderId.CODEX || providerId == ProviderId.GEMINI"))
-        assertTrue(service.contains("private fun maybeClickGeminiRefreshSignIn"))
-        assertTrue(service.contains("clickSignIn provider=gemini"))
-        assertTrue(service.contains("private fun shouldWaitForGeminiRefreshSignInRedirect"))
-        assertTrue(service.contains("private fun isGeminiRefreshInteractiveSignInPage"))
-        assertTrue(service.contains("interactiveSignInRequired provider=gemini"))
-        assertTrue(service.contains("path.contains(\"/signin/identifier\")"))
-        assertTrue(service.contains("GEMINI_SIGN_IN_CLICK_MAX_ATTEMPTS"))
-    }
-
-    @Test
     fun timedOutWebCollectorsAndBridgePayloadsMatchProductionFlow() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val webCollector = service.substringAfter("private suspend fun collectWebProviderUsage")
@@ -316,20 +274,23 @@ class ProviderBackgroundRefreshServicePolicyTest {
     }
 
     @Test
-    fun manualWebAuthFailuresKeepPreviousUsageButNativeTokenFailuresExpireSession() {
+    fun manualAuthFailuresExpireSessionAndClearNativeTokenCredentialsOnly() {
         val repository = File("src/main/java/com/aiquota/mobile/local/LocalUsageRepository.kt").readText()
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val authFailureHandler = service.substringAfter("private fun handleRefreshAuthFailure")
             .substringBefore("private suspend fun collectNativeProviderUsage")
+        val manualBranch = authFailureHandler.substringAfter("if (!automaticRefresh) {")
+            .substringBefore("if (automaticRefresh && providerId == ProviderId.GEMINI)")
 
         assertTrue(repository.contains("fun markSessionExpired(providerId: ProviderId, message: String)"))
         assertTrue(repository.contains("ProviderUsageSnapshot.disconnected(providerId).copy("))
         assertFalse(authFailureHandler.contains("repository.markInteractiveAuthRequired(providerId, message)"))
-        assertTrue(authFailureHandler.contains("!ProviderRefreshSessionPolicy.shouldClearCredentialsOnRefreshAuthFailure(providerId)"))
+        assertTrue(manualBranch.contains("ProviderRefreshSessionPolicy.shouldClearCredentialsOnRefreshAuthFailure(providerId)"))
+        assertTrue(manualBranch.contains("ProviderSessionResetter(applicationContext).disconnect(providerId)"))
+        assertTrue(manualBranch.contains("repository.markSessionExpired(providerId, message)"))
+        assertFalse(manualBranch.contains("repository.failKeepingPrevious(providerId, message)"))
+        assertTrue(authFailureHandler.contains("repository.markGoogleUsagePending(providerId, GoogleUsagePendingRetryPolicy.PENDING_MESSAGE)"))
         assertTrue(authFailureHandler.contains("repository.failKeepingPrevious(providerId, message)"))
-        assertTrue(authFailureHandler.contains("ProviderRefreshSessionPolicy.shouldClearCredentialsOnRefreshAuthFailure(providerId)"))
-        assertTrue(authFailureHandler.contains("ProviderSessionResetter(applicationContext).disconnect(providerId)"))
-        assertTrue(authFailureHandler.contains("repository.markSessionExpired(providerId, message)"))
     }
 
     @Test
@@ -343,19 +304,18 @@ class ProviderBackgroundRefreshServicePolicyTest {
     }
 
     @Test
-    fun nativeGoogleRefreshDoesNotBlockMainThread() {
+    fun nativeAntigravityRefreshDoesNotBlockMainThread() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val nativeRefresh = service.substringAfter("private suspend fun collectNativeProviderUsage")
             .substringBefore("private suspend fun collectWebProviderUsage")
 
         assertTrue(nativeRefresh.contains("withContext(Dispatchers.IO)"))
-        assertTrue(nativeRefresh.contains("GeminiCliOAuthRepository(applicationContext).fetchUsagePayloadFromStoredCredential()"))
         assertTrue(nativeRefresh.contains("AntigravityOAuthRepository(applicationContext).fetchUsagePayloadFromStoredCredential()"))
         assertFalse(nativeRefresh.contains("lastFailureDiagnostic()"))
     }
 
     @Test
-    fun nativeGoogleRefreshFallsBackToWebSessionWhenStoredTokenHasNoPayload() {
+    fun nativeAntigravityRefreshFallsBackToWebSessionWhenStoredTokenHasNoPayload() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val nativeRefresh = service.substringAfter("private suspend fun collectNativeProviderUsage")
             .substringBefore("private suspend fun collectWebProviderUsage")
@@ -386,6 +346,24 @@ class ProviderBackgroundRefreshServicePolicyTest {
     }
 
     @Test
+    fun codexBackgroundRefreshUsesAuthenticatedNativeResourceForAboutBlankNativeCollection() {
+        val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
+        val startBlock = service.substringAfter("private fun maybeStartCodexAboutBlankCollection")
+            .substringBefore("private fun shouldStartCodexNativeCollectionFromResource")
+        val routeBlock = service.substringAfter("private fun shouldStartCodexNativeCollectionFromResource")
+            .substringBefore("private fun captureCodexNativeFetchHeaders")
+        val loadResourceBlock = service.substringAfter("override fun onLoadResource")
+            .substringBefore("override fun onPageFinished")
+        val pageFinishedBlock = service.substringAfter("override fun onPageFinished")
+            .substringBefore("override fun onReceivedError")
+
+        assertTrue(startBlock.contains("hasCodexNativeFetchAuthContext(resourceUrl) && !hasCodexSessionCookies(resourceUrl)"))
+        assertTrue(routeBlock.contains("ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, url)"))
+        assertTrue(loadResourceBlock.contains("if (ownerProviderId == ProviderId.CODEX && pageUrl != \"about:blank\")"))
+        assertTrue(pageFinishedBlock.contains("if (ownerProviderId == ProviderId.CODEX && url != \"about:blank\")"))
+    }
+
+    @Test
     fun automaticForegroundRefreshDelaysFirstCycleAfterServiceStart() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val startRefreshLoop = service.substringAfter("private fun startRefreshLoop()")
@@ -394,7 +372,8 @@ class ProviderBackgroundRefreshServicePolicyTest {
             .substringBefore("private fun stopRefreshLoop")
 
         assertTrue(service.contains("INITIAL_AUTO_REFRESH_DELAY_MILLIS = 3_000L"))
-        assertTrue(startRefreshLoop.contains("scheduleNextTick(delayMillis = INITIAL_AUTO_REFRESH_DELAY_MILLIS)"))
+        assertTrue(startRefreshLoop.contains("scheduleNextTick(delayMillis = initialAutoRefreshDelayMillis())"))
+        assertTrue(service.contains("private fun initialAutoRefreshDelayMillis(): Long"))
         assertTrue(manualRefresh.contains("scheduleNextTick(delayMillis = 0L)"))
     }
 

@@ -1,0 +1,8 @@
+﻿06-30 04:10:42.902 I/AIQuotaDebugCookie(23111): provider=gemini debugCookieRestore=true reason=background_collection source=external urlCount=7 cookieCount=97
+06-30 04:10:47.532 D/AIQuotaBgRefreshService(23111): warmUpComplete provider=gemini from=gemini.google.com/app to=gemini.google.com/usage
+06-30 04:10:49.385 D/AIQuotaBgRefreshService(23111): nativeCollectorStart provider=gemini url=about:blank reason=page_finished rpcSession=true attempt=1 from=gemini.google.com/usage
+06-30 04:10:49.952 D/AIQuotaGeminiUsageRpc(23111): geminiUsageRpc status=200 payloadBytes=224
+06-30 04:10:49.967 D/AIQuotaNativeUsage(23111): nativeUsage provider=gemini ok=true diagnostic=ok
+06-30 04:10:49.972 D/AIQuotaBgRefreshService(23111): payload provider=gemini url= summary=root=provider|collectorMode|usage,provider=gemini,collectorMode=native-usage-page-rpc,lineCount=0,hasUsage=true,hasData=false,hasError=false
+06-30 04:10:49.986 D/AIQuotaBgRefreshService(23111): outcome provider=gemini type=Payload
+06-30 04:10:49.989 D/AIQuotaBgRefreshService(23111): saveSnapshot provider=gemini source=webview lineCount=2 planPresent=false accountPresent=false

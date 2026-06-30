@@ -1,0 +1,15 @@
+﻿stamp=20260630-223418
+device=emulator-5554
+pullExit=0
+deviceSnapshotPath=/sdcard/Android/data/com.aiquota.mobile/files/debug-session-cookies/codex.json
+localFreshSnapshot=.omo/private/provider-session-cookies/codex-fresh-20260630-223418.json
+deviceLs=-rw-rw---- 1 u0_a233 ext_data_rw 149562 2026-06-30 13:33 /sdcard/Android/data/com.aiquota.mobile/files/debug-session-cookies/codex.json
+provider=codex
+reason=background_webview_snapshot
+capturedAt=2026-06-30T13:33:22.081152Z
+topLevelKeys=provider,capturedAt,reason,cookies,nativeAuthContext
+cookieUrlEntryCount=14
+nativeAuthContextPresent=True
+nativeAuthContextEntryCount=4
+expectedAuthHeaderNamesPresent=Authorization|ChatGPT-Account-ID|OAI-Session-Id
+metadataResult=True

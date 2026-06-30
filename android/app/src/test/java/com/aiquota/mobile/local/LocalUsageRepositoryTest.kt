@@ -304,14 +304,21 @@ class LocalUsageRepositoryTest {
             planLabel = "Gemini Pro",
             lines = listOf(
                 ProviderUsageLine(
-                    key = "gemini:5_hour",
+                    key = "gemini:5_hour_limit",
                     label = "5-hour limit",
-                    remainingPercent = 1.0f
+                    remainingPercent = 1.0f,
+                    remainingAmount = 600.0,
+                    limitAmount = 600.0,
+                    unit = "requests"
                 ),
                 ProviderUsageLine(
-                    key = "gemini:weekly",
+                    key = "gemini:weekly_limit",
                     label = "Weekly limit",
                     remainingPercent = 1.0f,
+                    remainingAmount = 12096.0,
+                    limitAmount = 12096.0,
+                    unit = "requests",
+                    resetsAt = "2026-07-06T03:07:53.919Z",
                     resetText = "Resets in 5d 1h"
                 )
             )
@@ -322,6 +329,80 @@ class LocalUsageRepositoryTest {
         assertEquals(listOf("5-hour limit", "Weekly limit"), recovered.lines.map { it.label })
         assertEquals(null, recovered.lines[0].resetText)
         assertEquals("Resets in 5d 1h", recovered.lines[1].resetText)
+    }
+
+    @Test
+    fun geminiUsagePageQuotaLinesReplaceLegacyMergedDeepResearchLine() {
+        val previous = ProviderUsageSnapshot(
+            providerId = ProviderId.GEMINI,
+            connectionState = ProviderConnectionState.CONNECTED,
+            lines = listOf(
+                ProviderUsageLine(
+                    key = "gemini:deep-research",
+                    label = "Gemini Deep Research",
+                    remainingPercent = 1.0f
+                )
+            )
+        )
+        val fresh = previous.copy(
+            lines = listOf(
+                ProviderUsageLine(
+                    key = "gemini:5_hour_limit",
+                    label = "5-hour limit",
+                    remainingPercent = 1.0f,
+                    remainingAmount = 600.0,
+                    limitAmount = 600.0,
+                    unit = "requests"
+                ),
+                ProviderUsageLine(
+                    key = "gemini:weekly_limit",
+                    label = "Weekly limit",
+                    remainingPercent = 1.0f,
+                    remainingAmount = 12096.0,
+                    limitAmount = 12096.0,
+                    unit = "requests"
+                )
+            )
+        )
+
+        val merged = mergeFreshSnapshotWithPreviousLines(fresh, previous)
+
+        assertEquals(listOf("5-hour limit", "Weekly limit"), merged.lines.map { it.label })
+    }
+
+    @Test
+    fun geminiUsagePageQuotaLinesSurviveCleanupBesideLegacyDeepResearchLine() {
+        val snapshot = ProviderUsageSnapshot(
+            providerId = ProviderId.GEMINI,
+            connectionState = ProviderConnectionState.CONNECTED,
+            lines = listOf(
+                ProviderUsageLine(
+                    key = "gemini:deep-research",
+                    label = "Gemini Deep Research",
+                    remainingPercent = 1.0f
+                ),
+                ProviderUsageLine(
+                    key = "gemini:5_hour_limit",
+                    label = "5-hour limit",
+                    remainingPercent = 1.0f,
+                    remainingAmount = 600.0,
+                    limitAmount = 600.0,
+                    unit = "requests"
+                ),
+                ProviderUsageLine(
+                    key = "gemini:weekly_limit",
+                    label = "Weekly limit",
+                    remainingPercent = 1.0f,
+                    remainingAmount = 12096.0,
+                    limitAmount = 12096.0,
+                    unit = "requests"
+                )
+            )
+        )
+
+        val recovered = normalizeGeminiLegacyUsageLabels(snapshot)
+
+        assertEquals(listOf("5-hour limit", "Weekly limit"), recovered.lines.map { it.label })
     }
 
     @Test

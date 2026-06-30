@@ -1,0 +1,16 @@
+=== reinstall_restore_test ===
+appDataCleared=true
+rawCookieValues=not_printed
+pushedSnapshot=19380 /sdcard/Android/data/com.aiquota.mobile/files/debug-session-cookies/claude.json
+restoreFromExternal=False
+claudeSaveSnapshot=False
+claudeFailure=False
+=== redacted_log_summary ===
+06-30 01:40:42.435 10990 10990 W AIQuotaDebugRefresh: debugProviderRefresh=false provider=claude
+06-30 01:40:42.435 10990 10990 W AIQuotaDebugRefresh: android.app.ForegroundServiceStartNotAllowedException: startForegroundService() not allowed: service com.aiquota.mobile/.providers.ProviderBackgroundRefreshService
+06-30 01:40:42.435 10990 10990 W AIQuotaDebugRefresh: 	at android.app.ForegroundServiceStartNotAllowedException$1.createFromParcel(ForegroundServiceStartNotAllowedException.java:54)
+06-30 01:40:42.435 10990 10990 W AIQuotaDebugRefresh: 	at android.app.ForegroundServiceStartNotAllowedException$1.createFromParcel(ForegroundServiceStartNotAllowedException.java:50)
+06-30 01:40:42.435 10990 10990 W AIQuotaDebugRefresh: 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3387)
+06-30 01:40:42.435 10990 10990 W AIQuotaDebugRefresh: 	at android.os.Parcel.createException(Parcel.java:3376)
+06-30 01:40:42.435 10990 10990 W AIQuotaDebugRefresh: 	at android.os.Parcel.readException(Parcel.java:3359)
+06-30 01:40:42.435 10990 10990 W AIQuotaDebugRefresh: 	at android.os.Parcel.readException(Parcel.java:3301)

@@ -1,0 +1,12 @@
+﻿SNlM0e index=-1
+FdrFJe index=4107
+or","/emulator/*","/staging","/staging/*"],"FABJ3e":"https://docs.google.com/picker","FL1an":false,"FdrFJe":"<redacted>","GK6dn":"https://geminiweb-pa.clients6.google.com","GdU5Bf":"","GtQXDc":"Give me caption options to tell the world about my new fu
+cfb2h index=188887
+zf":"default_BardChatUi","bTPVLd":"%.@.null,null,null,\"https://default-bard-run-dev.corp.goog\"]","cfb2h":"boq_assistant-bard-web-server_20260628.03_p0","d2zJAe":"AIzaSyAPW83vB9zFQqfpMup_cMJdELqDQkWvTho","dLc0B":false,"eptZe":"/_/BardChatUi/","fLTY0d":"","fPD
+at= index=-1
+WIZ_global_data index=2107
+"script" nonce="wvBpyCosQ5sPLzSsUs7JXw"><script data-id="_gd" nonce="wvBpyCosQ5sPLzSsUs7JXw">window.WIZ_global_data = {"AEJOSc":false,"ARR9x":true,"AfY8Hf":false,"Ajsvkd":true,"B7TsWc":"","BTQaEe":false,"BdA8rf":true,"CVUPx":false,"DEh2U":false,"DedwT":true,"D
+AF_initDataCallback index=776767
+JXw">var AF_initDataKeys = []; var AF_dataServiceRequests = {}; var AF_initDataChunkQueue = []; var AF_initDataCallback; var AF_initDataInitializeCallback; if (AF_initDataInitializeCallback) {AF_initDataInitializeCallback(AF_initDataKeys, AF_initDataChunkQueue
+AD1_ index=-1
+SNlM0e index=-1

@@ -1,0 +1,10 @@
+﻿debugCookieRestore=true: found=True; line=31
+has_dom_inject_host_chatgpt=False: found=True; line=240
+has_aboutblank_frame_inject=False: found=True; line=241
+has_top_aboutblank_inject=True: found=True; line=242
+has_native_ok=True: found=True; line=243
+has_native_unavailable=False: found=True; line=244
+snapshot_connectionState=CONNECTED: found=True; line=202
+snapshot_refreshState=IDLE: found=True; line=203
+snapshot_line_segment_count=2: found=True; line=204
+activity_has_WebLoginActivity=False: found=True; line=245

@@ -1,0 +1,13 @@
+{
+    "remainingTokens":  null,
+    "goal":  {
+                 "timeUsedSeconds":  7977,
+                 "threadId":  "019f132b-48a7-7812-8c79-74541e487332",
+                 "createdAt":  1782786231,
+                 "updatedAt":  1782794208,
+                 "objective":  "Complete the durable ulw-loop plan in .omo/ulw-loop/gemini-native-usage-20260630/goals.json, including later accepted/appended stories, under the original brief constraints; use .omo/ulw-loop/gemini-native-usage-20260630/ledger.jsonl as the audit trail.",
+                 "status":  "complete",
+                 "tokensUsed":  2188947
+             },
+    "completionBudgetReport":  "Goal achieved. Report final usage from this tool result structured goal fields."
+}

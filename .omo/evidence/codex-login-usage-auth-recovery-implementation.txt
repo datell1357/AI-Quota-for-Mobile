@@ -1,0 +1,110 @@
+DoneClaim: codex-login-usage-auth-recovery
+
+Tier
+- HEAVY: auth/session header retention and login collection ordering.
+- Subagents/reviewer: not available in this tool surface; self-review performed with scoped diff, tests, build, cleanup, and artifact checks.
+
+Changed files
+- android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt
+- android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt
+- android/app/src/main/java/com/aiquota/mobile/providers/CodexNativeHeaderSelector.kt
+- android/app/src/test/java/com/aiquota/mobile/providers/WebLoginActivityNativeBridgeTest.kt
+- android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt
+- android/app/src/test/java/com/aiquota/mobile/providers/CodexNativeHeaderSelectorTest.kt
+
+Preserved unrelated dirty files
+- .idea/misc.xml
+- android/app/src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt
+- existing .omo artifacts and other untracked files outside this implementation
+
+Implementation summary
+- Gated Codex page_finished native collection so ChatGPT home cannot directly start about:blank collection; page_finished native start is limited to Codex usage routes.
+- Retained authenticated Codex native headers when later captured headers lack Authorization, ChatGPT-Account-ID, or OAI-Session-Id.
+- Forwarded selected Codex WebView headers through ProviderNativeUsagePayloadFetcher to ProviderNativeJsonBridge.fetchJson.
+
+Success criteria evidence
+1. Scenario: ChatGPT home page_finished should not directly trigger Codex about:blank collection before post-login redirect can run.
+   Invocation: cd android && JAVA_HOME='/c/Program Files/Android/Android Studio/jbr' gradle testDebugUnitTest --tests 'com.aiquota.mobile.providers.CodexNativeHeaderSelectorTest' --tests 'com.aiquota.mobile.providers.WebLoginActivityNativeBridgeTest' --tests 'com.aiquota.mobile.providers.ProviderNativeUsagePayloadFetcherTest'
+   Binary observable: BUILD SUCCESSFUL and WebLoginActivityNativeBridgeTest assertions pass.
+   Artifact: .omo/evidence/codex-login-usage-auth-recovery-green.txt
+
+2. Scenario: authenticated fallback/endpoint headers are not displaced by later unauthenticated endpoint headers.
+   Invocation: same focused Gradle command above.
+   Binary observable: BUILD SUCCESSFUL and CodexNativeHeaderSelectorTest assertions pass.
+   Artifact: .omo/evidence/codex-login-usage-auth-recovery-green.txt
+
+3. Scenario: Codex native fetch path forwards selected headers to ProviderNativeJsonBridge.fetchJson.
+   Invocation: same focused Gradle command above.
+   Binary observable: BUILD SUCCESSFUL and ProviderNativeUsagePayloadFetcherTest/WebLoginActivityNativeBridgeTest assertions pass.
+   Artifact: .omo/evidence/codex-login-usage-auth-recovery-green.txt
+
+Failing-first evidence
+- RED command: cd android && JAVA_HOME='/c/Program Files/Android/Android Studio/jbr' gradle testDebugUnitTest --tests '*Codex*' --tests '*WebLoginActivityNativeBridgeTest*' --tests '*ProviderNativeUsagePayloadFetcherTest*'
+- RED observable: compileDebugUnitTestKotlin failed on unresolved reference CodexNativeHeaderSelector.selectStoredHeaders.
+- RED artifact: .omo/evidence/codex-login-usage-auth-recovery-red.txt
+
+Exact tests and checks run
+- ./gradlew testDebugUnitTest --tests '*Codex*' --tests '*WebLoginActivityNativeBridgeTest*' --tests '*ProviderNativeUsagePayloadFetcherTest*'
+  Result: not runnable from repo root, no ./gradlew present; substituted installed Gradle from android project.
+- cd android && ./gradlew testDebugUnitTest --tests '*Codex*' --tests '*WebLoginActivityNativeBridgeTest*' --tests '*ProviderNativeUsagePayloadFetcherTest*'
+  Result: not runnable, no android/gradlew present.
+- cd android && gradle testDebugUnitTest --tests '*Codex*' --tests '*WebLoginActivityNativeBridgeTest*' --tests '*ProviderNativeUsagePayloadFetcherTest*'
+  Result: host default Java is JDK 8; Gradle requires JVM 17+.
+- cd android && JAVA_HOME='/c/Program Files/Android/Android Studio/jbr' gradle testDebugUnitTest --tests '*Codex*' --tests '*WebLoginActivityNativeBridgeTest*' --tests '*ProviderNativeUsagePayloadFetcherTest*'
+  Result: FAIL after implementation because broad *Codex* filter includes unrelated ProviderWebCollectorScriptsTest.codexCollectorExtractsKoreanUsageRowsWithoutCodexPrefix.
+  Artifact: .omo/evidence/codex-login-usage-auth-recovery-requested-filter.txt
+- cd android && JAVA_HOME='/c/Program Files/Android/Android Studio/jbr' gradle testDebugUnitTest --tests 'com.aiquota.mobile.providers.CodexNativeHeaderSelectorTest' --tests 'com.aiquota.mobile.providers.WebLoginActivityNativeBridgeTest' --tests 'com.aiquota.mobile.providers.ProviderNativeUsagePayloadFetcherTest'
+  Result: PASS, BUILD SUCCESSFUL in 3s.
+  Artifact: .omo/evidence/codex-login-usage-auth-recovery-green.txt
+- git diff --check
+  Result: PASS; only line-ending warnings from existing Windows checkout.
+  Artifact: .omo/evidence/codex-login-usage-auth-recovery-diff-check.txt
+- cd android && JAVA_HOME='/c/Program Files/Android/Android Studio/jbr' gradle assembleDebug
+  Result: PASS, BUILD SUCCESSFUL in 6s.
+  APK artifact: android/app/build/outputs/apk/debug/app-debug.apk
+  Log artifact: .omo/evidence/codex-login-usage-auth-recovery-assemble-debug.txt
+
+Evidence artifacts
+- .omo/evidence/codex-login-usage-auth-recovery-red.txt
+- .omo/evidence/codex-login-usage-auth-recovery-green.txt
+- .omo/evidence/codex-login-usage-auth-recovery-requested-filter.txt
+- .omo/evidence/codex-login-usage-auth-recovery-assemble-debug.txt
+- .omo/evidence/codex-login-usage-auth-recovery-diff-check.txt
+- .omo/evidence/codex-login-usage-auth-recovery-diff.txt
+- .omo/evidence/codex-login-usage-auth-recovery-status.txt
+- .omo/evidence/codex-login-usage-auth-recovery-artifact-sizes.txt
+- .omo/evidence/codex-login-usage-auth-recovery-cleanup.txt
+- .omo/evidence/codex-login-usage-auth-recovery-tmux.txt
+
+Manual QA handoff
+- Build APK: cd android && JAVA_HOME='/c/Program Files/Android/Android Studio/jbr' gradle assembleDebug
+- Install APK: adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+- Clear logs: adb logcat -c
+- Launch Codex login surface:
+  adb shell am start -n com.aiquota.mobile/.providers.WebLoginActivity --es providerId codex --es startUrl https://chatgpt.com/
+- Logcat capture:
+  adb logcat -v time AIQuotaLogin:D AIQuotaCollector:D AIQuotaNativeJson:D '*:S' > .omo/evidence/codex-login-usage-auth-recovery-manual-logcat.txt
+- PASS predicates for QA agent:
+  1. No line matching: provider=codex nativeCollectorStart=aboutblank reason=page_finished from=chatgpt.com/
+  2. A login recovery line appears before native collection, preferably: provider=codex postLoginRedirect=analytics
+  3. capturedNativeHeaders for Codex contains at least one auth-context header name among Authorization, ChatGPT-Account-ID, OAI-Session-Id before native fetches.
+  4. AIQuotaNativeJson for /backend-api/wham/usage does not end as status=401.
+  5. Stored usage_data_codex.xml is CONNECTED with non-empty usage lines, or QA records the external account/session blocker exactly.
+- Manual emulator login QA was intentionally not performed in this implementation pass per task instruction.
+
+Adversarial classes
+- stale_state: probed by reading root cause report, checked plan item, dirty status, and rebuilding debug APK; manual install/login remains delegated.
+- dirty_worktree: probed with git status; unrelated .idea/misc.xml and ProviderBackgroundRefreshService.kt were not touched.
+- misleading_success_output: probed by recording requested broad-filter failure separately and using narrow class filters only after identifying the unrelated failure.
+- flaky_tests: focused relevant suite passed once; no rerun loop performed because failure mode was deterministic and narrow suite was stable.
+- hung_or_long_commands: Gradle commands completed within timeout; no hung command observed.
+
+Cleanup receipt
+- Stopped Gradle daemon: .omo/evidence/codex-login-usage-auth-recovery-cleanup.txt contains "1 Daemon stopped".
+- tmux check: .omo/evidence/codex-login-usage-auth-recovery-tmux.txt is empty; no tmux QA sessions left.
+- No browser, emulator login QA, server, bound port, container, temp directory, or staged git state was created by this pass.
+
+Risks
+- The broad requested `--tests '*Codex*'` filter still fails because it includes existing ProviderWebCollectorScriptsTest.codexCollectorExtractsKoreanUsageRowsWithoutCodexPrefix; this implementation did not touch that collector test path.
+- Unit tests cover the code seam and source wiring, but full emulator login proof is still delegated to manual QA.
+- The repository remains dirty with unrelated pre-existing files; no commit or staging was performed.

@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "createdAt": "2026-06-30T05:19:52.532Z",
+  "updatedAt": "2026-06-30T07:36:44.989Z",
+  "briefPath": ".omo/ulw-loop/codex-login-return-20260630/brief.md",
+  "goalsPath": ".omo/ulw-loop/codex-login-return-20260630/goals.json",
+  "ledgerPath": ".omo/ulw-loop/codex-login-return-20260630/ledger.jsonl",
+  "codexGoalMode": "aggregate",
+  "goals": [
+    {
+      "id": "G001-fix-codex-provider-login-flow-so-aft",
+      "title": "Fix Codex provider login flow so after a user logs in through the app...",
+      "objective": "Fix Codex provider login flow so after a user logs in through the app, usage collection runs from the authenticated usage page and the app returns from the login page instead of remaining on ChatGPT. Preserve existing native/about:blank collection constraints and verify with failing-first tests plus Android real-surface evidence.",
+      "status": "complete",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "After a fresh authenticated Codex login reaches chatgpt.com/codex/cloud/settings/analytics, native collection fetches wham usage, stores CONNECTED Codex usage lines, and WebLoginActivity finishes back to the app.",
+          "userModel": "happy",
+          "expectedEvidence": ".omo/ulw-loop/codex-login-return-20260630/codex-login-postfix-monitor.txt showing nativeUsage provider=codex ok=true, usage_data_codex.xml connectionState CONNECTED with lines, and no resumed WebLoginActivity.",
+          "essential": true,
+          "capturedEvidence": "Final Codex debug session cookie restore QA after replacing source-string tests with route policy tests. Evidence .omo/ulw-loop/codex-login-return-20260630/android-surface-codex-cookie-restore-login-10.txt shows debugCookieRestore=true, has_dom_inject_host_chatgpt=False, has_aboutblank_frame_inject=False, has_top_aboutblank_inject=True, nativeUsage provider=codex ok=true, snapshot connectionState=CONNECTED refreshState=IDLE with 2 lines, and WebLoginActivity not resumed. Cookie values were not printed; host backup retained at C:\\Users\\datell1357\\.aiquota-debug-session-cookies\\codex.json for repeat QA.",
+          "status": "pass",
+          "capturedAt": "2026-06-30T07:23:13.614Z",
+          "notes": "Code-level checks passed again; real-surface completion cannot be proven without authenticated Codex session."
+        },
+        {
+          "id": "C002",
+          "scenario": "When the current saved/debug Codex session is logged out or stale, the app remains non-connected and does not fabricate usage.",
+          "userModel": "edge",
+          "expectedEvidence": ".omo/ulw-loop/codex-login-return-20260630/codex-login-postfix-monitor.txt showing CONNECTING/REFRESHING with empty lines while the WebView remains unauthenticated, plus logs lacking codex nativeUsage ok=true.",
+          "essential": true,
+          "capturedEvidence": "Current stale/logged-out Codex session did not fabricate usage: usage_data_codex.xml remains CONNECTING/REFRESHING with lines=[] and foreground remains WebLoginActivity. Evidence: .omo/ulw-loop/codex-login-return-20260630/codex-login-postfix-monitor.txt.",
+          "status": "pass",
+          "capturedAt": "2026-06-30T05:41:56.763Z",
+          "notes": "This is the safe edge-state behavior while auth is unavailable."
+        },
+        {
+          "id": "C003",
+          "scenario": "Regression: Codex still uses native/about:blank collection constraints without DOM fallback, and only the native bridge path fetches wham usage.",
+          "userModel": "regression",
+          "expectedEvidence": "Focused unit tests in target test output files pass, including Codex native JSON allowlist, Wham native fetcher fallback from empty dashboard analytics, and collector script guardrails.",
+          "essential": false,
+          "capturedEvidence": "Focused regression checks pass after replacing source-string WebLoginActivityNativeBridgeTest with CodexNativeCollectionRoutes policy tests: targeted-codex-top-aboutblank-native-tests-4.txt covers ProviderWebCollectorScriptsTest, ProviderNativeUsagePayloadFetcherTest, DebugProviderSessionCookieStoreTest, WebLoginActivityNativeBridgeTest, and Codex background policy. Build/install evidence: assemble-debug-top-aboutblank-native-3.txt and install-debug-top-aboutblank-native-3.txt. Runtime QA login-10 confirms no chatgpt.com DOM injection, no aboutblank-frame injection, top-level about:blank injection, and native Wham usage success. git diff --check reported only CRLF warnings.",
+          "status": "pass",
+          "capturedAt": "2026-06-30T07:23:24.414Z",
+          "notes": "No DOM fallback added; Codex collection now waits for authenticated wham usage resource headers before native about:blank collection."
+        }
+      ],
+      "attempt": 1,
+      "createdAt": "2026-06-30T05:19:52.532Z",
+      "updatedAt": "2026-06-30T07:36:44.989Z",
+      "startedAt": "2026-06-30T06:52:05.190Z",
+      "completedAt": "2026-06-30T07:36:44.989Z",
+      "evidence": "Complete: Codex debug cookie restore and top-level about:blank native collection verified. Evidence: android-surface-codex-cookie-restore-login-10.txt, targeted-codex-top-aboutblank-native-tests-4.txt, assemble-debug-top-aboutblank-native-3.txt, install-debug-top-aboutblank-native-3.txt, git diff --check CRLF warnings only, code review APPROVE, QA APPROVE, gate APPROVE."
+    }
+  ],
+  "codexObjective": "Complete the durable ulw-loop plan in .omo/ulw-loop/codex-login-return-20260630/goals.json, including later accepted/appended stories, under the original brief constraints; use .omo/ulw-loop/codex-login-return-20260630/ledger.jsonl as the audit trail.",
+  "aggregateCompletion": {
+    "status": "complete",
+    "completedAt": "2026-06-30T07:36:44.989Z",
+    "evidence": "Complete: Codex debug cookie restore and top-level about:blank native collection verified. Evidence: android-surface-codex-cookie-restore-login-10.txt, targeted-codex-top-aboutblank-native-tests-4.txt, assemble-debug-top-aboutblank-native-3.txt, install-debug-top-aboutblank-native-3.txt, git diff --check CRLF warnings only, code review APPROVE, QA APPROVE, gate APPROVE.",
+    "codexGoal": {
+      "goal": {
+        "threadId": "019f132b-48a7-7812-8c79-74541e487332",
+        "objective": "Complete the durable ulw-loop plan in .omo/ulw-loop/codex-login-return-20260630/goals.json, including the authenticated Codex usage-page collection and app return fix, under the original brief constraints; use .omo/ulw-loop/codex-login-return-20260630/ledger.jsonl as the audit trail.",
+        "status": "complete",
+        "tokensUsed": 495351,
+        "timeUsedSeconds": 822,
+        "createdAt": 1782798494,
+        "updatedAt": 1782804754
+      },
+      "remainingTokens": null,
+      "completionBudgetReport": "Goal achieved."
+    }
+  }
+}

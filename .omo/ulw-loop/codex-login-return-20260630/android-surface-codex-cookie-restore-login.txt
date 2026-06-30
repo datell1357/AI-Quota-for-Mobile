@@ -1,0 +1,462 @@
+scenario=push saved Codex cookie snapshot, launch debug login Activity, assert WebLoginActivity returns after native Wham collection
+cookie_push=true
+start=Starting: Intent { cmp=com.aiquota.mobile/.debug.ProviderLoginDebugActivity (has extras) }
+snapshot_connectionState=missing
+snapshot_refreshState=missing
+snapshot_lines_empty=false
+snapshot_json_redacted_begin
+
+snapshot_json_redacted_end
+log_filtered_begin
+06-30 06:21:21.742 I/AIQuotaDebugCookie( 2022): provider=codex debugCookieRestore=true reason=login_start source=extern
+al urlCount=14 cookieCount=192
+06-30 06:21:22.339 D/AIQuotaLogin( 2022): provider=codex capturedNativeHeaders path=/codex/cloud/settings/analytics nam
+es=Accept|Upgrade-Insecure-Requests|User-Agent|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 06:21:22.404 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/codex/cloud/settings/analytics
+06-30 06:21:24.660 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/root-jrecj1h9.css
+06-30 06:21:24.662 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/conversation-small-bnw
+wp2d9.css
+06-30 06:21:24.663 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/global-modals-5n50n0lo
+.css
+06-30 06:21:24.665 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/codex-analytics-tabs-j
+fs725i2.css
+06-30 06:21:24.684 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/04f8add6-o1yeev4p66uae
+hvi.js
+06-30 06:21:24.691 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/manifest-65d660dd.js
+06-30 06:21:24.692 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/entry.client-j9qvd8d1.
+js
+06-30 06:21:24.692 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/2340486e-cujl6rtgtlvfi
+845.js
+06-30 06:21:24.692 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/4813494d-hcygn6dw6erjx
+jzu.js
+06-30 06:21:24.747 I/AIQuotaCollector( 2022): provider=codex collectorMode=webview-js inject host=chatgpt.com
+06-30 06:21:24.856 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/f025431a-k9k2urgxtm157
+sx7.js
+06-30 06:21:24.857 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/root-jxvmpr6m.js
+06-30 06:21:24.857 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/conversation-small-k8e
+zwnmg46qjdseo.js
+06-30 06:21:24.858 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/codex.cloud.settings.a
+nalytics-dwzitg4e.js
+06-30 06:21:24.858 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/d942f648-moirm5cs3doop
+eor.js
+06-30 06:21:24.859 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/c2675c8c-lxnn8j94p952u
+pqa.js
+06-30 06:21:24.859 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/ef50f9ea-nk61s240ihjbs
+mhh.js
+06-30 06:21:24.859 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/3d9e424f-ox7c2n482bu6z
+gj2.js
+06-30 06:21:24.860 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/b0c2397c-cg161to1tlmy1
+50w.js
+06-30 06:21:24.860 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/a0344e44-ied1eyx09s3ax
+xvi.js
+06-30 06:21:24.861 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/e0dd6841-exdqwlefngn8r
+hlk.js
+06-30 06:21:24.862 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/3e72bb91-d9tmph5y8ooy7
+ety.js
+06-30 06:21:24.862 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/30901919-ou1gb8fm8z30f
+atr.js
+06-30 06:21:24.862 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/dbe1f625-4v5v08ukwgpbp
+ppj.js
+06-30 06:21:24.905 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/8eb03965-gaqnr5y321ppg
+whc.js
+06-30 06:21:24.926 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/fab52ad7-i1nh5wig7uygr
+ji8.js
+06-30 06:21:24.926 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/94ac5276-gny17t8dhu2rd
+01g.js
+06-30 06:21:24.927 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/9688073a-ekqt7wovn345z
+16c.js
+06-30 06:21:24.927 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/05d28061-dzgfjcjsyy9vr
+0h1.js
+06-30 06:21:24.927 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/c470f5ab-g95oqlhjogpry
+rsb.js
+06-30 06:21:24.927 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/0e5afe53-gpatef59ssikr
+gwj.js
+06-30 06:21:24.927 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/25a66342-lwm198mbjyhsy
+gd3.js
+06-30 06:21:24.927 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/25a66342-oslw88jlcp7wr
+ph8.js
+06-30 06:21:24.928 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/ab333bf7-ivez0c1zusi33
+91t.js
+06-30 06:21:24.928 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/82782bc9-papywsacp48i6
+3th.js
+06-30 06:21:24.928 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/8b34dbc2-og96en992gix2
+b6o.js
+06-30 06:21:24.928 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/e9df0b0e-gmtzevfgstb3o
+ond.js
+06-30 06:21:24.928 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/673c0d9b-mtknrtza20u25
+beq.js
+06-30 06:21:24.928 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/e19f3910-e7tff7ig1aflm
+9vi.js
+06-30 06:21:24.929 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/9e18a103-n9qwjmd8t1b8t
+1fl.js
+06-30 06:21:24.930 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/dd81d43b-gcujcfsf8643r
+gnb.js
+06-30 06:21:24.930 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/aaa2d182-dl9gw1m0sl1k8
+wms.js
+06-30 06:21:24.932 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/19189336-fh8cqtwrwehja
+c61.js
+06-30 06:21:24.933 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/1361132d-ajiruz6mq2h80
+65e.js
+06-30 06:21:24.933 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/5f4d7fa0-e8dftoykjwjq7
+sk4.js
+06-30 06:21:24.933 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/9ac7a75a-k01co5bwvlcdt
+3wc.js
+06-30 06:21:24.934 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/620167af-ke1oezjeynufm
+xl0.js
+06-30 06:21:24.934 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/b453068a-hzy65lntu5dch
+luz.js
+06-30 06:21:24.935 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/ab4d12c6-dv3j3h6jmnem3
+aa2.js
+06-30 06:21:24.935 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/af004db9-louqb2h2s6jo6
+3qh.js
+06-30 06:21:24.937 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/e8b55dd1-ia3a26pfw4h0o
+4fh.js
+06-30 06:21:24.939 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/cf64444f-540j93mc8h5vl
+wms.js
+06-30 06:21:24.939 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/9371a995-ckwd2mhp89zde
+j62.js
+06-30 06:21:24.939 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/0b9bc04d-m4cd8d9ft1mx4
+fa6.js
+06-30 06:21:24.940 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/b4c3a217-cbdw59itakf26
+wum.js
+06-30 06:21:24.942 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/e12c8cf3-c8hpo3txack04
+kwr.js
+06-30 06:21:24.942 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/35fc21ca-oayz4tx83r7lq
+8wa.js
+06-30 06:21:24.942 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/ec72420d-eew0z1sz2cr5a
+yo1.js
+06-30 06:21:24.943 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/1f8ec761-mwtnrlixegdb9
+4l9.js
+06-30 06:21:24.943 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/bb20f959-lgkv07h0hp3ar
+rsz.js
+06-30 06:21:25.022 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/sprites-core-16f983c9.
+svg
+06-30 06:21:25.061 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/sprites-wham-69c294bb.
+svg
+06-30 06:21:25.560 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/5ab42519-o2dsf4huzk8mu
+9cp.js
+06-30 06:21:25.560 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/eec4c631-dvwwfats45gy9
+twu.js
+06-30 06:21:25.560 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/be58453f-m86186qc7x1ad
+vg2.js
+06-30 06:21:25.563 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/fd7f274b-njp4nbaunvo5m
+qyo.js
+06-30 06:21:25.566 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/e6911992-oy72ez94r8h4p
+la1.js
+06-30 06:21:25.566 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/88605b43-hl70lstm4q0fs
+hsv.js
+06-30 06:21:25.771 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/noise-watercolor-m3j88
+gni.webp
+06-30 06:21:25.824 I/AIQuotaLoginTiming( 2022): codex pageFinished=4419ms host=chatgpt.com
+06-30 06:21:26.007 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/user_granular_consent
+06-30 06:21:26.008 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/accounts/optimized/ch
+eck
+06-30 06:21:26.044 D/AIQuotaLogin( 2022): provider=codex capturedNativeHeaders path=/backend-api/me names=Accept|Author
+ization|ChatGPT-Account-ID|OAI-Client-Build-Number|OAI-Client-Version|OAI-Device-Id|OAI-Language|OAI-Session-Id|Referer
+|User-Agent|X-OpenAI-Target-Path|X-OpenAI-Target-Route|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 06:21:26.044 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/me
+06-30 06:21:26.048 D/AIQuotaLogin( 2022): provider=codex capturedNativeHeaders path=/backend-api/accounts/check/v4-2023
+-04-27 names=Accept|Authorization|ChatGPT-Account-ID|OAI-Client-Build-Number|OAI-Client-Version|OAI-Device-Id|OAI-Langu
+age|OAI-Session-Id|Referer|User-Agent|X-OpenAI-Target-Path|X-OpenAI-Target-Route|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-p
+latform
+06-30 06:21:26.049 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/accounts/check/v4-202
+3-04-27?keys=timezone_offset_min
+06-30 06:21:26.082 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/ces/v1/rgstr?keys=k|st|sv|t|sid|e
+c|gz
+06-30 06:21:26.082 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/codex-favicon-hem6sxfy
+.ico
+06-30 06:21:26.090 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/codex-favicon-hem6sxfy
+.ico
+06-30 06:21:26.128 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/70025534-nqw2s0x0vqh7g
+tmr.js
+06-30 06:21:26.258 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/settings/is_adult
+06-30 06:21:26.261 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/settings/user
+06-30 06:21:26.261 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/user_system_messages
+06-30 06:21:26.287 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailycodereviewpriority.series.p0" for locale "ko-KR", 
+using default message (P0 issues) as fallback.
+06-30 06:21:26.293 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailycodereviewpriority.series.p1" for locale "ko-KR", 
+using default message (P1 issues) as fallback.
+06-30 06:21:26.293 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailycodereviewpriority.series.p2" for locale "ko-KR", 
+using default message (P2 issues) as fallback.
+06-30 06:21:26.293 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailycodereviewreactions.series.plus1" for locale "ko-K
+R", using default message (?? reactions) as fallback.
+06-30 06:21:26.294 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailycodereviewreactions.series.minus1" for locale "ko-
+KR", using default message (?? reactions) as fallback.
+06-30 06:21:26.294 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailycodereviewreactions.series.other" for locale "ko-K
+R", using default message (Other reactions) as fallback.
+06-30 06:21:26.295 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.absoluteUsers" for locale "ko-KR", using d
+efault message (Users) as fallback.
+06-30 06:21:26.295 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.desktop" for locale "ko-KR", using default
+ message (Desktop) as fallback.
+06-30 06:21:26.296 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.cli" for locale "ko-KR", using default mes
+sage (CLI) as fallback.
+06-30 06:21:26.296 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.vscode" for locale "ko-KR", using default 
+message (Extension) as fallback.
+06-30 06:21:26.296 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.cloud" for locale "ko-KR", using default m
+essage (Cloud) as fallback.
+06-30 06:21:26.296 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.codeReview" for locale "ko-KR", using defa
+ult message (Code Review) as fallback.
+06-30 06:21:26.297 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailyproductusageoverview.codeReviewSeriesLabel" for lo
+cale "ko-KR", using default message (Code review) as fallback.
+06-30 06:21:26.297 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailyproductusageoverview.webSeriesLabel" for locale "k
+o-KR", using default message (Cloud) as fallback.
+06-30 06:21:26.299 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailyproductusageoverview.desktopSeriesLabel" for local
+e "ko-KR", using default message (Desktop) as fallback.
+06-30 06:21:26.299 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailyproductusageoverview.vscodeSeriesLabel" for locale
+ "ko-KR", using default message (Extension) as fallback.
+06-30 06:21:26.299 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailyproductusageoverview.cliSeriesLabel" for locale "k
+o-KR", using default message (CLI) as fallback.
+06-30 06:21:26.300 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.codeReviewPanel.prsReviewed.redesign" for locale "ko-KR
+", using default message (PRs reviewed) as fallback.
+06-30 06:21:26.300 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.codeReviewPanel.issuesFound.redesign" for locale "ko-KR
+", using default message (Issues found) as fallback.
+06-30 06:21:26.301 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.threads" for locale "ko-KR", using default
+ message (threads) as fallback.
+06-30 06:21:26.301 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.threads" for locale "ko-KR", using default
+ message (threads) as fallback.
+06-30 06:21:26.301 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.metricPerInterval.redesign" for locale "ko
+-KR", using default message ({metric}/{groupBy, select, week {week} other {day}}) as fallback.
+06-30 06:21:26.302 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.turns" for locale "ko-KR", using default m
+essage (turns) as fallback.
+06-30 06:21:26.302 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.turns" for locale "ko-KR", using default m
+essage (turns) as fallback.
+06-30 06:21:26.303 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.metricPerInterval.redesign" for locale "ko
+-KR", using default message ({metric}/{groupBy, select, week {week} other {day}}) as fallback.
+06-30 06:21:26.450 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/ces/v1/rgstr?keys=k|st|sv|t|sid|e
+c|gz
+06-30 06:21:26.485 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/aip/connectors/list_a
+ccessible?keys=skip_actions|external_logos
+06-30 06:21:26.709 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/bcf56d39-j2pnalw8l9xlp
+hdf.js
+06-30 06:21:26.712 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/9289140b-nqrvlcelvtox6
+6nt.js
+06-30 06:21:26.713 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/e6fa0362-g0n3mua2thjid
+4on.js
+06-30 06:21:26.716 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/4e18e912-bqa09wl3ne1fd
+5h1.js
+06-30 06:21:26.765 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/f4e264a1-nzelrxeo30v85
+ls9.js
+06-30 06:21:26.766 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/silk-hq-jrmbfqt7.css
+06-30 06:21:26.771 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/ae144ef6-lp68l23td891s
+0g8.js
+06-30 06:21:26.821 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/70b3f499-c69grs2v3ksea
+ek6.js
+06-30 06:21:26.824 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/63173ebb-g9k4xhjwhmo8n
+l88.js
+06-30 06:21:26.825 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/dfa96487-lsn3h2ab625o0
+63n.js
+06-30 06:21:26.826 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/57f03fcb-og7kx1q3eso1x
+z3w.js
+06-30 06:21:26.877 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.breakdown.model.redesign" for locale "ko-K
+R", using default message (By model) as fallback.
+06-30 06:21:26.877 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.breakdown.surface.redesign" for locale "ko
+-KR", using default message (By surface) as fallback.
+06-30 06:21:26.877 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.chart.summaryValueUnavailable" for locale "ko-KR", usin
+g default message (-) as fallback.
+06-30 06:21:26.877 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailypluginusage.tooltipTotalLabel" for locale "ko-KR",
+ using default message (Total) as fallback.
+06-30 06:21:26.877 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailypluginusage.summaryLabel.redesign" for locale "ko-
+KR", using default message (Plugins calls) as fallback.
+06-30 06:21:26.877 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.chart.summaryValueUnavailable" for locale "ko-KR", usin
+g default message (-) as fallback.
+06-30 06:21:26.877 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailyskillusage.tooltipTotalLabel" for locale "ko-KR", 
+using default message (Total) as fallback.
+06-30 06:21:26.878 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.dailyskillusage.summaryLabel.redesign" for locale "ko-K
+R", using default message (Skills used) as fallback.
+06-30 06:21:26.880 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/conversation-small-bnw
+wp2d9.css
+06-30 06:21:26.883 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/global-modals-5n50n0lo
+.css
+06-30 06:21:26.983 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/compliance
+06-30 06:21:26.991 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/wham/settings/user
+06-30 06:21:26.993 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/aip/connectors/links/
+list_accessible
+06-30 06:21:26.993 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/aip/connectors/oauth_
+clients?keys=service
+06-30 06:21:26.996 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/wham/analytics/daily-
+skill-usage-metrics?keys=start_date|end_date|group_by|workspace_user|top_skill_limit
+06-30 06:21:26.998 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/wham/analytics/daily-
+plugin-usage-metrics?keys=start_date|end_date|group_by|workspace_user|top_plugin_limit
+06-30 06:21:26.998 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/wham/analytics/daily-
+workspace-usage-counts?keys=start_date|end_date|group_by|workspace_user
+06-30 06:21:26.998 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/students/refresh_enro
+llment_status
+06-30 06:21:27.002 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/amphora/notifications
+?keys=limit
+06-30 06:21:27.012 D/AIQuotaLogin( 2022): provider=codex capturedNativeHeaders path=/backend-api/wham/usage names=Accep
+t|Authorization|ChatGPT-Account-ID|OAI-Client-Build-Number|OAI-Client-Version|OAI-Device-Id|OAI-Language|OAI-Session-Id
+|Referer|User-Agent|X-OpenAI-Target-Path|X-OpenAI-Target-Route|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 06:21:27.012 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/wham/usage
+06-30 06:21:27.013 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/wham/usage/daily-toke
+n-usage-breakdown?keys=start_date|end_date|group_by
+06-30 06:21:27.128 I/AIQuotaLogin( 2022): provider=codex nativeCollectorStart=aboutblank reason=resource from=chatgpt.c
+om/codex/cloud/settings/analytics
+06-30 06:21:27.156 I/AIQuotaCollector( 2022): provider=codex collectorMode=webview-js inject host=aboutblank-frame
+06-30 06:21:27.175 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/celsius/ws/user
+06-30 06:21:27.447 D/AIQuotaLogin( 2022): provider=codex capturedNativeHeaders path=/api/auth/session names=Referer|Use
+r-Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 06:21:27.447 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/api/auth/session
+06-30 06:21:27.485 D/AIQuotaLogin( 2022): provider=codex capturedNativeHeaders path=/backend-api/me names=Referer|User-
+Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 06:21:27.486 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/me
+06-30 06:21:27.492 D/AIQuotaLogin( 2022): provider=codex capturedNativeHeaders path=/backend-api/accounts/check/v4-2023
+-04-27 names=Referer|User-Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 06:21:27.492 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/accounts/check/v4-202
+3-04-27
+06-30 06:21:27.718 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.chart.summaryValueUnavailable" for locale "ko-KR", usin
+g default message (-) as fallback.
+06-30 06:21:27.719 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.chart.summaryValueUnavailable" for locale "ko-KR", usin
+g default message (-) as fallback.
+06-30 06:21:27.782 I/AIQuotaLogin( 2022): provider=codex observedAccountId=true
+06-30 06:21:27.782 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/wham/usage/credit-usa
+ge-events
+06-30 06:21:27.782 D/AIQuotaLogin( 2022): provider=codex capturedNativeHeaders path=/backend-api/subscriptions names=Ac
+cept|Authorization|ChatGPT-Account-ID|OAI-Client-Build-Number|OAI-Client-Version|OAI-Device-Id|OAI-Language|OAI-Session
+-Id|Referer|User-Agent|X-OpenAI-Target-Path|X-OpenAI-Target-Route|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 06:21:27.783 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/subscriptions?keys=ac
+count_id
+06-30 06:21:27.944 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/ces/v1/projects/oai/settings
+06-30 06:21:28.107 I/AIQuotaLogin( 2022): provider=codex observedAccountId=true
+06-30 06:21:28.107 D/AIQuotaLogin( 2022): provider=codex capturedNativeHeaders path=/backend-api/subscriptions names=Re
+ferer|User-Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 06:21:28.107 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/subscriptions?keys=ac
+count_id
+06-30 06:21:28.109 D/AIQuotaLogin( 2022): provider=codex capturedNativeHeaders path=/backend-api/wham/usage names=Refer
+er|User-Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 06:21:28.109 D/AIQuotaLogin( 2022): provider=codex capturedNativeHeaders path=/codex/cloud/settings/analytics nam
+es=Referer|User-Agent|accept|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 06:21:28.109 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/codex/cloud/settings/analytics
+06-30 06:21:28.109 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/wham/usage
+06-30 06:21:28.114 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.chart.summaryValueUnavailable" for locale "ko-KR", usin
+g default message (-) as fallback.
+06-30 06:21:28.175 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/subscriptions/auto_to
+p_up/settings?keys=include_payment_method
+06-30 06:21:28.368 E/AIQuotaLogin( 2022): provider=codex http status=401 url=https://chatgpt.com/backend-api/subscripti
+ons?keys=account_id
+06-30 06:21:28.448 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/root-jrecj1h9.css
+06-30 06:21:28.461 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/root-jrecj1h9.css
+06-30 06:21:28.462 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/conversation-small-bnw
+wp2d9.css
+06-30 06:21:28.462 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/global-modals-5n50n0lo
+.css
+06-30 06:21:28.463 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/codex-analytics-tabs-j
+fs725i2.css
+06-30 06:21:28.463 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/04f8add6-o1yeev4p66uae
+hvi.js
+06-30 06:21:28.474 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/ba0ab623-hys9zt7beajd5
+1dl.js
+06-30 06:21:28.824 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/5f339043-kewbwxbo3ly13
+ghq.js
+06-30 06:21:28.825 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/cdn/assets/147d70af-fzgadq2vq3lg9
+0ey.js
+06-30 06:21:28.829 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.absoluteUsers" for locale "ko-KR", using d
+efault message (Users) as fallback.
+06-30 06:21:28.829 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.desktop" for locale "ko-KR", using default
+ message (Desktop) as fallback.
+06-30 06:21:28.829 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.cli" for locale "ko-KR", using default mes
+sage (CLI) as fallback.
+06-30 06:21:28.831 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.vscode" for locale "ko-KR", using default 
+message (Extension) as fallback.
+06-30 06:21:28.831 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.cloud" for locale "ko-KR", using default m
+essage (Cloud) as fallback.
+06-30 06:21:28.831 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.usageSurface.codeReview" for locale "ko-KR", using defa
+ult message (Code Review) as fallback.
+06-30 06:21:28.831 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.threads" for locale "ko-KR", using default
+ message (threads) as fallback.
+06-30 06:21:28.832 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.threads" for locale "ko-KR", using default
+ message (threads) as fallback.
+06-30 06:21:28.833 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.metricPerInterval.redesign" for locale "ko
+-KR", using default message ({metric}/{groupBy, select, week {week} other {day}}) as fallback.
+06-30 06:21:28.833 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.turns" for locale "ko-KR", using default m
+essage (turns) as fallback.
+06-30 06:21:28.833 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.turns" for locale "ko-KR", using default m
+essage (turns) as fallback.
+06-30 06:21:28.835 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=Error: [@formatjs/in
+tl Error MISSING_TRANSLATION] Missing message: "codex.analytics.productUsage.metricPerInterval.redesign" for locale "ko
+-KR", using default message ({metric}/{groupBy, select, week {week} other {day}}) as fallback.
+06-30 06:21:29.074 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/ces/v1/t
+06-30 06:21:29.106 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/ces/v1/p
+06-30 06:21:29.132 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/ces/v1/i
+06-30 06:21:29.173 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/checkout_pricing_conf
+ig/countries
+06-30 06:21:29.318 E/AIQuotaLogin( 2022): provider=codex http status=401 url=https://chatgpt.com/backend-api/wham/usage
+06-30 06:21:29.364 D/AIQuotaNativeUsage( 2022): nativeUsage provider=codex ok=false diagnostic=codex_usage_unavailable
+06-30 06:21:29.375 W/AIQuotaCollector( 2022): provider=codex collectorMode=webview-js errorKind=codex_usage_unavailable
+ keptPreviousSnapshot=true
+06-30 06:21:29.375 I/AIQuotaCollector( 2022): provider=codex awaitingUsagePayload=true errorKind=codex_usage_unavailabl
+e
+06-30 06:21:29.736 D/AIQuotaLogin( 2022): provider=codex resource=https://chatgpt.com/backend-api/checkout_pricing_conf
+ig/configs/KR
+06-30 06:21:31.613 I/NullBinder( 1298): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote Transact
+ionTooLargeException due to Service without Chimera impl, calling uid: 1000, calling pid: 0
+06-30 06:21:32.322 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=WARNING line=0 message=The resource https:
+//chatgpt.com/cdn/assets/global-modals-5n50n0lo.css# was preloaded using link preload but not used within a few seconds
+ from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded i
+06-30 06:21:32.322 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=WARNING line=0 message=The resource https:
+//chatgpt.com/cdn/assets/conversation-small-bnwwp2d9.css# was preloaded using link preload but not used within a few se
+conds from the window's load event. Please make sure it has an appropriate `as` value and it is preloa
+06-30 06:21:32.322 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=WARNING line=0 message=The resource https:
+//chatgpt.com/cdn/assets/codex-analytics-tabs-jfs725i2.css was preloaded using link preload but not used within a few s
+econds from the window's load event. Please make sure it has an appropriate `as` value and it is prelo
+06-30 06:21:32.322 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=WARNING line=0 message=The resource https:
+//chatgpt.com/cdn/assets/root-jrecj1h9.css# was preloaded using link preload but not used within a few seconds from the
+ window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentiona
+06-30 06:21:34.621 I/NullBinder( 1298): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote Transact
+ionTooLargeException due to Service without Chimera impl, calling uid: 1000, calling pid: 0
+06-30 06:21:35.539 D/AIQuotaLoginConsole( 2022): provider=codex consoleLevel=ERROR line=61 message=[object QuotaExceede
+dError] [object Object]
+06-30 06:21:37.628 I/NullBinder( 1298): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote Transact
+ionTooLargeException due to Service without Chimera impl, calling uid: 1000, calling pid: 0
+06-30 06:21:49.659 I/NullBinder( 1298): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote Transact
+ionTooLargeException due to Service without Chimera impl, calling uid: 1000, calling pid: 0
+log_filtered_end
+activity_begin
+topResumedActivity=ActivityRecord{254002549 u0 com.aiquota.mobile/.providers.WebLoginActivity t480}
+activity_end

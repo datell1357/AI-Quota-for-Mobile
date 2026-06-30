@@ -1,0 +1,9 @@
+﻿manual_review=pass
+scope=Gemini native usage page RPC collection
+new_core_files_loc=GeminiUsagePageNativeFetcher.kt:156; GeminiUsagePageRpcSession.kt:65
+behavior_tests=gemini-native-rpc-behavior-policy-tests-final6.txt
+full_verification=gemini-native-rpc-full-tests-assemble-final6.txt
+device_verification=gemini-native-rpc-device-refresh-logcat-final4.txt; gemini-native-rpc-sharedprefs-readback-final3.txt
+source_policy_is_supplemental=gemini-native-rpc-no-dom-fallback-grep-final6.txt
+implementation_mirroring_removed=gate-flagged Gemini test string patterns are absent; ProviderNativeUsagePayloadFetcherTest no longer reads ProviderNativeUsagePayloadFetcher.kt
+note=production code unchanged after device QA except diagnostic Log.d runCatching before final5; final6 changes remove brittle tests only

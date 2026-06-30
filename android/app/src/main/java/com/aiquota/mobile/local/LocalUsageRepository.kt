@@ -310,6 +310,9 @@ internal fun mergeFreshSnapshotWithPreviousLines(
     if (previous.providerId != snapshot.providerId) return snapshot
     if (snapshot.connectionState != ProviderConnectionState.CONNECTED) return snapshot
     if (snapshot.lines.isEmpty() || previous.lines.isEmpty()) return snapshot
+    if (snapshot.providerId == ProviderId.GEMINI && snapshot.lines.hasTrustedGeminiUsagePageQuotaLine()) {
+        return snapshot
+    }
 
     val incomingByKey = snapshot.lines.associateBy { it.mergeKey() }
     val previousKeys = previous.lines.map { it.mergeKey() }.toSet()
@@ -369,6 +372,7 @@ internal fun normalizeGeminiLegacyUsageLabels(snapshot: ProviderUsageSnapshot): 
 }
 
 private fun ProviderUsageLine.isLegacyGeminiCollapsedLine(): Boolean {
+    if (isTrustedGeminiUsagePageQuotaLine()) return false
     val normalized = label.trim()
         .replace('_', ' ')
         .replace('-', ' ')
@@ -384,9 +388,11 @@ private fun ProviderUsageLine.isLegacyGeminiCollapsedLine(): Boolean {
 }
 
 private val LegacyGeminiCollapsedLabels = setOf(
+    "deep research",
     "5 hour limit",
     "five hour limit",
     "gemini pro",
+    "gemini deep research",
     "gemini flash",
     "gemini weekly",
     "weekly limit",
@@ -394,11 +400,44 @@ private val LegacyGeminiCollapsedLabels = setOf(
 )
 
 private val LegacyGeminiCollapsedKeys = setOf(
+    "gemini deep research",
     "gemini 5 hour limit",
+    "gemini gemini deep research",
     "gemini gemini pro",
     "gemini gemini flash",
     "gemini weekly limit",
     "gemini gemini weekly"
+)
+
+private fun List<ProviderUsageLine>.hasTrustedGeminiUsagePageQuotaLine(): Boolean {
+    return any { it.isTrustedGeminiUsagePageQuotaLine() }
+}
+
+private fun ProviderUsageLine.isTrustedGeminiUsagePageQuotaLine(): Boolean {
+    val normalized = normalizedGeminiUsageText(label)
+    val normalizedKey = normalizedGeminiUsageText(key).replace(':', ' ')
+    val isUsagePageQuota = normalized in GeminiUsagePageQuotaLabels ||
+        normalizedKey.endsWith(" 5 hour limit") ||
+        normalizedKey.endsWith(" weekly limit")
+    if (!isUsagePageQuota) return false
+    return unit == "requests" ||
+        usedAmount != null ||
+        limitAmount != null ||
+        remainingAmount != null ||
+        resetsAt != null
+}
+
+private fun normalizedGeminiUsageText(value: String): String {
+    return value.trim()
+        .replace('_', ' ')
+        .replace('-', ' ')
+        .replace(Regex("\\s+"), " ")
+        .lowercase()
+}
+
+private val GeminiUsagePageQuotaLabels = setOf(
+    "5 hour limit",
+    "weekly limit"
 )
 
 internal fun normalizeGeminiLegacyPlanLabel(snapshot: ProviderUsageSnapshot): ProviderUsageSnapshot {

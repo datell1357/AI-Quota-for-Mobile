@@ -1,0 +1,5 @@
+﻿Static guard: scoped provider native collection
+CopilotNativeUsageFetcher forbidden fallback markers:
+PASS: no forbidden Copilot production fallback markers found.
+ProviderWebCollectorScripts production path:
+PASS: covered by ProviderWebCollectorScriptsTest scopedProvidersBuildOnlyNativeUsagePayloadCollector, scopedProvidersRejectNonAboutBlankCollectorPages, scopedProvidersDoNotFallBackToLegacyCollectorsWhenPageUrlIsMissing.

@@ -14,7 +14,10 @@ class ProviderDefinitionRegistryTest {
 
         assertEquals(ProviderId.defaultOrder(), definitions.map { it.providerId })
         assertEquals("https://claude.ai/login", definitionsByProvider[ProviderId.CLAUDE]?.loginStartUrl)
-        assertEquals("https://chatgpt.com/auth/login", definitionsByProvider[ProviderId.CODEX]?.loginStartUrl)
+        assertEquals(
+            "https://chatgpt.com/codex/cloud/settings/analytics#usage",
+            definitionsByProvider[ProviderId.CODEX]?.loginStartUrl
+        )
         assertEquals("aiquota://provider/glm-api-key", definitionsByProvider[ProviderId.GLM]?.loginStartUrl)
         assertEquals(
             "https://api.z.ai/api/monitor/usage/quota/limit",
@@ -26,7 +29,10 @@ class ProviderDefinitionRegistryTest {
         assertEquals("https://opencode.ai/auth", definitionsByProvider[ProviderId.OPENCODE]?.preferredUsageEndpoint)
         assertEquals(ProviderAuthStoreKind.WEBVIEW_PROFILE, definitionsByProvider[ProviderId.OPENCODE]?.authStoreKind)
         assertEquals(ProviderCollectionKind.WEBVIEW_COLLECTOR, definitionsByProvider[ProviderId.OPENCODE]?.collectionKind)
-        assertEquals("https://gemini.google.com/usage", definitionsByProvider[ProviderId.GEMINI]?.loginStartUrl)
+        assertEquals(
+            "https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fgemini.google.com%2Fusage&authuser=-1",
+            definitionsByProvider[ProviderId.GEMINI]?.loginStartUrl
+        )
         assertEquals(
             "https://gemini.google.com/usage",
             definitionsByProvider[ProviderId.GEMINI]?.preferredUsageEndpoint

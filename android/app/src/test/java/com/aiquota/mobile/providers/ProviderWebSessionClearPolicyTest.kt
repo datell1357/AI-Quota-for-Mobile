@@ -85,15 +85,15 @@ class ProviderWebSessionClearPolicyTest {
         assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.OPENCODE).contains("https://opencode.ai/auth"))
 
         assertFalse(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.CODEX).contains("https://github.com"))
-        assertFalse(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.CLAUDE).contains("https://accounts.google.com"))
-        assertFalse(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.CODEX).contains("https://accounts.google.com"))
-        assertFalse(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.GEMINI).contains("https://accounts.google.com"))
-        assertFalse(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.ANTIGRAVITY).contains("https://accounts.google.com"))
-        assertFalse(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.CURSOR).contains("https://accounts.google.com"))
-        assertFalse(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.CURSOR).contains("https://github.com"))
+        assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.CLAUDE).contains("https://accounts.google.com"))
+        assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.CODEX).contains("https://accounts.google.com"))
+        assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.GEMINI).contains("https://accounts.google.com"))
+        assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.ANTIGRAVITY).contains("https://accounts.google.com"))
+        assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.CURSOR).contains("https://accounts.google.com"))
+        assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.CURSOR).contains("https://github.com"))
         assertFalse(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.GLM).contains("https://accounts.google.com"))
-        assertFalse(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.OPENCODE).contains("https://accounts.google.com"))
-        assertFalse(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.OPENCODE).contains("https://github.com"))
+        assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.OPENCODE).contains("https://accounts.google.com"))
+        assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.OPENCODE).contains("https://github.com"))
     }
 
     @Test

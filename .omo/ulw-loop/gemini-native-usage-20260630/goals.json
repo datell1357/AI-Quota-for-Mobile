@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "createdAt": "2026-06-30T02:23:15.592Z",
+  "updatedAt": "2026-06-30T05:03:38.566Z",
+  "briefPath": ".omo/ulw-loop/gemini-native-usage-20260630/brief.md",
+  "goalsPath": ".omo/ulw-loop/gemini-native-usage-20260630/goals.json",
+  "ledgerPath": ".omo/ulw-loop/gemini-native-usage-20260630/ledger.jsonl",
+  "codexGoalMode": "aggregate",
+  "goals": [
+    {
+      "id": "G001-gemini-usage-collection-currently-re",
+      "title": "Gemini usage collection currently reports only Deep Research and does...",
+      "objective": "Gemini usage collection currently reports only Deep Research and does not match the actual Gemini usage page. Change the Android app so Gemini usage matches the real usage page. If needed, inject the saved Gemini session cookie for QA. Hard constraint: absolutely no DOM collection and no fallback; Gemini must collect only via about:blank native JavaScript/native bridge collection. Preserve existing provider behavior and verify with TDD plus real-device evidence.",
+      "status": "complete",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "Unit + Android runtime: Gemini about:blank native bridge must use Gemini usage page batchexecute jSf9Qc RPC, normalize current usage-page quota buckets, and persist only the actual 5-hour/weekly usage-page rows instead of Deep Research.",
+          "userModel": "happy",
+          "expectedEvidence": ".omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-native-rpc-policy-tests-final.txt, gemini-native-rpc-device-refresh-logcat-final3.txt, and gemini-native-rpc-snapshot-summary-final3.txt",
+          "essential": true,
+          "capturedEvidence": "Focused tests BUILD SUCCESSFUL: .omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-native-rpc-policy-tests-final.txt; device refresh log shows debugCookieRestore=true, nativeCollectorStart about:blank rpcSession=true, geminiUsageRpc status=200, nativeUsage ok, saveSnapshot lineCount=2: .omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-native-rpc-device-refresh-logcat-final3.txt; explicit run-as SharedPreferences readback from shared_prefs/ai_quota_local_usage.xml shows only 5-hour limit and Weekly limit with request amounts: .omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-native-rpc-sharedprefs-readback-final.txt | cleanup: no spawned server/tmux/browser/container; adb/logcat commands exited; app remains installed intentionally for QA",
+          "status": "pass",
+          "capturedAt": "2026-06-30T03:47:57.662Z"
+        },
+        {
+          "id": "C002",
+          "scenario": "Regression/adversarial source+test check: Gemini collector must not use DOM collection, observed page/network fallback, HTML rawText parsing, or usage-page text fallback; PASS when tests fail on existing fallback and pass after only about:blank native usage payload remains for Gemini collection.",
+          "userModel": "edge",
+          "expectedEvidence": ".omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-no-dom-fallback-tests.txt and source grep snippets for Gemini fallback removal",
+          "essential": true,
+          "capturedEvidence": "Source/policy grep: asset_exists=False, gemini_collector_native_only=True, fetch_gemini_uses_usage_page_rpc=True, rpc_param_capture_no_dom_text=True, native_fetcher_no_html_dom_fallback=True, network_codeassist_fallback_rejected=True: .omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-native-rpc-no-dom-fallback-grep-final.txt; policy tests BUILD SUCCESSFUL: .omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-native-rpc-policy-tests-final.txt | cleanup: no spawned server/tmux/browser/container; grep/test commands exited",
+          "status": "pass",
+          "capturedAt": "2026-06-30T03:41:18.607Z"
+        },
+        {
+          "id": "C003",
+          "scenario": "Adjacent regression: existing Codex/Claude/Copilot native bridge and normalizer tests touched by shared files still pass, and debug cookie restore remains redacted; PASS when focused shared-provider tests pass and git diff shows no unrelated provider behavior rewrites.",
+          "userModel": "regression",
+          "expectedEvidence": ".omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-shared-regression-tests.txt plus final git diff summary",
+          "essential": false,
+          "capturedEvidence": "Shared regression tests BUILD SUCCESSFUL after rerun: .omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-shared-regression-tests-final2.txt; final assembleDebug BUILD SUCCESSFUL: .omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-native-rpc-assemble-debug-final4.txt; git diff --check reported no whitespace errors, only CRLF conversion warnings: .omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-native-rpc-diff-check-final2.txt | cleanup: no spawned server/tmux/browser/container; gradle/git commands exited",
+          "status": "pass",
+          "capturedAt": "2026-06-30T03:44:11.114Z"
+        }
+      ],
+      "attempt": 1,
+      "createdAt": "2026-06-30T02:23:15.592Z",
+      "updatedAt": "2026-06-30T05:03:38.566Z",
+      "startedAt": "2026-06-30T02:23:41.396Z",
+      "completedAt": "2026-06-30T05:03:38.566Z",
+      "evidence": "C001: PASS. Gemini device QA after debug APK reinstall and saved cookie injection restored 97 cookies, loaded gemini.google.com/usage, switched to about:blank with rpcSession=true, posted jSf9Qc usage RPC with status=200, normalized collectorMode=native-usage-page-rpc, and saved lineCount=2. SharedPreferences final readback shows only 5-hour limit and Weekly limit request rows with amount fields; no Deep Research row. C002: PASS. Gemini collector asset deleted, ProviderWebCollectorScripts.gemini emits native provider payload only, WIZ capture script has no DOM text/query selection, native fetcher has no HTML/DOM fallback, network CodeAssist fallback is rejected for WebView/native network responses, background Gemini OAuth/CodeAssist fallback removed. Gate-flagged Gemini implementation-string tests are absent; behavior tests cover fail-closed bridge and usage RPC payload parsing. C003: PASS. Full :app:testDebugUnitTest :app:assembleDebug passed after final6 changes. Focused behavior/policy tests passed. git diff --check reports no whitespace errors, only CRLF conversion warnings in pre-existing working-copy files."
+    }
+  ],
+  "codexObjective": "Complete the durable ulw-loop plan in .omo/ulw-loop/gemini-native-usage-20260630/goals.json, including later accepted/appended stories, under the original brief constraints; use .omo/ulw-loop/gemini-native-usage-20260630/ledger.jsonl as the audit trail.",
+  "aggregateCompletion": {
+    "status": "complete",
+    "completedAt": "2026-06-30T05:03:38.566Z",
+    "evidence": "C001: PASS. Gemini device QA after debug APK reinstall and saved cookie injection restored 97 cookies, loaded gemini.google.com/usage, switched to about:blank with rpcSession=true, posted jSf9Qc usage RPC with status=200, normalized collectorMode=native-usage-page-rpc, and saved lineCount=2. SharedPreferences final readback shows only 5-hour limit and Weekly limit request rows with amount fields; no Deep Research row. C002: PASS. Gemini collector asset deleted, ProviderWebCollectorScripts.gemini emits native provider payload only, WIZ capture script has no DOM text/query selection, native fetcher has no HTML/DOM fallback, network CodeAssist fallback is rejected for WebView/native network responses, background Gemini OAuth/CodeAssist fallback removed. Gate-flagged Gemini implementation-string tests are absent; behavior tests cover fail-closed bridge and usage RPC payload parsing. C003: PASS. Full :app:testDebugUnitTest :app:assembleDebug passed after final6 changes. Focused behavior/policy tests passed. git diff --check reports no whitespace errors, only CRLF conversion warnings in pre-existing working-copy files.",
+    "codexGoal": {
+      "remainingTokens": null,
+      "goal": {
+        "timeUsedSeconds": 7977,
+        "threadId": "019f132b-48a7-7812-8c79-74541e487332",
+        "createdAt": 1782786231,
+        "updatedAt": 1782794208,
+        "objective": "Complete the durable ulw-loop plan in .omo/ulw-loop/gemini-native-usage-20260630/goals.json, including later accepted/appended stories, under the original brief constraints; use .omo/ulw-loop/gemini-native-usage-20260630/ledger.jsonl as the audit trail.",
+        "status": "complete",
+        "tokensUsed": 2188947
+      },
+      "completionBudgetReport": "Goal achieved. Report final usage from this tool result structured goal fields."
+    }
+  }
+}

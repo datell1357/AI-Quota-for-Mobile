@@ -1,0 +1,180 @@
+{
+    "iteration":  {
+                      "status":  "passed",
+                      "evidence":  "Focused final6 tests and full final6 tests/build passed; device QA evidence remains valid for unchanged production collection path.",
+                      "fullRerun":  true,
+                      "rerunCommands":  [
+                                            "gradle :app:testDebugUnitTest --rerun-tasks --tests Gemini focused final6 set",
+                                            "gradle :app:testDebugUnitTest :app:assembleDebug",
+                                            "adb install -r; adb push saved gemini cookie; adb broadcast refresh"
+                                        ]
+                  },
+    "criteriaCoverage":  {
+                             "passCount":  3,
+                             "desiredOutcome":  "Gemini collects usage-page 5-hour and weekly request quota rows via about:blank native bridge only.",
+                             "totalCriteria":  3,
+                             "originalIntent":  "Gemini usage collection must match the real usage page instead of Deep Research-only values.",
+                             "adversarialClassesCovered":  [
+                                                               "actual usage page RPC source",
+                                                               "no DOM collection",
+                                                               "no fallback",
+                                                               "APK reinstall with cookie injection",
+                                                               "stale Deep Research removal",
+                                                               "shared provider regression"
+                                                           ],
+                             "userOutcomeReview":  "Verified with saved-cookie device QA and final SharedPreferences readback."
+                         },
+    "codeReview":  {
+                       "reportPath":  ".omo/evidence/gemini-native-usage-20260630-code-review.md",
+                       "blockers":  [
+
+                                    ],
+                       "evidence":  "Final6 code review APPROVE/CLEAR; no blockers after implementation-mirroring tests were removed.",
+                       "codeQualityStatus":  "CLEAR",
+                       "by":  "lazycodex-code-reviewer",
+                       "recommendation":  "APPROVE"
+                   },
+    "manualQa":  {
+                     "surfaceEvidence":  [
+                                             {
+                                                 "id":  "c001-device-cli",
+                                                 "surface":  "cli",
+                                                 "verdict":  "passed",
+                                                 "invocation":  "adb install -r, adb push saved gemini cookie, debug refresh broadcast, logcat filter",
+                                                 "artifactRefs":  [
+                                                                      "device-log",
+                                                                      "device-log-expanded"
+                                                                  ],
+                                                 "criterionRef":  "C001"
+                                             },
+                                             {
+                                                 "id":  "c001-sharedprefs-data",
+                                                 "surface":  "data",
+                                                 "verdict":  "passed",
+                                                 "invocation":  "adb shell run-as com.aiquota.mobile cat shared_prefs/ai_quota_local_usage.xml",
+                                                 "artifactRefs":  [
+                                                                      "sharedprefs"
+                                                                  ],
+                                                 "criterionRef":  "C001"
+                                             },
+                                             {
+                                                 "id":  "c002-policy-cli",
+                                                 "surface":  "cli",
+                                                 "verdict":  "passed",
+                                                 "invocation":  "final6 focused behavior tests and no DOM/fallback grep",
+                                                 "artifactRefs":  [
+                                                                      "behavior-tests",
+                                                                      "no-dom-grep",
+                                                                      "slop-review"
+                                                                  ],
+                                                 "criterionRef":  "C002"
+                                             },
+                                             {
+                                                 "id":  "c003-regression-cli",
+                                                 "surface":  "cli",
+                                                 "verdict":  "passed",
+                                                 "invocation":  "gradle :app:testDebugUnitTest :app:assembleDebug and git diff --check",
+                                                 "artifactRefs":  [
+                                                                      "full-tests",
+                                                                      "diff-check"
+                                                                  ],
+                                                 "criterionRef":  "C003"
+                                             }
+                                         ],
+                     "adversarialCases":  [
+                                              {
+                                                  "id":  "no-deep-research-row",
+                                                  "expectedBehavior":  "Final stored Gemini lines contain 5-hour limit and Weekly limit only",
+                                                  "verdict":  "passed",
+                                                  "scenario":  "Previous Deep Research-only Gemini row must not survive fresh usage-page RPC snapshot",
+                                                  "artifactRefs":  [
+                                                                       "sharedprefs"
+                                                                   ],
+                                                  "criterionRef":  "C001"
+                                              },
+                                              {
+                                                  "id":  "no-dom-or-fallback",
+                                                  "expectedBehavior":  "Gemini native fetch uses usage page RPC and source/test grep shows no blocked fallback paths",
+                                                  "verdict":  "passed",
+                                                  "scenario":  "Gemini collection must not use DOM collection, observed network fallback, or CodeAssist fallback",
+                                                  "artifactRefs":  [
+                                                                       "no-dom-grep",
+                                                                       "behavior-tests"
+                                                                   ],
+                                                  "criterionRef":  "C002"
+                                              },
+                                              {
+                                                  "id":  "reinstall-cookie-injection",
+                                                  "expectedBehavior":  "debugCookieRestore true, rpcSession true, geminiUsageRpc status 200, saveSnapshot lineCount 2",
+                                                  "verdict":  "passed",
+                                                  "scenario":  "After debug APK reinstall, saved Gemini session cookie is injected and collection runs without manual login",
+                                                  "artifactRefs":  [
+                                                                       "device-log"
+                                                                   ],
+                                                  "criterionRef":  "C001"
+                                              }
+                                          ],
+                     "artifactRefs":  [
+                                          {
+                                              "path":  ".omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-native-rpc-device-refresh-logcat-final4.txt",
+                                              "description":  "APK reinstall and saved-cookie Gemini refresh log showing /usage warm-up, about:blank native RPC status=200, and saveSnapshot lineCount=2",
+                                              "id":  "device-log",
+                                              "kind":  "log"
+                                          },
+                                          {
+                                              "path":  ".omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-native-rpc-device-refresh-logcat-final4-expanded.txt",
+                                              "description":  "Expanded Gemini refresh log including later successful retry after transient timeout",
+                                              "id":  "device-log-expanded",
+                                              "kind":  "log"
+                                          },
+                                          {
+                                              "path":  ".omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-native-rpc-sharedprefs-readback-final3.txt",
+                                              "description":  "Final run-as SharedPreferences readback showing only 5-hour and Weekly Gemini request rows",
+                                              "id":  "sharedprefs",
+                                              "kind":  "data-diff"
+                                          },
+                                          {
+                                              "path":  ".omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-native-rpc-behavior-policy-tests-final6.txt",
+                                              "description":  "Focused final6 Gemini behavior and policy tests",
+                                              "id":  "behavior-tests",
+                                              "kind":  "cli-transcript"
+                                          },
+                                          {
+                                              "path":  ".omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-native-rpc-full-tests-assemble-final6.txt",
+                                              "description":  "Full final6 unit tests and debug build",
+                                              "id":  "full-tests",
+                                              "kind":  "cli-transcript"
+                                          },
+                                          {
+                                              "path":  ".omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-native-rpc-no-dom-fallback-grep-final6.txt",
+                                              "description":  "No DOM/fallback policy grep and gate-flagged test string absence",
+                                              "id":  "no-dom-grep",
+                                              "kind":  "log"
+                                          },
+                                          {
+                                              "path":  ".omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-native-rpc-diff-check-final6.txt",
+                                              "description":  "git diff --check final6",
+                                              "id":  "diff-check",
+                                              "kind":  "cli-transcript"
+                                          },
+                                          {
+                                              "path":  ".omo/ulw-loop/gemini-native-usage-20260630/evidence/gemini-native-rpc-slop-review-final6.txt",
+                                              "description":  "Final6 slop/programming manual review summary",
+                                              "id":  "slop-review",
+                                              "kind":  "log"
+                                          }
+                                      ],
+                     "evidence":  "Debug APK reinstall with saved Gemini cookie injection verified about:blank native RPC collection and final SharedPreferences readback.",
+                     "by":  "lazycodex-qa-executor",
+                     "status":  "passed"
+                 },
+    "gateReview":  {
+                       "by":  "lazycodex-gate-reviewer",
+                       "evidence":  "Gate final6 APPROVE: all C001-C003 covered; code review CLEAR; only checkpoint metadata remained.",
+                       "blockers":  [
+
+                                    ],
+                       "recommendation":  "APPROVE",
+                       "reportPath":  ".omo/evidence/gemini-native-usage-20260630-gate-review-final6.md"
+                   }
+}

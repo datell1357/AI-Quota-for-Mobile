@@ -1,0 +1,124 @@
+{
+  "codeReview": {
+    "by": "lazycodex-code-reviewer",
+    "recommendation": "APPROVE",
+    "codeQualityStatus": "CLEAR",
+    "reportPath": ".omo/evidence/codex-login-return-20260630-code-review.md",
+    "evidence": "Final code review approved after hidden iframe removal and source-string WebLoginActivityNativeBridgeTest replacement. Nonblocking WATCH note remains for dormant legacy Codex web-state code that is not selected by the reviewed login-return path.",
+    "blockers": []
+  },
+  "manualQa": {
+    "by": "lazycodex-qa-executor",
+    "status": "passed",
+    "evidence": "Final QA approved. Android surface artifact, targeted tests, assemble, install, and diff hygiene all passed.",
+    "surfaceEvidence": [
+      {
+        "id": "surface-android-codex-login-return",
+        "criterionRef": "C001",
+        "surface": "cli",
+        "invocation": "PowerShell adb QA script against ProviderLoginDebugActivity with saved Codex debug cookie snapshot",
+        "verdict": "passed",
+        "artifactRefs": ["artifact-android-surface"]
+      },
+      {
+        "id": "surface-targeted-tests-build-install",
+        "criterionRef": "C003",
+        "surface": "cli",
+        "invocation": "gradle :app:testDebugUnitTest targeted Codex suite; gradle :app:assembleDebug; adb install -r",
+        "verdict": "passed",
+        "artifactRefs": ["artifact-targeted-tests", "artifact-assemble", "artifact-install"]
+      }
+    ],
+    "adversarialCases": [
+      {
+        "id": "adv-no-chatgpt-dom-injection",
+        "criterionRef": "C003",
+        "scenario": "Codex must not inject collector into chatgpt.com DOM or hidden about:blank iframe.",
+        "expectedBehavior": "Artifact shows has_dom_inject_host_chatgpt=False and has_aboutblank_frame_inject=False.",
+        "verdict": "passed",
+        "artifactRefs": ["artifact-android-surface"]
+      },
+      {
+        "id": "adv-top-aboutblank-native-only",
+        "criterionRef": "C003",
+        "scenario": "Codex usage must be collected from top-level about:blank native bridge.",
+        "expectedBehavior": "Artifact shows has_top_aboutblank_inject=True, nativeUsage ok=true, and native unavailable false.",
+        "verdict": "passed",
+        "artifactRefs": ["artifact-android-surface"]
+      },
+      {
+        "id": "adv-stale-or-failed-session-not-fabricated",
+        "criterionRef": "C002",
+        "scenario": "A stale or logged-out session must not fabricate connected usage.",
+        "expectedBehavior": "Earlier C002 evidence records non-connected stale state with no fabricated usage.",
+        "verdict": "passed",
+        "artifactRefs": ["artifact-ledger"]
+      }
+    ],
+    "artifactRefs": [
+      {
+        "id": "artifact-android-surface",
+        "kind": "cli-transcript",
+        "description": "Final Android Codex saved-cookie restore and top-level about:blank native collection QA transcript.",
+        "path": ".omo/ulw-loop/codex-login-return-20260630/android-surface-codex-cookie-restore-login-10.txt"
+      },
+      {
+        "id": "artifact-targeted-tests",
+        "kind": "cli-transcript",
+        "description": "Targeted Codex unit/regression test transcript.",
+        "path": ".omo/ulw-loop/codex-login-return-20260630/targeted-codex-top-aboutblank-native-tests-4.txt"
+      },
+      {
+        "id": "artifact-assemble",
+        "kind": "cli-transcript",
+        "description": "Final debug assemble transcript.",
+        "path": ".omo/ulw-loop/codex-login-return-20260630/assemble-debug-top-aboutblank-native-3.txt"
+      },
+      {
+        "id": "artifact-install",
+        "kind": "cli-transcript",
+        "description": "Final debug APK install transcript.",
+        "path": ".omo/ulw-loop/codex-login-return-20260630/install-debug-top-aboutblank-native-3.txt"
+      },
+      {
+        "id": "artifact-ledger",
+        "kind": "log",
+        "description": "ULW ledger with C002 stale-session no-fabrication evidence.",
+        "path": ".omo/ulw-loop/codex-login-return-20260630/ledger.jsonl"
+      }
+    ]
+  },
+  "gateReview": {
+    "by": "lazycodex-gate-reviewer",
+    "recommendation": "APPROVE",
+    "reportPath": ".omo/evidence/codex-login-return-20260630-final-gate-review.md",
+    "evidence": "Final gate reviewer approved after hidden iframe removal, policy-test replacement, and latest login-10 QA evidence.",
+    "blockers": []
+  },
+  "iteration": {
+    "fullRerun": true,
+    "status": "passed",
+    "rerunCommands": [
+      "gradle :app:testDebugUnitTest --tests \"com.aiquota.mobile.providers.WebLoginActivityNativeBridgeTest\" --tests \"com.aiquota.mobile.providers.ProviderWebCollectorScriptsTest\" --tests \"com.aiquota.mobile.providers.ProviderNativeUsagePayloadFetcherTest\" --tests \"com.aiquota.mobile.providers.DebugProviderSessionCookieStoreTest\" --tests \"com.aiquota.mobile.providers.ProviderBackgroundRefreshServicePolicyTest.codexBackgroundRefreshUsesOnlyAuthenticatedWhamAboutBlankNativeCollection\"",
+      "gradle :app:assembleDebug",
+      "adb install -r app/build/outputs/apk/debug/app-debug.apk",
+      "PowerShell adb saved-cookie Codex ProviderLoginDebugActivity QA",
+      "git diff --check"
+    ],
+    "evidence": "targeted-codex-top-aboutblank-native-tests-4.txt, assemble-debug-top-aboutblank-native-3.txt, install-debug-top-aboutblank-native-3.txt, android-surface-codex-cookie-restore-login-10.txt, and git diff --check with CRLF warnings only."
+  },
+  "criteriaCoverage": {
+    "totalCriteria": 3,
+    "passCount": 3,
+    "originalIntent": "Codex usage collection should continue without user intervention by restoring a saved debug session cookie and must use pure about:blank native JS collection, with no DOM scan or fallback.",
+    "desiredOutcome": "After APK reinstall, the saved Codex session restores, usage collection runs from top-level about:blank through native Wham fetch, Codex snapshot becomes CONNECTED/IDLE with usage lines, and WebLoginActivity exits.",
+    "userOutcomeReview": "Covered by android-surface-codex-cookie-restore-login-10.txt, targeted-codex-top-aboutblank-native-tests-4.txt, assemble-debug-top-aboutblank-native-3.txt, install-debug-top-aboutblank-native-3.txt, reviewer approvals, and git diff --check with CRLF warnings only.",
+    "adversarialClassesCovered": [
+      "stale_session_no_fabricated_usage",
+      "no_chatgpt_dom_injection",
+      "no_hidden_aboutblank_iframe",
+      "top_level_aboutblank_native_bridge",
+      "debug_cookie_restore_after_reinstall"
+    ]
+  }
+}

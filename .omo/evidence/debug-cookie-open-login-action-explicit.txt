@@ -1,0 +1,21 @@
+=== explicit_open_login_debug_action ===
+broadcast=-n com.aiquota.mobile/.debug.ProviderRefreshDebugReceiver OPEN_PROVIDER_LOGIN provider_id=claude
+=== activity_summary ===
+* Task{7dfc24e #2 type=home I=com.google.android.apps.nexuslauncher/.NexusLauncherActivity U=0 rootTaskId=1 visible=true visibleRequested=true mode=fullscreen translucent=false sz=2}
+mLastPausedActivity: ActivityRecord{167040275 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t2}
+topResumedActivity=ActivityRecord{167040275 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t2}
+* Hist  #1: ActivityRecord{167040275 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t2}
+packageName=com.google.android.apps.nexuslauncher processName=com.google.android.apps.nexuslauncher
+app=ProcessRecord{e1af46a 1173:com.google.android.apps.nexuslauncher/u0a192}
+Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.google.android.apps.nexuslauncher/.NexusLauncherActivity (has extras) }
+rootOfTask=true task=Task{7dfc24e #2 type=home I=com.google.android.apps.nexuslauncher/.NexusLauncherActivity}
+mActivityComponent=com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+baseDir=/system_ext/priv-app/NexusLauncherRelease/NexusLauncherRelease.apk
+dataDir=/data/user/0/com.google.android.apps.nexuslauncher
+windows=[Window{f8de099 u0 com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}]
+=== redacted_log_summary ===
+06-30 01:14:03.579   691  1739 E ActivityTaskManager: Background activity launch blocked! goo.gle/android-bal [callingPackage: com.aiquota.mobile; callingPackageTargetSdk: 35; callingUid: 10233; callingPid: 8614; appSwitchState: 2; callingUidHasVisibleActivity: false; callingUidHasVisibleNotPinnedActivity: false; callingUidHasNonAppVisibleWindow: false; callingUidProcState: TRANSIENT_BACKGROUND; isCallingUidPersistentSystemProcess: false; allowBalExemptionForSystemProcess: false; intent: Intent { flg=0x10000000 xflg=0x4 cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras) }; callerApp: ProcessRecord{7e45a88 8614:com.aiquota.mobile/u0a233}; inVisibleTask: false; balAllowedByPiCreator: BSP.ALLOW_BAL; resultIfPiCreatorAllowsBal: BAL_BLOCK; callerStartMode: MODE_BACKGROUND_ACTIVITY_START_SYSTEM_DEFINED; hasRealCaller: true; isCallForResult: false; isPendingIntent: false; autoOptInReason: notPendingIntent; realCallingPackage: com.aiquota.mobile; realCallingPackageTargetSdk: 35; realCallingUid: 10233; realCallingPid: 8614; realCallingUidHasVisibleActivity: false; realCallingUidHasVisibleNotPinnedActivity: false; realCallingUidHasNonAppVisibleWindow: false; realCallingUidProcState: TRANSIENT_BACKGROUND; isRealCallingUidPersistentSystemProcess: false; originatingPendingIntent: null; realCallerApp: ProcessRecord{7e45a88 8614:com.aiquota.mobile/u0a233}; realInVisibleTask: false; balAllowedByPiSender: BSP.ALLOW_BAL; resultIfPiSenderAllowsBal: BAL_BLOCK; realCallerStartMode: MODE_BACKGROUND_ACTIVITY_START_SYSTEM_DEFINED; balDontBringExistingBackgroundTaskStackToFg: true]
+06-30 01:14:03.581   691  1739 E ActivityTaskManager: Abort background activity starts from 10233
+06-30 01:14:03.581   691  1739 V ActivityTaskManager: TaskLaunchParamsModifier: phase=3 task=null activity=ActivityRecord{606716 u0 com.aiquota.mobile/.providers.WebLoginActivity t-1} display-area-from-current-params=null display-area-from-default-fallback=DefaultTaskDisplayArea@152657951 display-id=0 task-display-area-windowing-mode=1 suggested-display-area=DefaultTaskDisplayArea@152657951 non-freeform-task-display-area display-area=DefaultTaskDisplayArea@152657951 skip-bounds-fullscreen
+06-30 01:14:03.581   691  1739 I ActivityTaskManager: START u0 {flg=0x10000000 xflg=0x4 cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras)} with LAUNCH_MULTIPLE from uid 10233 (com.aiquota.mobile) (BAL_BLOCK) result code=102
+06-30 01:14:03.583  8614  8614 I AIQuotaDebugRefresh: debugProviderLogin=true provider=claude

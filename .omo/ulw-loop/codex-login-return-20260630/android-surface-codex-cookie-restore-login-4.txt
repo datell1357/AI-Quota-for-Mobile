@@ -1,0 +1,107 @@
+﻿qa=codex cookie restore login surface with native status diagnostics
+timestamp=2026-06-30T15:35:17.3484844+09:00
+host_cookie_exists=True
+host_cookie_size=69574
+host_cookie_sha256=5A5E860EBA1E6F95D336FA2439F0CB65BCC1A8A7177664C3DAC227CDFDD7827A
+adb_devices_begin
+List of devices attached
+emulator-5554	device
+
+adb_devices_end
+remote_cookie_push_begin
+
+C:\Users\datell1357\.aiquota-debug-session-cookies\codex.json: 1 file pushed, 0 skipped. 99.7 MB/s (69574 bytes in 0.001s)
+remote_cookie_push_end
+remote_cookie_ls_begin
+-rw-rw-rw- 1 shell ext_data_rw 69574 2026-06-30 06:19 /sdcard/Android/data/com.aiquota.mobile/files/debug-session-cookies/codex.json
+remote_cookie_ls_end
+logcat_clear_begin
+
+logcat_clear_end
+launch_begin
+Starting: Intent { cmp=com.aiquota.mobile/.debug.ProviderLoginDebugActivity (has extras) }
+launch_end
+filtered_log_begin
+06-30 06:34:57.263 I/AIQuotaDebugCookie( 3333): provider=codex debugCookieRestore=true reason=login_start source=external urlCount=14 cookieCount=192
+06-30 06:34:57.772 D/AIQuotaLogin( 3333): provider=codex capturedNativeHeaders path=/codex/cloud/settings/analytics names=Accept|Upgrade-Insecure-Requests|User-Agent|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+06-30 06:34:57.960 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/codex/cloud/settings/analytics
+06-30 06:35:00.037 D/AIQuotaLogin( 3333): provider=codex navigate=https://chatgpt.com/
+06-30 06:35:00.135 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/client-CH2DCQWp.js?keys=worker_version
+06-30 06:35:00.136 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/react-stable-Bzq9cI-a.js?keys=worker_version
+06-30 06:35:00.139 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/client-BgI73up8.js?keys=worker_version
+06-30 06:35:00.140 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/app-CGw-yMgf.css?keys=worker_version
+06-30 06:35:00.148 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/rolldown-runtime-QTnfLwEv.js?keys=worker_version
+06-30 06:35:00.156 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/client-shared-CJY0rkyW.js?keys=worker_version
+06-30 06:35:00.163 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/ko-KR-CUSx9lTO.js?keys=worker_version
+06-30 06:35:00.196 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/scripts/declarative-partial-updates-c9a8e7b1b6de.js?keys=worker_version
+06-30 06:35:00.292 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/sentinel/chat-requirements/prepare
+06-30 06:35:00.307 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/conversation/prepare
+06-30 06:35:00.313 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/vendor-stable-Dfq6nK2i.js?keys=worker_version
+06-30 06:35:00.354 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/mobile-prompt-typeahead-CODpjJW-.js?keys=worker_version
+06-30 06:35:00.413 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/events/page-view
+06-30 06:35:00.416 I/AIQuotaLoginTiming( 3333): codex pageFinished=3584ms host=chatgpt.com
+06-30 06:35:00.418 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/images/chatgpt-icon-48x48.png
+06-30 06:35:00.419 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/favicon.ico
+06-30 06:35:00.442 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/events/statsc/flush
+06-30 06:35:00.576 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/assets/mobile-sidebar-BSU2ib7L.js?keys=worker_version
+06-30 06:35:00.977 I/NullBinder( 1298): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl, calling uid: 1000, calling pid: 0
+06-30 06:35:03.598 D/AIQuotaLoginConsole( 3333): provider=codex consoleLevel=WARNING line=0 message=The resource https://chatgpt.com/cdn/assets/global-modals-5n50n0lo.css was preloaded using link preload in Early Hints but not used within a few seconds from the window's load event.
+06-30 06:35:03.598 D/AIQuotaLoginConsole( 3333): provider=codex consoleLevel=WARNING line=0 message=The resource https://chatgpt.com/cdn/assets/conversation-small-bnwwp2d9.css was preloaded using link preload in Early Hints but not used within a few seconds from the window's load event.
+06-30 06:35:03.598 D/AIQuotaLoginConsole( 3333): provider=codex consoleLevel=WARNING line=0 message=The resource https://chatgpt.com/cdn/assets/root-jrecj1h9.css was preloaded using link preload in Early Hints but not used within a few seconds from the window's load event.
+06-30 06:35:03.598 D/AIQuotaLoginConsole( 3333): provider=codex consoleLevel=WARNING line=0 message=The resource https://chatgpt.com/cdn/assets/codex-analytics-tabs-jfs725i2.css was preloaded using link preload in Early Hints but not used within a few seconds from the window's load event.
+06-30 06:35:03.983 I/NullBinder( 1298): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl, calling uid: 1000, calling pid: 0
+06-30 06:35:05.355 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/events/business
+06-30 06:35:05.619 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/events/statsc/flush
+06-30 06:35:05.619 D/AIQuotaLogin( 3333): provider=codex resource=https://chatgpt.com/unauth-mweb/events/performance
+06-30 06:35:10.000 I/NullBinder( 1298): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl, calling uid: 1000, calling pid: 0
+06-30 06:35:13.007 I/NullBinder( 1298): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl, calling uid: 1000, calling pid: 0
+06-30 06:35:16.014 I/NullBinder( 1298): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl, calling uid: 1000, calling pid: 0
+06-30 06:35:19.027 I/NullBinder( 1298): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl, calling uid: 1000, calling pid: 0
+06-30 06:35:25.039 I/NullBinder( 1298): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl, calling uid: 1000, calling pid: 0
+06-30 06:35:28.063 I/NullBinder( 1298): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl, calling uid: 1000, calling pid: 0
+06-30 06:35:34.071 I/NullBinder( 1298): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl, calling uid: 1000, calling pid: 0
+06-30 06:35:37.082 I/NullBinder( 1298): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl, calling uid: 1000, calling pid: 0
+06-30 06:35:49.113 I/NullBinder( 1298): NullBinder for android.net.action.RECOMMEND_NETWORKS triggering remote TransactionTooLargeException due to Service without Chimera impl, calling uid: 1000, calling pid: 0
+filtered_log_end
+snapshot_connectionState=CONNECTING
+snapshot_refreshState=REFRESHING
+snapshot_line_segment_count=0
+snapshot_redacted={"providers":[{"providerId":"codex","displayName":"Codex","connectionState":"CONNECTING","refreshState":"REFRESHING","planLabel":null,"account":null,"updatedAt":"2026-06-30T06:34:56.837637Z","statusUpdatedAt":"2026-06-30T06:34:56.837637Z","message":"Opening provider login","lines":[]}]}
+top_activity_begin
+    mLastPausedActivity: ActivityRecord{89684823 u0 com.aiquota.mobile/.debug.ProviderLoginDebugActivity t-1 f}}
+    topResumedActivity=ActivityRecord{173242246 u0 com.aiquota.mobile/.providers.WebLoginActivity t482}
+    * Hist  #0: ActivityRecord{173242246 u0 com.aiquota.mobile/.providers.WebLoginActivity t482}
+      Intent { xflg=0x4 cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras) }
+      mActivityComponent=com.aiquota.mobile/.providers.WebLoginActivity
+      windows=[Window{130150a u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}]
+    Resumed: ActivityRecord{173242246 u0 com.aiquota.mobile/.providers.WebLoginActivity t482}
+  ResumedActivity: ActivityRecord{173242246 u0 com.aiquota.mobile/.providers.WebLoginActivity t482}
+  deepestLastOrientationSource=ActivityRecord{173242246 u0 com.aiquota.mobile/.providers.WebLoginActivity t482}
+  mImeLayeringTarget=Window{130150a u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+  mImeInputTarget=Window{130150a u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+  mImeControlTarget=Window{130150a u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+  mImeParent=ActivityRecord{173242246 u0 com.aiquota.mobile/.providers.WebLoginActivity t482}
+  mCurrentFocus=Window{130150a u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+  mFocusedApp=ActivityRecord{173242246 u0 com.aiquota.mobile/.providers.WebLoginActivity t482}
+  mObscuringWindow=Window{130150a u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+        * ActivityRecord{173242246 u0 com.aiquota.mobile/.providers.WebLoginActivity t482}
+    mFocusedWindow=Window{130150a u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+    mTopFullscreenOpaqueWindowState=Window{130150a u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+    mSystemUiControllingWindow=Window{130150a u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+    mSystemBarColorApps={ActivityRecord{173242246 u0 com.aiquota.mobile/.providers.WebLoginActivity t482}}
+    mNavBarColorWindowCandidate=Window{130150a u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+    mNavBarBackgroundWindowCandidate=Window{130150a u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+      Window{130150a u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+      Window{130150a u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}:
+        mControlTarget=Window{130150a u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+        mControlTarget=Window{130150a u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+        mControlTarget=Window{130150a u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+top_activity_end
+has_cookie_restore=True
+has_dom_inject_host_chatgpt=False
+has_aboutblank_frame_inject=False
+has_native_ok=False
+has_native_unavailable=False
+activity_has_WebLoginActivity=True
+activity_has_ProviderLoginDebugActivity=True
+activity_has_MainActivity=False

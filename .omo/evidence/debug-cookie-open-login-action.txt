@@ -1,0 +1,6 @@
+=== install_and_open_login_debug_action ===
+apk=app-debug.apk
+broadcast=com.aiquota.mobile.debug.OPEN_PROVIDER_LOGIN provider_id=claude
+=== activity_summary ===
+topResumedActivity=ActivityRecord{167040275 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t2}
+=== redacted_log_summary ===

@@ -19,34 +19,20 @@ object CopilotNativeUsageFetcher {
             authorizationHeader = githubAuthorizationHeader
                 ?: copilotApiAuthorizationHeader(token.optJSONObject("json"))
         )
-        val settingsPage = fetchWrappedJson(COPILOT_SETTINGS_URL)
-        val billingPage = fetchWrappedJson(COPILOT_PREMIUM_USAGE_URL)
-        val billingInput = if (billingPage.optBoolean("ok")) {
-            extractPremiumBillingInput(billingPage.optJSONObject("json")?.optString("rawText").orEmpty())
-        } else {
-            null
-        }
-        val premiumCard = billingInput?.let { input ->
-            fetchWrappedJson(premiumBillingCardUrl(input))
-                .takeIf { it.optBoolean("ok") }
-                ?.optJSONObject("json")
-                ?.let(::premiumBillingObject)
-        }
-        Log.d(
-            "AIQuotaCopilot",
+        runCatching {
+            Log.d(
+                "AIQuotaCopilot",
                 "nativeFetch entitlement=${entitlement.optInt("status", -1)} " +
                 "token=${token.optInt("status", -1)} " +
-                "internal=${internalUser.optInt("status", -1)} " +
-                "settings=${settingsPage.optInt("status", -1)} " +
-                "billing=${billingPage.optInt("status", -1)} " +
-                "billingInput=${billingInput != null} premiumCard=${premiumCard != null}"
-        )
+                    "internal=${internalUser.optInt("status", -1)}"
+            )
+        }
         val payload = buildUsagePayload(
             entitlement = entitlement.optJSONObject("json"),
             internalUser = internalUser.takeIf { it.optBoolean("ok") }?.optJSONObject("json"),
-            settingsPage = copilotSettingsUsage(settingsPage.takeIf { it.optBoolean("ok") }?.optJSONObject("json")),
-            premiumBilling = premiumCard,
-            billingInput = billingInput
+            settingsPage = null,
+            premiumBilling = null,
+            billingInput = null
         )
         return payload?.takeIf(::hasCopilotUsage)?.toString()
     }
@@ -82,39 +68,6 @@ object CopilotNativeUsageFetcher {
             premiumBilling = null,
             billingInput = null
         )?.takeIf(::hasCopilotUsage)?.toString()
-    }
-
-    internal fun extractPremiumBillingInput(rawText: String): CopilotPremiumBillingInput? {
-        if (rawText.isBlank()) return null
-        val markerIndex = rawText.indexOf("react-app.embeddedData")
-        val scriptText = if (markerIndex >= 0) {
-            val openEnd = rawText.indexOf(">", markerIndex)
-            val closeStart = if (openEnd >= 0) rawText.indexOf("</script>", openEnd) else -1
-            if (openEnd >= 0 && closeStart > openEnd) rawText.substring(openEnd + 1, closeStart) else null
-        } else {
-            null
-        } ?: EMBEDDED_DATA_REGEX.find(rawText)?.groups?.get(1)?.value ?: return null
-        val embedded = runCatching { JSONObject(htmlDecode(scriptText.trim())) }.getOrNull() ?: return null
-        val payload = embedded.optJSONObject("payload") ?: embedded
-        val customer = payload.optJSONObject("customer") ?: JSONObject()
-        val firstCustomer = payload.optJSONArray("customer_selections")?.firstObject()
-            ?: payload.optJSONArray("customerSelections")?.firstObject()
-            ?: JSONObject()
-        val customerId = customer.optionalString("customerId")
-            ?: customer.optionalString("id")
-            ?: payload.optionalString("customer_id")
-            ?: firstCustomer.optionalString("customerId")
-            ?: firstCustomer.optionalString("id")
-            ?: return null
-        val period = selectedPeriod(payload.optJSONArray("period_selections"))
-            ?: selectedPeriod(payload.optJSONArray("periodSelections"))
-            ?: "3"
-        val account = customer.optionalString("displayId")
-            ?: customer.optionalString("slug")
-            ?: customer.optionalString("name")
-            ?: firstCustomer.optionalString("displayId")
-            ?: firstCustomer.optionalString("name")
-        return CopilotPremiumBillingInput(customerId = customerId, period = period, account = account)
     }
 
     internal fun buildUsagePayload(
@@ -179,7 +132,7 @@ object CopilotNativeUsageFetcher {
                 setRequestProperty("Accept", "application/vnd.github+json, application/json, text/html")
                 setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("User-Agent", ProviderWebViewUserAgent.loginUserAgent())
-                setRequestProperty("Referer", "https://github.com/settings/copilot")
+                setRequestProperty("Referer", "https://github.com/")
                 setRequestProperty("X-Requested-With", "XMLHttpRequest")
                 setRequestProperty("X-GitHub-Api-Version", "2022-11-28")
                 if (endpoint == "/copilot_internal/user") {
@@ -206,45 +159,12 @@ object CopilotNativeUsageFetcher {
         }
     }
 
-    private fun premiumBillingCardUrl(input: CopilotPremiumBillingInput): String {
-        return "https://github.com/settings/billing/copilot_usage_card" +
-            "?customer_id=${input.customerId.urlEncode()}&period=${input.period.urlEncode()}&query="
-    }
-
-    private fun premiumBillingObject(json: JSONObject): JSONObject {
-        return json.optJSONObject("payload")
-            ?: json.optJSONObject("data")
-            ?: json
-    }
-
     private fun quotaSnapshots(json: JSONObject?): JSONObject? {
         if (json == null) return null
         return json.optJSONObject("quota_snapshots")
             ?: json.optJSONObject("quotaSnapshots")
             ?: json.optJSONObject("quotas")?.optJSONObject("quota_snapshots")
             ?: json.optJSONObject("quotas")?.optJSONObject("quotaSnapshots")
-    }
-
-    private fun copilotSettingsUsage(json: JSONObject?): JSONObject? {
-        if (json == null) return null
-        findCopilotQuotaEnvelope(json)?.let { return it }
-        val rawText = json.optionalString("rawText") ?: return null
-        val candidates = buildList {
-            EMBEDDED_DATA_REGEX.findAll(rawText).forEach { match ->
-                runCatching { JSONObject(htmlDecode(match.groups[1]?.value.orEmpty().trim())) }
-                    .getOrNull()
-                    ?.let(::add)
-            }
-            JSON_SCRIPT_REGEX.findAll(rawText).forEach { match ->
-                runCatching { JSONObject(htmlDecode(match.groups[1]?.value.orEmpty().trim())) }
-                    .getOrNull()
-                    ?.let(::add)
-            }
-        }
-        candidates.forEach { candidate ->
-            findCopilotQuotaEnvelope(candidate)?.let { return it }
-        }
-        return null
     }
 
     internal fun copilotAuthorizationHeader(json: JSONObject?): String? {
@@ -379,9 +299,6 @@ object CopilotNativeUsageFetcher {
                 "/github-copilot/chat/token",
                 "/github-copilot/chat",
                 "/github-copilot/chat/deferred_payload.json",
-                "/settings/copilot",
-                "/settings/billing/premium_requests_usage",
-                "/settings/billing/copilot_usage_card",
                 "/copilot_internal/user"
             )
             "api.github.com" -> path == "/copilot_internal/user"
@@ -391,7 +308,7 @@ object CopilotNativeUsageFetcher {
     }
 
     private fun rawTextLimit(endpoint: String): Int {
-        return if (endpoint == "/settings/billing/premium_requests_usage" || endpoint == "/settings/copilot") 1_000_000 else 4_000
+        return 4_000
     }
 
     private fun copyObjectIfPresent(source: JSONObject?, target: JSONObject, snakeKey: String, camelKey: String) {
@@ -417,30 +334,9 @@ object CopilotNativeUsageFetcher {
         return optString(key).takeIf { it.isNotBlank() && it != "null" }
     }
 
-    private fun htmlDecode(value: String): String {
-        return value
-            .replace("&quot;", "\"")
-            .replace("&#34;", "\"")
-            .replace("&#39;", "'")
-            .replace("&amp;", "&")
-            .replace("&lt;", "<")
-            .replace("&gt;", ">")
-    }
-
-    private fun String.urlEncode(): String {
-        return java.net.URLEncoder.encode(this, StandardCharsets.UTF_8.name())
-    }
-
-    private val EMBEDDED_DATA_REGEX =
-        Regex("""<script[^>]+data-target=["']react-app\.embeddedData["'][^>]*>([\s\S]*?)</script>""", RegexOption.IGNORE_CASE)
-    private val JSON_SCRIPT_REGEX =
-        Regex("""<script[^>]+type=["']application/json["'][^>]*>([\s\S]*?)</script>""", RegexOption.IGNORE_CASE)
-
     private const val COPILOT_ENTITLEMENT_URL = "https://github.com/github-copilot/chat/entitlement"
     private const val COPILOT_CHAT_TOKEN_URL = "https://github.com/github-copilot/chat/token"
     private const val COPILOT_INTERNAL_USER_URL = "https://api.github.com/copilot_internal/user"
-    private const val COPILOT_SETTINGS_URL = "https://github.com/settings/copilot"
-    private const val COPILOT_PREMIUM_USAGE_URL = "https://github.com/settings/billing/premium_requests_usage"
     private const val NETWORK_TIMEOUT_MS = 10_000
 }
 

@@ -1,0 +1,152 @@
+==== 2026-06-30T14:39:41.8717915+09:00 ====
+-- snapshot --
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="updated_at">2026-06-30T05:33:38.455639Z</string>
+    <string name="provider_id">codex</string>
+    <string name="snapshot">{&quot;providers&quot;:[{&quot;providerId&quot;:&quot;codex&quot;,&quot;displayName&quot;:&quot;Codex&quot;,&quot;connectionState&quot;:&quot;CONNECTING&quot;,&quot;refreshState&quot;:&quot;REFRESHING&quot;,&quot;planLabel&quot;:null,&quot;account&quot;:null,&quot;updatedAt&quot;:&quot;2026-06-30T05:33:38.455639Z&quot;,&quot;statusUpdatedAt&quot;:&quot;2026-06-30T05:33:38.455639Z&quot;,&quot;message&quot;:&quot;Opening provider login&quot;,&quot;lines&quot;:[]}]}</string>
+</map>
+-- activity --
+>   * Task{17038a7 #474 type=standard A=10233:com.aiquota.mobile U=0 visible=true visibleRequested=true mode=fullscreen translucent=false sz=1}
+      fullscreenRequestAllowMode=NONE
+>     mLastPausedActivity: ActivityRecord{74337638 u0 com.aiquota.mobile/.debug.ProviderLoginDebugActivity t-1 f}}
+      isSleeping=false
+>     topResumedActivity=ActivityRecord{130190066 u0 com.aiquota.mobile/.providers.WebLoginActivity t474}
+>     * Hist  #0: ActivityRecord{130190066 u0 com.aiquota.mobile/.providers.WebLoginActivity t474}
+>       packageName=com.aiquota.mobile processName=com.aiquota.mobile
+>       launchedFromUid=10233 launchedFromPackage=com.aiquota.mobile launchedFromFeature=null userId=0
+>       app=ProcessRecord{e81d9f2 29469:com.aiquota.mobile/u0a233}
+>       Intent { xflg=0x4 cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras) }
+>       rootOfTask=true task=Task{17038a7 #474 type=standard A=10233:com.aiquota.mobile}
+>       taskAffinity=10233:com.aiquota.mobile
+>       mActivityComponent=com.aiquota.mobile/.providers.WebLoginActivity
+>       baseDir=/data/app/~~ZIb4O9ymERv2RWCysqU5BQ==/com.aiquota.mobile-LBSUDQEnw9azhRLSjYSiwA==/base.apk
+>       dataDir=/data/user/0/com.aiquota.mobile
+        stateNotNeeded=false componentSpecified=true mActivityType=standard
+>       windows=[Window{7b8545e u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}]
+        windowType=2
+>     Resumed: ActivityRecord{130190066 u0 com.aiquota.mobile/.providers.WebLoginActivity t474}
+  
+>   ResumedActivity: ActivityRecord{130190066 u0 com.aiquota.mobile/.providers.WebLoginActivity t474}
+  
+>   topDisplayFocusedRootTask=Task{17038a7 #474 type=standard A=10233:com.aiquota.mobile}
+    Display: mDisplayId=0 (organized)
+>   deepestLastOrientationSource=ActivityRecord{130190066 u0 com.aiquota.mobile/.providers.WebLoginActivity t474}
+    overrideConfig={1.0 310mcc260mnc [ko_KR] ldltr sw411dp w411dp h914dp 420dpi nrml long compactNeeded port finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 0 - 1080, 2400) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.56 fontWeightAdjustment=0}
+>   mImeLayeringTarget=Window{7b8545e u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>   mImeInputTarget=Window{7b8545e u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>   mImeControlTarget=Window{7b8545e u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+    ImeContainer
+>   mImeParent=ActivityRecord{130190066 u0 com.aiquota.mobile/.providers.WebLoginActivity t474}
+    mRemoteInsetsControlTarget=RemoteInsetsControlTarget{330955f displayId=0 requestedVisibleTypes=503 animatingTypes=0}
+>   mCurrentFocus=Window{7b8545e u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>   mFocusedApp=ActivityRecord{130190066 u0 com.aiquota.mobile/.providers.WebLoginActivity t474}
+    mFixedRotationLaunchingApp=null
+>   mObscuringWindow=Window{7b8545e u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+    mLastWakeLockHoldingWindow=null
+>       mPreferredTopFocusableRootTask=Task{17038a7 #474 type=standard A=10233:com.aiquota.mobile}
+>       mLastFocusedRootTask=Task{17038a7 #474 type=standard A=10233:com.aiquota.mobile}
+        Application tokens in top down Z order:
+>       * Task{17038a7 #474 type=standard A=10233:com.aiquota.mobile U=0 visible=true visibleRequested=true mode=fullscreen translucent=false sz=1}
+          bounds=[0,0][1080,2400]
+>         * ActivityRecord{130190066 u0 com.aiquota.mobile/.providers.WebLoginActivity t474}
+        * Task{dcdaf6f #1 type=home U=0 visible=false visibleRequested=false mode=fullscreen translucent=true sz=1}
+>     mFocusedWindow=Window{7b8545e u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>     mTopFullscreenOpaqueWindowState=Window{7b8545e u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>     mSystemUiControllingWindow=Window{7b8545e u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>     mSystemBarColorApps={ActivityRecord{130190066 u0 com.aiquota.mobile/.providers.WebLoginActivity t474}}
+>     mNavBarColorWindowCandidate=Window{7b8545e u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+>     mNavBarBackgroundWindowCandidate=Window{7b8545e u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+      mLastStatusBarAppearanceRegions=
+>       Window{7b8545e u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+      mImeInsetsConsumed=false
+>       Window{7b8545e u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}:
+          InsetsSourceControl: {3 mType=ime mSurfacePosition=Point(0, 132) mInsetsHint=Insets{left=0, top=0, right=0, bottom=0} mLeash=null}
+>         mControlTarget=Window{7b8545e u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+          mImeShowing=false mLastDrawn=false
+>         mControlTarget=Window{7b8545e u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+        InsetsSourceProvider
+>         mControlTarget=Window{7b8545e u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}
+    InsetsPolicy
+>         (fullscreen) Task{17038a7 #474 type=standard A=10233:com.aiquota.mobile}
+  
+>   VisibleActivityProcess:[ ProcessRecord{e81d9f2 29469:com.aiquota.mobile/u0a233}]
+    NumNonAppVisibleWindowUidMap:[ 10195:3 10192:1]
+-- logs --
+06-30 05:37:14.871 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:37:15.370 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:37:15.631 D/AIQuotaBgRefreshService(29469): pageFinished provider=copilot url=github.com/
+06-30 05:37:15.650 D/AIQuotaBgRefreshService(29469): pageFinished provider=copilot url=github.com/
+06-30 05:37:15.680 D/AIQuotaBgRefreshService(29469): pageFinished provider=copilot url=
+06-30 05:37:17.883 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:37:18.385 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:37:20.171 D/AIQuotaNativeUsage(29469): nativeUsage provider=copilot ok=true diagnostic=copilot_usage_unavailable
+06-30 05:37:20.198 I/AIQuotaDebugCookie(29469): provider=copilot debugCookieSnapshot=true reason=background_webview_snapshot urlCount=3 cookieCount=3
+06-30 05:37:29.915 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:37:30.414 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:37:32.082 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:37:32.924 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:37:33.423 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:37:37.316 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:37:38.939 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:37:39.443 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:37:41.953 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:37:42.451 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:37:42.545 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:37:47.728 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:37:50.968 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:37:51.468 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:37:52.926 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:37:58.127 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:38:03.006 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:38:03.323 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:38:03.504 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:38:08.501 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:38:13.678 I/AIQuotaDebugCookie(29469): provider=gemini debugCookieRestore=true reason=background_collection source=external urlCount=7 cookieCount=121
+06-30 05:38:13.682 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:38:16.010 D/AIQuotaBgRefreshService(29469): pageFinished provider=gemini url=gemini.google.com/app
+06-30 05:38:18.231 D/AIQuotaBgRefreshService(29469): pageFinished provider=gemini url=gemini.google.com/app
+06-30 05:38:18.892 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:38:19.765 D/AIQuotaBgRefreshService(29469): pageFinished provider=gemini url=gemini.google.com/app
+06-30 05:38:21.387 D/AIQuotaBgRefreshService(29469): pageFinished provider=gemini url=gemini.google.com/app
+06-30 05:38:24.107 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:38:25.509 I/AIQuotaDebugCookie(29469): provider=copilot debugCookieRestore=true reason=background_collection source=external urlCount=3 cookieCount=32
+06-30 05:38:26.618 D/AIQuotaBgRefreshService(29469): pageFinished provider=copilot url=github.com/
+06-30 05:38:26.642 D/AIQuotaBgRefreshService(29469): pageFinished provider=copilot url=github.com/
+06-30 05:38:26.663 D/AIQuotaBgRefreshService(29469): pageFinished provider=copilot url=
+06-30 05:38:27.066 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:38:27.566 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:38:29.300 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:38:30.079 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:38:30.576 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:38:30.959 D/AIQuotaNativeUsage(29469): nativeUsage provider=copilot ok=true diagnostic=copilot_usage_unavailable
+06-30 05:38:30.996 I/AIQuotaDebugCookie(29469): provider=copilot debugCookieSnapshot=true reason=background_webview_snapshot urlCount=3 cookieCount=3
+06-30 05:38:33.086 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:38:33.587 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:38:34.510 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:38:36.096 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:38:36.594 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:38:39.108 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:38:39.606 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:38:39.720 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:38:42.119 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:38:42.618 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:38:44.911 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:38:50.100 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:38:54.150 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:38:54.650 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:38:55.306 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:38:57.159 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:38:57.660 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:39:00.167 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:39:00.503 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'
+06-30 05:39:00.667 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:39:03.180 I/BugleRcsEngine( 4345): Connected state: [1], networkType: [WIFI] [CONTEXT thread_id=59 ]
+06-30 05:39:03.677 I/NearbySharing( 1298): Network state changed: NetworkState(isRestricted=false, isOnline=true, isCongested=false, isMetered=false, isWifiConnected=true)
+06-30 05:39:13.597 I/AIQuotaDebugCookie(29469): provider=copilot debugCookieRestore=true reason=background_collection source=external urlCount=3 cookieCount=32
+06-30 05:39:15.240 D/AIQuotaBgRefreshService(29469): pageFinished provider=copilot url=github.com/
+06-30 05:39:15.262 D/AIQuotaBgRefreshService(29469): pageFinished provider=copilot url=github.com/
+06-30 05:39:15.281 D/AIQuotaBgRefreshService(29469): pageFinished provider=copilot url=
+06-30 05:39:19.606 D/AIQuotaNativeUsage(29469): nativeUsage provider=copilot ok=true diagnostic=copilot_usage_unavailable
+06-30 05:39:19.632 I/AIQuotaDebugCookie(29469): provider=copilot debugCookieSnapshot=true reason=background_webview_snapshot urlCount=3 cookieCount=3
+06-30 05:39:20.517 I/adbd    (  539): adbd service requested 'shell,v2,raw:run-as com.aiquota.mobile cat shared_prefs/usage_data_codex.xml'

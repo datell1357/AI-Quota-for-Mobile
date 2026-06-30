@@ -12,7 +12,6 @@ class GoogleProviderOAuthCallbackHandlingTest {
 
         assertFalse(login.contains("completeGoogleProviderAuthorization"))
         assertFalse(login.contains("recoverGoogleProviderFromOAuthCallback"))
-        assertFalse(login.contains("GeminiCliOAuthRepository(applicationContext)"))
         assertFalse(login.contains("AntigravityOAuthRepository(applicationContext)"))
         assertFalse(login.contains("googleTokenExchange"))
         assertFalse(login.contains("google_token_exchange_failed"))

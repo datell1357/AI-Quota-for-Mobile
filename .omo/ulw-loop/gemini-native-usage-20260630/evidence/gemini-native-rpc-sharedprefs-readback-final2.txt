@@ -1,0 +1,5 @@
+﻿invocation=adb shell run-as com.aiquota.mobile cat shared_prefs/ai_quota_local_usage.xml
+source=SharedPreferences:shared_prefs/ai_quota_local_usage.xml provider_snapshots
+provider=gemini state=CONNECTED refresh=IDLE lineCount=2 message=Background collector failed: gemini_usage_rpc_SocketTimeoutException
+line label=5-hour limit key=gemini:5_hour_limit remainingText=600 of 600 requests left remaining=600 limit=600 used=0 unit=requests resetsAt=2026-06-30T04:27:53.919528Z
+line label=Weekly limit key=gemini:weekly_limit remainingText=12096 of 12096 requests left remaining=12096 limit=12096 used=0 unit=requests resetsAt=2026-07-06T11:27:53.919653Z

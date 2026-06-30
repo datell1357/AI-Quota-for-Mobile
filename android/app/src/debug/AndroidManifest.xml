@@ -1,10 +1,27 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <application>
+    <activity
+      android:name=".debug.ProviderLoginDebugActivity"
+      android:exported="true" />
     <receiver
       android:name=".debug.LiveRefreshIssueDebugReceiver"
       android:exported="true">
       <intent-filter>
         <action android:name="com.aiquota.mobile.debug.SHOW_LIVE_REFRESH_ISSUE" />
+      </intent-filter>
+    </receiver>
+    <receiver
+      android:name=".debug.ProviderRefreshDebugReceiver"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="com.aiquota.mobile.debug.REFRESH_PROVIDER" />
+      </intent-filter>
+    </receiver>
+    <receiver
+      android:name=".debug.ProviderStateDebugReceiver"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="com.aiquota.mobile.debug.RESET_PROVIDER" />
       </intent-filter>
     </receiver>
   </application>

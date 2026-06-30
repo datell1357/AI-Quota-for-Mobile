@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "createdAt": "2026-06-29T12:05:23.970Z",
+  "updatedAt": "2026-06-29T12:31:54.543Z",
+  "briefPath": ".omo/ulw-loop/brief.md",
+  "goalsPath": ".omo/ulw-loop/goals.json",
+  "ledgerPath": ".omo/ulw-loop/ledger.jsonl",
+  "codexGoalMode": "aggregate",
+  "goals": [
+    {
+      "id": "G001-investigate-without-product-code-edi",
+      "title": "Investigate without product-code edits why Codex usage collection sti...",
+      "objective": "Investigate without product-code edits why Codex usage collection still fails after ChatGPT login and the app remains on the ChatGPT page; confirm root cause from runtime evidence and report an evidence-bound remediation plan.",
+      "status": "complete",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "CLI + Android runtime evidence: inspect package/activity/UI/logcat/shared_prefs without product-code edits; PASS when evidence file shows current ChatGPT logged-in surface and exact failing collection timeline.",
+          "userModel": "happy",
+          "expectedEvidence": ".omo/ulw-loop/evidence/codex-login-root-cause-runtime.txt lines 1-44 and cleanup receipt for /sdcard/aiquota-window.xml",
+          "essential": true,
+          "capturedEvidence": ".omo/ulw-loop/evidence/codex-login-root-cause-runtime.txt lines 1-44 show installed app, ChatGPT logged-in UI, early about:blank start, auth header loss, 401 usage calls, and stale CONNECTING snapshot | cleanup: .omo/ulw-loop/evidence/codex-login-root-cause-cleanup.txt confirms .debug-journal.md and /sdcard/aiquota-window.xml removed",
+          "status": "pass",
+          "capturedAt": "2026-06-29T12:12:50.031Z"
+        },
+        {
+          "id": "C002",
+          "scenario": "Hypothesis discrimination: compare at least three hypotheses against runtime timeline and source code lines; PASS when report separates primary cause from downstream symptoms.",
+          "userModel": "edge",
+          "expectedEvidence": ".omo/ulw-loop/evidence/codex-login-root-cause-report.md with hypothesis results and source refs.",
+          "essential": true,
+          "capturedEvidence": ".omo/ulw-loop/evidence/codex-login-root-cause-report.md records H1-H4 and root cause: early about:blank collection blocks analytics redirect and later authless fetches return 401 | cleanup: .omo/ulw-loop/evidence/codex-login-root-cause-cleanup.txt",
+          "status": "pass",
+          "capturedAt": "2026-06-29T12:12:50.711Z"
+        },
+        {
+          "id": "C003",
+          "scenario": "Scope control: verify temporary debug artifacts were removed and report explicitly treats existing dirty product/test diffs as out-of-scope rather than proving their origin.",
+          "userModel": "regression",
+          "expectedEvidence": ".omo/ulw-loop/evidence/codex-login-root-cause-cleanup.txt shows temporary cleanup and dirty status; .omo/ulw-loop/evidence/codex-login-root-cause-report.md Scope Note states dirty product/test diffs are out of scope and not used as completion evidence.",
+          "essential": false,
+          "capturedEvidence": ".omo/ulw-loop/evidence/codex-login-root-cause-cleanup.txt shows temp files removed and current dirty status; .omo/ulw-loop/evidence/codex-login-root-cause-report.md Scope Note states dirty product/test diffs are out of scope and their origin is not used as completion evidence | cleanup: .debug-journal.md and /sdcard/aiquota-window.xml absent",
+          "status": "pass",
+          "capturedAt": "2026-06-29T12:17:24.616Z"
+        }
+      ],
+      "attempt": 1,
+      "createdAt": "2026-06-29T12:05:23.970Z",
+      "updatedAt": "2026-06-29T12:31:54.543Z",
+      "startedAt": "2026-06-29T12:13:03.036Z",
+      "completedAt": "2026-06-29T12:31:54.543Z",
+      "evidence": "Research/report criteria C001-C003 passed with runtime, report, cleanup, code-review, QA, and gate-review approval artifacts; overclaims corrected after first gate rejection; no implementation attempted in this report phase."
+    }
+  ],
+  "codexObjective": "Complete the durable ulw-loop plan in .omo/ulw-loop/goals.json, including later accepted/appended stories, under the original brief constraints; use .omo/ulw-loop/ledger.jsonl as the audit trail.",
+  "aggregateCompletion": {
+    "status": "complete",
+    "completedAt": "2026-06-29T12:31:54.543Z",
+    "evidence": "Research/report criteria C001-C003 passed with runtime, report, cleanup, code-review, QA, and gate-review approval artifacts; overclaims corrected after first gate rejection; no implementation attempted in this report phase.",
+    "codexGoal": {
+      "goal": {
+        "threadId": "019f132b-48a7-7812-8c79-74541e487332",
+        "objective": "Complete the durable ulw-loop plan in .omo/ulw-loop/goals.json, including later accepted/appended stories, under the original brief constraints; use .omo/ulw-loop/ledger.jsonl as the audit trail.",
+        "status": "complete",
+        "tokensUsed": 0,
+        "timeUsedSeconds": 10
+      }
+    }
+  }
+}

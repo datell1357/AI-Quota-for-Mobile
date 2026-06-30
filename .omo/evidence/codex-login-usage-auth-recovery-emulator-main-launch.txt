@@ -1,0 +1,15 @@
+  bash arg: -p
+  bash arg: com.aiquota.mobile
+  bash arg: -c
+  bash arg: android.intent.category.LAUNCHER
+  bash arg: 1
+args: [-p, com.aiquota.mobile, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "com.aiquota.mobile"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="com.aiquota.mobile"
+data="android.intent.category.LAUNCHER"
+Events injected: 1
+## Network stats: elapsed time=137ms (0ms mobile, 0ms wifi, 137ms not connected)

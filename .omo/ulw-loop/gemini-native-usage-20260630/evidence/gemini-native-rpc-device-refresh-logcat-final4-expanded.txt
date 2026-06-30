@@ -1,0 +1,48 @@
+﻿06-30 04:10:42.406 D/AIQuotaBgRefreshService(23111): cycleStart providers=gemini
+06-30 04:10:42.903 D/AIQuotaBgRefreshService(23111): load provider=gemini start=gemini.google.com/ warmUp=true request=1
+06-30 04:10:47.532 D/AIQuotaBgRefreshService(23111): pageFinished provider=gemini url=gemini.google.com/app
+06-30 04:10:47.532 D/AIQuotaBgRefreshService(23111): warmUpComplete provider=gemini from=gemini.google.com/app to=gemini.google.com/usage
+06-30 04:10:48.159 D/AIQuotaBgRefreshService(23111): skipInject provider=gemini url=gemini.google.com/usage reason=host=gemini.google.com path=/usage usageUrl=true appUrl=false page=len=0,signIn=false,usage=false,limit=false,quota=false,error=false
+06-30 04:10:49.207 D/AIQuotaBgRefreshService(23111): pageFinished provider=gemini url=gemini.google.com/usage
+06-30 04:10:49.385 D/AIQuotaBgRefreshService(23111): nativeCollectorStart provider=gemini url=about:blank reason=page_finished rpcSession=true attempt=1 from=gemini.google.com/usage
+06-30 04:10:49.402 D/AIQuotaBgRefreshService(23111): pageFinished provider=gemini url=gemini.google.com/usage
+06-30 04:10:49.496 D/AIQuotaBgRefreshService(23111): inject provider=gemini url=
+06-30 04:10:49.498 D/AIQuotaBgRefreshService(23111): pageFinished provider=gemini url=
+06-30 04:10:49.504 D/AIQuotaBgRefreshService(23111): skipInject provider=gemini url=gemini.google.com/usage reason=host=gemini.google.com path=/usage usageUrl=true appUrl=false page=len=0,signIn=false,usage=false,limit=false,quota=false,error=false
+06-30 04:10:49.505 D/AIQuotaBgRefreshService(23111): terminalCheckScheduled provider=gemini url=gemini.google.com/usage
+06-30 04:10:49.952 D/AIQuotaGeminiUsageRpc(23111): geminiUsageRpc status=200 payloadBytes=224
+06-30 04:10:49.967 D/AIQuotaNativeUsage(23111): nativeUsage provider=gemini ok=true diagnostic=ok
+06-30 04:10:49.972 D/AIQuotaBgRefreshService(23111): payload provider=gemini url= summary=root=provider|collectorMode|usage,provider=gemini,collectorMode=native-usage-page-rpc,lineCount=0,hasUsage=true,hasData=false,hasError=false
+06-30 04:10:49.986 D/AIQuotaBgRefreshService(23111): outcome provider=gemini type=Payload
+06-30 04:10:49.989 D/AIQuotaBgRefreshService(23111): saveSnapshot provider=gemini source=webview lineCount=2 planPresent=false accountPresent=false
+06-30 04:11:42.405 D/AIQuotaBgRefreshService(23111): cycleStart providers=gemini,copilot
+06-30 04:11:42.529 D/AIQuotaBgRefreshService(23111): load provider=gemini start=gemini.google.com/ warmUp=true request=2
+06-30 04:11:44.730 D/AIQuotaBgRefreshService(23111): pageFinished provider=gemini url=gemini.google.com/app
+06-30 04:11:44.730 D/AIQuotaBgRefreshService(23111): warmUpComplete provider=gemini from=gemini.google.com/app to=gemini.google.com/usage
+06-30 04:11:45.049 D/AIQuotaBgRefreshService(23111): skipInject provider=gemini url=gemini.google.com/usage reason=host=gemini.google.com path=/usage usageUrl=true appUrl=false page=len=0,signIn=false,usage=false,limit=false,quota=false,error=false
+06-30 04:11:46.107 D/AIQuotaBgRefreshService(23111): pageFinished provider=gemini url=gemini.google.com/usage
+06-30 04:11:46.144 D/AIQuotaBgRefreshService(23111): nativeCollectorStart provider=gemini url=about:blank reason=page_finished rpcSession=true attempt=1 from=gemini.google.com/usage
+06-30 04:11:46.350 D/AIQuotaBgRefreshService(23111): inject provider=gemini url=
+06-30 04:11:46.352 D/AIQuotaBgRefreshService(23111): pageFinished provider=gemini url=
+06-30 04:11:56.363 D/AIQuotaGeminiUsageRpc(23111): geminiUsageRpc error=SocketTimeoutException
+06-30 04:11:56.364 D/AIQuotaNativeUsage(23111): nativeUsage provider=gemini ok=false diagnostic=gemini_usage_rpc_SocketTimeoutException
+06-30 04:11:56.367 D/AIQuotaBgRefreshService(23111): collectorError provider=gemini errorKind=gemini_usage_rpc_SocketTimeoutException retry=0 url= summary=root=provider|errorKind|message,provider=gemini,collectorMode=none,lineCount=0,hasUsage=false,hasData=false,hasError=true
+06-30 04:11:56.368 D/AIQuotaBgRefreshService(23111): outcome provider=gemini type=Failure
+06-30 04:11:56.371 W/AIQuotaBgRefreshService(23111): failure provider=gemini kind=COLLECTOR_ERROR message=Background collector failed: gemini_usage_rpc_SocketTimeoutException
+06-30 04:12:42.407 D/AIQuotaBgRefreshService(23111): cycleStart providers=gemini,copilot
+06-30 04:12:42.536 D/AIQuotaBgRefreshService(23111): load provider=gemini start=gemini.google.com/ warmUp=true request=4
+06-30 04:12:43.898 D/AIQuotaBgRefreshService(23111): pageFinished provider=gemini url=gemini.google.com/app
+06-30 04:12:43.898 D/AIQuotaBgRefreshService(23111): warmUpComplete provider=gemini from=gemini.google.com/app to=gemini.google.com/usage
+06-30 04:12:44.350 D/AIQuotaBgRefreshService(23111): skipInject provider=gemini url=gemini.google.com/usage reason=host=gemini.google.com path=/usage usageUrl=true appUrl=false page=len=0,signIn=false,usage=false,limit=false,quota=false,error=false
+06-30 04:12:44.812 D/AIQuotaBgRefreshService(23111): pageFinished provider=gemini url=gemini.google.com/usage
+06-30 04:12:44.927 D/AIQuotaBgRefreshService(23111): nativeCollectorStart provider=gemini url=about:blank reason=page_finished rpcSession=true attempt=1 from=gemini.google.com/usage
+06-30 04:12:44.943 D/AIQuotaBgRefreshService(23111): pageFinished provider=gemini url=gemini.google.com/usage
+06-30 04:12:44.959 D/AIQuotaBgRefreshService(23111): skipInject provider=gemini url=gemini.google.com/usage reason=host=gemini.google.com path=/usage usageUrl=true appUrl=false page=len=6,signIn=false,usage=true,limit=true,quota=false,error=false
+06-30 04:12:44.959 D/AIQuotaBgRefreshService(23111): terminalCheckScheduled provider=gemini url=gemini.google.com/usage
+06-30 04:12:45.016 D/AIQuotaBgRefreshService(23111): inject provider=gemini url=
+06-30 04:12:45.020 D/AIQuotaBgRefreshService(23111): pageFinished provider=gemini url=
+06-30 04:12:45.763 D/AIQuotaGeminiUsageRpc(23111): geminiUsageRpc status=200 payloadBytes=224
+06-30 04:12:45.764 D/AIQuotaNativeUsage(23111): nativeUsage provider=gemini ok=true diagnostic=ok
+06-30 04:12:45.767 D/AIQuotaBgRefreshService(23111): payload provider=gemini url= summary=root=provider|collectorMode|usage,provider=gemini,collectorMode=native-usage-page-rpc,lineCount=0,hasUsage=true,hasData=false,hasError=false
+06-30 04:12:45.779 D/AIQuotaBgRefreshService(23111): outcome provider=gemini type=Payload
+06-30 04:12:45.782 D/AIQuotaBgRefreshService(23111): saveSnapshot provider=gemini source=webview lineCount=2 planPresent=false accountPresent=false

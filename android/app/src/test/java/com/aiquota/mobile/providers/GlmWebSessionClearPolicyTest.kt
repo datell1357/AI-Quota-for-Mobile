@@ -8,6 +8,16 @@ import org.junit.Test
 
 class GlmWebSessionClearPolicyTest {
     @Test
+    fun claudeCookieUrlsIncludeRootVariants() {
+        val cookieUrls = ProviderWebSessionClearPolicy.cookieUrls(ProviderId.CLAUDE)
+
+        assertTrue(cookieUrls.contains("https://claude.ai"))
+        assertTrue(cookieUrls.contains("https://claude.ai/"))
+        assertTrue(cookieUrls.contains("https://www.claude.ai"))
+        assertTrue(cookieUrls.contains("https://www.claude.ai/"))
+    }
+
+    @Test
     fun glmLoginPreservesExistingWebSessionBeforeStarting() {
         assertFalse(
             ProviderWebSessionClearPolicy.shouldClearBeforeLogin(

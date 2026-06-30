@@ -1,0 +1,29 @@
+ M .idea/misc.xml
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/WebLoginActivityNativeBridgeTest.kt
+?? .omo/boulder.json
+?? .omo/codex-now.png
+?? .omo/evidence/codex-login-root-cause-code-review.md
+?? .omo/evidence/codex-login-usage-auth-recovery-artifact-sizes.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-assemble-debug.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-cleanup.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-continuation-status.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-diff-check.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-diff.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-green.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-implementation.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-red.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-requested-filter.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-status.txt
+?? .omo/evidence/codex-login-usage-auth-recovery-tmux.txt
+?? .omo/plans/codex-login-usage-auth-recovery.md
+?? .omo/start-work/
+?? .omo/ultraresearch/20260629-104317/
+?? .omo/ulw-loop/brief.md
+?? .omo/ulw-loop/goals.json
+?? .omo/ulw-loop/ledger.jsonl
+?? android/app/src/main/java/com/aiquota/mobile/providers/CodexNativeHeaderSelector.kt
+?? android/app/src/test/java/com/aiquota/mobile/providers/CodexNativeHeaderSelectorTest.kt

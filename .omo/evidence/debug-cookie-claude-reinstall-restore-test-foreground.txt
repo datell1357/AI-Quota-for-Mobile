@@ -1,0 +1,17 @@
+=== reinstall_restore_test_foreground ===
+appForegroundBeforeRefresh=true
+rawCookieValues=not_printed
+pushedSnapshot=19380 /sdcard/Android/data/com.aiquota.mobile/files/debug-session-cookies/claude.json
+restoreFromExternal=True
+claudeSaveSnapshot=True
+claudeFailure=False
+=== redacted_log_summary ===
+06-30 01:42:22.042 10990 10990 I AIQuotaDebugRefresh: debugProviderRefresh=true provider=claude
+06-30 01:42:22.556 10990 10990 I AIQuotaDebugCookie: provider=claude debugCookieRestore=true reason=background_collection source=external urlCount=10 cookieCount=145
+06-30 01:42:26.184 10990 10990 D AIQuotaBgRefreshService: outcome provider=claude type=Payload
+06-30 01:42:26.185 10990 10990 D AIQuotaBgRefreshService: saveSnapshot provider=claude source=webview lineCount=3 planPresent=false accountPresent=false
+06-30 01:42:26.218 10990 10990 I AIQuotaDebugCookie: provider=claude debugCookieSnapshot=true reason=background_webview_snapshot urlCount=10 cookieCount=10
+06-30 01:43:22.260 10990 10990 I AIQuotaDebugCookie: provider=claude debugCookieRestore=true reason=background_collection source=external urlCount=10 cookieCount=106
+06-30 01:43:24.324 10990 10990 D AIQuotaBgRefreshService: outcome provider=claude type=Payload
+06-30 01:43:24.326 10990 10990 D AIQuotaBgRefreshService: saveSnapshot provider=claude source=webview lineCount=3 planPresent=false accountPresent=false
+06-30 01:43:24.342 10990 10990 I AIQuotaDebugCookie: provider=claude debugCookieSnapshot=true reason=background_webview_snapshot urlCount=10 cookieCount=10

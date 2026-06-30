@@ -1,0 +1,3 @@
+﻿asset_exists=False
+forbidden_main_matches=none
+collector_dom_matches=none

@@ -1,0 +1,9 @@
+﻿manual_review=pass
+scope=Gemini native usage page RPC collection
+new_core_files_loc=GeminiUsagePageNativeFetcher.kt:156; GeminiUsagePageRpcSession.kt:65
+behavior_tests=gemini-native-rpc-behavior-policy-tests-final5.txt
+full_verification=gemini-native-rpc-full-tests-assemble-final5.txt
+device_verification=gemini-native-rpc-device-refresh-logcat-final4.txt; gemini-native-rpc-sharedprefs-readback-final3.txt
+source_policy_is_supplemental=gemini-native-rpc-no-dom-fallback-grep-final5.txt
+implementation_mirroring_removed=ProviderNativeUsagePayloadFetcherTest no longer reads ProviderNativeUsagePayloadFetcher.kt
+note=large shared Android files pre-existed; edits were scoped to Gemini collection/storage and shared policy tests needed for regression

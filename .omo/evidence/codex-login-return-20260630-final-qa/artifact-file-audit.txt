@@ -1,0 +1,4 @@
+﻿.omo/ulw-loop/codex-login-return-20260630/android-surface-codex-cookie-restore-login-10.txt: bytes=35773; nonEmpty=True; successEvidence=True; successLine=31
+.omo/ulw-loop/codex-login-return-20260630/targeted-codex-top-aboutblank-native-tests-4.txt: bytes=4734; nonEmpty=True; successEvidence=True; successLine=43
+.omo/ulw-loop/codex-login-return-20260630/assemble-debug-top-aboutblank-native-3.txt: bytes=5632; nonEmpty=True; successEvidence=True; successLine=55
+.omo/ulw-loop/codex-login-return-20260630/install-debug-top-aboutblank-native-3.txt: bytes=78; nonEmpty=True; successEvidence=True; successLine=2

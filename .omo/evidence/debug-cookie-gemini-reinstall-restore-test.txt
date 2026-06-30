@@ -1,0 +1,20 @@
+=== reinstall_restore_test ===
+provider=gemini
+appDataCleared=true
+appForegroundBeforeRefresh=true
+rawCookieValues=not_printed
+pushedSnapshot=14392 /sdcard/Android/data/com.aiquota.mobile/files/debug-session-cookies/gemini.json
+restoreFromExternal=True
+geminiPayload=True
+geminiSaveSnapshot=True
+geminiFailure=False
+=== redacted_log_summary ===
+06-30 01:50:30.825 11860 11860 I AIQuotaDebugRefresh: debugProviderRefresh=true provider=gemini
+06-30 01:50:31.332 11860 11860 I AIQuotaDebugCookie: provider=gemini debugCookieRestore=true reason=background_collection source=external urlCount=7 cookieCount=97
+06-30 01:50:36.403 11860 11860 D AIQuotaBgRefreshService: outcome provider=gemini type=Payload
+06-30 01:50:36.404 11860 11860 D AIQuotaBgRefreshService: saveSnapshot provider=gemini source=webview lineCount=2 planPresent=true accountPresent=true
+06-30 01:50:36.430 11860 11860 I AIQuotaDebugCookie: provider=gemini debugCookieSnapshot=true reason=background_webview_snapshot urlCount=7 cookieCount=7
+06-30 01:51:31.083 11860 11860 I AIQuotaDebugCookie: provider=gemini debugCookieRestore=true reason=background_collection source=external urlCount=7 cookieCount=99
+06-30 01:51:34.102 11860 11860 D AIQuotaBgRefreshService: outcome provider=gemini type=Payload
+06-30 01:51:34.103 11860 11860 D AIQuotaBgRefreshService: saveSnapshot provider=gemini source=webview lineCount=2 planPresent=true accountPresent=true
+06-30 01:51:34.118 11860 11860 I AIQuotaDebugCookie: provider=gemini debugCookieSnapshot=true reason=background_webview_snapshot urlCount=7 cookieCount=7

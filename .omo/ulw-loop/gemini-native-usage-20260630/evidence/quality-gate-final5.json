@@ -1,0 +1,10 @@
+{
+    "slopReview":  "gemini-native-rpc-slop-review-final5.txt",
+    "gateReview":  "pending_rerun_after_checkpoint_metadata",
+    "sharedPrefs":  "gemini-native-rpc-sharedprefs-readback-final3.txt",
+    "status":  "approve",
+    "deviceEvidence":  "gemini-native-rpc-device-refresh-logcat-final4.txt",
+    "fullTests":  "gemini-native-rpc-full-tests-assemble-final5.txt",
+    "noDomFallback":  "gemini-native-rpc-no-dom-fallback-grep-final5.txt",
+    "codeReview":  "APPROVE"
+}

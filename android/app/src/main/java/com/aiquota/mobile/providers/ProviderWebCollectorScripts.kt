@@ -118,6 +118,9 @@ object ProviderWebCollectorScripts {
         if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && url == "about:blank") {
             return true
         }
+        if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
+            return false
+        }
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
         val path = uri.path.orEmpty().lowercase(Locale.US)
@@ -168,8 +171,7 @@ object ProviderWebCollectorScripts {
                             text.contains("credit")
                         )
             ProviderId.GEMINI ->
-                host == "gemini.google.com" &&
-                    (path == "/" || path.startsWith("/app") || path.startsWith("/usage"))
+                false
             ProviderId.COPILOT ->
                 host == "github.com" &&
                     !path.startsWith("/login") &&
@@ -308,6 +310,7 @@ object ProviderWebCollectorScripts {
                 (host == "chatgpt.com" || host.endsWith(".chatgpt.com") || host == "chat.openai.com") &&
                     (path == "/api/auth/session" ||
                         path == "/backend-api/subscriptions" ||
+                        path == "/backend-api/wham/usage" ||
                         path == "/backend-api/me" ||
                         path.startsWith("/backend-api/accounts/check") ||
                         path == "/codex/cloud/settings/analytics" ||
@@ -345,13 +348,11 @@ object ProviderWebCollectorScripts {
                         path == "/api/usage-summary" ||
                         path == "/api/dashboard/get-credit-grants-balance")
             ProviderId.GEMINI ->
-                host == "gemini.google.com" && (path.startsWith("/app") || path.startsWith("/usage"))
+                false
             ProviderId.COPILOT ->
                 (host == "github.com" &&
                     (path == "/github-copilot/chat/entitlement" ||
                         path == "/github-copilot/chat/token" ||
-                        path == "/settings/billing/premium_requests_usage" ||
-                        path == "/settings/billing/copilot_usage_card" ||
                         path == "/copilot_internal/user")) ||
                     (host == "api.github.com" && path == "/copilot_internal/user")
             ProviderId.ANTIGRAVITY ->
@@ -362,6 +363,9 @@ object ProviderWebCollectorScripts {
     }
 
     fun shouldRunCollectorFromResource(providerId: ProviderId, pageUrl: String, resourceUrl: String): Boolean {
+        if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && pageUrl != "about:blank") {
+            return false
+        }
         return shouldRunCollectorOnResource(providerId, resourceUrl) &&
             (shouldRunCollector(providerId, pageUrl, emptyMap(), "") || isCodexChatGptRoot(providerId, pageUrl))
     }
@@ -369,6 +373,9 @@ object ProviderWebCollectorScripts {
     fun shouldAcceptCollectorPayload(providerId: ProviderId, pageUrl: String): Boolean {
         if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && pageUrl == "about:blank") {
             return true
+        }
+        if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
+            return false
         }
         val uri = runCatching { URI(pageUrl) }.getOrNull() ?: return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
@@ -442,13 +449,10 @@ object ProviderWebCollectorScripts {
         pageUrl: String = "",
         awaitInteractiveLoginUsage: Boolean = false
     ): String {
-        val collectorScript = if (providerId == ProviderId.CODEX && ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
-            if (pageUrl == "about:blank") {
-                codexAboutBlankJsonPayload(forceCollectorStart = awaitInteractiveLoginUsage)
-            } else {
-                ""
-            }
-        } else if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && pageUrl.isNotBlank()) {
+        if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && pageUrl != "about:blank") {
+            return ""
+        }
+        val collectorScript = if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
             if (providerId == ProviderId.CODEX) {
                 codexAboutBlankJsonPayload(forceCollectorStart = awaitInteractiveLoginUsage)
             } else {
@@ -472,8 +476,17 @@ object ProviderWebCollectorScripts {
         observedAccountId: String?,
         pageText: String,
         pageUrl: String = "",
-        awaitInteractiveLoginUsage: Boolean = false
-    ): String = common(providerId, cookies, observedAccountId, pageText, pageUrl, awaitInteractiveLoginUsage)
+        awaitInteractiveLoginUsage: Boolean = false,
+        nativeJsonBridgeEnabled: Boolean = ProviderAboutBlankCollectorPolicy.isEnabled(providerId)
+    ): String = common(
+        providerId,
+        cookies,
+        observedAccountId,
+        pageText,
+        pageUrl,
+        awaitInteractiveLoginUsage,
+        nativeJsonBridgeEnabled
+    )
 
     private fun common(
         providerId: ProviderId,
@@ -481,7 +494,8 @@ object ProviderWebCollectorScripts {
         observedAccountId: String?,
         pageText: String,
         pageUrl: String,
-        awaitInteractiveLoginUsage: Boolean
+        awaitInteractiveLoginUsage: Boolean,
+        nativeJsonBridgeEnabled: Boolean = ProviderAboutBlankCollectorPolicy.isEnabled(providerId)
     ): String {
         val collectorCookies = when (providerId) {
             ProviderId.CLAUDE -> cookies.filterKeys { it == "lastActiveOrg" }
@@ -492,7 +506,76 @@ object ProviderWebCollectorScripts {
         val pageTextJson = JSONObject.quote(pageText)
         val pageUrlJson = JSONObject.quote(pageUrl)
         val awaitInteractiveLoginUsageJson = if (awaitInteractiveLoginUsage) "true" else "false"
-        val nativeJsonBridgeEnabledJson = if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) "true" else "false"
+        val nativeJsonBridgeEnabledJson = if (nativeJsonBridgeEnabled) "true" else "false"
+        val fetchJsonScript = if (nativeJsonBridgeEnabled) {
+            """
+                 fetchJson: function(url) {
+                   var href = "";
+                   try { href = String(location && location.href || ""); } catch (error) {}
+                   if (href !== "about:blank") {
+                     return Promise.resolve({
+                       ok: false,
+                       status: 0,
+                       url: url,
+                       json: { error: "native_json_bridge_requires_about_blank" }
+                     });
+                   }
+                   return this.fetchNativeJson(url);
+                 }
+            """.trimIndent()
+        } else {
+            """
+                 fetchJson: function(url) {
+                   return fetch(url, {
+                     credentials: "include",
+                     headers: { "accept": "application/json, text/html" }
+                   }).then(function(response) {
+                     return response.text().then(function(text) {
+                       var json = {};
+                       try { json = text ? JSON.parse(text) : {}; } catch (error) { json = { rawText: text }; }
+                       return { ok: response.ok, status: response.status, url: url, json: json };
+                     });
+                   });
+                  }
+            """.trimIndent()
+        }
+        val pageScanHelpersScript = if (nativeJsonBridgeEnabled) {
+            """
+                 text: function() {
+                   return "";
+                 },
+                 rows: function() {
+                   return [];
+                 }
+            """.trimIndent()
+        } else {
+            """
+                 text: function() {
+                   return ((document.documentElement && document.documentElement.innerText) || document.title || "").slice(0, 50000);
+                 },
+                 rows: function() {
+                   var values = [];
+                   function push(value) {
+                     if (value === null || value === undefined) return;
+                     var text = String(value);
+                     if (text.length > 0) values.push(text.slice(0, 200000));
+                   }
+                   try {
+                     for (var i = 0; i < localStorage.length; i += 1) push(localStorage.getItem(localStorage.key(i)));
+                   } catch (error) {}
+                   try {
+                     for (var j = 0; j < sessionStorage.length; j += 1) push(sessionStorage.getItem(sessionStorage.key(j)));
+                   } catch (error) {}
+                   try {
+                     Array.prototype.slice.call(document.scripts || []).forEach(function(script) {
+                       if (script && script.textContent) push(script.textContent);
+                     });
+                   } catch (error) {}
+                   values.push(this.text());
+                   return values;
+                 }
+            """.trimIndent()
+        }
         return """
             (function(){
               if (!window.__AIQuotaStartProviderCollector) {
@@ -533,47 +616,8 @@ object ProviderWebCollectorScripts {
                     message: message || ""
                   }));
                 },
-                 fetchJson: function(url) {
-                   var href = "";
-                   try { href = String(location && location.href || ""); } catch (error) {}
-                   if ($nativeJsonBridgeEnabledJson && href === "about:blank") {
-                     return this.fetchNativeJson(url);
-                   }
-                   return fetch(url, {
-                     credentials: "include",
-                     headers: { "accept": "application/json, text/html" }
-                  }).then(function(response) {
-                    return response.text().then(function(text) {
-                      var json = {};
-                      try { json = text ? JSON.parse(text) : {}; } catch (error) { json = { rawText: text }; }
-                      return { ok: response.ok, status: response.status, url: url, json: json };
-                    });
-                  });
-                },
-                text: function() {
-                  return ((document.documentElement && document.documentElement.innerText) || document.title || "").slice(0, 50000);
-                },
-                rows: function() {
-                  var values = [];
-                  function push(value) {
-                    if (value === null || value === undefined) return;
-                    var text = String(value);
-                    if (text.length > 0) values.push(text.slice(0, 200000));
-                  }
-                  try {
-                    for (var i = 0; i < localStorage.length; i += 1) push(localStorage.getItem(localStorage.key(i)));
-                  } catch (error) {}
-                  try {
-                    for (var j = 0; j < sessionStorage.length; j += 1) push(sessionStorage.getItem(sessionStorage.key(j)));
-                  } catch (error) {}
-                  try {
-                    Array.prototype.slice.call(document.scripts || []).forEach(function(script) {
-                      if (script && script.textContent) push(script.textContent);
-                    });
-                  } catch (error) {}
-                  values.push(this.text());
-                  return values;
-                },
+                $fetchJsonScript,
+                $pageScanHelpersScript,
                 first: function(object, keys) {
                   if (!object) return null;
                   for (var index = 0; index < keys.length; index += 1) {
@@ -1083,6 +1127,7 @@ object ProviderWebCollectorScripts {
               if (!c || !c.fetchNativeUsagePayload) return;
               c.fetchNativeUsagePayload().then(function(result) {
                 if (result && result.ok && result.payload) {
+                  result.payload.collectorMode = result.payload.collectorMode || "native-bridge";
                   c.post(result.payload);
                   return;
                 }
@@ -1102,76 +1147,13 @@ object ProviderWebCollectorScripts {
               if (!window.__AIQuotaStartProviderCollector || !window.__AIQuotaStartProviderCollector("codex", $forceCollectorStartJson)) return;
               var c = window.__AIQuotaCollector;
               if (!c) return;
-              var accountKeys = [
-                "account_id", "accountId", "current_account_id", "currentAccountId",
-                "chatgpt_account_id", "chatgptAccountId", "id"
-              ];
-              var planKeys = ["plan", "plan_type", "planType", "subscription_plan", "subscriptionPlan", "name"];
-              var emailKeys = ["email", "account_email", "accountEmail"];
-              function findDeep(value, keys, depth) {
-                if (!value || depth > 8) return null;
-                if (Array.isArray(value)) {
-                  for (var i = 0; i < value.length; i += 1) {
-                    var arrayResult = findDeep(value[i], keys, depth + 1);
-                    if (arrayResult) return arrayResult;
-                  }
-                  return null;
-                }
-                if (typeof value !== "object") return null;
-                for (var k = 0; k < keys.length; k += 1) {
-                  var key = keys[k];
-                  if (Object.prototype.hasOwnProperty.call(value, key) && value[key] !== null && value[key] !== undefined && value[key] !== "") {
-                    return String(value[key]);
-                  }
-                }
-                var names = Object.keys(value);
-                for (var n = 0; n < names.length; n += 1) {
-                  var result = findDeep(value[names[n]], keys, depth + 1);
-                  if (result) return result;
-                }
-                return null;
-              }
-              function jsonOf(result) {
-                return result && result.json ? result.json : {};
-              }
-              Promise.all([
-                c.fetchJson("https://chatgpt.com/api/auth/session").catch(function(){ return null; }),
-                c.fetchJson("https://chatgpt.com/backend-api/me").catch(function(){ return null; }),
-                c.fetchJson("https://chatgpt.com/backend-api/accounts/check/v4-2023-04-27").catch(function(){ return null; })
-              ]).then(function(initial) {
-                var session = jsonOf(initial[0]);
-                var me = jsonOf(initial[1]);
-                var accountCheck = jsonOf(initial[2]);
-                var accountId = findDeep(me, accountKeys, 0) || findDeep(accountCheck, accountKeys, 0) || findDeep(session, accountKeys, 0) || "";
-                var subscriptionUrl = "https://chatgpt.com/backend-api/subscriptions" + (accountId ? "?account_id=" + encodeURIComponent(accountId) : "");
-                 return Promise.all([
-                   Promise.resolve(session),
-                   Promise.resolve(me),
-                   Promise.resolve(accountCheck),
-                   c.fetchJson(subscriptionUrl).catch(function(){ return null; }),
-                   c.fetchJson("https://chatgpt.com/backend-api/wham/usage").catch(function(){ return null; }),
-                   c.fetchJson("https://chatgpt.com/codex/cloud/settings/analytics").catch(function(){ return null; })
-                 ]);
-               }).then(function(results) {
-                 var session = results[0] || {};
-                 var me = results[1] || {};
-                 var accountCheck = results[2] || {};
-                 var subscription = jsonOf(results[3]);
-                 var whamUsage = jsonOf(results[4]);
-                 var dashboard = jsonOf(results[5]);
-                 var accountId = findDeep(me, accountKeys, 0) || findDeep(accountCheck, accountKeys, 0) || findDeep(session, accountKeys, 0) || "";
-                 var plan = findDeep(subscription, planKeys, 0) || findDeep(accountCheck, planKeys, 0) || findDeep(me, planKeys, 0) || "";
-                 var account = findDeep(me, emailKeys, 0) || findDeep(session, emailKeys, 0) || findDeep(accountCheck, emailKeys, 0) || "";
-                 var usageEnvelope = {
-                   usage: whamUsage || {},
-                   dashboard: dashboard && dashboard.rawText ? String(dashboard.rawText) : dashboard || {}
-                 };
-                 var parsed = JSON.parse(window.AIQuotaCollectorBridge.parseCodexFetchedPayload(JSON.stringify(usageEnvelope), plan, accountId, account));
-                if (parsed && parsed.ok && parsed.payload) {
-                  c.post(parsed.payload);
-                  return;
-                }
-                c.fail(parsed && (parsed.diagnostic || parsed.error) || "codex_usage_unavailable", JSON.stringify(parsed || {}));
+              c.fetchNativeUsagePayload().then(function(parsed) {
+                 if (parsed && parsed.ok && parsed.payload) {
+                   parsed.payload.collectorMode = parsed.payload.collectorMode || "native-bridge";
+                   c.post(parsed.payload);
+                   return;
+                 }
+                 c.fail(parsed && (parsed.diagnostic || parsed.error) || "codex_usage_unavailable", JSON.stringify(parsed || {}));
               }).catch(function(error) {
                 c.fail("codex_usage_unavailable", String(error && error.message || error));
               });
@@ -2204,259 +2186,9 @@ object ProviderWebCollectorScripts {
         """.trimIndent()
     }
 
+    @Suppress("UNUSED_PARAMETER")
     internal fun gemini(asset: String): String {
-        val collectorAsset = asset.ifBlank {
-            "window.SAGE_USAGE_EXTRACTOR={buildGeminiUsagePayload:function(){return null;}};"
-        }
-        return """
-            (function(){
-              if (!window.__AIQuotaStartProviderCollector ||
-                !window.__AIQuotaStartProviderCollector("gemini", window.__AIQuotaCollector && window.__AIQuotaCollector.awaitInteractiveLoginUsage)
-              ) return;
-              function safeText(value) { return value === null || value === undefined ? "" : String(value); }
-              function parseNumber(value) { var n = Number(value); return Number.isFinite(n) ? n : null; }
-              function isNumber(value) { return typeof value === "number" && Number.isFinite(value); }
-              function extractJsonCandidates(value) {
-                var text = safeText(value);
-                var candidates = [];
-                var objectStart = text.indexOf("{");
-                var objectEnd = text.lastIndexOf("}");
-                if (objectStart >= 0 && objectEnd > objectStart) candidates.push(text.slice(objectStart, objectEnd + 1));
-                var arrayStart = text.indexOf("[");
-                var arrayEnd = text.lastIndexOf("]");
-                if (arrayStart >= 0 && arrayEnd > arrayStart) candidates.push(text.slice(arrayStart, arrayEnd + 1));
-                return candidates;
-              }
-              function scanGeminiQuotaResponse(value, path, source, limits) {
-                if (!value || limits.length > 40) return;
-                if (Array.isArray(value)) {
-                  value.forEach(function(item, index) { scanGeminiQuotaResponse(item, path.concat(String(index)), source, limits); });
-                  return;
-                }
-                if (typeof value !== "object") return;
-                var label = value.l || value.label || value.name || value.title || value.modelId || value.model_id || value.model || value.feature;
-                var usedRateValue = parseNumber(value.u !== undefined ? value.u : (value.usageRate !== undefined ? value.usageRate : (value.usedRate !== undefined ? value.usedRate : value.utilization)));
-                    var usedPercentValue = parseNumber(value.usedPercent !== undefined ? value.usedPercent : (value.used_percent !== undefined ? value.used_percent : (value.usedPercentage !== undefined ? value.usedPercentage : (value.used_percentage !== undefined ? value.used_percentage : (value.percentUsed !== undefined ? value.percentUsed : (value.percent_used !== undefined ? value.percent_used : (value.totalPercentUsed !== undefined ? value.totalPercentUsed : value.total_percent_used)))))));
-                var remainingFractionValue = parseNumber(value.remainingFraction !== undefined ? value.remainingFraction : value.remaining_fraction);
-                var remainingPercentValue = parseNumber(value.remainingPercent !== undefined ? value.remainingPercent : (value.remaining_percent !== undefined ? value.remaining_percent : (value.remainingPercentage !== undefined ? value.remainingPercentage : value.remaining_percentage)));
-                if (label && (usedRateValue !== null || usedPercentValue !== null || remainingFractionValue !== null || remainingPercentValue !== null)) {
-                  var line = {
-                    l: label,
-                    r: value.r || value.resetAt || value.resets_at,
-                    t: value.t || value.resetText || value.reset_text,
-                    source: source,
-                    confidence: value.confidence
-                  };
-                  if (usedPercentValue !== null) {
-                    line.used_percent = Math.max(0, Math.min(100, usedPercentValue));
-                  } else if (usedRateValue !== null) {
-                    line.u = Math.max(0, Math.min(1, usedRateValue <= 1 ? usedRateValue : usedRateValue / 100));
-                  } else if (remainingPercentValue !== null) {
-                    line.remaining_percent = Math.max(0, Math.min(100, remainingPercentValue));
-                  } else {
-                    line.remaining_fraction = Math.max(0, Math.min(1, remainingFractionValue <= 1 ? remainingFractionValue : remainingFractionValue / 100));
-                  }
-                  limits.push(line);
-                }
-                Object.keys(value).forEach(function(key) {
-                  scanGeminiQuotaResponse(value[key], path.concat(key), source, limits);
-                });
-              }
-              function pushGeminiNetworkRow(url, text) {
-                if (!text) return;
-                var lower = text.toLowerCase();
-                if (
-                  lower.indexOf("remainingfraction") < 0 &&
-                  lower.indexOf("modelid") < 0 &&
-                  lower.indexOf("retrieveuserquota") < 0 &&
-                  lower.indexOf("loadcodeassist") < 0 &&
-                  lower.indexOf("gemini") < 0
-                ) return;
-                window.__AIQuotaGeminiNetworkRows = window.__AIQuotaGeminiNetworkRows || [];
-                window.__AIQuotaGeminiNetworkRows.push((url || "") + "\n" + text.slice(0, 200000));
-                if (window.__AIQuotaGeminiNetworkRows.length > 30) window.__AIQuotaGeminiNetworkRows.shift();
-              }
-              function installGeminiNetworkHook() {
-                if (window.__AIQuotaGeminiNetworkHookInstalled) return;
-                window.__AIQuotaGeminiNetworkHookInstalled = true;
-                window.__AIQuotaGeminiNetworkRows = window.__AIQuotaGeminiNetworkRows || [];
-                try {
-                  var originalFetch = window.fetch;
-                  if (originalFetch) {
-                    window.fetch = function(input, init) {
-                      var url = typeof input === "string" ? input : (input && input.url) || "";
-                      return originalFetch.apply(this, arguments).then(function(response) {
-                        try {
-                          response.clone().text().then(function(text) {
-                            pushGeminiNetworkRow(url, text);
-                          }).catch(function(){});
-                        } catch (error) {}
-                        return response;
-                      });
-                    };
-                  }
-                } catch (error) {}
-                try {
-                  var originalOpen = XMLHttpRequest.prototype.open;
-                  var originalSend = XMLHttpRequest.prototype.send;
-                  XMLHttpRequest.prototype.open = function(method, url) {
-                    this.__aiQuotaUrl = url;
-                    return originalOpen.apply(this, arguments);
-                  };
-                  XMLHttpRequest.prototype.send = function() {
-                    this.addEventListener("load", function() {
-                      try { pushGeminiNetworkRow(this.__aiQuotaUrl || "", this.responseText || ""); } catch (error) {}
-                    });
-                    return originalSend.apply(this, arguments);
-                  };
-                } catch (error) {}
-              }
-              function clickGeminiSetupSkip() {
-                var labels = ["skip", "not now", "건너뛰기", "나중에"];
-                var elements = Array.prototype.slice.call(document.querySelectorAll("button, [role='button'], a"));
-                for (var i = 0; i < elements.length; i += 1) {
-                  var text = safeText(elements[i].innerText || elements[i].textContent).trim().toLowerCase();
-                  if (!text) continue;
-                  for (var j = 0; j < labels.length; j += 1) {
-                    if (text.indexOf(labels[j]) >= 0) {
-                      elements[i].click();
-                      return true;
-                    }
-                  }
-                }
-                return false;
-              }
-              function isGeminiUsagePageUrl(value) {
-                var text = safeText(value);
-                return /^https?:\/\/([^\/]+\.)?gemini\.google\.com\/usage(?:[/?#]|${'$'})/i.test(text);
-              }
-              function looksLikeGeminiLoginText(value) {
-                var text = safeText(value).toLowerCase();
-                if (!text) return false;
-                if (
-                  text.indexOf("usage limit") >= 0 ||
-                  text.indexOf("current usage") >= 0 ||
-                  text.indexOf("5-hour") >= 0 ||
-                  text.indexOf("weekly") >= 0 ||
-                  text.indexOf("사용량") >= 0 ||
-                  text.indexOf("한도") >= 0
-                ) return false;
-                var hasLoginAction = text.indexOf("로그인") >= 0 ||
-                  text.indexOf("sign in") >= 0 ||
-                  text.indexOf("log in") >= 0;
-                var hasGeminiLandingCopy = text.indexOf("gemini와의 대화") >= 0 ||
-                  text.indexOf("개인 ai") >= 0 ||
-                  text.indexOf("meet gemini") >= 0 ||
-                  text.indexOf("personal ai") >= 0;
-                return hasLoginAction && hasGeminiLandingCopy;
-              }
-              function clickGeminiSignIn() {
-                window.__AIQuotaGeminiSignInClicks = window.__AIQuotaGeminiSignInClicks || 0;
-                if (window.__AIQuotaGeminiSignInClicks >= 2) return false;
-                var labels = ["로그인", "sign in", "log in"];
-                var elements = Array.prototype.slice.call(document.querySelectorAll("a, button, [role='button']"));
-                for (var i = 0; i < elements.length; i += 1) {
-                  var text = safeText(elements[i].innerText || elements[i].textContent).trim().toLowerCase();
-                  var href = safeText(elements[i].href || elements[i].getAttribute && elements[i].getAttribute("href") || "");
-                  if (!text && !href) continue;
-                  for (var j = 0; j < labels.length; j += 1) {
-                    if (text.indexOf(labels[j]) >= 0 || href.indexOf("accounts.google.com/ServiceLogin") >= 0) {
-                      window.__AIQuotaGeminiSignInClicks += 1;
-                      if (href.indexOf("accounts.google.com/ServiceLogin") >= 0) {
-                        location.href = href;
-                      } else {
-                        elements[i].click();
-                      }
-                      return true;
-                    }
-                  }
-                }
-                return false;
-              }
-              window.PROVIDER_ID = "gemini";
-              $collectorAsset
-              var c = window.__AIQuotaCollector;
-              if (!c) return;
-              installGeminiNetworkHook();
-              var skipAttempts = 0;
-              var collectAttempts = 0;
-              function isAboutBlankPage() {
-                try { return String(location && location.href || "") === "about:blank"; } catch (error) { return false; }
-              }
-              function postGeminiNativePayload() {
-                if (!isAboutBlankPage()) return Promise.resolve(false);
-                return c.fetchNativeUsagePayload().then(function(result) {
-                  if (result && result.ok && result.payload) {
-                    c.post(result.payload);
-                    return true;
-                  }
-                  return false;
-                }).catch(function() {
-                  return false;
-                });
-              }
-              function postGeminiObservedPayload() {
-                try {
-                  var rows = c.rows().concat(window.__AIQuotaGeminiNetworkRows || []);
-                  var visibleText = c.text ? c.text() : (c.pageText || "");
-                  var limits = [];
-                  if (looksLikeGeminiLoginText(visibleText)) {
-                    if (c.awaitInteractiveLoginUsage && clickGeminiSignIn()) {
-                      return true;
-                    }
-                    c.fail("gemini_login_required", "Gemini login is required.");
-                    return true;
-                  }
-                  rows.forEach(function(row) {
-                    extractJsonCandidates(row).forEach(function(candidate) {
-                      try { scanGeminiQuotaResponse(JSON.parse(candidate), ["root"], "page-state", limits); } catch (error) {}
-                    });
-                  });
-                  var payload = window.SAGE_USAGE_EXTRACTOR &&
-                    window.SAGE_USAGE_EXTRACTOR.buildGeminiUsagePayload &&
-                    window.SAGE_USAGE_EXTRACTOR.buildGeminiUsagePayload({
-                      rows: rows,
-                      limits: limits,
-                      pageText: visibleText,
-                      combinedText: [visibleText, rows.join("\n")].join("\n"),
-                      usagePage: isGeminiUsagePageUrl(location && location.href) || isGeminiUsagePageUrl(c.pageUrl),
-                      authenticatedApp: location.hostname === "gemini.google.com" &&
-                        (location.pathname.indexOf("/app") === 0 || location.pathname.indexOf("/usage") === 0),
-                      providerPage: true
-                    });
-                  if (payload && payload.usage && payload.usage.x && payload.usage.x.length > 0) {
-                    c.post(payload);
-                    return true;
-                  }
-                } catch (error) {
-                  c.fail("gemini_collector_error", String(error && error.message || error));
-                  return true;
-                }
-                return false;
-              }
-              function finishGeminiNoObservedPayload() {
-                if (collectAttempts < 6) {
-                  setTimeout(collectGeminiUsage, 5000);
-                } else {
-                  c.fail("gemini_no_trusted_payload", "Gemini usage payload was not available.");
-                }
-              }
-              function collectGeminiUsage() {
-                collectAttempts += 1;
-                postGeminiNativePayload().then(function(done) {
-                  if (done) return;
-                  if (skipAttempts < 3 && clickGeminiSetupSkip()) {
-                    skipAttempts += 1;
-                    setTimeout(collectGeminiUsage, 2200);
-                    return;
-                  }
-                  if (postGeminiObservedPayload()) return;
-                  finishGeminiNoObservedPayload();
-                });
-              }
-              setTimeout(collectGeminiUsage, 1800);
-            })();
-        """.trimIndent()
+        return nativeProviderPayload(ProviderId.GEMINI)
     }
 
     internal fun glm(): String {

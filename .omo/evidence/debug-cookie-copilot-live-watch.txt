@@ -1,0 +1,88 @@
+=== live_watch_result ===
+provider=copilot
+snapshot=present bytes=2485
+hostPath=.omo\private\provider-session-cookies\copilot.json
+previousDeviceSnapshotPreserved=False
+previousHostSnapshotPreserved=False
+rawCookieValues=not_printed
+=== redacted_log_tail ===
+06-30 02:10:03.291 11860 12993 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/46287-50b124258ef9c356.js
+06-30 02:10:03.291 11860 12992 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/9506-5679f156315d844a.js
+06-30 02:10:03.291 11860 12991 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/89627-d6568840e3302a2b.js
+06-30 02:10:03.291 11860 12981 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/23548-06460d6ad6134b8e.js
+06-30 02:10:03.291 11860 12989 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/55682-4f9c532916993730.js
+06-30 02:10:03.292 11860 12996 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/49029-7ca2ead5f497f031.js
+06-30 02:10:03.292 11860 12995 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/99328-0f824473476788e3.js
+06-30 02:10:03.292 11860 12999 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/behaviors-a588225710df8951.js
+06-30 02:10:03.292 11860 13000 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/61272-f2158b5d00e77e7b.js
+06-30 02:10:03.293 11860 12994 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/57639-c11f2fce6b8a5462.js
+06-30 02:10:03.294 11860 13002 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/98304-e396ebf96aff23e2.js
+06-30 02:10:03.295 11860 13005 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/19930-c2749e0e22d03aed.js
+06-30 02:10:03.295 11860 13006 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/37438-ef8a676c1fc3fbdf.js
+06-30 02:10:03.295 11860 13004 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/settings-1ae1b96a3b736e45.js
+06-30 02:10:03.296 11860 12998 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/14872.236fe58d0f3e0131.module.css
+06-30 02:10:03.296 11860 12997 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/notifications-global-af6906205a03177b.js
+06-30 02:10:03.297 11860 13058 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/copilot-user-checklist.08004ebecbdaccde.module.css
+06-30 02:10:03.299 11860 13057 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/global-nav-bar.d678c053d95f5ee2.module.css
+06-30 02:10:03.312 11860 11959 D AIQuotaLogin: provider=copilot resource=https://avatars.githubusercontent.com/u/73424328?keys=v|size
+06-30 02:10:03.326 11860 11960 D AIQuotaLogin: provider=copilot resource=https://avatars.githubusercontent.com/u/73424328?keys=s|v
+06-30 02:10:06.578 11860 11860 I AIQuotaCollector: provider=copilot collectorMode=webview-js rawPayloadPresent=true
+06-30 02:10:06.593 11860 11860 I AIQuotaDebugCookie: provider=copilot debugCookieSnapshot=true reason=trusted_usage_payload urlCount=3 cookieCount=3
+06-30 02:10:06.603 11860 11860 I AIQuotaCollector: provider=copilot source=structured-script lineCount=1 planPresent=true accountPresent=false keptPreviousSnapshot=false
+06-30 02:10:06.783 11860 11960 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-63160-0e070544b8a7e599.js
+06-30 02:10:06.826 11860 11960 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-71795-f9fd0b3ab1eb02cb.js
+06-30 02:10:06.827 11860 11961 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-36287-6de4d34d8763e08b.js
+06-30 02:10:06.828 11860 11966 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-21638-fff2fbb4730f6059.js
+06-30 02:10:06.828 11860 11960 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-57376-7916b5d3de514f20.js
+06-30 02:10:06.828 11860 11965 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-51591-9cc4549d156c33ac.js
+06-30 02:10:06.830 11860 12020 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-34877-5f5352cbe1a34c76.js
+06-30 02:10:06.841 11860 11959 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-36423-2b0fda879dc99638.js
+06-30 02:10:06.860 11860 11960 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/44391-e6dbc84db1bf0374.js
+06-30 02:10:06.860 11860 11969 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/50110-6738dab2949218b7.js
+06-30 02:10:06.861 11860 11966 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/2694-2204ab9c999d08d2.js
+06-30 02:10:06.867 11860 12967 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-43205-2b6b4501b29d53c9.js
+06-30 02:10:06.869 11860 11961 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-87260-d2d4837e0146e328.js
+06-30 02:10:06.870 11860 11960 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/17752-b7b54a0082b6bfa5.js
+06-30 02:10:06.870 11860 12973 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-52728-54adcb094a6cb392.js
+06-30 02:10:06.871 11860 12975 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-73937-d2ba93eb3d6799ac.js
+06-30 02:10:06.871 11860 11959 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-23835-e0bfd8a2a6e5509d.js
+06-30 02:10:06.872 11860 12976 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/37826-fefad747c0e29a0e.js
+06-30 02:10:06.872 11860 11965 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-3876-d2174a16b2241787.js
+06-30 02:10:06.872 11860 12020 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-76753-ce40b2a240bc9ecf.js
+06-30 02:10:06.872 11860 12977 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-46661-5f4458bcd825d5a3.js
+06-30 02:10:06.873 11860 12974 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/primer-react-0ed21f4b9e8f991d.js
+06-30 02:10:06.873 11860 12966 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/octicons-react-6d4b073f11eb4456.js
+06-30 02:10:06.873 11860 12979 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/97458-4c244b6be0b3304c.js
+06-30 02:10:06.875 11860 12980 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/68751-ed2de1f8d1b6cf6e.js
+06-30 02:10:06.875 11860 12978 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/68735-090bea2cedf32faa.js
+06-30 02:10:06.875 11860 12982 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/68033-6297462e005d658b.js
+06-30 02:10:06.875 11860 12983 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/40828-506ed5d504a99bf1.js
+06-30 02:10:06.875 11860 12986 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/63000-26b4566c2dff846a.js
+06-30 02:10:06.876 11860 12981 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/66231-51996d3b402ebf0f.js
+06-30 02:10:06.876 11860 12989 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/7507-a0d11870ecf85d46.js
+06-30 02:10:06.876 11860 12988 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/5128.cf38ec74733916eb.module.css
+06-30 02:10:06.876 11860 12990 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/23295-603e7545a3286d5b.js
+06-30 02:10:06.877 11860 12992 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/437-a847efc3619ac5cc.js
+06-30 02:10:06.877 11860 12987 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/41328-eda62e0f5a40da8e.js
+06-30 02:10:06.877 11860 12984 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/40294-d69d54532a6a5942.js
+06-30 02:10:06.878 11860 12993 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/66732-3e702203439d131a.js
+06-30 02:10:06.878 11860 12995 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/83912-3ab207faefe85e1b.js
+06-30 02:10:06.878 11860 12985 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/68469-34af89b23deb152f.js
+06-30 02:10:06.878 11860 12991 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/88609-22b30551d8963821.js
+06-30 02:10:06.878 11860 11969 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/19838-2ea224bb9a39ee47.js
+06-30 02:10:06.881 11860 12994 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/33684-b5fb50e53d222306.js
+06-30 02:10:06.884 11860 12998 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/91919-98960b47b7cc57f2.js
+06-30 02:10:06.884 11860 12997 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/92162-8af72e66e59f0ceb.js
+06-30 02:10:06.884 11860 11966 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/14872-c5f036ff4f3a11ad.js
+06-30 02:10:06.887 11860 12996 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/51064-620710bb07b2da72.js
+06-30 02:10:06.895 11860 11960 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/16812-c18eebb5744eea92.js
+06-30 02:10:06.895 11860 11965 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/80856-c363c6d608751c52.js
+06-30 02:10:06.896 11860 12992 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/81758.fdaf9f6daf87dafe.module.css
+06-30 02:10:06.896 11860 12987 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/32883-1e0789bb61b21038.js
+06-30 02:10:06.896 11860 12990 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/38963.8add87f5d74d588c.module.css
+06-30 02:10:06.898 11860 11959 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/44824-d75aa1964af0d891.js
+06-30 02:10:06.967 11860 11959 D AIQuotaLogin: provider=copilot resource=https://github.com/in-product-messaging/copilot-budget-request-banner?keys=page_path
+06-30 02:10:07.001 11860 11960 D AIQuotaLogin: provider=copilot resource=https://api.github.com/_private/browser/stats
+06-30 02:10:07.108 11860 11959 D AIQuotaLogin: provider=copilot resource=https://github.githubassets.com/assets/chunk-85825-311c11e4756fbf7d.js
+06-30 02:10:07.269 11860 11959 D AIQuotaLogin: provider=copilot resource=https://collector.github.com/github/collect
+06-30 02:10:07.279 11860 11959 D AIQuotaLogin: provider=copilot resource=https://collector.github.com/github/collect

@@ -51,6 +51,7 @@ open class WebLoginActivity : Activity() {
     private var openCodePostLoginRedirected = false
     private var codexPostLoginUsageRedirected = false
     private var codexNativeCollectionStarted = false
+    private var geminiNativeCollectionStarted = false
     @Volatile
     private var oauthCallbackHandled = false
     @Volatile
@@ -61,11 +62,7 @@ open class WebLoginActivity : Activity() {
     private val popupViews = mutableSetOf<WebView>()
     private val collectorInjectionKeys = mutableSetOf<String>()
     private val startedAtMs = SystemClock.elapsedRealtime()
-    private val geminiCollectorAsset by lazy {
-        runCatching {
-            assets.open("gemini_collector.js").bufferedReader().use { it.readText() }
-        }.getOrDefault("")
-    }
+    private val geminiCollectorAsset = ""
     private val antigravityCollectorAsset by lazy {
         runCatching {
             assets.open("antigravity_collector.js").bufferedReader().use { it.readText() }
@@ -103,6 +100,7 @@ open class WebLoginActivity : Activity() {
         if (ProviderWebSessionClearPolicy.shouldClearBeforeLogin(providerId, previousConnectionState)) {
             clearProviderWebSession(cookieManager, providerId)
         }
+        DebugProviderSessionCookieStore.restore(applicationContext, providerId, cookieManager, "login_start")
         webView = createConfiguredWebView(cookieManager, capabilities)
         rootContainer = FrameLayout(this).apply {
             addView(webView, loginWebViewLayoutParams())
@@ -229,7 +227,6 @@ open class WebLoginActivity : Activity() {
         override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
             if (isCodexAboutBlankNavigation(url)) {
                 noteBridgePageUrl("about:blank")
-                injectCollectorIfReady(view, "about:blank", "", resourceTriggered = true)
                 return
             }
             noteBridgePageUrl(url)
@@ -295,7 +292,7 @@ open class WebLoginActivity : Activity() {
                 if (shouldRedirectCodexToUsageAfterLogin(pageUrl, url)) {
                     view.post { maybeRedirectCodexToUsageAfterLogin(view, pageUrl, url) }
                 }
-                if (shouldStartCodexNativeCollectionFromResource(url)) {
+                if (shouldStartCodexNativeCollectionFromResource(url) && hasCodexNativeFetchAuthContext(url)) {
                     view.post { maybeStartCodexNativeCollection(view, pageUrl, "resource") }
                 }
             }
@@ -311,7 +308,7 @@ open class WebLoginActivity : Activity() {
             noteBridgePageUrl(pageUrl)
             if (!ProviderWebCollectorScripts.shouldRunCollectorFromResource(providerId, pageUrl, url)) return
             if (providerId == ProviderId.CODEX) {
-                if (shouldStartCodexNativeCollectionFromResource(url)) {
+                if (shouldStartCodexNativeCollectionFromResource(url) && hasCodexNativeFetchAuthContext(url)) {
                     maybeStartCodexNativeCollection(view, pageUrl, "resource")
                 }
                 return
@@ -332,9 +329,11 @@ open class WebLoginActivity : Activity() {
             if (providerId == ProviderId.CODEX && ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, effectiveUrl)) {
                 if (effectiveUrl == "about:blank") {
                     injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
-                } else {
-                    maybeStartCodexNativeCollection(view, effectiveUrl, "page_finished")
                 }
+                return
+            }
+            if (providerId == ProviderId.GEMINI && effectiveUrl == "about:blank") {
+                injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
                 return
             }
             view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
@@ -343,6 +342,9 @@ open class WebLoginActivity : Activity() {
                     return@evaluateJavascript
                 }
                 if (maybeClickGeminiSignIn(view, url, pageText)) {
+                    return@evaluateJavascript
+                }
+                if (maybeStartGeminiNativeCollection(view, url, pageText, "page_finished")) {
                     return@evaluateJavascript
                 }
                 if (maybeRedirectOpenCodeToGo(view, url)) {
@@ -394,6 +396,8 @@ open class WebLoginActivity : Activity() {
             if (oauthCallbackHandled || finished) return true
             oauthCallbackHandled = true
             Log.i("AIQuotaLogin", "provider=${providerId.storageId} oauthCallback=true host=${hostOf(url)}")
+            CookieManager.getInstance().flush()
+            captureDebugProviderSessionCookies("login_complete_navigation")
             view.stopLoading()
             failKeepingPrevious("Provider login did not produce a trusted usage payload.", "login_complete_without_payload")
             return true
@@ -516,7 +520,9 @@ open class WebLoginActivity : Activity() {
             if (!isNativeFetchBridgePageAllowed(providerId)) {
                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
             }
-            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(providerId, currentBridgeUserAgent)
+            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(providerId, currentBridgeUserAgent) { url ->
+                if (providerId == ProviderId.CODEX) codexNativeFetchHeadersFor(url) else emptyMap()
+            }
         }
 
         @JavascriptInterface
@@ -620,6 +626,59 @@ open class WebLoginActivity : Activity() {
         return true
     }
 
+    private fun maybeStartGeminiNativeCollection(view: WebView, url: String, pageText: String, reason: String): Boolean {
+        if (providerId != ProviderId.GEMINI || finished || geminiNativeCollectionStarted) return false
+        if (!GeminiUsagePageRoutes.isUsageUrl(url)) return false
+        if (ProviderWebCollectorScripts.isRefreshLoginPage(ProviderId.GEMINI, url, pageText)) return false
+        geminiNativeCollectionStarted = true
+        GeminiUsagePageRpcSession.clear()
+        CookieManager.getInstance().flush()
+        captureDebugProviderSessionCookies("gemini_native_collection_start")
+        collectorInjectionKeys.clear()
+        captureGeminiRpcSessionThenLoadAboutBlank(view, url, reason, attempt = 0)
+        return true
+    }
+
+    private fun captureGeminiRpcSessionThenLoadAboutBlank(
+        view: WebView,
+        url: String,
+        reason: String,
+        attempt: Int
+    ) {
+        view.evaluateJavascript(GeminiUsagePageRpcSession.captureScript()) { encoded ->
+            if (finished) return@evaluateJavascript
+            val captured = GeminiUsagePageRpcSession.updateFromJson(decodeJsString(encoded), url)
+            if (!captured && attempt < GEMINI_RPC_SESSION_CAPTURE_MAX_ATTEMPTS) {
+                view.postDelayed(
+                    { captureGeminiRpcSessionThenLoadAboutBlank(view, url, reason, attempt + 1) },
+                    GEMINI_RPC_SESSION_CAPTURE_RETRY_MS
+                )
+                return@evaluateJavascript
+            }
+            if (!captured) {
+                GeminiUsagePageRpcSession.clear()
+                Log.w(
+                    "AIQuotaLogin",
+                    "provider=gemini nativeCollectorBlocked=missingRpcSession attempt=${attempt + 1} " +
+                        "from=${hostOf(url)}${pathOf(url)}"
+                )
+                finishGoogleUsagePending(
+                    GoogleUsagePendingRetryPolicy.PENDING_MESSAGE,
+                    "gemini_usage_rpc_session_unavailable"
+                )
+                return@evaluateJavascript
+            }
+            noteBridgePageUrl("about:blank")
+            Log.i(
+                "AIQuotaLogin",
+                "provider=gemini nativeCollectorStart=aboutblank reason=$reason " +
+                    "rpcSession=$captured attempt=${attempt + 1} from=${hostOf(url)}${pathOf(url)}"
+            )
+            view.stopLoading()
+            view.loadUrl("about:blank")
+        }
+    }
+
     private fun maybeRedirectOpenCodeToGo(view: WebView, url: String): Boolean {
         if (providerId != ProviderId.OPENCODE || openCodePostLoginRedirected) return false
         val goUsageUrl = OpenCodeUsagePageRoutes.goUsageUrlFrom(url) ?: return false
@@ -647,56 +706,15 @@ open class WebLoginActivity : Activity() {
         collectorInjectionKeys.clear()
         noteBridgePageUrl("about:blank")
         Log.i("AIQuotaLogin", "provider=codex nativeCollectorStart=aboutblank reason=$reason from=${hostOf(url)}${pathOf(url)}")
-        injectCodexAboutBlankFrameCollector(view, url)
+        view.stopLoading()
+        view.loadUrl("about:blank")
         return true
-    }
-
-    private fun injectCodexAboutBlankFrameCollector(view: WebView, sourceUrl: String) {
-        val script = ProviderWebCollectorScripts.build(
-            providerId = ProviderId.CODEX,
-            cookies = cookiesFor(sourceUrl),
-            geminiCollectorAsset = geminiCollectorAsset,
-            antigravityCollectorAsset = antigravityCollectorAsset,
-            observedAccountId = observedCodexAccountId,
-            pageText = "",
-            pageUrl = "about:blank",
-            awaitInteractiveLoginUsage = true
-        )
-        val quotedScript = JSONObject.quote("window.AIQuotaCollectorBridge = parent.AIQuotaCollectorBridge;\n$script")
-        val frameScript = """
-            (function(){
-              var id = "__aiquota_codex_native_frame";
-              var oldFrame = document.getElementById(id);
-              if (oldFrame && oldFrame.parentNode) oldFrame.parentNode.removeChild(oldFrame);
-              var frame = document.createElement("iframe");
-              frame.id = id;
-              frame.src = "about:blank";
-              frame.style.cssText = "display:none;width:0;height:0;border:0";
-              (document.documentElement || document.body).appendChild(frame);
-              try {
-                var doc = frame.contentDocument || (frame.contentWindow && frame.contentWindow.document);
-                var nonceNode = document.querySelector("script[nonce]");
-                var nonce = nonceNode ? (nonceNode.nonce || nonceNode.getAttribute("nonce") || "") : "";
-                doc.open();
-                doc.write("<!doctype html><html><head><meta charset=\"utf-8\"></head><body></body></html>");
-                doc.close();
-                var script = doc.createElement("script");
-                if (nonce) script.setAttribute("nonce", nonce);
-                script.text = $quotedScript;
-                (doc.body || doc.documentElement).appendChild(script);
-              } catch (error) {
-                try {
-                  window.AIQuotaCollectorBridge.postCollectorError("codex_usage_unavailable", String(error && error.message || error));
-                } catch (_) {}
-              }
-            })();
-        """.trimIndent()
-        Log.i("AIQuotaCollector", "provider=codex collectorMode=webview-js inject host=aboutblank-frame")
-        view.evaluateJavascript(frameScript, null)
     }
 
     private fun maybeRedirectCodexToUsageAfterLogin(view: WebView, pageUrl: String, resourceUrl: String): Boolean {
         if (!shouldRedirectCodexToUsageAfterLogin(pageUrl, resourceUrl)) return false
+        CookieManager.getInstance().flush()
+        captureDebugProviderSessionCookies("codex_post_login_redirect")
         codexPostLoginUsageRedirected = true
         collectorInjectionKeys.clear()
         Log.i("AIQuotaLogin", "provider=codex postLoginRedirect=analytics from=${hostOf(pageUrl)}${pathOf(pageUrl)}")
@@ -721,22 +739,27 @@ open class WebLoginActivity : Activity() {
 
     private fun shouldStartCodexNativeCollectionFromResource(url: String): Boolean {
         if (providerId != ProviderId.CODEX) return false
-        val uri = runCatching { URI(url) }.getOrNull() ?: return false
-        val host = uri.host.orEmpty().lowercase(Locale.US)
-        if (host != "chatgpt.com" && !host.endsWith(".chatgpt.com")) return false
-        val path = uri.path.orEmpty().lowercase(Locale.US)
-        return path == "/backend-api/wham/usage"
+        return CodexNativeCollectionRoutes.shouldStartFromResource(url)
+    }
+
+    private fun hasCodexNativeFetchAuthContext(url: String): Boolean {
+        return codexNativeFetchHeadersFor(url).any { (name, value) ->
+            value.isNotBlank() && (
+                name.equals("Authorization", ignoreCase = true) ||
+                    name.equals("ChatGPT-Account-ID", ignoreCase = true) ||
+                    name.equals("OAI-Session-Id", ignoreCase = true)
+                )
+        }
     }
 
     private fun isCodexAboutBlankNavigation(url: String): Boolean {
-        if (providerId != ProviderId.CODEX || !codexNativeCollectionStarted) return false
-        if (url == "about:blank") return true
-        val scheme = runCatching { URI(url).scheme.orEmpty() }.getOrDefault("")
-        return scheme.equals("about", ignoreCase = true)
+        return providerId == ProviderId.CODEX &&
+            CodexNativeCollectionRoutes.isAboutBlankNavigation(codexNativeCollectionStarted, url)
     }
 
     private fun recoverCodexFromLocalAuthCallback(view: WebView, url: String) {
         CookieManager.getInstance().flush()
+        captureDebugProviderSessionCookies("codex_local_auth_callback")
         collectorInjectionKeys.clear()
         Log.i("AIQuotaLogin", "provider=codex localCallbackRecovered=true host=${hostOf(url)}")
         view.loadUrl(ProviderLoginStrategy.CODEX_CALLBACK_RECOVERY_URL)
@@ -819,6 +842,7 @@ open class WebLoginActivity : Activity() {
         resourceTriggered: Boolean = false
     ) {
         if (finished) return
+        if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && url != "about:blank") return
         noteBridgePageUrl(url)
         val cookies = cookiesFor(url)
         if (!resourceTriggered && !ProviderWebCollectorScripts.shouldRunCollector(providerId, url, cookies, pageText)) return
@@ -877,41 +901,25 @@ open class WebLoginActivity : Activity() {
         if (providerId != ProviderId.CODEX) return
         val url = request.url.toString()
         if (!ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, url)) return
-        val headers = request.requestHeaders.orEmpty()
-            .filterKeys(::isCodexNativeForwardableHeader)
-            .filterValues(String::isNotBlank)
-        if (headers.isEmpty()) return
-        val key = codexNativeHeaderKey(url) ?: return
-        codexNativeFetchHeaders[key] = headers
-        codexNativeFetchHeaders[CODEX_NATIVE_HEADER_FALLBACK_KEY] = headers
+        if (!CodexNativeHeaderStore.capture(
+                codexNativeFetchHeaders,
+                url,
+                request.requestHeaders.orEmpty(),
+                CODEX_NATIVE_HEADER_FALLBACK_KEY
+            )
+        ) return
+        val headerNames = CodexNativeHeaderStore.forwardableHeaders(request.requestHeaders.orEmpty())
+            .keys
+            .sorted()
+            .joinToString("|")
         Log.d(
             "AIQuotaLogin",
-            "provider=codex capturedNativeHeaders path=${pathOf(url)} names=${headers.keys.sorted().joinToString("|")}"
+            "provider=codex capturedNativeHeaders path=${pathOf(url)} names=$headerNames"
         )
     }
 
     private fun codexNativeFetchHeadersFor(url: String): Map<String, String> {
-        val key = codexNativeHeaderKey(url)
-        return key?.let { codexNativeFetchHeaders[it] }
-            ?: codexNativeFetchHeaders[CODEX_NATIVE_HEADER_FALLBACK_KEY]
-            ?: emptyMap()
-    }
-
-    private fun codexNativeHeaderKey(url: String): String? {
-        val uri = runCatching { URI(url) }.getOrNull() ?: return null
-        val host = uri.host.orEmpty().lowercase(Locale.US)
-        val path = uri.path.orEmpty().lowercase(Locale.US)
-        if (host != "chatgpt.com" && !host.endsWith(".chatgpt.com")) return null
-        return "$host$path"
-    }
-
-    private fun isCodexNativeForwardableHeader(name: String): Boolean {
-        val normalized = name.trim()
-        if (normalized.isBlank()) return false
-        return !normalized.equals("Host", ignoreCase = true) &&
-            !normalized.equals("Connection", ignoreCase = true) &&
-            !normalized.equals("Content-Length", ignoreCase = true) &&
-            !normalized.equals("Accept-Encoding", ignoreCase = true)
+        return CodexNativeHeaderStore.headersFor(codexNativeFetchHeaders, url, CODEX_NATIVE_HEADER_FALLBACK_KEY)
     }
 
     private fun finishSuccessfulLogin(
@@ -921,6 +929,7 @@ open class WebLoginActivity : Activity() {
         if (finished) return
         finished = true
         CookieManager.getInstance().flush()
+        captureDebugProviderSessionCookies("trusted_usage_payload", includeNativeAuthContext = true)
         ProviderUsageCollectionService.start(
             context = applicationContext,
             providerId = providerId,
@@ -935,6 +944,7 @@ open class WebLoginActivity : Activity() {
         if (finished) return
         finished = true
         CookieManager.getInstance().flush()
+        captureDebugProviderSessionCookies("connected_without_plan")
         captureGlmWebSessionCookieHeader()
         val repository = LocalUsageRepository(applicationContext)
         repository.markConnectedWithoutPlan(
@@ -958,6 +968,7 @@ open class WebLoginActivity : Activity() {
         }
         finished = true
         CookieManager.getInstance().flush()
+        captureDebugProviderSessionCookies("connected_without_usage")
         captureGlmWebSessionCookieHeader()
         val repository = LocalUsageRepository(applicationContext)
         repository.markConnectedWithoutUsage(providerId, message)
@@ -979,6 +990,7 @@ open class WebLoginActivity : Activity() {
 
     private fun markGoogleUsagePendingAndStartCollection(message: String, errorKind: String) {
         CookieManager.getInstance().flush()
+        captureDebugProviderSessionCookies("google_usage_pending")
         val repository = LocalUsageRepository(applicationContext)
         repository.markGoogleUsagePending(providerId, message)
         Log.w("AIQuotaLogin", "provider=${providerId.storageId} errorKind=$errorKind usagePending=true")
@@ -1010,6 +1022,21 @@ open class WebLoginActivity : Activity() {
     private fun saveOpenCodeUsageUrl(url: String) {
         if (providerId != ProviderId.OPENCODE) return
         ProviderScopedStateRepository(applicationContext).saveOpenCodeUsageUrl(url)
+    }
+
+    private fun captureDebugProviderSessionCookies(reason: String, includeNativeAuthContext: Boolean = false) {
+        val nativeAuthContext = if (includeNativeAuthContext && providerId == ProviderId.CODEX) {
+            CodexNativeHeaderStore.snapshotAuthContext(codexNativeFetchHeaders)
+        } else {
+            emptyMap()
+        }
+        DebugProviderSessionCookieStore.capture(
+            applicationContext,
+            providerId,
+            CookieManager.getInstance(),
+            reason,
+            nativeAuthContext = nativeAuthContext
+        )
     }
 
     private fun captureGlmWebSessionCookieHeader(): String? {
@@ -1075,6 +1102,7 @@ open class WebLoginActivity : Activity() {
     }
 
     private fun hostOf(url: String): String {
+        if (url == "about:blank") return "about:blank"
         return runCatching { URI(url).host.orEmpty() }.getOrDefault("")
     }
 
@@ -1158,6 +1186,8 @@ open class WebLoginActivity : Activity() {
         private const val CODEX_NATIVE_HEADER_FALLBACK_KEY = "*"
         private const val PAGE_CAPTURE_SCRIPT =
             "(function(){return (document.documentElement.innerText||document.title||'').slice(0,12000);})()"
+        private const val GEMINI_RPC_SESSION_CAPTURE_MAX_ATTEMPTS = 3
+        private const val GEMINI_RPC_SESSION_CAPTURE_RETRY_MS = 500L
 
         fun createIntent(context: Context, providerId: ProviderId): Intent {
             val definition = ProviderDefinitionRegistry.definitionFor(providerId)

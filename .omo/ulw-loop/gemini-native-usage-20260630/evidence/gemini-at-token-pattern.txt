@@ -1,0 +1,5 @@
+﻿idx=-1
+AD1_[A-Za-z0-9_:-]+ => <none>
+"at":"([^"]+)" => <none>
+\["SNlM0e","([^"]+)"\] => <none>
+SNlM0e[^A-Z]+(AD1_[A-Za-z0-9_:-]+) => <none>
