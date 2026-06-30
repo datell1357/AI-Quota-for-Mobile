@@ -92,6 +92,37 @@ class ProviderLoginStrategyTest {
     }
 
     @Test
+    fun claudeSignedInChatStartsNativeCollection() {
+        assertTrue(ProviderLoginStrategy.shouldStartClaudeNativeCollection("https://claude.ai/new"))
+        assertTrue(ProviderLoginStrategy.shouldStartClaudeNativeCollection("https://claude.ai/chat/abc123"))
+        assertTrue(
+            ProviderLoginStrategy.shouldStartClaudeNativeCollectionFromResource(
+                "https://claude.ai/api/organizations/org_123/chat_conversations_v2"
+            )
+        )
+        assertTrue(
+            ProviderLoginStrategy.shouldStartClaudeNativeCollectionFromResource(
+                "https://claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/current_user_access"
+            )
+        )
+
+        assertFalse(ProviderLoginStrategy.shouldStartClaudeNativeCollection("https://claude.ai/login"))
+        assertFalse(ProviderLoginStrategy.shouldStartClaudeNativeCollection("https://claude.ai/logout"))
+        assertFalse(ProviderLoginStrategy.shouldStartClaudeNativeCollection("https://accounts.google.com/signin"))
+        assertFalse(ProviderLoginStrategy.shouldStartClaudeNativeCollection("https://example.com/chat/abc123"))
+        assertFalse(
+            ProviderLoginStrategy.shouldStartClaudeNativeCollectionFromResource(
+                "https://claude.ai/api/organizations/discoverable"
+            )
+        )
+        assertFalse(
+            ProviderLoginStrategy.shouldStartClaudeNativeCollectionFromResource(
+                "https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/index.js"
+            )
+        )
+    }
+
+    @Test
     fun doesNotTreatLoginPagesAsSuccess() {
         assertFalse(ProviderLoginStrategy.isLoginComplete(ProviderId.CLAUDE, "https://claude.ai/login", emptyMap(), ""))
         assertFalse(ProviderLoginStrategy.isLoginComplete(ProviderId.CLAUDE, "https://claude.ai/", emptyMap(), "Claude"))

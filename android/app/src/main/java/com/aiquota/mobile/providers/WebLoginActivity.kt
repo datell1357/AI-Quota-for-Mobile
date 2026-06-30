@@ -51,6 +51,7 @@ open class WebLoginActivity : Activity() {
     private var openCodePostLoginRedirected = false
     private var codexPostLoginUsageRedirected = false
     private var codexNativeCollectionStarted = false
+    private var claudeNativeCollectionStarted = false
     private var geminiNativeCollectionStarted = false
     @Volatile
     private var oauthCallbackHandled = false
@@ -286,6 +287,9 @@ open class WebLoginActivity : Activity() {
             if (ProviderLoginStrategy.isLoginComplete(providerId, url, cookiesFor(url), "")) {
                 view.post { handleLoginCompleteNavigation(view, url) }
             }
+            if (providerId == ProviderId.CLAUDE && ProviderLoginStrategy.shouldStartClaudeNativeCollectionFromResource(url)) {
+                view.post { maybeStartClaudeNativeCollection(view, url, "resource") }
+            }
             if (providerId == ProviderId.CODEX) {
                 val pageUrl = currentBridgePageUrl.ifBlank { url }
                 if (shouldRedirectCodexToUsageAfterLogin(pageUrl, url)) {
@@ -305,6 +309,7 @@ open class WebLoginActivity : Activity() {
         override fun onLoadResource(view: WebView, url: String) {
             val pageUrl = view.url ?: url
             noteBridgePageUrl(pageUrl)
+            if (providerId == ProviderId.CLAUDE && maybeStartClaudeNativeCollection(view, url, "resource")) return
             if (!ProviderWebCollectorScripts.shouldRunCollectorFromResource(providerId, pageUrl, url)) return
             if (providerId == ProviderId.CODEX) {
                 if (shouldStartCodexNativeCollectionFromResource(url) && hasCodexNativeFetchAuthContext(url)) {
@@ -325,10 +330,15 @@ open class WebLoginActivity : Activity() {
             if (maybeRedirectGeminiToUsage(view, effectiveUrl)) return
             if (maybeRedirectGlmToUsage(view, effectiveUrl)) return
             if (maybeRedirectOpenCodeToGo(view, effectiveUrl)) return
+            if (maybeStartClaudeNativeCollection(view, effectiveUrl, "page_finished")) return
             if (providerId == ProviderId.CODEX && ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, effectiveUrl)) {
                 if (effectiveUrl == "about:blank") {
                     injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
                 }
+                return
+            }
+            if (providerId == ProviderId.CLAUDE && effectiveUrl == "about:blank") {
+                injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
                 return
             }
             if (providerId == ProviderId.GEMINI && effectiveUrl == "about:blank") {
@@ -622,6 +632,24 @@ open class WebLoginActivity : Activity() {
             """.trimIndent(),
             null
         )
+        return true
+    }
+
+    private fun maybeStartClaudeNativeCollection(view: WebView, url: String, reason: String): Boolean {
+        if (providerId != ProviderId.CLAUDE || finished || claudeNativeCollectionStarted) return false
+        if (!ProviderLoginStrategy.shouldStartClaudeNativeCollection(url) &&
+            !ProviderLoginStrategy.shouldStartClaudeNativeCollectionFromResource(url)
+        ) {
+            return false
+        }
+        claudeNativeCollectionStarted = true
+        CookieManager.getInstance().flush()
+        captureDebugProviderSessionCookies("claude_native_collection_start")
+        collectorInjectionKeys.clear()
+        noteBridgePageUrl("about:blank")
+        Log.i("AIQuotaLogin", "provider=claude nativeCollectorStart=aboutblank reason=$reason from=${hostOf(url)}${pathOf(url)}")
+        view.stopLoading()
+        view.loadUrl("about:blank")
         return true
     }
 

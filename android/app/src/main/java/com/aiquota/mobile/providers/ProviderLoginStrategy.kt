@@ -62,6 +62,24 @@ object ProviderLoginStrategy {
         return providerId == ProviderId.ANTIGRAVITY
     }
 
+    fun shouldStartClaudeNativeCollection(url: String): Boolean {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        if (!isClaudeHost(host)) return false
+        val path = uri.path.orEmpty().lowercase(Locale.US)
+        return path == "/new" || path.startsWith("/chat/")
+    }
+
+    fun shouldStartClaudeNativeCollectionFromResource(url: String): Boolean {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        if (!isClaudeHost(host)) return false
+        val path = uri.path.orEmpty().lowercase(Locale.US)
+        if (!path.startsWith("/api/organizations/")) return false
+        val organizationId = path.removePrefix("/api/organizations/").substringBefore("/")
+        return organizationId.isNotBlank() && organizationId != "discoverable"
+    }
+
     fun shouldRedirectCopilotToSettings(url: String, pageText: String): Boolean {
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
@@ -108,6 +126,10 @@ object ProviderLoginStrategy {
 
     private fun isGoogleAccountHost(host: String): Boolean {
         return GOOGLE_ACCOUNT_HOST.matches(host)
+    }
+
+    private fun isClaudeHost(host: String): Boolean {
+        return host == "claude.ai" || host.endsWith(".claude.ai")
     }
 
     fun isBlockingHttpError(url: String, statusCode: Int): Boolean {

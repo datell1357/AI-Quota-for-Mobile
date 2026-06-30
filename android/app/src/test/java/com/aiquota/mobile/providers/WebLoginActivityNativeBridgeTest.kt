@@ -1,6 +1,7 @@
 package com.aiquota.mobile.providers
 
 import com.aiquota.mobile.local.ProviderId
+import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -65,5 +66,17 @@ class WebLoginActivityNativeBridgeTest {
         assertFalse(script.contains("__AIQuotaCodexNetworkRows"))
         assertFalse(script.contains("scanCodexPageState"))
         assertFalse(script.contains("scanCodexUsageText"))
+    }
+
+    @Test
+    fun claudeSignedInChatRedirectsToAboutBlankNativeBridge() {
+        val source = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+
+        assertTrue(source.contains("maybeStartClaudeNativeCollection(view, effectiveUrl, \"page_finished\")"))
+        assertTrue(source.contains("ProviderLoginStrategy.shouldStartClaudeNativeCollectionFromResource(url)"))
+        assertTrue(source.contains("maybeStartClaudeNativeCollection(view, url, \"resource\")"))
+        assertTrue(source.contains("providerId == ProviderId.CLAUDE && effectiveUrl == \"about:blank\""))
+        assertTrue(source.contains("captureDebugProviderSessionCookies(\"claude_native_collection_start\")"))
+        assertTrue(source.contains("provider=claude nativeCollectorStart=aboutblank"))
     }
 }
