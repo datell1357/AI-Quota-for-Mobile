@@ -170,6 +170,19 @@ class ProviderBackgroundRefreshServicePolicyTest {
     }
 
     @Test
+    fun glmWebOAuthBackgroundRefreshUsesStoredWebSessionNativeFetch() {
+        val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
+        val nativeCollector = service.substringAfter("private suspend fun collectNativeProviderUsage")
+            .substringBefore("private fun fetchAntigravityNativeOrWebSessionPayload")
+        val webCollector = service.substringAfter("private suspend fun collectWebProviderUsage")
+            .substringBefore("val requestId = ++nextRequestId")
+
+        assertTrue(nativeCollector.contains("connectionMode()"))
+        assertTrue(nativeCollector.contains("fetchUsagePayloadFromWebSession()"))
+        assertFalse(webCollector.contains("GlmIsolatedWebSession.collectUsage("))
+    }
+
+    @Test
     fun opencodeBackgroundRefreshRedirectsWorkspaceShellToGoUsagePage() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val redirect = service.substringAfter("private fun maybeRedirectOpenCodeRefreshToGo")

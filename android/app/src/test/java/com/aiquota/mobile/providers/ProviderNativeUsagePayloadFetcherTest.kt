@@ -22,6 +22,18 @@ class ProviderNativeUsagePayloadFetcherTest {
     }
 
     @Test
+    fun glmIsCollectedThroughAboutBlankNativeWebSessionFetcher() {
+        val policy = File("src/main/java/com/aiquota/mobile/providers/ProviderAboutBlankCollectorPolicy.kt").readText()
+        val source = File("src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt").readText()
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+
+        assertTrue(policy.contains("ProviderId.GLM"))
+        assertTrue(source.contains("ProviderId.GLM -> fetchGlmPayload"))
+        assertTrue(source.contains("GlmUsageFetcher.fetchUsagePayloadWithCookie"))
+        assertTrue(login.contains("cookieHeaderForUrl = { url -> CookieManager.getInstance().getCookie(url) }"))
+    }
+
+    @Test
     fun geminiNativeUsageSourceRejectsGenericOnlyCodeAssistAndDomFallbacks() {
         val nativeFetcher = File("src/main/java/com/aiquota/mobile/providers/GeminiUsagePageNativeFetcher.kt").readText()
         val nativeDispatcher = File("src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt").readText()

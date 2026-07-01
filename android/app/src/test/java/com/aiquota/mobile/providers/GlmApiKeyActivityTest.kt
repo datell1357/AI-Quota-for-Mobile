@@ -74,4 +74,16 @@ class GlmApiKeyActivityTest {
                 source.contains("saveButton.setOnClickListener { saveAndCollect() }")
         )
     }
+
+    @Test
+    fun webOAuthStartClearsStaleGlmWebSessionBeforeOpeningLogin() {
+        val source = File("src/main/java/com/aiquota/mobile/providers/GlmApiKeyActivity.kt").readText()
+        val openWebOAuth = source.substringAfter("private fun openWebOAuth()")
+            .substringBefore("private fun showApiKeyEntry")
+
+        assertTrue(openWebOAuth.contains("ProviderWebSessionCleaner.clearProviderWebSession(ProviderId.GLM)"))
+        assertTrue(openWebOAuth.contains("GlmProviderUrls.WEB_LOGIN_URL"))
+        assertTrue(openWebOAuth.indexOf("ProviderWebSessionCleaner.clearProviderWebSession(ProviderId.GLM)") <
+            openWebOAuth.indexOf("WebLoginActivity.createIntent("))
+    }
 }

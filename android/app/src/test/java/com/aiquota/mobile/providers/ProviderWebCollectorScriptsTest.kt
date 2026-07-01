@@ -17,11 +17,12 @@ class ProviderWebCollectorScriptsTest {
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CODEX, "about:blank", emptyMap(), ""))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "about:blank", emptyMap(), ""))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "about:blank", emptyMap(), ""))
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "about:blank", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "https://github.com/settings/copilot", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "https://github.com/settings/billing/premium_requests_usage", emptyMap(), ""))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CURSOR, "https://cursor.com/dashboard", emptyMap(), ""))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "https://z.ai/manage-apikey/coding-plan/personal/my-plan", emptyMap(), ""))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "https://chat.z.ai/", emptyMap(), "Coding Plan Usage"))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "https://z.ai/manage-apikey/coding-plan/personal/my-plan", emptyMap(), ""))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "https://chat.z.ai/", emptyMap(), "Coding Plan Usage"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "https://opencode.ai/auth", emptyMap(), "OpenCode Go usage limits"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "https://opencode.ai/zen/go/usage", emptyMap(), "Weekly limit"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "https://opencode.ai/workspace/wrk_123/go", emptyMap(), "롤링 사용량"))
@@ -41,7 +42,6 @@ class ProviderWebCollectorScriptsTest {
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.ANTIGRAVITY, "about:blank", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.ANTIGRAVITY, "https://accounts.google.com/signin", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.ANTIGRAVITY, "https://antigravity.google/docs/plans", emptyMap(), "Antigravity"))
-        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "about:blank", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "about:blank", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CURSOR, "about:blank", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CURSOR, "https://api.workos.com/sso/authorize", emptyMap(), ""))
@@ -87,21 +87,21 @@ class ProviderWebCollectorScriptsTest {
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CODEX, "about:blank"))
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GEMINI, "about:blank"))
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.COPILOT, "about:blank"))
+        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GLM, "about:blank"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CLAUDE, "https://claude.ai/new"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CODEX, "https://chatgpt.com/codex/settings/usage"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.COPILOT, "https://github.com/settings/copilot/features"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.ANTIGRAVITY, "about:blank"))
-        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GLM, "about:blank"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.OPENCODE, "about:blank"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CURSOR, "about:blank"))
     }
 
     @Test
     fun aboutBlankNativeUsagePayloadPolicyIncludesOnlyScopedProviders() {
-        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT).forEach { providerId ->
+        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT, ProviderId.GLM).forEach { providerId ->
             assertTrue(ProviderAboutBlankCollectorPolicy.isEnabled(providerId))
         }
-        listOf(ProviderId.ANTIGRAVITY, ProviderId.GLM, ProviderId.OPENCODE, ProviderId.CURSOR).forEach { providerId ->
+        listOf(ProviderId.ANTIGRAVITY, ProviderId.OPENCODE, ProviderId.CURSOR).forEach { providerId ->
             assertFalse(ProviderAboutBlankCollectorPolicy.isEnabled(providerId))
         }
     }
@@ -112,12 +112,15 @@ class ProviderWebCollectorScriptsTest {
             ProviderId.CLAUDE to "about:blank",
             ProviderId.CODEX to "about:blank",
             ProviderId.GEMINI to "about:blank",
-            ProviderId.COPILOT to "about:blank"
+            ProviderId.COPILOT to "about:blank",
+            ProviderId.GLM to "about:blank"
         ).forEach { (providerId, pageUrl) ->
             val script = ProviderWebCollectorScripts.build(providerId, emptyMap(), "", pageUrl = pageUrl)
 
             assertTrue(script.contains("fetchNativeUsagePayload"))
             assertTrue(script.contains("collectorMode"))
+            assertFalse(script.contains("__AIQuotaGlmNetworkRows"))
+            assertFalse(script.contains("visible-dom"))
             assertTrue(script.contains("native-bridge"))
             assertFalse(script.contains("parseCodexUsagePayload"))
             assertFalse(script.contains("extractCodexVisibleDomUsage"))
@@ -217,453 +220,42 @@ class ProviderWebCollectorScriptsTest {
     }
 
     @Test
-    fun glmCollectorConvertsPageStateLimitsToTrustedPayload() {
-        val node = nodeCommandOrNull()
-        assumeTrue("node is required for injected GLM runtime checks", node != null)
-
-        val glm = ProviderWebCollectorScripts.build(ProviderId.GLM, emptyMap(), "")
-        val path = Files.createTempFile("ai-quota-glm-runtime", ".js")
-        val runtime = """
-            const posted = [];
-            const errors = [];
-            const timers = [];
-            global.window = global;
-            global.location = {
-              hostname: "z.ai",
-              pathname: "/manage-apikey/coding-plan/personal/my-plan",
-              href: "https://z.ai/manage-apikey/coding-plan/personal/my-plan"
-            };
-            const quota = {
-              productName: "GLM Coding Pro",
-              data: {
-                limits: [
-                  { type: "TOKENS_LIMIT", unit: 3, number: 5, usage: 1000, currentValue: 250, percentage: 25, nextResetTime: 1792537200000 },
-                  { type: "TOKENS_LIMIT", unit: 6, number: 7, usage: 1000, currentValue: 400, percentage: 40 },
-                  { type: "TIME_LIMIT", unit: 5, number: 1, usage: 500, currentValue: 125, percentage: 25 }
-                ]
-              }
-            };
-            global.document = {
-              title: "My Coding Plan",
-              body: { innerText: "GLM Coding Plan Usage" },
-              documentElement: { innerText: "GLM Coding Plan Usage" },
-              scripts: [{ textContent: JSON.stringify(quota) }],
-              querySelectorAll: () => []
-            };
-            class StorageMock {
-              constructor(values) { this.values = values || {}; this.keys = Object.keys(this.values); this.length = this.keys.length; }
-              key(index) { return this.keys[index] || null; }
-              getItem(key) { return this.values[key] || ""; }
-            }
-            global.localStorage = new StorageMock({});
-            global.sessionStorage = new StorageMock({});
-            global.AIQuotaCollectorBridge = {
-              postUsagePayload: (value) => posted.push(JSON.parse(value)),
-              postCollectorError: (value) => errors.push(JSON.parse(value))
-            };
-            global.fetch = async function() {
-              return {
-                ok: true,
-                status: 200,
-                clone() { return { text: async () => "" }; },
-                text: async () => ""
-              };
-            };
-            global.XMLHttpRequest = function() {};
-            global.XMLHttpRequest.prototype = {
-              open() {},
-              send() {},
-              addEventListener() {}
-            };
-            global.setTimeout = function(fn) {
-              timers.push(fn);
-              return timers.length;
-            };
-            global.clearTimeout = function() {};
-            $glm
-            (async function() {
-              for (let i = 0; i < 8 && posted.length === 0 && errors.length === 0; i += 1) {
-                while (timers.length > 0) timers.shift()();
-                await Promise.resolve();
-                await new Promise((resolve) => setImmediate(resolve));
-              }
-              const limits = posted[0] && posted[0].data && posted[0].data.limits;
-              if (posted[0].provider !== "glm" || !Array.isArray(limits) || limits.length !== 3) {
-                console.error(JSON.stringify({ posted, errors }));
-                process.exit(1);
-              }
-              if (limits[0].type !== "TOKENS_LIMIT" || limits[1].number !== 7 || limits[2].type !== "TIME_LIMIT") {
-                console.error(JSON.stringify(limits));
-                process.exit(1);
-              }
-              if (posted[0].plan !== "Pro") {
-                console.error(JSON.stringify(posted[0]));
-                process.exit(1);
-              }
-            })();
-        """.trimIndent()
-        try {
-            Files.write(path, runtime.toByteArray(StandardCharsets.UTF_8))
-            val process = ProcessBuilder(node!!, path.toString()).redirectErrorStream(true).start()
-            val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-            assertTrue("GLM collector did not post trusted quota payload:\n$output", process.waitFor() == 0)
-        } finally {
-            Files.deleteIfExists(path)
-        }
+    fun glmVisibleDomCollectorIsNoLongerRouted() {
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "https://z.ai/manage-apikey/coding-plan/personal/usage", emptyMap(), "GLM Coding Plan Usage"))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "https://z.ai/manage-apikey/coding-plan/personal/my-plan", emptyMap(), "GLM Coding Plan Usage"))
+        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GLM, "https://z.ai/manage-apikey/coding-plan/personal/usage"))
     }
 
     @Test
-    fun glmCollectorFetchesQuotaJsonBeforeDomFallback() {
-        val node = nodeCommandOrNull()
-        assumeTrue("node is required for injected GLM runtime checks", node != null)
-
-        val glm = ProviderWebCollectorScripts.build(ProviderId.GLM, emptyMap(), "")
-        val path = Files.createTempFile("ai-quota-glm-quota-json-runtime", ".js")
-        val runtime = """
-            const posted = [];
-            const errors = [];
-            const timers = [];
-            const quotaUrl = "https://api.z.ai/api/monitor/usage/quota/limit";
-            const quotaResponse = JSON.stringify({
-              code: 200,
-              success: true,
-              data: {
-                level: { packageName: "GLM Coding Max-Yearly Plan" },
-                limits: [
-                  { limitType: "TIME_LIMIT", unit: 5, number: 1, usage: 500, currentValue: 10, percentage: 2, nextResetTime: 1792537200000 },
-                  { limitType: "TOKENS_LIMIT", unit: 3, number: 5, percentage: 3, nextResetTime: 1792537200000 },
-                  { limitType: "TOKENS_LIMIT", unit: 6, number: 1, percentage: 4, nextResetTime: 1792537200000 }
-                ]
-              }
-            });
-            let quotaFetches = 0;
-            global.window = global;
-            global.location = {
-              hostname: "z.ai",
-              pathname: "/manage-apikey/coding-plan/personal/usage",
-              href: "https://z.ai/manage-apikey/coding-plan/personal/usage"
-            };
-            global.document = {
-              title: "Usage",
-              body: { innerText: "GLM Coding Plan Usage" },
-              documentElement: { innerText: "GLM Coding Plan Usage" },
-              scripts: [],
-              querySelectorAll: () => []
-            };
-            class StorageMock {
-              constructor(values) { this.values = values || {}; this.keys = Object.keys(this.values); this.length = this.keys.length; }
-              key(index) { return this.keys[index] || null; }
-              getItem(key) { return this.values[key] || ""; }
-            }
-            global.localStorage = new StorageMock({});
-            global.sessionStorage = new StorageMock({});
-            global.AIQuotaCollectorBridge = {
-              postUsagePayload: (value) => posted.push(JSON.parse(value)),
-              postCollectorError: (value) => errors.push(JSON.parse(value))
-            };
-            global.fetch = async function(input) {
-              const url = typeof input === "string" ? input : (input && input.url) || "";
-              const text = url === quotaUrl ? quotaResponse : "";
-              if (url === quotaUrl) quotaFetches += 1;
-              return {
-                ok: true,
-                status: 200,
-                clone() { return { text: async () => text }; },
-                text: async () => text
-              };
-            };
-            global.XMLHttpRequest = function() {};
-            global.XMLHttpRequest.prototype = {
-              open() {},
-              send() {},
-              addEventListener() {}
-            };
-            global.setTimeout = function(fn) {
-              timers.push(fn);
-              return timers.length;
-            };
-            global.clearTimeout = function() {};
-            $glm
-            (async function() {
-              for (let i = 0; i < 8 && posted.length === 0 && errors.length === 0; i += 1) {
-                while (timers.length > 0) timers.shift()();
-                await Promise.resolve();
-                await new Promise((resolve) => setImmediate(resolve));
-              }
-              const limits = posted[0] && posted[0].data && posted[0].data.limits;
-              if (quotaFetches !== 1 || posted.length !== 1 || errors.length !== 0) {
-                console.error(JSON.stringify({ quotaFetches, posted, errors }));
-                process.exit(1);
-              }
-              if (posted[0].source !== "webview-network" || posted[0].plan !== "Max") {
-                console.error(JSON.stringify(posted[0]));
-                process.exit(1);
-              }
-              if (!Array.isArray(limits) || limits.length !== 3) {
-                console.error(JSON.stringify(limits));
-                process.exit(1);
-              }
-            })();
-        """.trimIndent()
-        try {
-            Files.write(path, runtime.toByteArray(StandardCharsets.UTF_8))
-            val process = ProcessBuilder(node!!, path.toString()).redirectErrorStream(true).start()
-            val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-            assertTrue("GLM collector did not fetch quota JSON before DOM fallback:\n$output", process.waitFor() == 0)
-        } finally {
-            Files.deleteIfExists(path)
-        }
+    fun glmLoginPageTextBlocksNativeCollectionStart() {
+        assertTrue(
+            ProviderWebCollectorScripts.isRefreshLoginPage(
+                ProviderId.GLM,
+                "https://z.ai/manage-apikey/coding-plan/personal/my-plan",
+                "GLM Coding Plan Log in with Google"
+            )
+        )
+        assertTrue(
+            ProviderWebCollectorScripts.isRefreshLoginPage(
+                ProviderId.GLM,
+                "https://z.ai/manage-apikey/coding-plan/personal/usage",
+                "로그인 후 이용해 주세요"
+            )
+        )
     }
 
     @Test
-    fun glmCollectorDoesNotReadIrrelevantFetchBodies() {
-        val node = nodeCommandOrNull()
-        assumeTrue("node is required for injected GLM runtime checks", node != null)
+    fun glmAboutBlankCollectorDoesNotIncludeLegacyDomFallbacks() {
+        val glm = ProviderWebCollectorScripts.build(ProviderId.GLM, emptyMap(), "", pageUrl = "about:blank")
 
-        val glm = ProviderWebCollectorScripts.build(ProviderId.GLM, emptyMap(), "")
-        val path = Files.createTempFile("ai-quota-glm-network-filter-runtime", ".js")
-        val runtime = """
-            const posted = [];
-            const errors = [];
-            let cloneTextReads = 0;
-            global.window = global;
-            global.location = {
-              hostname: "z.ai",
-              pathname: "/manage-apikey/coding-plan/personal/usage",
-              href: "https://z.ai/manage-apikey/coding-plan/personal/usage"
-            };
-            global.document = {
-              title: "Usage",
-              body: { innerText: "" },
-              documentElement: { innerText: "" },
-              scripts: [],
-              querySelectorAll: () => []
-            };
-            class StorageMock {
-              constructor(values) { this.values = values || {}; this.keys = Object.keys(this.values); this.length = this.keys.length; }
-              key(index) { return this.keys[index] || null; }
-              getItem(key) { return this.values[key] || ""; }
-            }
-            global.localStorage = new StorageMock({});
-            global.sessionStorage = new StorageMock({});
-            global.AIQuotaCollectorBridge = {
-              postUsagePayload: (value) => posted.push(JSON.parse(value)),
-              postCollectorError: (value) => errors.push(JSON.parse(value))
-            };
-            global.fetch = async function() {
-              return {
-                ok: true,
-                status: 200,
-                clone() {
-                  return {
-                    text: async () => {
-                      cloneTextReads += 1;
-                      return "{}";
-                    }
-                  };
-                },
-                text: async () => "{}"
-              };
-            };
-            global.XMLHttpRequest = function() {};
-            global.XMLHttpRequest.prototype = {
-              open() {},
-              send() {},
-              addEventListener() {}
-            };
-            global.setTimeout = function() { return 0; };
-            global.clearTimeout = function() {};
-            $glm
-            (async function() {
-              await window.fetch("https://www.google-analytics.com/g/collect?dl=https%3A%2F%2Fz.ai%2Fmanage-apikey%2Fcoding-plan%2Fpersonal%2Fusage");
-              await Promise.resolve();
-              await new Promise((resolve) => setImmediate(resolve));
-              if (cloneTextReads !== 0) {
-                console.error(JSON.stringify({ cloneTextReads, posted, errors }));
-                process.exit(1);
-              }
-              await window.fetch("https://api.z.ai/api/monitor/usage/quota/limit");
-              await Promise.resolve();
-              await new Promise((resolve) => setImmediate(resolve));
-              if (cloneTextReads !== 1) {
-                console.error(JSON.stringify({ cloneTextReads, posted, errors }));
-                process.exit(1);
-              }
-            })();
-        """.trimIndent()
-        try {
-            Files.write(path, runtime.toByteArray(StandardCharsets.UTF_8))
-            val process = ProcessBuilder(node!!, path.toString()).redirectErrorStream(true).start()
-            val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-            assertTrue("GLM collector read irrelevant fetch response bodies:\n$output", process.waitFor() == 0)
-        } finally {
-            Files.deleteIfExists(path)
-        }
-    }
-
-    @Test
-    fun glmCollectorPicksPlanTierFromVisibleMyPlanPage() {
-        val node = nodeCommandOrNull()
-        assumeTrue("node is required for injected GLM runtime checks", node != null)
-
-        val glm = ProviderWebCollectorScripts.build(ProviderId.GLM, emptyMap(), "")
-        val path = Files.createTempFile("ai-quota-glm-visible-plan-runtime", ".js")
-        val runtime = """
-            const posted = [];
-            const errors = [];
-            const timers = [];
-            const pageText = [
-              "My Plan",
-              "GLM Coding Max-Yearly Plan",
-              "5-Hour Token Limit",
-              "100% remaining"
-            ].join("\n");
-            global.window = global;
-            global.location = {
-              hostname: "z.ai",
-              pathname: "/manage-apikey/coding-plan/personal/my-plan",
-              href: "https://z.ai/manage-apikey/coding-plan/personal/my-plan"
-            };
-            global.document = {
-              title: "My Plan",
-              body: { innerText: pageText },
-              documentElement: { innerText: pageText },
-              scripts: [],
-              querySelectorAll: () => []
-            };
-            class StorageMock {
-              constructor(values) { this.values = values || {}; this.keys = Object.keys(this.values); this.length = this.keys.length; }
-              key(index) { return this.keys[index] || null; }
-              getItem(key) { return this.values[key] || ""; }
-            }
-            global.localStorage = new StorageMock({});
-            global.sessionStorage = new StorageMock({});
-            global.AIQuotaCollectorBridge = {
-              postUsagePayload: (value) => posted.push(JSON.parse(value)),
-              postCollectorError: (value) => errors.push(JSON.parse(value))
-            };
-            global.fetch = async function() {
-              return {
-                ok: true,
-                status: 200,
-                clone() { return { text: async () => "" }; },
-                text: async () => ""
-              };
-            };
-            global.XMLHttpRequest = function() {};
-            global.XMLHttpRequest.prototype = {
-              open() {},
-              send() {},
-              addEventListener() {}
-            };
-            global.setTimeout = function(fn) {
-              timers.push(fn);
-              return timers.length;
-            };
-            global.clearTimeout = function() {};
-            $glm
-            (async function() {
-              for (let i = 0; i < 8 && posted.length === 0 && errors.length === 0; i += 1) {
-                while (timers.length > 0) timers.shift()();
-                await Promise.resolve();
-                await new Promise((resolve) => setImmediate(resolve));
-              }
-              if (!posted[0] || posted[0].plan !== "Max") {
-                console.error(JSON.stringify({ posted, errors }));
-                process.exit(1);
-              }
-            })();
-        """.trimIndent()
-        try {
-            Files.write(path, runtime.toByteArray(StandardCharsets.UTF_8))
-            val process = ProcessBuilder(node!!, path.toString()).redirectErrorStream(true).start()
-            val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-            assertTrue("GLM visible my-plan text did not produce a tier-only plan:\n$output", process.waitFor() == 0)
-        } finally {
-            Files.deleteIfExists(path)
-        }
-    }
-
-    @Test
-    fun glmCollectorReportsNoSubscriptionWhenPlanPageSaysNoSubscription() {
-        val node = nodeCommandOrNull()
-        assumeTrue("node is required for injected GLM runtime checks", node != null)
-
-        val glm = ProviderWebCollectorScripts.build(ProviderId.GLM, emptyMap(), "")
-        val path = Files.createTempFile("ai-quota-glm-no-subscription-runtime", ".js")
-        val runtime = """
-            const posted = [];
-            const errors = [];
-            const timers = [];
-            const pageText = "GLM Coding Plan\nYou don't have any subscription";
-            global.window = global;
-            global.location = {
-              hostname: "z.ai",
-              pathname: "/manage-apikey/coding-plan/personal/my-plan",
-              href: "https://z.ai/manage-apikey/coding-plan/personal/my-plan"
-            };
-            global.document = {
-              title: "My Coding Plan",
-              body: { innerText: pageText },
-              documentElement: { innerText: pageText },
-              scripts: [],
-              querySelectorAll: () => []
-            };
-            class StorageMock {
-              constructor(values) { this.values = values || {}; this.keys = Object.keys(this.values); this.length = this.keys.length; }
-              key(index) { return this.keys[index] || null; }
-              getItem(key) { return this.values[key] || ""; }
-            }
-            global.localStorage = new StorageMock({});
-            global.sessionStorage = new StorageMock({});
-            global.AIQuotaCollectorBridge = {
-              postUsagePayload: (value) => posted.push(JSON.parse(value)),
-              postCollectorError: (value) => errors.push(JSON.parse(value))
-            };
-            global.fetch = async function() {
-              return {
-                ok: true,
-                status: 200,
-                clone() { return { text: async () => "" }; },
-                text: async () => ""
-              };
-            };
-            global.XMLHttpRequest = function() {};
-            global.XMLHttpRequest.prototype = {
-              open() {},
-              send() {},
-              addEventListener() {}
-            };
-            global.setTimeout = function(fn) {
-              timers.push(fn);
-              return timers.length;
-            };
-            global.clearTimeout = function() {};
-            $glm
-            (async function() {
-              for (let i = 0; i < 8 && posted.length === 0 && errors.length === 0; i += 1) {
-                while (timers.length > 0) timers.shift()();
-                await Promise.resolve();
-                await new Promise((resolve) => setImmediate(resolve));
-              }
-              if (posted.length !== 0 || errors.length === 0 || errors[0].errorKind !== "glm_no_subscription") {
-                console.error(JSON.stringify({ posted, errors }));
-                process.exit(1);
-              }
-              if (errors[0].message !== "You don't have any subscription") {
-                console.error(JSON.stringify(errors[0]));
-                process.exit(1);
-              }
-            })();
-        """.trimIndent()
-        try {
-            Files.write(path, runtime.toByteArray(StandardCharsets.UTF_8))
-            val process = ProcessBuilder(node!!, path.toString()).redirectErrorStream(true).start()
-            val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-            assertTrue("GLM no-subscription DOM was not reported as a planless state:\n$output", process.waitFor() == 0)
-        } finally {
-            Files.deleteIfExists(path)
-        }
+        assertTrue(glm.contains("fetchNativeUsagePayload"))
+        assertFalse(glm.contains("__AIQuotaGlmNetworkRows"))
+        assertFalse(glm.contains("webview-network"))
+        assertFalse(glm.contains("visible-dom"))
+        assertFalse(glm.contains("document.documentElement"))
+        assertFalse(glm.contains("document.scripts"))
+        assertFalse(glm.contains("localStorage"))
+        assertFalse(glm.contains("sessionStorage"))
     }
 
     @Test

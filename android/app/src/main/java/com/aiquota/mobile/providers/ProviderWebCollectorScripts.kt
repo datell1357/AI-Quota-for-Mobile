@@ -63,10 +63,10 @@ object ProviderWebCollectorScripts {
         if (providerId == ProviderId.GLM) {
             if (host != "z.ai" && host != "www.z.ai" && host != "chat.z.ai") return false
             val text = pageText.lowercase(Locale.US)
-            return text.contains("login") &&
-                !text.contains("coding plan") &&
-                !text.contains("quota") &&
-                !text.contains("usage")
+            return text.contains("login") ||
+                text.contains("log in") ||
+                text.contains("sign in") ||
+                text.contains("로그인")
         }
         if (providerId == ProviderId.OPENCODE) {
             if (host != "opencode.ai" && host != "www.opencode.ai" && host != "auth.opencode.ai") return false

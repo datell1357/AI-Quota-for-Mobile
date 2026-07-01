@@ -17,10 +17,6 @@
       android:name=".providers.WebLoginActivity"
       android:exported="false" />
     <activity
-      android:name=".providers.GlmWebLoginActivity"
-      android:exported="false"
-      android:process=":glm_webview" />
-    <activity
       android:name=".providers.GlmApiKeyActivity"
       android:exported="false" />
     <activity

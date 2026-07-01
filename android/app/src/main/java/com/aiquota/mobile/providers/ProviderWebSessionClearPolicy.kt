@@ -65,6 +65,8 @@ object ProviderWebSessionClearPolicy {
         }
     }
 
+    fun googleAuthCookieUrls(): List<String> = GOOGLE_AUTH_COOKIE_URLS
+
     fun storageOrigins(providerId: ProviderId): List<String> {
         return cookieUrls(providerId)
     }
@@ -162,6 +164,7 @@ object ProviderWebSessionClearPolicy {
     private val GLM_COOKIE_URLS = listOf(
         "https://z.ai",
         "https://www.z.ai",
+        GlmProviderUrls.WEB_LOGIN_URL,
         GlmProviderUrls.WEB_OAUTH_URL,
         GlmProviderUrls.WEB_USAGE_URL,
         "https://z.ai/manage-apikey",

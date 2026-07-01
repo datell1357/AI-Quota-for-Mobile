@@ -437,7 +437,11 @@ class ProviderBackgroundRefreshService : Service() {
     private suspend fun collectNativeProviderUsage(job: ProviderRefreshJob): ServiceRefreshOutcome {
         if (job.providerId == ProviderId.GLM) {
             val result = withContext(Dispatchers.IO) {
-                GlmUsageRepository(applicationContext).fetchUsagePayloadFromStoredCredential()
+                val repository = GlmUsageRepository(applicationContext)
+                when (repository.connectionMode()) {
+                    GlmConnectionMode.WEB_OAUTH -> repository.fetchUsagePayloadFromWebSession()
+                    GlmConnectionMode.API_KEY -> repository.fetchUsagePayloadFromStoredCredential()
+                }
             }
             val snapshot = result.payload?.let {
                 ProviderUsageNormalizer.normalize(
@@ -508,20 +512,6 @@ class ProviderBackgroundRefreshService : Service() {
         job: ProviderRefreshJob,
         automaticRefresh: Boolean
     ): ServiceRefreshOutcome {
-        if (job.providerId == ProviderId.GLM) {
-            Log.i(TAG, "glmWebSessionCollect start automatic=$automaticRefresh")
-            return when (val result = GlmIsolatedWebSession.collectUsage(
-                context = applicationContext,
-                startUrl = job.startUrl,
-                timeoutMillis = ProviderRefreshPlan.timeoutMillisFor(job.providerId)
-            )) {
-                is GlmIsolatedUsageResult.Payload -> {
-                    GlmUsageRepository(applicationContext).saveWebSessionCookieHeader(result.cookieHeader)
-                    ServiceRefreshOutcome.Payload(result.rawPayload)
-                }
-                is GlmIsolatedUsageResult.Failure -> ServiceRefreshOutcome.Failure(result.failure)
-            }
-        }
         val requestId = ++nextRequestId
         webJobLastUrls[requestId] = job.startUrl
         val result = withTimeoutOrNull(timeoutMillisForWebJob(job)) {

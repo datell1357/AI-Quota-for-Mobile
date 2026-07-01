@@ -15,6 +15,7 @@ data class GlmUsageResult(
 )
 
 object GlmProviderUrls {
+    const val WEB_LOGIN_URL = "https://z.ai/chat"
     const val WEB_OAUTH_URL = "https://z.ai/manage-apikey/coding-plan/personal/my-plan"
     const val WEB_USAGE_URL = "https://z.ai/manage-apikey/coding-plan/personal/usage"
     const val API_QUOTA_URL = "https://api.z.ai/api/monitor/usage/quota/limit"
@@ -22,6 +23,7 @@ object GlmProviderUrls {
         "https://z.ai",
         "https://www.z.ai",
         "https://chat.z.ai",
+        WEB_LOGIN_URL,
         WEB_OAUTH_URL,
         WEB_USAGE_URL,
         API_QUOTA_URL
@@ -165,6 +167,7 @@ class GlmUsageRepository(context: Context) {
     }
 
     fun useWebOAuth() {
+        webSessionCookieStore.clear()
         modeStore.save(GlmConnectionMode.WEB_OAUTH)
     }
 

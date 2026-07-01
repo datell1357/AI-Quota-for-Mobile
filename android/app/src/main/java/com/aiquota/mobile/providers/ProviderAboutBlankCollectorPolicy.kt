@@ -7,6 +7,7 @@ object ProviderAboutBlankCollectorPolicy {
         return providerId == ProviderId.CLAUDE ||
             providerId == ProviderId.CODEX ||
             providerId == ProviderId.GEMINI ||
-            providerId == ProviderId.COPILOT
+            providerId == ProviderId.COPILOT ||
+            providerId == ProviderId.GLM
     }
 }

@@ -102,14 +102,16 @@ class GlmWebSessionClearPolicyTest {
     }
 
     @Test
-    fun glmWebLoginRunsInIsolatedWebViewProcess() {
+    fun glmWebLoginUsesMainProcessAndKeepsOnlyCollectorServiceIsolated() {
         val manifest = File("src/main/AndroidManifest.xml").readText()
         val loginActivity = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
         val application = File("src/main/java/com/aiquota/mobile/AIQuotaApplication.kt").readText()
 
-        assertTrue(manifest.contains("android:name=\".providers.GlmWebLoginActivity\""))
+        assertFalse(manifest.contains("android:name=\".providers.GlmWebLoginActivity\""))
+        assertTrue(manifest.contains("android:name=\".providers.GlmIsolatedWebSessionService\""))
         assertTrue(manifest.contains("android:process=\":glm_webview\""))
-        assertTrue(loginActivity.contains("ProviderId.GLM -> GlmWebLoginActivity::class.java"))
+        assertTrue(loginActivity.contains("return Intent(context, WebLoginActivity::class.java)"))
+        assertFalse(loginActivity.contains("ProviderId.GLM -> GlmWebLoginActivity::class.java"))
         assertTrue(application.contains("GlmIsolatedWebViewProfile.configureIfNeeded(this)"))
     }
 
@@ -128,30 +130,47 @@ class GlmWebSessionClearPolicyTest {
     }
 
     @Test
-    fun glmWebOAuthBackgroundRefreshUsesIsolatedCollector() {
+    fun glmWebOAuthBackgroundRefreshUsesStoredSessionNativeFetch() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
-        val collector = File("src/main/java/com/aiquota/mobile/providers/GlmIsolatedWebSessionService.kt").readText()
-        val session = File("src/main/java/com/aiquota/mobile/providers/GlmIsolatedWebSession.kt").readText()
 
         assertTrue(service.contains("if (job.providerId == ProviderId.GLM)"))
-        assertTrue(service.contains("GlmIsolatedWebSession.collectUsage("))
-        assertFalse(service.contains("fetchUsagePayloadFromWebSession()"))
+        assertTrue(service.contains("GlmConnectionMode.WEB_OAUTH -> repository.fetchUsagePayloadFromWebSession()"))
+        assertFalse(service.contains("GlmIsolatedWebSession.collectUsage("))
         assertFalse(service.contains("GlmWebSessionFallbackGate(applicationContext)"))
-        assertTrue(collector.contains("class GlmIsolatedWebSessionService : Service()"))
-        assertTrue(collector.contains("ProviderWebCollectorScripts.build("))
-        assertTrue(collector.contains("scheduleProcessExit(reason)"))
-        assertTrue(collector.contains("Process.killProcess(Process.myPid())"))
-        assertTrue(session.contains("killIsolatedProcessIfRunning(context, \"collect_timeout\")"))
     }
 
     @Test
-    fun glmDisconnectClearsOnlyIsolatedWebViewProfile() {
+    fun glmNativeAuthRequiredKeepsLoginOpenAndReloadsLoginStart() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+
+        assertTrue(login.contains("errorKind == \"glm_auth_required\" && recoverGlmAuthRequiredFromNativeCollection()"))
+        assertTrue(login.contains("glmAuthRecoveryAttempted"))
+        assertTrue(login.contains("authRequiredRecovery=login"))
+        assertTrue(login.contains("webView.loadUrl(GlmProviderUrls.WEB_LOGIN_URL)"))
+    }
+
+    @Test
+    fun glmChatLoginUrlDoesNotStartNativeCollectionBeforeUsageRoute() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val nativeStart = login
+            .substringAfter("private fun maybeStartGlmNativeCollection")
+            .substringBefore("private fun recoverGlmAuthRequiredFromNativeCollection")
+
+        assertTrue(nativeStart.contains("if (!isUsagePage && !isMyPlanPage) return false"))
+        assertFalse(nativeStart.contains("isChatUrl"))
+        assertFalse(nativeStart.contains("WEB_LOGIN_URL"))
+    }
+
+    @Test
+    fun glmDisconnectClearsMainAndIsolatedWebViewProfiles() {
         val cleaner = File("src/main/java/com/aiquota/mobile/providers/ProviderWebSessionCleaner.kt").readText()
         val resetter = File("src/main/java/com/aiquota/mobile/providers/ProviderSessionResetter.kt").readText()
         val isolated = File("src/main/java/com/aiquota/mobile/providers/GlmIsolatedWebSessionService.kt").readText()
 
         assertTrue(cleaner.contains("if (providerId == ProviderId.GLM)"))
         assertTrue(cleaner.contains("GlmIsolatedWebSession.clearAndWait(context.applicationContext)"))
+        assertTrue(cleaner.contains("clearProviderWebSessionCookiesAndWait(CookieManager.getInstance(), providerId)"))
+        assertTrue(cleaner.contains("clearProviderWebStorageOrigins(WebStorage.getInstance(), providerId)"))
         assertTrue(resetter.contains("ProviderWebSessionCleaner.clearProviderWebSession(appContext, providerId)"))
         assertTrue(isolated.contains("cookieManager.removeAllCookies"))
         assertTrue(isolated.contains("WebStorage.getInstance().deleteAllData()"))

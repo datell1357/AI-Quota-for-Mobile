@@ -64,6 +64,8 @@ class ProviderDefinitionRegistryTest {
         assertTrue(ProviderDefinitionRegistry.isAllowed(ProviderId.GLM, "https://api.z.ai/api/monitor/usage/quota/limit"))
         assertTrue(ProviderDefinitionRegistry.isAllowed(ProviderId.GLM, "https://z.ai/manage-apikey/coding-plan/personal/my-plan"))
         assertTrue(ProviderDefinitionRegistry.isAllowed(ProviderId.GLM, "https://chat.z.ai/"))
+        assertTrue(ProviderDefinitionRegistry.isAllowed(ProviderId.GLM, "https://login.z.ai/auth"))
+        assertTrue(ProviderDefinitionRegistry.isAllowed(ProviderId.GLM, "https://auth.z.ai/login"))
         assertTrue(ProviderDefinitionRegistry.isAllowed(ProviderId.GLM, "https://accounts.google.com/o/oauth2/v2/auth"))
         assertTrue(ProviderDefinitionRegistry.isAllowed(ProviderId.OPENCODE, "https://opencode.ai/auth"))
         assertTrue(ProviderDefinitionRegistry.isAllowed(ProviderId.OPENCODE, "https://auth.opencode.ai/authorize"))
@@ -111,6 +113,8 @@ class ProviderDefinitionRegistryTest {
         assertTrue(ProviderDefinitionRegistry.isLoginNavigationAllowed(ProviderId.OPENCODE, "https://opencode.ai/auth"))
         assertTrue(ProviderDefinitionRegistry.isLoginNavigationAllowed(ProviderId.OPENCODE, "https://auth.opencode.ai/authorize"))
         assertTrue(ProviderDefinitionRegistry.isLoginNavigationAllowed(ProviderId.OPENCODE, "https://github.com/login/oauth/authorize"))
+        assertTrue(ProviderDefinitionRegistry.isLoginNavigationAllowed(ProviderId.GLM, "https://login.z.ai/auth"))
+        assertTrue(ProviderDefinitionRegistry.isLoginNavigationAllowed(ProviderId.GLM, "https://auth.z.ai/login"))
 
         assertFalse(ProviderDefinitionRegistry.isLoginNavigationAllowed(ProviderId.CLAUDE, "https://firebase.googleapis.com/relay"))
         assertFalse(ProviderDefinitionRegistry.isLoginNavigationAllowed(ProviderId.GEMINI, "https://cloudfunctions.net/relay"))

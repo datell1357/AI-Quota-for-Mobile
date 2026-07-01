@@ -16,8 +16,8 @@ object GlmRuntimeRefreshJobs {
         if (job.providerId != ProviderId.GLM) return job
         if (connectionMode != GlmConnectionMode.WEB_OAUTH) return job
         return job.copy(
-            mode = ProviderRefreshMode.HIDDEN_WEB_COLLECTOR,
-            startUrl = GlmProviderUrls.WEB_USAGE_URL
+            mode = ProviderRefreshMode.NATIVE_API,
+            startUrl = ""
         )
     }
 }
@@ -31,4 +31,13 @@ object GlmUsagePageRoutes {
         if (path != "/manage-apikey/coding-plan/personal/my-plan") return null
         return GlmProviderUrls.WEB_USAGE_URL
     }
+
+    fun isUsageUrl(url: String): Boolean {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        if (host != "z.ai" && host != "www.z.ai") return false
+        return uri.path.orEmpty().lowercase(Locale.US).trimEnd('/') ==
+            "/manage-apikey/coding-plan/personal/usage"
+    }
+
 }

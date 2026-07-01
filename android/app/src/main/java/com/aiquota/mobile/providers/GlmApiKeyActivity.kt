@@ -209,11 +209,12 @@ class GlmApiKeyActivity : ComponentActivity() {
     private fun openWebOAuth() {
         setActionControlsEnabled(false)
         statusText.text = getString(R.string.glm_connection_status_opening)
+        ProviderWebSessionCleaner.clearProviderWebSession(ProviderId.GLM)
         GlmUsageRepository(applicationContext).useWebOAuth()
         val intent = WebLoginActivity.createIntent(
             this,
             ProviderId.GLM,
-            GlmProviderUrls.WEB_OAUTH_URL
+            GlmProviderUrls.WEB_LOGIN_URL
         )
         val result = runCatching {
             startActivity(intent)

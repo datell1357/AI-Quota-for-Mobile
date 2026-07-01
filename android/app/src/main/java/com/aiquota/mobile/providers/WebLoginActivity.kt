@@ -54,6 +54,10 @@ open class WebLoginActivity : Activity() {
     private var geminiNetworkChangedRecoveryAttempted = false
     private var geminiNativeCollectionScheduled = false
     private var glmPostLoginRedirected = false
+    private var glmNativeCollectionStarted = false
+    private var glmAuthRecoveryAttempted = false
+    private var glmCookieMismatchRecoveryAttempted = false
+    private var lastGoogleOAuthUrl: String? = null
     private var openCodePostLoginRedirected = false
     private var codexPostLoginUsageRedirected = false
     private var codexNativeCollectionStarted = false
@@ -239,10 +243,10 @@ open class WebLoginActivity : Activity() {
                 return
             }
             noteBridgePageUrl(url)
-            if (maybeRecoverGeminiCookieMismatch(view, url)) return
+            rememberGoogleOAuthStartUrl(url)
+            if (maybeRecoverGoogleCookieMismatch(view, url)) return
             if (handleLoginCompleteNavigation(view, url)) return
             if (maybeRedirectGeminiToUsage(view, url)) return
-            if (maybeRedirectGlmToUsage(view, url)) return
             if (maybeRedirectOpenCodeToGo(view, url)) return
             injectCollectorIfReady(view, url, "")
         }
@@ -256,7 +260,8 @@ open class WebLoginActivity : Activity() {
             }
             if (request.isForMainFrame) {
                 noteBridgePageUrl(url)
-                if (maybeRecoverGeminiCookieMismatch(view, url)) return true
+                rememberGoogleOAuthStartUrl(url)
+                if (maybeRecoverGoogleCookieMismatch(view, url)) return true
                 ProviderLoginUrlRewriter.rewriteMainFrameUrl(providerId, url)?.let { rewrittenUrl ->
                     Log.i("AIQuotaLogin", "provider=${providerId.storageId} googleOAuthRewrite=select_account")
                     view.loadUrl(rewrittenUrl)
@@ -340,10 +345,9 @@ open class WebLoginActivity : Activity() {
             val effectiveUrl = if (isCodexAboutBlankNavigation(url)) "about:blank" else url
             noteBridgePageUrl(effectiveUrl)
             logFirstPageFinished(url)
-            if (maybeRecoverGeminiCookieMismatch(view, effectiveUrl)) return
+            if (maybeRecoverGoogleCookieMismatch(view, effectiveUrl)) return
             if (handleLoginCompleteNavigation(view, effectiveUrl)) return
             if (maybeRedirectGeminiToUsage(view, effectiveUrl)) return
-            if (maybeRedirectGlmToUsage(view, effectiveUrl)) return
             if (maybeRedirectOpenCodeToGo(view, effectiveUrl)) return
             if (maybeStartClaudeNativeCollection(view, effectiveUrl, "page_finished")) return
             if (maybeStartCopilotNativeCollection(view, effectiveUrl, "page_finished")) return
@@ -361,6 +365,10 @@ open class WebLoginActivity : Activity() {
                 injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
                 return
             }
+            if (providerId == ProviderId.GLM && effectiveUrl == "about:blank") {
+                injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
+                return
+            }
             if (providerId == ProviderId.COPILOT && effectiveUrl == "about:blank") {
                 injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
                 return
@@ -374,6 +382,12 @@ open class WebLoginActivity : Activity() {
                     return@evaluateJavascript
                 }
                 if (maybeStartGeminiNativeCollection(view, url, pageText, "page_finished")) {
+                    return@evaluateJavascript
+                }
+                if (maybeRedirectGlmToUsage(view, url, pageText)) {
+                    return@evaluateJavascript
+                }
+                if (maybeStartGlmNativeCollection(view, url, pageText, "page_finished")) {
                     return@evaluateJavascript
                 }
                 if (maybeRedirectOpenCodeToGo(view, url)) {
@@ -466,6 +480,9 @@ open class WebLoginActivity : Activity() {
                     finishGlmNoSubscription(errorKind)
                     return@runOnUiThread
                 }
+                if (providerId == ProviderId.GLM && errorKind == "glm_auth_required" && recoverGlmAuthRequiredFromNativeCollection()) {
+                    return@runOnUiThread
+                }
                 if (shouldKeepLoginOpenUntilUsagePayload(errorKind)) {
                     if (providerId == ProviderId.CODEX) {
                         codexNativeCollectionStarted = false
@@ -555,7 +572,8 @@ open class WebLoginActivity : Activity() {
                 providerId = providerId,
                 userAgent = currentBridgeUserAgent,
                 bridgePageUrl = nativeUsageBridgePageUrl(),
-                geminiRpcIds = geminiUsageRpcIds.toList()
+                geminiRpcIds = geminiUsageRpcIds.toList(),
+                cookieHeaderForUrl = { url -> CookieManager.getInstance().getCookie(url) }
             ) { url ->
                 if (providerId == ProviderId.CODEX) codexNativeFetchHeadersFor(url) else emptyMap()
             }
@@ -580,8 +598,9 @@ open class WebLoginActivity : Activity() {
 
     }
 
-    private fun maybeRedirectGlmToUsage(view: WebView, url: String): Boolean {
+    private fun maybeRedirectGlmToUsage(view: WebView, url: String, pageText: String): Boolean {
         if (providerId != ProviderId.GLM || glmPostLoginRedirected) return false
+        if (ProviderWebCollectorScripts.isRefreshLoginPage(providerId, url, pageText)) return false
         val usageUrl = GlmLoginPostRedirects.usageRedirectUrl(providerId, url) ?: return false
         glmPostLoginRedirected = true
         collectorInjectionKeys.clear()
@@ -639,6 +658,51 @@ open class WebLoginActivity : Activity() {
         view.stopLoading()
         view.loadUrl(recoveryUrl)
         return true
+    }
+
+    private fun maybeRecoverGoogleCookieMismatch(view: WebView, url: String): Boolean {
+        if (maybeRecoverGeminiCookieMismatch(view, url)) return true
+        return maybeRecoverGlmCookieMismatch(view, url)
+    }
+
+    private fun maybeRecoverGlmCookieMismatch(view: WebView, url: String): Boolean {
+        if (providerId != ProviderId.GLM || glmCookieMismatchRecoveryAttempted) return false
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        if (host != "accounts.google.com" || uri.path != "/CookieMismatch") return false
+        glmCookieMismatchRecoveryAttempted = true
+        glmNativeCollectionStarted = false
+        glmPostLoginRedirected = false
+        collectorInjectionKeys.clear()
+        clearGoogleAuthCookies(CookieManager.getInstance())
+        val recoveryUrl = lastGoogleOAuthUrl ?: GlmProviderUrls.WEB_LOGIN_URL
+        Log.w(
+            "AIQuotaLogin",
+            "provider=glm cookieMismatchRecovery=google_sso_retry target=${hostOf(recoveryUrl)}${pathOf(recoveryUrl)}"
+        )
+        view.stopLoading()
+        view.loadUrl(recoveryUrl)
+        return true
+    }
+
+    private fun rememberGoogleOAuthStartUrl(url: String) {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        if (host != "accounts.google.com" || uri.path != "/o/oauth2/v2/auth") return
+        lastGoogleOAuthUrl = url
+    }
+
+    private fun clearGoogleAuthCookies(cookieManager: CookieManager) {
+        ProviderWebSessionClearPolicy.googleAuthCookieUrls().forEach { url ->
+            ProviderWebSessionClearPolicy.expiringCookieHeaders(
+                cookieHeader = cookieManager.getCookie(url),
+                url = url
+            ).forEach { header ->
+                cookieManager.setCookie(url, header)
+            }
+        }
+        cookieManager.flush()
+        Log.i("AIQuotaLogin", "provider=${providerId.storageId} googleSsoCookiesCleared=true")
     }
 
     private fun maybeRedirectGeminiToUsage(view: WebView, url: String): Boolean {
@@ -766,6 +830,38 @@ open class WebLoginActivity : Activity() {
         )
         view.stopLoading()
         view.loadUrl("about:blank")
+        return true
+    }
+
+    private fun maybeStartGlmNativeCollection(view: WebView, url: String, pageText: String, reason: String): Boolean {
+        if (providerId != ProviderId.GLM || finished || glmNativeCollectionStarted || url == "about:blank") return false
+        val isUsagePage = GlmUsagePageRoutes.isUsageUrl(url)
+        val isMyPlanPage = GlmLoginPostRedirects.usageRedirectUrl(providerId, url) != null
+        if (!isUsagePage && !isMyPlanPage) return false
+        if (ProviderWebCollectorScripts.isRefreshLoginPage(providerId, url, pageText)) return false
+        glmNativeCollectionStarted = true
+        CookieManager.getInstance().flush()
+        captureGlmWebSessionCookieHeader()?.let {
+            GlmUsageRepository(applicationContext).saveWebSessionCookieHeader(it)
+        }
+        collectorInjectionKeys.clear()
+        noteBridgePageUrl("about:blank")
+        Log.i("AIQuotaLogin", "provider=glm nativeCollectorStart=aboutblank reason=$reason from=${hostOf(url)}${pathOf(url)}")
+        view.stopLoading()
+        view.loadUrl("about:blank")
+        return true
+    }
+
+    private fun recoverGlmAuthRequiredFromNativeCollection(): Boolean {
+        if (providerId != ProviderId.GLM || glmAuthRecoveryAttempted) return false
+        glmAuthRecoveryAttempted = true
+        glmNativeCollectionStarted = false
+        glmPostLoginRedirected = false
+        collectorInjectionKeys.clear()
+        clearProviderWebSession(CookieManager.getInstance(), providerId)
+        Log.w("AIQuotaLogin", "provider=glm authRequiredRecovery=login")
+        webView.stopLoading()
+        webView.loadUrl(GlmProviderUrls.WEB_LOGIN_URL)
         return true
     }
 
@@ -1350,11 +1446,7 @@ open class WebLoginActivity : Activity() {
         }
 
         fun createIntent(context: Context, providerId: ProviderId, startUrl: String): Intent {
-            val activityClass = when (providerId) {
-                ProviderId.GLM -> GlmWebLoginActivity::class.java
-                else -> WebLoginActivity::class.java
-            }
-            return Intent(context, activityClass)
+            return Intent(context, WebLoginActivity::class.java)
                 .putExtra(EXTRA_PROVIDER_ID, providerId.storageId)
                 .putExtra(EXTRA_START_URL, startUrl)
         }
@@ -1378,5 +1470,3 @@ open class WebLoginActivity : Activity() {
         }
     }
 }
-
-class GlmWebLoginActivity : WebLoginActivity()

@@ -32,7 +32,6 @@ object ProviderWebSessionCleaner {
         if (!ProviderWebSessionClearPolicy.shouldClearOnDisconnect(providerId)) return
         if (providerId == ProviderId.GLM) {
             GlmIsolatedWebSession.clear(context.applicationContext)
-            return
         }
         clearProviderWebSession(providerId)
     }
@@ -55,7 +54,6 @@ object ProviderWebSessionCleaner {
             withContext(Dispatchers.Main.immediate) {
                 if (providerId == ProviderId.GLM) {
                     GlmIsolatedWebSession.clearAndWait(context.applicationContext)
-                    return@withContext
                 }
                 clearProviderWebSessionCookiesAndWait(CookieManager.getInstance(), providerId)
                 clearProviderWebStorageOrigins(WebStorage.getInstance(), providerId)

@@ -135,8 +135,8 @@ class GoogleProviderLoginRoutingTest {
         val recover = login.substringAfter("private fun maybeRecoverGeminiCookieMismatch")
             .substringBefore("private fun maybeRedirectGeminiToUsage")
 
-        assertTrue(pageStarted.contains("maybeRecoverGeminiCookieMismatch(view, url)"))
-        assertTrue(shouldOverride.contains("maybeRecoverGeminiCookieMismatch(view, url)"))
+        assertTrue(pageStarted.contains("maybeRecoverGoogleCookieMismatch(view, url)"))
+        assertTrue(shouldOverride.contains("maybeRecoverGoogleCookieMismatch(view, url)"))
         assertTrue(recover.contains("ProviderId.GEMINI"))
         assertTrue(recover.contains("\"accounts.google.com\""))
         assertTrue(recover.contains("\"/CookieMismatch\""))
@@ -160,6 +160,40 @@ class GoogleProviderLoginRoutingTest {
                 "https://accounts.google.com/CookieMismatch?continue=https%3A%2F%2Fgemini.google.com%2Fu%2F1%2Fapp%3Fpli%3D1"
             )
         )
+    }
+
+    @Test
+    fun glmCookieMismatchClearsOnlyGoogleSsoCookiesAndRetriesOauthUrl() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val pageStarted = login.substringAfter("override fun onPageStarted")
+            .substringBefore("override fun shouldOverrideUrlLoading")
+        val shouldOverride = login.substringAfter("override fun shouldOverrideUrlLoading")
+            .substringBefore("override fun shouldInterceptRequest")
+        val recover = login.substringAfter("private fun maybeRecoverGlmCookieMismatch")
+            .substringBefore("private fun rememberGoogleOAuthStartUrl")
+        val remember = login.substringAfter("private fun rememberGoogleOAuthStartUrl")
+            .substringBefore("private fun clearGoogleAuthCookies")
+        val clearGoogle = login.substringAfter("private fun clearGoogleAuthCookies")
+            .substringBefore("private fun maybeRedirectGeminiToUsage")
+
+        assertTrue(pageStarted.contains("rememberGoogleOAuthStartUrl(url)"))
+        assertTrue(shouldOverride.contains("rememberGoogleOAuthStartUrl(url)"))
+        assertTrue(pageStarted.contains("maybeRecoverGoogleCookieMismatch(view, url)"))
+        assertTrue(shouldOverride.contains("maybeRecoverGoogleCookieMismatch(view, url)"))
+        assertTrue(recover.contains("ProviderId.GLM"))
+        assertTrue(recover.contains("\"accounts.google.com\""))
+        assertTrue(recover.contains("\"/CookieMismatch\""))
+        assertTrue(recover.contains("glmCookieMismatchRecoveryAttempted = true"))
+        assertTrue(recover.contains("clearGoogleAuthCookies(CookieManager.getInstance())"))
+        assertTrue(recover.contains("lastGoogleOAuthUrl ?: GlmProviderUrls.WEB_LOGIN_URL"))
+        assertTrue(recover.contains("cookieMismatchRecovery=google_sso_retry"))
+        assertFalse(recover.contains("clearProviderWebSession"))
+        assertFalse(recover.contains("removeAllCookies"))
+        assertTrue(remember.contains("\"/o/oauth2/v2/auth\""))
+        assertTrue(remember.contains("lastGoogleOAuthUrl = url"))
+        assertTrue(clearGoogle.contains("ProviderWebSessionClearPolicy.googleAuthCookieUrls()"))
+        assertFalse(clearGoogle.contains("removeAllCookies"))
+        assertFalse(clearGoogle.contains("ProviderWebSessionClearPolicy.cookieUrls(ProviderId.GLM)"))
     }
 
     @Test
