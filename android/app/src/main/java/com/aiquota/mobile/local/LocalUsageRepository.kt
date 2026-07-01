@@ -91,12 +91,13 @@ class LocalUsageRepository(context: Context) {
 
     fun markConnecting(providerId: ProviderId) {
         val current = readSnapshots().firstOrNull { it.providerId == providerId }
+        val base = if (providerId == ProviderId.GEMINI) current?.copy(lines = emptyList()) else current
         val now = Instant.now().toString()
         saveSnapshot(
-            current?.copy(
+            base?.copy(
                 connectionState = ProviderConnectionState.CONNECTING,
                 refreshState = ProviderRefreshState.REFRESHING,
-                updatedAt = snapshotUpdatedAtForStatusTransition(current, now),
+                updatedAt = snapshotUpdatedAtForStatusTransition(base, now),
                 statusUpdatedAt = now,
                 message = "Opening provider login"
             ) ?: ProviderUsageSnapshot.connecting(providerId)
@@ -189,6 +190,10 @@ class LocalUsageRepository(context: Context) {
                     message = message
                 )
             )
+            return
+        }
+        if (providerId == ProviderId.GEMINI && message.isGeminiUsageRpcUnavailableMessage()) {
+            saveSnapshot(ProviderUsageSnapshot.unavailable(providerId, message))
             return
         }
         if (providerId.isGoogleProvider() && message.isRecoverableGoogleUsageFailureMessage()) {
@@ -517,6 +522,10 @@ private fun String.isGeminiInteractiveAuthRequiredMessage(): Boolean {
 
 private fun String.isGeminiBackgroundRefreshLoginPageMessage(): Boolean {
     return trim().lowercase() == "background refresh reached a provider login page."
+}
+
+private fun String.isGeminiUsageRpcUnavailableMessage(): Boolean {
+    return trim().lowercase().contains("gemini_usage_page_rpc_unavailable")
 }
 
 private const val GOOGLE_USAGE_PENDING_MESSAGE =

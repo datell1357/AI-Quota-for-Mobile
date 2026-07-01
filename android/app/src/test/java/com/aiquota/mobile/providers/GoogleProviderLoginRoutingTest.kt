@@ -1,6 +1,7 @@
 package com.aiquota.mobile.providers
 
 import java.io.File
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -96,12 +97,17 @@ class GoogleProviderLoginRoutingTest {
         assertTrue(redirect.contains("GeminiUsagePageRoutes.isUsageUrl(url)"))
         assertTrue(redirect.contains("GeminiUsagePageRoutes.usageUrlFrom(url)"))
         assertTrue(redirect.contains("view.loadUrl(usageUrl)"))
+        assertTrue(redirect.contains("if (geminiNativeCollectionStarted || geminiNativeCollectionScheduled) return false"))
+        assertTrue(
+            redirect.indexOf("geminiNativeCollectionStarted || geminiNativeCollectionScheduled") <
+                redirect.indexOf("GeminiUsagePageRoutes.usageUrlFrom(url)")
+        )
         assertFalse(redirect.contains("|| geminiPostLoginRedirected"))
         assertTrue(redirect.contains("geminiUsageRedirectAttempts >= GEMINI_USAGE_REDIRECT_MAX_ATTEMPTS"))
     }
 
     @Test
-    fun geminiGoogleAccountNavigationResetsUsageRedirectBudgetBeforeAttemptLimit() {
+    fun geminiGoogleServiceLoginDoesNotResetUsageRedirectBudgetBeforeAttemptLimit() {
         val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
         val redirect = login.substringAfter("private fun maybeRedirectGeminiToUsage")
             .substringBefore("private fun maybeClickGeminiSignIn")
@@ -113,10 +119,104 @@ class GoogleProviderLoginRoutingTest {
             redirect.indexOf("maybeResetGeminiUsageRedirectBudget(host)") <
                 redirect.indexOf("geminiUsageRedirectAttempts >= GEMINI_USAGE_REDIRECT_MAX_ATTEMPTS")
         )
-        assertTrue(reset.contains("accounts.google."))
         assertTrue(reset.contains("myaccount.google.com"))
+        assertFalse(reset.contains("accounts.google."))
         assertTrue(reset.contains("geminiUsageRedirectAttempts = 0"))
         assertTrue(reset.contains("lastGeminiUsageRedirectKey = null"))
+    }
+
+    @Test
+    fun geminiCookieMismatchRedirectsToUsageWithoutClearingSession() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val pageStarted = login.substringAfter("override fun onPageStarted")
+            .substringBefore("override fun shouldOverrideUrlLoading")
+        val shouldOverride = login.substringAfter("override fun shouldOverrideUrlLoading")
+            .substringBefore("override fun shouldInterceptRequest")
+        val recover = login.substringAfter("private fun maybeRecoverGeminiCookieMismatch")
+            .substringBefore("private fun maybeRedirectGeminiToUsage")
+
+        assertTrue(pageStarted.contains("maybeRecoverGeminiCookieMismatch(view, url)"))
+        assertTrue(shouldOverride.contains("maybeRecoverGeminiCookieMismatch(view, url)"))
+        assertTrue(recover.contains("ProviderId.GEMINI"))
+        assertTrue(recover.contains("\"accounts.google.com\""))
+        assertTrue(recover.contains("\"/CookieMismatch\""))
+        assertTrue(recover.contains("geminiCookieMismatchRecoveryAttempted = true"))
+        assertTrue(recover.contains("geminiCookieMismatchRecoveryUrl(url)"))
+        assertTrue(recover.contains("view.loadUrl(recoveryUrl)"))
+        assertTrue(recover.contains("cookieMismatchRecovery=usageRedirect"))
+        assertFalse(recover.contains("clearProviderWebSession"))
+        assertFalse(recover.contains("ProviderDefinitionRegistry.definitionFor(providerId).loginStartUrl"))
+        assertFalse(recover.contains("removeAllCookies"))
+
+        assertEquals(
+            GeminiUsagePageRoutes.USAGE_URL,
+            WebLoginActivity.geminiCookieMismatchRecoveryUrlForTest(
+                "https://accounts.google.com/CookieMismatch?continue=https%3A%2F%2Fgemini.google.com%2Fapp%3Fpli%3D1"
+            )
+        )
+        assertEquals(
+            "https://gemini.google.com/u/1/usage",
+            WebLoginActivity.geminiCookieMismatchRecoveryUrlForTest(
+                "https://accounts.google.com/CookieMismatch?continue=https%3A%2F%2Fgemini.google.com%2Fu%2F1%2Fapp%3Fpli%3D1"
+            )
+        )
+    }
+
+    @Test
+    fun geminiRedirectLoopClearsOnlyProviderWebSessionBeforeRetryingLogin() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val receivedError = login.substringAfter("override fun onReceivedError")
+            .substringBefore("override fun onReceivedHttpError")
+        val recover = login.substringAfter("private fun maybeRecoverGeminiRedirectLoop")
+            .substringBefore("private fun maybeRecoverGeminiCookieMismatch")
+
+        assertTrue(receivedError.contains("maybeRecoverGeminiRedirectLoop(view, request.url.toString(), error.errorCode)"))
+        assertTrue(recover.contains("ProviderId.GEMINI"))
+        assertTrue(recover.contains("WebViewClient.ERROR_REDIRECT_LOOP"))
+        assertTrue(recover.contains("geminiRedirectLoopRecoveryAttempted = true"))
+        assertTrue(recover.contains("resetGeminiLoginRecoveryState()"))
+        assertTrue(recover.contains("clearProviderWebSession(CookieManager.getInstance(), providerId)"))
+        assertTrue(recover.contains("ProviderDefinitionRegistry.definitionFor(providerId).loginStartUrl"))
+        assertTrue(recover.contains("redirectLoopRecovery=true"))
+        assertFalse(recover.contains("removeAllCookies"))
+    }
+
+    @Test
+    fun geminiNetworkChangedRetriesUsagePageInsteadOfFailingLogin() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val receivedError = login.substringAfter("override fun onReceivedError")
+            .substringBefore("override fun onReceivedHttpError")
+        val recover = login.substringAfter("private fun maybeRecoverGeminiNetworkChanged")
+            .substringBefore("private fun maybeRecoverGeminiRedirectLoop")
+
+        assertTrue(receivedError.contains("maybeRecoverGeminiNetworkChanged(view, request.url.toString(), error.description.toString())"))
+        assertTrue(recover.contains("ProviderId.GEMINI"))
+        assertTrue(recover.contains("ERR_NETWORK_CHANGED"))
+        assertTrue(recover.contains("\"gemini.google.com\""))
+        assertTrue(recover.contains("geminiNetworkChangedRecoveryAttempted = true"))
+        assertTrue(recover.contains("networkChangedRecovery=true"))
+        assertTrue(recover.contains("view.postDelayed({ if (!finished) view.loadUrl(url) }"))
+    }
+
+    @Test
+    fun geminiUsagePageResourceRpcIdsStartAboutBlankNativeCollection() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val intercept = login.substringAfter("override fun shouldInterceptRequest")
+            .substringBefore("override fun onLoadResource")
+        val capture = login.substringAfter("private fun captureGeminiUsageRpcId")
+            .substringBefore("private fun maybeScheduleGeminiNativeCollectionFromResource")
+        val schedule = login.substringAfter("private fun maybeScheduleGeminiNativeCollectionFromResource")
+            .substringBefore("private fun finishSuccessfulLogin")
+
+        assertTrue(intercept.contains("captureGeminiUsageRpcId(url)"))
+        assertTrue(intercept.contains("maybeScheduleGeminiNativeCollectionFromResource(view, url)"))
+        assertTrue(capture.contains("\"gemini.google.com\""))
+        assertTrue(capture.contains("\"/_/BardChatUi/data/batchexecute\""))
+        assertTrue(capture.contains("\"rpcids\""))
+        assertTrue(schedule.contains("GeminiUsagePageRoutes.isUsageUrl(pageUrl)"))
+        assertTrue(schedule.contains("postDelayed"))
+        assertTrue(login.contains("GEMINI_NATIVE_COLLECTION_RESOURCE_DELAY_MS = 8_000L"))
+        assertTrue(schedule.contains("maybeStartGeminiNativeCollection(view, pageUrl, \"\", \"resource\")"))
     }
 
     @Test

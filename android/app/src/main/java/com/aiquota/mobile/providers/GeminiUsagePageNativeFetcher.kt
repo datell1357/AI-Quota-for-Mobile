@@ -22,7 +22,8 @@ internal object GeminiUsagePageNativeFetcher {
     fun fetchUsagePayload(
         userAgent: String,
         sessionCookieHeader: String? = null,
-        usagePageUrl: String = GEMINI_USAGE_PAGE_URL
+        usagePageUrl: String = GEMINI_USAGE_PAGE_URL,
+        observedRpcIds: List<String> = emptyList()
     ): FetchResult {
         val requestUsagePageUrl = GeminiUsagePageRoutes.canonicalUsageUrl(usagePageUrl) ?: GEMINI_USAGE_PAGE_URL
         val usagePath = usagePathForLog(requestUsagePageUrl)
@@ -33,15 +34,53 @@ internal object GeminiUsagePageNativeFetcher {
         val requestUserAgent = userAgent.takeIf { it.isNotBlank() } ?: ProviderWebViewUserAgent.loginUserAgent()
         val sessionResult = fetchUsagePageParams(cookieHeader, requestUserAgent, requestUsagePageUrl)
         val statuses = sessionResult.statuses.toMutableList()
+        sessionResult.bootstrapPayload?.let { payload ->
+            return FetchResult(payload.toString(), "ok", statuses + "gemini_usage_page_bootstrap:200")
+        }
         val params = sessionResult.params
             ?: return FetchResult(null, sessionResult.diagnostic, statuses)
-        val endpoint = batchExecuteUrl(params, requestUsagePageUrl)
-        val statusLabel = "gemini_usage_rpc"
+        val candidateRpcIds = (observedRpcIds + sessionResult.candidateRpcIds)
+            .filter { it.matches(RPC_ID_ALLOWLIST_PATTERN) }
+            .distinct()
+            .filterNot { it == JSF9QC_RPC_ID }
+            .take(MAX_PROBE_RPC_IDS)
+        for (rpcId in candidateRpcIds) {
+            val result = fetchBatchExecuteRpc(
+                params = params,
+                cookieHeader = cookieHeader,
+                userAgent = requestUserAgent,
+                usagePageUrl = requestUsagePageUrl,
+                rpcId = rpcId
+            )
+            statuses += result.status
+            result.payload?.let { return FetchResult(it.toString(), "ok", statuses) }
+        }
+        val legacyResult = fetchBatchExecuteRpc(
+            params = params,
+            cookieHeader = cookieHeader,
+            userAgent = requestUserAgent,
+            usagePageUrl = requestUsagePageUrl,
+            rpcId = JSF9QC_RPC_ID
+        )
+        statuses += legacyResult.status
+        return FetchResult(null, "gemini_usage_page_rpc_unavailable", statuses)
+    }
+
+    private fun fetchBatchExecuteRpc(
+        params: GeminiUsagePageRpcSession.Params,
+        cookieHeader: String,
+        userAgent: String,
+        usagePageUrl: String,
+        rpcId: String
+    ): RpcFetchResult {
+        val endpoint = batchExecuteUrl(params, usagePageUrl, rpcId)
+        val statusLabel = "gemini_usage_rpc_$rpcId"
         return runCatching {
+            val requestPayload = batchExecuteRequest(rpcId)
             val body = if (params.at.isBlank()) {
-                "f.req=${encodeQuery(JSF9QC_REQUEST)}&"
+                "f.req=${encodeQuery(requestPayload)}&"
             } else {
-                "f.req=${encodeQuery(JSF9QC_REQUEST)}&at=${encodeQuery(params.at)}&"
+                "f.req=${encodeQuery(requestPayload)}&at=${encodeQuery(params.at)}&"
             }
             val bodyBytes = body.toByteArray(StandardCharsets.UTF_8)
             val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
@@ -54,8 +93,8 @@ internal object GeminiUsagePageNativeFetcher {
                 setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8")
                 setRequestProperty("Cookie", cookieHeader)
                 setRequestProperty("Origin", GEMINI_ORIGIN)
-                setRequestProperty("Referer", requestUsagePageUrl)
-                setRequestProperty("User-Agent", requestUserAgent)
+                setRequestProperty("Referer", usagePageUrl)
+                setRequestProperty("User-Agent", userAgent)
                 setRequestProperty("X-Same-Domain", "1")
                 outputStream.use { it.write(bodyBytes) }
             }
@@ -63,23 +102,26 @@ internal object GeminiUsagePageNativeFetcher {
             val stream = if (status in 200..299) connection.inputStream else connection.errorStream
             val text = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
             connection.disconnect()
-            Log.d(TAG, "geminiUsageRpc usagePath=$usagePath status=$status payloadBytes=${text.length}")
-            statuses += "$statusLabel:$status"
-            if (status !in 200..299) {
-                return FetchResult(null, "gemini_usage_rpc_http_$status", statuses)
-            }
-            val payload = usagePayloadFromBatchExecute(text)
-                ?: return FetchResult(null, "gemini_usage_rpc_unavailable", statuses)
-            FetchResult(payload.toString(), "ok", statuses)
+            Log.d(
+                TAG,
+                discoveryMetadataFromBatchExecute(
+                    rawText = text,
+                    status = status,
+                    usagePageUrl = usagePageUrl,
+                    payloadBytes = text.toByteArray(StandardCharsets.UTF_8).size,
+                    rpcId = rpcId
+                )
+            )
+            val payload = if (status in 200..299) usagePayloadFromBatchExecute(text, rpcId) else null
+            RpcFetchResult(payload, "$statusLabel:$status")
         }.getOrElse { error ->
-            Log.d(TAG, "geminiUsageRpc usagePath=$usagePath error=${error.javaClass.simpleName}")
-            statuses += "$statusLabel:error"
-            FetchResult(null, "gemini_usage_rpc_${error.javaClass.simpleName}", statuses)
+            Log.d(TAG, "geminiUsageRpc usagePath=${usagePathForLog(usagePageUrl)} rpcId=$rpcId error=${error.javaClass.simpleName}")
+            RpcFetchResult(null, "$statusLabel:error")
         }
     }
 
-    internal fun usagePayloadFromBatchExecuteForTest(rawText: String): JSONObject? {
-        return usagePayloadFromBatchExecute(rawText)
+    internal fun usagePayloadFromBatchExecuteForTest(rawText: String, rpcId: String = JSF9QC_RPC_ID): JSONObject? {
+        return usagePayloadFromBatchExecute(rawText, rpcId)
     }
 
     internal fun usagePageParamsFromHtmlForTest(rawText: String, nowMillis: Long): GeminiUsagePageRpcSession.Params? {
@@ -88,6 +130,29 @@ internal object GeminiUsagePageNativeFetcher {
 
     internal fun batchExecuteUrlForTest(params: GeminiUsagePageRpcSession.Params, usagePageUrl: String): String {
         return batchExecuteUrl(params, usagePageUrl)
+    }
+
+    internal fun discoveryMetadataFromBatchExecuteForTest(
+        rawText: String,
+        status: Int,
+        usagePageUrl: String,
+        payloadBytes: Int,
+        rpcId: String = JSF9QC_RPC_ID
+    ): String {
+        return discoveryMetadataFromBatchExecute(rawText, status, usagePageUrl, payloadBytes, rpcId)
+    }
+
+    internal fun discoveryMetadataFromHtmlForTest(
+        rawText: String,
+        status: Int,
+        usagePageUrl: String,
+        payloadBytes: Int
+    ): String {
+        return discoveryMetadataFromHtml(rawText, status, usagePageUrl, payloadBytes)
+    }
+
+    internal fun usagePayloadFromHtmlBootstrapForTest(rawText: String): JSONObject? {
+        return usagePayloadFromHtmlBootstrap(rawText)
     }
 
     private fun fetchUsagePageParams(cookieHeader: String, userAgent: String, usagePageUrl: String): RpcSessionResult {
@@ -108,16 +173,55 @@ internal object GeminiUsagePageNativeFetcher {
             val stream = if (status in 200..299) connection.inputStream else connection.errorStream
             val text = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
             connection.disconnect()
-            Log.d(TAG, "geminiUsagePageHtml usagePath=$usagePath status=$status payloadBytes=${text.length}")
+            Log.d(
+                TAG,
+                discoveryMetadataFromHtml(
+                    text,
+                    status,
+                    usagePageUrl,
+                    text.toByteArray(StandardCharsets.UTF_8).size
+                )
+            )
             if (status !in 200..299) {
-                return RpcSessionResult(null, "gemini_usage_page_http_$status", listOf("$statusLabel:$status"))
+                return RpcSessionResult(
+                    params = null,
+                    diagnostic = "gemini_usage_page_http_$status",
+                    statuses = listOf("$statusLabel:$status"),
+                    candidateRpcIds = emptyList(),
+                    bootstrapPayload = null
+                )
+            }
+            val candidateRpcIds = discoverCandidateRpcIds(
+                rawHtml = text,
+                cookieHeader = cookieHeader,
+                userAgent = userAgent,
+                usagePageUrl = usagePageUrl
+            )
+            val bootstrapPayload = usagePayloadFromHtmlBootstrap(text)
+            if (bootstrapPayload != null) {
+                Log.d(
+                    TAG,
+                    "geminiUsageBootstrap " + payloadMetadata(bootstrapPayload, usagePageUrl)
+                )
             }
             val params = usagePageParamsFromHtml(text)
-                ?: return RpcSessionResult(null, "gemini_usage_page_rpc_params_unavailable", listOf("$statusLabel:$status"))
-            RpcSessionResult(params, "ok", listOf("$statusLabel:$status"))
+                ?: return RpcSessionResult(
+                    params = null,
+                    diagnostic = "gemini_usage_page_rpc_params_unavailable",
+                    statuses = listOf("$statusLabel:$status"),
+                    candidateRpcIds = candidateRpcIds.ids,
+                    bootstrapPayload = bootstrapPayload
+                )
+            RpcSessionResult(params, "ok", listOf("$statusLabel:$status") + candidateRpcIds.statuses, candidateRpcIds.ids, bootstrapPayload)
         }.getOrElse { error ->
             Log.d(TAG, "geminiUsagePageHtml usagePath=$usagePath error=${error.javaClass.simpleName}")
-            RpcSessionResult(null, "gemini_usage_page_${error.javaClass.simpleName}", listOf("$statusLabel:error"))
+            RpcSessionResult(
+                params = null,
+                diagnostic = "gemini_usage_page_${error.javaClass.simpleName}",
+                statuses = listOf("$statusLabel:error"),
+                candidateRpcIds = emptyList(),
+                bootstrapPayload = null
+            )
         }
     }
 
@@ -152,6 +256,14 @@ internal object GeminiUsagePageNativeFetcher {
     }
 
     private fun balancedJsonObjectEnd(value: String, start: Int): Int? {
+        return balancedJsonEnd(value, start, '{', '}')
+    }
+
+    private fun balancedJsonArrayEnd(value: String, start: Int): Int? {
+        return balancedJsonEnd(value, start, '[', ']')
+    }
+
+    private fun balancedJsonEnd(value: String, start: Int, open: Char, close: Char): Int? {
         var depth = 0
         var inString = false
         var escaped = false
@@ -167,8 +279,8 @@ internal object GeminiUsagePageNativeFetcher {
             }
             when (char) {
                 '"' -> inString = true
-                '{' -> depth += 1
-                '}' -> {
+                open -> depth += 1
+                close -> {
                     depth -= 1
                     if (depth == 0) return index
                 }
@@ -178,14 +290,304 @@ internal object GeminiUsagePageNativeFetcher {
     }
 
     private fun usagePayloadFromBatchExecute(rawText: String): JSONObject? {
-        val quotaPayload = findRpcPayload(rawText, JSF9QC_RPC_ID) ?: return null
-        val rows = quotaPayload.optJSONArray(1) ?: return null
+        return usagePayloadFromBatchExecute(rawText, JSF9QC_RPC_ID)
+    }
+
+    private fun usagePayloadFromBatchExecute(rawText: String, rpcId: String): JSONObject? {
+        val quotaPayload = findRpcPayload(rawText, rpcId) ?: return null
+        quotaPayload.optJSONArray(1)?.let { rows ->
+            usagePayloadFromRows(rows, "native-usage-page-rpc")?.let { return it }
+        }
+        if (rpcId == JSF9QC_RPC_ID) return null
+        return usagePayloadFromLines(deepQuotaRows(quotaPayload), "native-usage-page-rpc-deep")
+    }
+
+    private fun usagePayloadFromHtmlBootstrap(rawText: String): JSONObject? {
+        val rowsByType = linkedMapOf<Int, JSONArray>()
+        afDataArraysFromHtml(rawText).forEach { data ->
+            collectQuotaRowsDeep(data, rowsByType)
+        }
+        QUOTA_BOOTSTRAP_ROW_PATTERN.findAll(rawText).forEach { match ->
+            val type = match.groupValues[3].toIntOrNull() ?: return@forEach
+            val row = JSONArray()
+                .put(match.groupValues[1].toDoubleOrNull() ?: return@forEach)
+                .put(match.groupValues[2].toDoubleOrNull() ?: return@forEach)
+                .put(type)
+                .put(resetArrayFromText(match.groupValues[4]) ?: JSONObject.NULL)
+            rowsByType[type] = row
+        }
+        if (rowsByType.isEmpty()) return null
+        return usagePayloadFromRows(JSONArray(rowsByType.values.toList()), "native-usage-page-bootstrap")
+    }
+
+    private fun afDataArraysFromHtml(rawText: String): List<JSONArray> {
+        val arrays = mutableListOf<JSONArray>()
+        var searchFrom = 0
+        while (true) {
+            val callback = rawText.indexOf("AF_initDataCallback", searchFrom)
+            if (callback < 0) break
+            searchFrom = callback + "AF_initDataCallback".length
+            val nextCallback = rawText.indexOf("AF_initDataCallback", searchFrom).takeIf { it >= 0 } ?: rawText.length
+            val dataKey = rawText.indexOf("data:", searchFrom).takeIf { it >= 0 && it < nextCallback } ?: continue
+            val start = rawText.indexOf('[', dataKey).takeIf { it >= 0 && it < nextCallback } ?: continue
+            val end = balancedJsonArrayEnd(rawText, start) ?: continue
+            val parsed = runCatching { JSONTokener(rawText.substring(start, end + 1)).nextValue() as? JSONArray }.getOrNull()
+            if (parsed != null) arrays += parsed
+        }
+        return arrays
+    }
+
+    private fun collectQuotaRowsDeep(value: Any?, rowsByType: MutableMap<Int, JSONArray>) {
+        when (value) {
+            is JSONArray -> {
+                val line = quotaLine(value)
+                val type = when (line?.optString("l")) {
+                    "5-hour limit" -> 1
+                    "Weekly limit" -> 2
+                    else -> null
+                }
+                if (type != null) rowsByType[type] = value
+                for (index in 0 until value.length()) collectQuotaRowsDeep(value.opt(index), rowsByType)
+            }
+            is JSONObject -> value.keys().forEach { key -> collectQuotaRowsDeep(value.opt(key), rowsByType) }
+        }
+    }
+
+    private fun usagePayloadFromRows(rows: JSONArray, collectorMode: String): JSONObject? {
         val lines = quotaRows(rows)
+        return usagePayloadFromLines(lines, collectorMode)
+    }
+
+    private fun usagePayloadFromLines(lines: JSONArray, collectorMode: String): JSONObject? {
         if (lines.length() == 0) return null
         return JSONObject()
             .put("provider", ProviderId.GEMINI.storageId)
-            .put("collectorMode", "native-usage-page-rpc")
+            .put("collectorMode", collectorMode)
             .put("usage", JSONObject().put("x", lines))
+    }
+
+    private fun resetArrayFromText(value: String): JSONArray? {
+        val match = RESET_BOOTSTRAP_PATTERN.find(value) ?: return null
+        return JSONArray().put(JSONArray().put(match.groupValues[1].toLong()).put(match.groupValues[2].toLong()))
+    }
+
+    private fun discoveryMetadataFromBatchExecute(
+        rawText: String,
+        status: Int,
+        usagePageUrl: String,
+        payloadBytes: Int,
+        rpcId: String = JSF9QC_RPC_ID
+    ): String {
+        val quotaPayload = findRpcPayload(rawText, rpcId)
+        val lines = quotaPayload
+            ?.optJSONArray(1)
+            ?.let(::quotaRows)
+            ?: JSONArray()
+        val labels = mutableListOf<String>()
+        val remainingPercents = mutableListOf<String>()
+        val quotaSummaries = mutableListOf<String>()
+        for (index in 0 until lines.length()) {
+            val line = lines.optJSONObject(index) ?: continue
+            labels += line.optString("l").takeIf { it.isNotBlank() } ?: continue
+            remainingPercents += formatNumber(line.optDouble("remaining_percent"))
+            quotaSummaries += listOf("remaining", "used", "limit").joinToString("/") { key ->
+                "$key=${formatNumber(line.optDouble(key))}"
+            }
+        }
+        val deepLines = quotaPayload?.let(::deepQuotaRows) ?: JSONArray()
+        val deepRemainingPercents = mutableListOf<String>()
+        for (index in 0 until deepLines.length()) {
+            val line = deepLines.optJSONObject(index) ?: continue
+            deepRemainingPercents += formatNumber(line.optDouble("remaining_percent"))
+        }
+        return "geminiUsageDiscovery " + listOf(
+            "provider=${ProviderId.GEMINI.storageId}",
+            "usagePath=${usagePathForLog(usagePageUrl)}",
+            "rpcId=$rpcId",
+            "status=$status",
+            "payloadBytes=$payloadBytes",
+            "shape=${shapeSummary(quotaPayload)}",
+            "rowCount=${lines.length()}",
+            "labels=${labels.joinToString("|")}",
+            "remainingPercents=${remainingPercents.joinToString("|")}",
+            "quotaSummaries=${quotaSummaries.joinToString("|")}",
+            "deepRowCount=${deepLines.length()}",
+            "deepRemainingPercents=${deepRemainingPercents.joinToString("|")}"
+        ).joinToString(" ")
+    }
+
+    private fun discoveryMetadataFromHtml(
+        rawText: String,
+        status: Int,
+        usagePageUrl: String,
+        payloadBytes: Int
+    ): String {
+        val candidateRpcIds = candidateRpcIdsFromHtml(rawText)
+        val afDataArrays = afDataArraysFromHtml(rawText)
+        return "geminiUsageHtmlDiscovery " + listOf(
+            "provider=${ProviderId.GEMINI.storageId}",
+            "usagePath=${usagePathForLog(usagePageUrl)}",
+            "status=$status",
+            "payloadBytes=$payloadBytes",
+            "scriptSrcCount=${scriptUrlsFromHtml(rawText).size}",
+            "batchexecuteCount=${countOccurrences(rawText, "batchexecute")}",
+            "afInitCount=${countOccurrences(rawText, "AF_initDataCallback")}",
+            "afDataCount=${afDataArrays.size}",
+            "afShapes=${afDataArrays.take(3).joinToString("|") { shapeSummary(it) }}",
+            "usageSignalCount=${USAGE_CONTEXT_PATTERN.findAll(rawText).count()}",
+            "candidateRpcCount=${candidateRpcIds.size}",
+            "rpcIds=${candidateRpcIds.joinToString("|")}"
+        ).joinToString(" ")
+    }
+
+    private fun payloadMetadata(payload: JSONObject, usagePageUrl: String): String {
+        val lines = payload.optJSONObject("usage")?.optJSONArray("x") ?: JSONArray()
+        val labels = mutableListOf<String>()
+        val remainingPercents = mutableListOf<String>()
+        for (index in 0 until lines.length()) {
+            val line = lines.optJSONObject(index) ?: continue
+            labels += line.optString("l").takeIf { it.isNotBlank() } ?: continue
+            remainingPercents += formatNumber(line.optDouble("remaining_percent"))
+        }
+        return listOf(
+            "provider=${ProviderId.GEMINI.storageId}",
+            "usagePath=${usagePathForLog(usagePageUrl)}",
+            "collectorMode=${payload.optString("collectorMode")}",
+            "rowCount=${lines.length()}",
+            "labels=${labels.joinToString("|")}",
+            "remainingPercents=${remainingPercents.joinToString("|")}"
+        ).joinToString(" ")
+    }
+
+    private fun discoverCandidateRpcIds(
+        rawHtml: String,
+        cookieHeader: String,
+        userAgent: String,
+        usagePageUrl: String
+    ): CandidateRpcDiscovery {
+        val htmlCandidates = candidateRpcIdsFromHtml(rawHtml)
+        if (htmlCandidates.any { it != JSF9QC_RPC_ID }) {
+            return CandidateRpcDiscovery(htmlCandidates, emptyList())
+        }
+        val statuses = mutableListOf<String>()
+        val candidates = linkedSetOf<String>()
+        val scriptUrls = scriptUrlsFromHtml(rawHtml)
+        for ((index, scriptUrl) in scriptUrls.withIndex()) {
+            val result = fetchScriptCandidates(scriptUrl, cookieHeader, userAgent)
+            statuses += "gemini_usage_script_${index + 1}:${result.status}"
+            candidates += result.candidateRpcIds
+            Log.d(
+                TAG,
+                "geminiUsageScriptDiscovery " + listOf(
+                    "provider=${ProviderId.GEMINI.storageId}",
+                    "usagePath=${usagePathForLog(usagePageUrl)}",
+                    "scriptIndex=${index + 1}",
+                    "status=${result.status}",
+                    "payloadBytes=${result.payloadBytes}",
+                    "candidateRpcCount=${result.candidateRpcIds.size}",
+                    "rpcIds=${result.candidateRpcIds.joinToString("|")}"
+                ).joinToString(" ")
+            )
+            if (candidates.any { it != JSF9QC_RPC_ID }) break
+        }
+        return CandidateRpcDiscovery(candidates.toList(), statuses)
+    }
+
+    private fun fetchScriptCandidates(
+        scriptUrl: String,
+        cookieHeader: String,
+        userAgent: String
+    ): ScriptCandidateResult {
+        return runCatching {
+            val connection = (URL(scriptUrl).openConnection() as HttpURLConnection).apply {
+                connectTimeout = NETWORK_TIMEOUT_MS
+                readTimeout = NETWORK_TIMEOUT_MS
+                requestMethod = "GET"
+                setRequestProperty("Accept", "application/javascript,text/javascript,*/*")
+                setRequestProperty("Cookie", cookieHeader)
+                setRequestProperty("Referer", GEMINI_USAGE_PAGE_URL)
+                setRequestProperty("User-Agent", userAgent)
+            }
+            val status = connection.responseCode
+            val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+            val text = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
+            connection.disconnect()
+            ScriptCandidateResult(status.toString(), text.toByteArray(StandardCharsets.UTF_8).size, candidateRpcIdsFromHtml(text))
+        }.getOrElse { error ->
+            ScriptCandidateResult("error:${error.javaClass.simpleName}", 0, emptyList())
+        }
+    }
+
+    private fun candidateRpcIdsFromHtml(rawText: String): List<String> {
+        val normalized = rawText
+            .replace("\\u003d", "=")
+            .replace("\\x3d", "=")
+            .replace("%3D", "=", ignoreCase = true)
+            .replace("&#61;", "=")
+        return (RPCIDS_PATTERN.findAll(normalized).map { it.groupValues[1] } + contextualRpcIdCandidates(normalized))
+            .filter { it.isNotBlank() }
+            .distinct()
+            .take(MAX_DISCOVERY_RPC_IDS)
+            .toList()
+    }
+
+    private fun contextualRpcIdCandidates(rawText: String): Sequence<String> {
+        return USAGE_CONTEXT_PATTERN.findAll(rawText)
+            .flatMap { context ->
+                val start = (context.range.first - RPC_CONTEXT_WINDOW).coerceAtLeast(0)
+                val end = (context.range.last + RPC_CONTEXT_WINDOW).coerceAtMost(rawText.length - 1)
+                RPC_ID_TOKEN_PATTERN.findAll(rawText.substring(start, end + 1))
+            }
+            .map { it.groupValues[1] }
+            .filter(::looksLikeRpcId)
+    }
+
+    private fun looksLikeRpcId(value: String): Boolean {
+        if (value == JSF9QC_RPC_ID) return true
+        if (value.length !in 5..16) return false
+        if (!value.any(Char::isDigit)) return false
+        if (!value.any(Char::isLetter)) return false
+        return value.none { it == '/' || it == '.' }
+    }
+
+    private fun scriptUrlsFromHtml(rawText: String): List<String> {
+        return SCRIPT_SRC_PATTERN.findAll(rawText)
+            .map { it.groupValues[1] }
+            .map(::htmlAttributeDecode)
+            .mapNotNull(::allowedScriptUrl)
+            .distinct()
+            .take(MAX_SCRIPT_DISCOVERY_URLS)
+            .toList()
+    }
+
+    private fun allowedScriptUrl(value: String): String? {
+        val absolute = when {
+            value.startsWith("//") -> "https:$value"
+            value.startsWith("/") -> "$GEMINI_ORIGIN$value"
+            value.startsWith("https://") -> value
+            else -> return null
+        }
+        val host = runCatching { URL(absolute).host.lowercase(Locale.US) }.getOrNull() ?: return null
+        if (host != "gemini.google.com" && host != "www.gstatic.com" && host != "ssl.gstatic.com") return null
+        return absolute
+    }
+
+    private fun htmlAttributeDecode(value: String): String {
+        return value
+            .replace("&amp;", "&")
+            .replace("\\u0026", "&")
+            .replace("\\u003d", "=")
+            .replace("\\x3d", "=")
+    }
+
+    private fun countOccurrences(value: String, needle: String): Int {
+        var count = 0
+        var index = value.indexOf(needle)
+        while (index >= 0) {
+            count += 1
+            index = value.indexOf(needle, index + needle.length)
+        }
+        return count
     }
 
     private fun findRpcPayload(rawText: String, rpcId: String): JSONArray? {
@@ -214,6 +616,12 @@ internal object GeminiUsagePageNativeFetcher {
             line.remove("_order")
             line
         })
+    }
+
+    private fun deepQuotaRows(value: Any?): JSONArray {
+        val rowsByType = linkedMapOf<Int, JSONArray>()
+        collectQuotaRowsDeep(value, rowsByType)
+        return quotaRows(JSONArray(rowsByType.values.toList()))
     }
 
     private fun quotaLine(row: JSONArray): JSONObject? {
@@ -247,16 +655,40 @@ internal object GeminiUsagePageNativeFetcher {
     }
 
     private fun batchExecuteUrl(params: GeminiUsagePageRpcSession.Params, usagePageUrl: String): String {
+        return batchExecuteUrl(params, usagePageUrl, JSF9QC_RPC_ID)
+    }
+
+    private fun batchExecuteUrl(params: GeminiUsagePageRpcSession.Params, usagePageUrl: String, rpcId: String): String {
         val reqId = (System.currentTimeMillis() % 1_000_000L) + 100_000L
         val sourcePath = usagePathForLog(usagePageUrl)
-        return "$GEMINI_ORIGIN/_/BardChatUi/data/batchexecute" +
-            "?rpcids=$JSF9QC_RPC_ID" +
+        return "$GEMINI_ORIGIN${batchExecutePathFor(sourcePath)}" +
+            "?rpcids=$rpcId" +
             "&source-path=${encodeQuery(sourcePath)}" +
             "&bl=${encodeQuery(params.bl)}" +
             "&f.sid=${encodeQuery(params.fSid)}" +
             "&hl=${encodeQuery(params.hl)}" +
             "&_reqid=$reqId" +
             "&rt=c"
+    }
+
+    private fun batchExecutePathFor(sourcePath: String): String {
+        val accountPrefix = Regex("""^(/u/\d+)/usage$""").matchEntire(sourcePath)?.groupValues?.get(1)
+        return "${accountPrefix.orEmpty()}/_/BardChatUi/data/batchexecute"
+    }
+
+    private fun batchExecuteRequest(rpcId: String): String {
+        return JSONArray()
+            .put(
+                JSONArray()
+                    .put(
+                        JSONArray()
+                            .put(rpcId)
+                            .put("[]")
+                            .put(JSONObject.NULL)
+                            .put("usage-page")
+                    )
+            )
+            .toString()
     }
 
     private fun JSONArray.optionalDouble(index: Int): Double? {
@@ -277,16 +709,79 @@ internal object GeminiUsagePageNativeFetcher {
         return runCatching { URL(usagePageUrl).path }.getOrDefault("/usage").ifBlank { "/usage" }
     }
 
+    private fun shapeSummary(value: Any?): String {
+        return when (value) {
+            null, JSONObject.NULL -> "missing"
+            is JSONArray -> {
+                val itemTypes = (0 until value.length())
+                    .map { index -> shapeType(value.opt(index)) }
+                    .joinToString("|")
+                "array[${value.length()}]:$itemTypes"
+            }
+            is JSONObject -> "object[${value.length()}]"
+            else -> shapeType(value)
+        }
+    }
+
+    private fun shapeType(value: Any?): String {
+        return when (value) {
+            null, JSONObject.NULL -> "null"
+            is JSONArray -> "array[${value.length()}]"
+            is JSONObject -> "object[${value.length()}]"
+            is Number -> "number"
+            is Boolean -> "boolean"
+            else -> "string"
+        }
+    }
+
+    private fun formatNumber(value: Double): String {
+        return if (value % 1.0 == 0.0) {
+            String.format(Locale.US, "%.1f", value)
+        } else {
+            String.format(Locale.US, "%.2f", value).trimEnd('0')
+        }
+    }
+
     private data class RpcSessionResult(
         val params: GeminiUsagePageRpcSession.Params?,
         val diagnostic: String,
+        val statuses: List<String>,
+        val candidateRpcIds: List<String>,
+        val bootstrapPayload: JSONObject?
+    )
+
+    private data class RpcFetchResult(
+        val payload: JSONObject?,
+        val status: String
+    )
+
+    private data class CandidateRpcDiscovery(
+        val ids: List<String>,
         val statuses: List<String>
+    )
+
+    private data class ScriptCandidateResult(
+        val status: String,
+        val payloadBytes: Int,
+        val candidateRpcIds: List<String>
     )
 
     private const val TAG = "AIQuotaGeminiUsageRpc"
     private const val GEMINI_ORIGIN = "https://gemini.google.com"
     private const val GEMINI_USAGE_PAGE_URL = "https://gemini.google.com/usage"
     private const val JSF9QC_RPC_ID = "jSf9Qc"
-    private const val JSF9QC_REQUEST = """[[["jSf9Qc","[]",null,"generic"]]]"""
     private const val NETWORK_TIMEOUT_MS = 10_000
+    private const val MAX_DISCOVERY_RPC_IDS = 12
+    private const val MAX_PROBE_RPC_IDS = 6
+    private const val MAX_SCRIPT_DISCOVERY_URLS = 4
+    private const val RPC_CONTEXT_WINDOW = 180
+    private val RPC_ID_ALLOWLIST_PATTERN = Regex("""[A-Za-z0-9_-]{3,40}""")
+    private val RPCIDS_PATTERN = Regex("""rpcids=([A-Za-z0-9_-]{3,40})""")
+    private val QUOTA_BOOTSTRAP_ROW_PATTERN = Regex(
+        """\[\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*([12])\s*,\s*(null|\[\s*\[\s*\d+\s*,\s*\d+\s*]\s*])\s*]"""
+    )
+    private val RESET_BOOTSTRAP_PATTERN = Regex("""\[\s*\[\s*(\d+)\s*,\s*(\d+)\s*]\s*]""")
+    private val SCRIPT_SRC_PATTERN = Regex("""<script[^>]+src=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
+    private val USAGE_CONTEXT_PATTERN = Regex("""usage|quota|limit|remaining""", RegexOption.IGNORE_CASE)
+    private val RPC_ID_TOKEN_PATTERN = Regex("""["']([A-Za-z0-9_-]{5,16})["']""")
 }

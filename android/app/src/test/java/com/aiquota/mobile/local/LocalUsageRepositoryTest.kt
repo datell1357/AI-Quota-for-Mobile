@@ -64,6 +64,24 @@ class LocalUsageRepositoryTest {
     }
 
     @Test
+    fun geminiRpcUnavailableClearsPreviousUsageInsteadOfShowingStaleConnectedUsage() {
+        val source = java.io.File("src/main/java/com/aiquota/mobile/local/LocalUsageRepository.kt").readText()
+        val failKeepingPrevious = source.substringAfter("fun failKeepingPrevious")
+            .substringBefore("fun markInteractiveAuthRequired")
+        val classifier = source.substringAfter("private fun String.isGeminiUsageRpcUnavailableMessage")
+            .substringBefore("private const val GOOGLE_USAGE_PENDING_MESSAGE")
+
+        assertEquals(true, failKeepingPrevious.contains("message.isGeminiUsageRpcUnavailableMessage()"))
+        assertEquals(true, failKeepingPrevious.contains("ProviderUsageSnapshot.unavailable(providerId, message)"))
+        assertEquals(
+            true,
+            failKeepingPrevious.indexOf("message.isGeminiUsageRpcUnavailableMessage()") <
+                failKeepingPrevious.indexOf("message.isRecoverableGoogleUsageFailureMessage()")
+        )
+        assertEquals(true, classifier.contains("gemini_usage_page_rpc_unavailable"))
+    }
+
+    @Test
     fun geminiBackgroundRefreshLoginPageKeepsUsagePendingInsteadOfAuthExpired() {
         val source = java.io.File("src/main/java/com/aiquota/mobile/local/LocalUsageRepository.kt").readText()
         val failKeepingPrevious = source.substringAfter("fun failKeepingPrevious")
@@ -128,10 +146,11 @@ class LocalUsageRepositoryTest {
             .substringBefore("fun disconnectProvider")
 
         assertEquals(true, markConnecting.contains("val current = readSnapshots().firstOrNull"))
-        assertEquals(true, markConnecting.contains("current?.copy("))
+        assertEquals(true, markConnecting.contains("val base = if (providerId == ProviderId.GEMINI) current?.copy(lines = emptyList()) else current"))
+        assertEquals(true, markConnecting.contains("base?.copy("))
         assertEquals(true, markConnecting.contains("connectionState = ProviderConnectionState.CONNECTING"))
         assertEquals(true, markConnecting.contains("refreshState = ProviderRefreshState.REFRESHING"))
-        assertEquals(true, markConnecting.contains("updatedAt = snapshotUpdatedAtForStatusTransition(current, now)"))
+        assertEquals(true, markConnecting.contains("updatedAt = snapshotUpdatedAtForStatusTransition(base, now)"))
         assertEquals(true, markConnecting.contains("statusUpdatedAt = now"))
         assertEquals(true, markLoginCancelled.contains("providerConnectionStateAfterPreviousUsageFailure"))
         assertEquals(true, markLoginCancelled.contains("hasPreviousUsage = current.lines.isNotEmpty()"))

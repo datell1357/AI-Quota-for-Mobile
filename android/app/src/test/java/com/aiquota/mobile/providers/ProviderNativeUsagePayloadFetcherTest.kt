@@ -18,16 +18,38 @@ class ProviderNativeUsagePayloadFetcherTest {
         assertTrue(policy.contains("providerId == ProviderId.GEMINI"))
         assertFalse(source.contains("GoogleWebSessionCodeAssistFetcher.fetchUsagePayload(ProviderId.GEMINI)"))
         assertTrue(source.contains("GeminiUsagePageNativeFetcher.fetchUsagePayload"))
+        assertTrue(source.contains("observedRpcIds"))
     }
 
     @Test
-    fun geminiUsagePageBatchExecutePayloadIncludesFiveHourAndWeeklyLimits() {
+    fun geminiNativeUsageSourceRejectsGenericOnlyCodeAssistAndDomFallbacks() {
+        val nativeFetcher = File("src/main/java/com/aiquota/mobile/providers/GeminiUsagePageNativeFetcher.kt").readText()
+        val nativeDispatcher = File("src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt").readText()
+
+        assertFalse(nativeDispatcher.contains("GoogleWebSessionCodeAssistFetcher.fetchUsagePayload(ProviderId.GEMINI)"))
+        assertFalse(nativeFetcher.contains("""[[["jSf9Qc","[]",null,"generic"]]]"""))
+        listOf(
+            "document.documentElement",
+            "innerText",
+            "querySelector",
+            "postGeminiObservedPayload",
+            "installGeminiNetworkHook",
+            "SAGE_USAGE_EXTRACTOR.buildGeminiUsagePayload",
+            "GeminiUsagePageRpcSession.captureScript"
+        ).forEach { forbidden ->
+            assertFalse("$forbidden must not be part of Gemini native collection", nativeFetcher.contains(forbidden))
+            assertFalse("$forbidden must not be dispatched for Gemini native collection", nativeDispatcher.contains(forbidden))
+        }
+    }
+
+    @Test
+    fun geminiUsagePageBatchExecutePayloadNormalizesUsedFiveHourAndWeeklyLimits() {
         val payload = GeminiUsagePageNativeFetcher.usagePayloadFromBatchExecuteForTest(
             """
             )]}'
 
             189
-            [["wrb.fr","jSf9Qc","[1,[[12096,0,2,[[1783337273,919653000]]],[600,0,1,[[1782793673,919528000]]]],false]",null,null,null,"generic"]]
+            [["wrb.fr","jSf9Qc","[1,[[6048,6048,2,[[1783337273,919653000]]],[450,150,1,[[1782793673,919528000]]]],false]",null,null,null,"usage-page"]]
             25
             [["e",4,null,null,225]]
             """.trimIndent()
@@ -45,15 +67,15 @@ class ProviderNativeUsagePayloadFetcherTest {
         assertEquals(listOf("5-hour limit", "Weekly limit"), snapshot!!.lines.map { it.label })
         val fiveHour = snapshot.lines.first { it.label == "5-hour limit" }
         val weekly = snapshot.lines.first { it.label == "Weekly limit" }
-        assertEquals(600.0, fiveHour.remainingAmount ?: 0.0, 0.001)
+        assertEquals(450.0, fiveHour.remainingAmount ?: 0.0, 0.001)
         assertEquals(600.0, fiveHour.limitAmount ?: 0.0, 0.001)
-        assertEquals("100% left", fiveHour.remainingText)
-        assertEquals(1.0f, fiveHour.remainingPercent ?: 0f, 0.001f)
+        assertEquals("75% left", fiveHour.remainingText)
+        assertEquals(0.75f, fiveHour.remainingPercent ?: 0f, 0.001f)
         assertTrue(fiveHour.resetsAt.orEmpty().startsWith("2026-06-30"))
-        assertEquals(12096.0, weekly.remainingAmount ?: 0.0, 0.001)
+        assertEquals(6048.0, weekly.remainingAmount ?: 0.0, 0.001)
         assertEquals(12096.0, weekly.limitAmount ?: 0.0, 0.001)
-        assertEquals("100% left", weekly.remainingText)
-        assertEquals(1.0f, weekly.remainingPercent ?: 0f, 0.001f)
+        assertEquals("50% left", weekly.remainingText)
+        assertEquals(0.5f, weekly.remainingPercent ?: 0f, 0.001f)
         assertTrue(weekly.resetsAt.orEmpty().startsWith("2026-07-06"))
     }
 

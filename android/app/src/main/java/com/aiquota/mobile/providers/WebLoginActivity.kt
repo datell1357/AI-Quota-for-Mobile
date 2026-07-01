@@ -28,6 +28,7 @@ import com.aiquota.mobile.local.ProviderId
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URL
+import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
@@ -48,6 +49,10 @@ open class WebLoginActivity : Activity() {
     private var lastGeminiUsageRedirectAtMs = 0L
     private var geminiUsageRedirectAttempts = 0
     private var geminiSignInClickAttempts = 0
+    private var geminiCookieMismatchRecoveryAttempted = false
+    private var geminiRedirectLoopRecoveryAttempted = false
+    private var geminiNetworkChangedRecoveryAttempted = false
+    private var geminiNativeCollectionScheduled = false
     private var glmPostLoginRedirected = false
     private var openCodePostLoginRedirected = false
     private var codexPostLoginUsageRedirected = false
@@ -63,6 +68,7 @@ open class WebLoginActivity : Activity() {
     @Volatile
     private var currentBridgeUserAgent = ProviderWebViewUserAgent.loginUserAgent()
     private val codexNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
+    private val geminiUsageRpcIds = linkedSetOf<String>()
     private val popupViews = mutableSetOf<WebView>()
     private val collectorInjectionKeys = mutableSetOf<String>()
     private val startedAtMs = SystemClock.elapsedRealtime()
@@ -233,6 +239,7 @@ open class WebLoginActivity : Activity() {
                 return
             }
             noteBridgePageUrl(url)
+            if (maybeRecoverGeminiCookieMismatch(view, url)) return
             if (handleLoginCompleteNavigation(view, url)) return
             if (maybeRedirectGeminiToUsage(view, url)) return
             if (maybeRedirectGlmToUsage(view, url)) return
@@ -249,6 +256,7 @@ open class WebLoginActivity : Activity() {
             }
             if (request.isForMainFrame) {
                 noteBridgePageUrl(url)
+                if (maybeRecoverGeminiCookieMismatch(view, url)) return true
                 ProviderLoginUrlRewriter.rewriteMainFrameUrl(providerId, url)?.let { rewrittenUrl ->
                     Log.i("AIQuotaLogin", "provider=${providerId.storageId} googleOAuthRewrite=select_account")
                     view.loadUrl(rewrittenUrl)
@@ -272,6 +280,9 @@ open class WebLoginActivity : Activity() {
             val url = request.url.toString()
             captureCodexAccountId(url)
             captureCodexNativeFetchHeaders(request)
+            if (captureGeminiUsageRpcId(url)) {
+                maybeScheduleGeminiNativeCollectionFromResource(view, url)
+            }
             logGoogleCodeAssistResource(request)
             Log.d("AIQuotaLogin", "provider=${providerId.storageId} resource=${safeUrlForLog(url)}")
             if (ProviderLoginStrategy.isInteractiveLoginSessionReached(providerId, url) &&
@@ -329,6 +340,7 @@ open class WebLoginActivity : Activity() {
             val effectiveUrl = if (isCodexAboutBlankNavigation(url)) "about:blank" else url
             noteBridgePageUrl(effectiveUrl)
             logFirstPageFinished(url)
+            if (maybeRecoverGeminiCookieMismatch(view, effectiveUrl)) return
             if (handleLoginCompleteNavigation(view, effectiveUrl)) return
             if (maybeRedirectGeminiToUsage(view, effectiveUrl)) return
             if (maybeRedirectGlmToUsage(view, effectiveUrl)) return
@@ -383,6 +395,8 @@ open class WebLoginActivity : Activity() {
                 "AIQuotaLogin",
                 "provider=${providerId.storageId} error url=${safeUrlForLog(request.url.toString())} description=${error.description}"
             )
+            if (request.isForMainFrame && maybeRecoverGeminiNetworkChanged(view, request.url.toString(), error.description.toString())) return
+            if (request.isForMainFrame && maybeRecoverGeminiRedirectLoop(view, request.url.toString(), error.errorCode)) return
             if (request.isForMainFrame && handleLoginCompleteNavigation(view, request.url.toString())) return
             if (request.isForMainFrame && !ProviderLoginStrategy.isTransientNavigationError(request.url.toString(), error.errorCode)) {
                 failKeepingPrevious("Provider login page failed to load.", "main_frame_load_failed")
@@ -540,7 +554,8 @@ open class WebLoginActivity : Activity() {
             return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(
                 providerId = providerId,
                 userAgent = currentBridgeUserAgent,
-                bridgePageUrl = nativeUsageBridgePageUrl()
+                bridgePageUrl = nativeUsageBridgePageUrl(),
+                geminiRpcIds = geminiUsageRpcIds.toList()
             ) { url ->
                 if (providerId == ProviderId.CODEX) codexNativeFetchHeadersFor(url) else emptyMap()
             }
@@ -575,8 +590,60 @@ open class WebLoginActivity : Activity() {
         return true
     }
 
+    private fun resetGeminiLoginRecoveryState() {
+        geminiUsageRedirectAttempts = 0
+        lastGeminiUsageRedirectKey = null
+        lastGeminiUsageRedirectAtMs = 0L
+        geminiNativeCollectionScheduled = false
+        geminiNativeCollectionStarted = false
+        geminiNativeUsagePageUrl = ""
+        geminiExpectedUsagePageUrl = ""
+        geminiUsageRpcIds.clear()
+        collectorInjectionKeys.clear()
+    }
+
+    private fun maybeRecoverGeminiNetworkChanged(view: WebView, url: String, description: String): Boolean {
+        if (providerId != ProviderId.GEMINI || geminiNetworkChangedRecoveryAttempted) return false
+        if (!description.contains("ERR_NETWORK_CHANGED", ignoreCase = true)) return false
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        if (uri.host.orEmpty().lowercase(Locale.US) != "gemini.google.com") return false
+        geminiNetworkChangedRecoveryAttempted = true
+        Log.w("AIQuotaLogin", "provider=gemini networkChangedRecovery=true from=${hostOf(url)}${pathOf(url)}")
+        view.stopLoading()
+        view.postDelayed({ if (!finished) view.loadUrl(url) }, GEMINI_NETWORK_CHANGED_RETRY_DELAY_MS)
+        return true
+    }
+
+    private fun maybeRecoverGeminiRedirectLoop(view: WebView, url: String, errorCode: Int): Boolean {
+        if (providerId != ProviderId.GEMINI || geminiRedirectLoopRecoveryAttempted) return false
+        if (errorCode != WebViewClient.ERROR_REDIRECT_LOOP) return false
+        geminiRedirectLoopRecoveryAttempted = true
+        resetGeminiLoginRecoveryState()
+        clearProviderWebSession(CookieManager.getInstance(), providerId)
+        val startUrl = ProviderDefinitionRegistry.definitionFor(providerId).loginStartUrl
+        Log.w("AIQuotaLogin", "provider=gemini redirectLoopRecovery=true from=${hostOf(url)}${pathOf(url)}")
+        view.stopLoading()
+        view.loadUrl(startUrl)
+        return true
+    }
+
+    private fun maybeRecoverGeminiCookieMismatch(view: WebView, url: String): Boolean {
+        if (providerId != ProviderId.GEMINI || geminiCookieMismatchRecoveryAttempted) return false
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        if (host != "accounts.google.com" || uri.path != "/CookieMismatch") return false
+        geminiCookieMismatchRecoveryAttempted = true
+        resetGeminiLoginRecoveryState()
+        val recoveryUrl = geminiCookieMismatchRecoveryUrl(url)
+        Log.w("AIQuotaLogin", "provider=gemini cookieMismatchRecovery=usageRedirect target=${pathOf(recoveryUrl)}")
+        view.stopLoading()
+        view.loadUrl(recoveryUrl)
+        return true
+    }
+
     private fun maybeRedirectGeminiToUsage(view: WebView, url: String): Boolean {
         if (providerId != ProviderId.GEMINI) return false
+        if (geminiNativeCollectionStarted || geminiNativeCollectionScheduled) return false
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
         maybeResetGeminiUsageRedirectBudget(host)
@@ -614,7 +681,7 @@ open class WebLoginActivity : Activity() {
 
     private fun maybeResetGeminiUsageRedirectBudget(host: String) {
         if (providerId != ProviderId.GEMINI) return
-        if (host != "myaccount.google.com" && !host.startsWith("accounts.google.")) return
+        if (host != "myaccount.google.com") return
         if (geminiUsageRedirectAttempts == 0 && lastGeminiUsageRedirectKey == null) return
         geminiUsageRedirectAttempts = 0
         lastGeminiUsageRedirectKey = null
@@ -961,6 +1028,40 @@ open class WebLoginActivity : Activity() {
         return CodexNativeHeaderStore.headersFor(codexNativeFetchHeaders, url, CODEX_NATIVE_HEADER_FALLBACK_KEY)
     }
 
+    private fun captureGeminiUsageRpcId(url: String): Boolean {
+        if (providerId != ProviderId.GEMINI) return false
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        if (uri.host.orEmpty().lowercase(Locale.US) != "gemini.google.com") return false
+        if (!uri.path.orEmpty().contains("/_/BardChatUi/data/batchexecute")) return false
+        val rpcIds = uri.rawQuery.orEmpty()
+            .split("&")
+            .firstOrNull { it.substringBefore("=") == "rpcids" }
+            ?.substringAfter("=", "")
+            ?.split(",")
+            ?.map { it.trim() }
+            ?.filter { it.matches(Regex("[A-Za-z0-9_-]{3,40}")) }
+            .orEmpty()
+        if (rpcIds.isEmpty()) return false
+        val before = geminiUsageRpcIds.size
+        geminiUsageRpcIds += rpcIds
+        if (geminiUsageRpcIds.size != before) {
+            Log.d("AIQuotaLogin", "provider=gemini capturedUsageRpcIds=${geminiUsageRpcIds.joinToString("|")}")
+            return true
+        }
+        return false
+    }
+
+    private fun maybeScheduleGeminiNativeCollectionFromResource(view: WebView, resourceUrl: String) {
+        if (providerId != ProviderId.GEMINI || finished || geminiNativeCollectionStarted || geminiNativeCollectionScheduled) return
+        val pageUrl = currentBridgePageUrl.ifBlank { resourceUrl }
+        if (!GeminiUsagePageRoutes.isUsageUrl(pageUrl)) return
+        geminiNativeCollectionScheduled = true
+        view.postDelayed(
+            { maybeStartGeminiNativeCollection(view, pageUrl, "", "resource") },
+            GEMINI_NATIVE_COLLECTION_RESOURCE_DELAY_MS
+        )
+    }
+
     private fun finishSuccessfulLogin(
         rawPayload: String?,
         source: String = ProviderUsageCollectionService.SOURCE_LOGIN
@@ -1237,6 +1338,8 @@ open class WebLoginActivity : Activity() {
         private const val GEMINI_USAGE_REDIRECT_MIN_INTERVAL_MS = 1_500L
         private const val GEMINI_USAGE_REDIRECT_MAX_ATTEMPTS = 2
         private const val GEMINI_SIGN_IN_CLICK_MAX_ATTEMPTS = 2
+        private const val GEMINI_NATIVE_COLLECTION_RESOURCE_DELAY_MS = 8_000L
+        private const val GEMINI_NETWORK_CHANGED_RETRY_DELAY_MS = 750L
         private const val CODEX_NATIVE_HEADER_FALLBACK_KEY = "*"
         private const val PAGE_CAPTURE_SCRIPT =
             "(function(){return (document.documentElement.innerText||document.title||'').slice(0,12000);})()"
@@ -1254,6 +1357,24 @@ open class WebLoginActivity : Activity() {
             return Intent(context, activityClass)
                 .putExtra(EXTRA_PROVIDER_ID, providerId.storageId)
                 .putExtra(EXTRA_START_URL, startUrl)
+        }
+
+        internal fun geminiCookieMismatchRecoveryUrlForTest(url: String): String {
+            return geminiCookieMismatchRecoveryUrl(url)
+        }
+
+        private fun geminiCookieMismatchRecoveryUrl(url: String): String {
+            val continueUrl = runCatching {
+                URI(url).rawQuery.orEmpty()
+                    .split("&")
+                    .firstOrNull { it.substringBefore("=") == "continue" }
+                    ?.substringAfter("=", "")
+                    ?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) }
+            }.getOrNull()
+
+            return continueUrl?.let {
+                GeminiUsagePageRoutes.canonicalUsageUrl(it) ?: GeminiUsagePageRoutes.usageUrlFrom(it)
+            } ?: GeminiUsagePageRoutes.USAGE_URL
         }
     }
 }

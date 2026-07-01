@@ -127,6 +127,7 @@ object ProviderLoginStrategy {
             host.endsWith("accounts.youtube.com") ||
             host.endsWith("google.com") ||
             host.endsWith("gstatic.com") ||
+            host.endsWith("gemini.google.com") ||
             host.endsWith("github.com") ||
             host.endsWith("githubassets.com") ||
             host.endsWith("auth.openai.com") ||

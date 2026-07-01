@@ -188,6 +188,7 @@ class ProviderLoginStrategyTest {
         assertTrue(ProviderLoginStrategy.isTransientNavigationError("https://github.com/login/oauth/authorize", -6))
         assertTrue(ProviderLoginStrategy.isTransientNavigationError("https://authenticator.cursor.sh/oauth/authorize", -2))
         assertTrue(ProviderLoginStrategy.isTransientNavigationError("https://antigravity.google/docs/plans", -2))
+        assertTrue(ProviderLoginStrategy.isTransientNavigationError("https://gemini.google.com/u/1/usage", -1))
         assertTrue(ProviderLoginStrategy.isTransientNavigationError("http://localhost:1455/auth/callback?code=abc", -6))
         assertTrue(ProviderLoginStrategy.isTransientNavigationError("http://127.0.0.1:8080/callback?code=abc", -6))
         assertTrue(ProviderLoginStrategy.isTransientNavigationError("https://accounts.google.co.in/accounts/SetSID", -2))

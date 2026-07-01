@@ -17,9 +17,10 @@ object ProviderNativeUsagePayloadFetcher {
         userAgent: String = ProviderWebViewUserAgent.loginUserAgent(),
         cookieHeaderForUrl: (String) -> String? = { null },
         bridgePageUrl: String? = null,
+        geminiRpcIds: List<String> = emptyList(),
         requestHeadersForUrl: (String) -> Map<String, String> = { emptyMap() }
     ): String {
-        return bridgeUsagePayload(providerId, userAgent, requestHeadersForUrl, cookieHeaderForUrl, bridgePageUrl, ProviderNativeJsonBridge::fetchJson)
+        return bridgeUsagePayload(providerId, userAgent, requestHeadersForUrl, cookieHeaderForUrl, bridgePageUrl, geminiRpcIds, ProviderNativeJsonBridge::fetchJson)
     }
 
     internal fun codexUsagePayloadForTest(
@@ -36,6 +37,7 @@ object ProviderNativeUsagePayloadFetcher {
         requestHeadersForUrl: (String) -> Map<String, String>,
         cookieHeaderForUrl: (String) -> String?,
         bridgePageUrl: String?,
+        geminiRpcIds: List<String>,
         fetchJson: NativeJsonFetcher
     ): String {
         if (!ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
@@ -47,7 +49,7 @@ object ProviderNativeUsagePayloadFetcher {
             ProviderId.GEMINI -> {
                 val usagePageUrl = GeminiUsagePageRoutes.canonicalUsageUrl(bridgePageUrl.orEmpty())
                     ?: GEMINI_USAGE_PAGE_URL
-                fetchGeminiPayload(userAgent, cookieHeaderForUrl(usagePageUrl), usagePageUrl)
+                fetchGeminiPayload(userAgent, cookieHeaderForUrl(usagePageUrl), usagePageUrl, geminiRpcIds)
             }
             ProviderId.COPILOT -> NativePayloadResult(
                 payload = CopilotNativeUsageFetcher.fetchUsagePayload(),
@@ -170,9 +172,10 @@ object ProviderNativeUsagePayloadFetcher {
     private fun fetchGeminiPayload(
         userAgent: String,
         cookieHeader: String?,
-        usagePageUrl: String
+        usagePageUrl: String,
+        observedRpcIds: List<String>
     ): NativePayloadResult {
-        val result = GeminiUsagePageNativeFetcher.fetchUsagePayload(userAgent, cookieHeader, usagePageUrl)
+        val result = GeminiUsagePageNativeFetcher.fetchUsagePayload(userAgent, cookieHeader, usagePageUrl, observedRpcIds)
         val payload = result.payload
             ?: return NativePayloadResult(
                 payload = null,
