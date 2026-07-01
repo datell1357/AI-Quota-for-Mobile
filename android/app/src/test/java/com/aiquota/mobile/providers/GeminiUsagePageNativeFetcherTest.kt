@@ -3,6 +3,7 @@ package com.aiquota.mobile.providers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -90,6 +91,25 @@ class GeminiUsagePageNativeFetcherTest {
     }
 
     @Test
+    fun batchExecuteJsf9QcDirectRowsBecomeUsagePayload() {
+        val rawText = """
+            )]}'
+            [["wrb.fr","jSf9Qc","[null,[[2400.0,0.0,1,[[1782793673,919528000]]],[48344.0,0.0,2,[[1783337273,919653000]]]]]"]]
+        """.trimIndent()
+
+        val payload = GeminiUsagePageNativeFetcher.usagePayloadFromBatchExecuteForTest(rawText)
+
+        assertNotNull(payload)
+        assertEquals("native-usage-page-rpc", payload!!.getString("collectorMode"))
+        val lines = payload.getJSONObject("usage").getJSONArray("x")
+        assertEquals(2, lines.length())
+        assertEquals(100.0, lines.getJSONObject(0).getDouble("remaining_percent"), 0.01)
+        assertEquals(100.0, lines.getJSONObject(1).getDouble("remaining_percent"), 0.01)
+        assertEquals(0.0, lines.getJSONObject(0).getDouble("used"), 0.01)
+        assertEquals(0.0, lines.getJSONObject(1).getDouble("used"), 0.01)
+    }
+
+    @Test
     fun batchExecuteDiscoveryMetadataSummarizesCandidateShapeWithoutRawPayload() {
         val rawText = """
             )]}'
@@ -113,7 +133,7 @@ class GeminiUsagePageNativeFetcherTest {
     }
 
     @Test
-    fun batchExecuteNestedOtAQ7bPayloadBecomesUsagePayload() {
+    fun batchExecuteNestedOtAQ7bPayloadIsMetadataOnly() {
         val rawText = """
             )]}'
             [["wrb.fr","otAQ7b","[7,[\"state\",null,null],true,null,null,null,true,null,null,null,null,null,true,true,1,[\"x\"],[\"y\"],[null,[[450.0,150.0,1,[[1782793673,919528000]]],[300.0,300.0,2,[[1783337273,919653000]]]]],\"tail\",[\"z\"],\"usage-page\"]",null,null,null,"usage-page"]]
@@ -128,12 +148,7 @@ class GeminiUsagePageNativeFetcherTest {
             rpcId = "otAQ7b"
         )
 
-        assertNotNull(payload)
-        val lines = payload!!.getJSONObject("usage").getJSONArray("x")
-        assertEquals("native-usage-page-rpc-deep", payload.getString("collectorMode"))
-        assertEquals(2, lines.length())
-        assertEquals(75.0, lines.getJSONObject(0).getDouble("remaining_percent"), 0.01)
-        assertEquals(50.0, lines.getJSONObject(1).getDouble("remaining_percent"), 0.01)
+        assertNull(payload)
         assertTrue(metadata.contains("rowCount=0"))
         assertTrue(metadata.contains("deepRowCount=2"))
         assertTrue(metadata.contains("deepRemainingPercents=75.0|50.0"))

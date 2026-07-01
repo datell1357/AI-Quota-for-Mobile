@@ -63,6 +63,7 @@ internal object GeminiUsagePageNativeFetcher {
             rpcId = JSF9QC_RPC_ID
         )
         statuses += legacyResult.status
+        legacyResult.payload?.let { return FetchResult(it.toString(), "ok", statuses) }
         return FetchResult(null, "gemini_usage_page_rpc_unavailable", statuses)
     }
 
@@ -298,8 +299,7 @@ internal object GeminiUsagePageNativeFetcher {
         quotaPayload.optJSONArray(1)?.let { rows ->
             usagePayloadFromRows(rows, "native-usage-page-rpc")?.let { return it }
         }
-        if (rpcId == JSF9QC_RPC_ID) return null
-        return usagePayloadFromLines(deepQuotaRows(quotaPayload), "native-usage-page-rpc-deep")
+        return null
     }
 
     private fun usagePayloadFromHtmlBootstrap(rawText: String): JSONObject? {
