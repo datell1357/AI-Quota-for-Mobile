@@ -80,6 +80,38 @@ class ProviderNativeUsagePayloadFetcherTest {
     }
 
     @Test
+    fun geminiUsagePageBatchExecuteFractionRowNormalizesUsedFiveHourAndWeeklyLimits() {
+        val payload = GeminiUsagePageNativeFetcher.usagePayloadFromBatchExecuteForTest(
+            """
+            )]}'
+
+            189
+            [["wrb.fr","jSf9Qc","[null,[[2357.0,0.02,1,[[1782793673,919528000]]],[48302.0,0.0,2,[[1783337273,919653000]]]]]"]]
+            25
+            [["e",4,null,null,225]]
+            """.trimIndent()
+        )
+        assertNotNull(payload)
+
+        val snapshot = ProviderUsageNormalizer.normalize(
+            providerId = ProviderId.GEMINI,
+            rawPayload = payload!!.toString(),
+            source = ProviderPayloadSource.NETWORK_RESPONSE,
+            fetchedAt = "2026-06-30T00:00:00Z"
+        )
+
+        assertNotNull(snapshot)
+        assertEquals(listOf("5-hour limit", "Weekly limit"), snapshot!!.lines.map { it.label })
+        val fiveHour = snapshot.lines.first { it.label == "5-hour limit" }
+        val weekly = snapshot.lines.first { it.label == "Weekly limit" }
+        assertEquals(2, fiveHour.usedPercent)
+        assertEquals(0.98f, fiveHour.remainingPercent ?: 0f, 0.001f)
+        assertEquals("98% left", fiveHour.remainingText)
+        assertEquals(0, weekly.usedPercent)
+        assertEquals(1f, weekly.remainingPercent ?: 0f, 0.001f)
+    }
+
+    @Test
     fun codexNativeUsagePayloadFetchUsesForwardedWebViewHeaders() {
         val capturedHeaders = linkedMapOf<String, Map<String, String>>()
         val capturedUserAgents = linkedMapOf<String, String>()

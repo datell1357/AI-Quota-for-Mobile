@@ -637,13 +637,16 @@ internal object GeminiUsagePageNativeFetcher {
         val resetAt = row.optJSONArray(3)
             ?.optJSONArray(0)
             ?.let(::resetInstant)
+        val usedPercent = if (used in 0.0..1.0) used * 100.0 else (used / limit) * 100.0
+        val remainingPercent = if (used in 0.0..1.0) (1.0 - used) * 100.0 else (remaining / limit) * 100.0
         return JSONObject()
             .put("_order", type)
             .put("l", label)
             .put("remaining", remaining)
             .put("used", used)
             .put("limit", limit)
-            .put("remaining_percent", (remaining / limit) * 100.0)
+            .put("remaining_percent", remainingPercent)
+            .put("used_percent", usedPercent)
             .put("unit", "requests")
             .apply { resetAt?.let { put("r", it) } }
     }

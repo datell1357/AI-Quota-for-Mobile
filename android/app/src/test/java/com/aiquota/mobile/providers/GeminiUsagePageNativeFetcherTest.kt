@@ -94,7 +94,7 @@ class GeminiUsagePageNativeFetcherTest {
     fun batchExecuteJsf9QcDirectRowsBecomeUsagePayload() {
         val rawText = """
             )]}'
-            [["wrb.fr","jSf9Qc","[null,[[2400.0,0.0,1,[[1782793673,919528000]]],[48344.0,0.0,2,[[1783337273,919653000]]]]]"]]
+            [["wrb.fr","jSf9Qc","[null,[[2357.0,0.02,1,[[1782793673,919528000]]],[48302.0,0.0,2,[[1783337273,919653000]]]]]"]]
         """.trimIndent()
 
         val payload = GeminiUsagePageNativeFetcher.usagePayloadFromBatchExecuteForTest(rawText)
@@ -103,10 +103,12 @@ class GeminiUsagePageNativeFetcherTest {
         assertEquals("native-usage-page-rpc", payload!!.getString("collectorMode"))
         val lines = payload.getJSONObject("usage").getJSONArray("x")
         assertEquals(2, lines.length())
-        assertEquals(100.0, lines.getJSONObject(0).getDouble("remaining_percent"), 0.01)
+        assertEquals(98.0, lines.getJSONObject(0).getDouble("remaining_percent"), 0.01)
         assertEquals(100.0, lines.getJSONObject(1).getDouble("remaining_percent"), 0.01)
-        assertEquals(0.0, lines.getJSONObject(0).getDouble("used"), 0.01)
+        assertEquals(0.02, lines.getJSONObject(0).getDouble("used"), 0.01)
         assertEquals(0.0, lines.getJSONObject(1).getDouble("used"), 0.01)
+        assertEquals(2.0, lines.getJSONObject(0).getDouble("used_percent"), 0.01)
+        assertEquals(0.0, lines.getJSONObject(1).getDouble("used_percent"), 0.01)
     }
 
     @Test
