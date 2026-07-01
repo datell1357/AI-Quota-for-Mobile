@@ -56,7 +56,7 @@ open class WebLoginActivity : Activity() {
     private var glmPostLoginRedirected = false
     private var glmNativeCollectionStarted = false
     private var glmAuthRecoveryAttempted = false
-    private var glmCookieMismatchRecoveryAttempted = false
+    private var glmCookieMismatchRecoveryAttempts = 0
     private var lastGoogleOAuthUrl: String? = null
     private var openCodePostLoginRedirected = false
     private var codexPostLoginUsageRedirected = false
@@ -666,11 +666,13 @@ open class WebLoginActivity : Activity() {
     }
 
     private fun maybeRecoverGlmCookieMismatch(view: WebView, url: String): Boolean {
-        if (providerId != ProviderId.GLM || glmCookieMismatchRecoveryAttempted) return false
+        if (providerId != ProviderId.GLM || glmCookieMismatchRecoveryAttempts >= GLM_COOKIE_MISMATCH_MAX_RECOVERIES) {
+            return false
+        }
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
         if (host != "accounts.google.com" || uri.path != "/CookieMismatch") return false
-        glmCookieMismatchRecoveryAttempted = true
+        glmCookieMismatchRecoveryAttempts += 1
         glmNativeCollectionStarted = false
         glmPostLoginRedirected = false
         collectorInjectionKeys.clear()
@@ -678,7 +680,7 @@ open class WebLoginActivity : Activity() {
         val recoveryUrl = lastGoogleOAuthUrl ?: GlmProviderUrls.WEB_LOGIN_URL
         Log.w(
             "AIQuotaLogin",
-            "provider=glm cookieMismatchRecovery=google_sso_retry target=${hostOf(recoveryUrl)}${pathOf(recoveryUrl)}"
+            "provider=glm cookieMismatchRecovery=google_sso_retry attempt=$glmCookieMismatchRecoveryAttempts target=${hostOf(recoveryUrl)}${pathOf(recoveryUrl)}"
         )
         view.stopLoading()
         view.loadUrl(recoveryUrl)
@@ -696,7 +698,8 @@ open class WebLoginActivity : Activity() {
         ProviderWebSessionClearPolicy.googleAuthCookieUrls().forEach { url ->
             ProviderWebSessionClearPolicy.expiringCookieHeaders(
                 cookieHeader = cookieManager.getCookie(url),
-                url = url
+                url = url,
+                includeSharedGoogleIdentityParent = true
             ).forEach { header ->
                 cookieManager.setCookie(url, header)
             }
@@ -1436,6 +1439,7 @@ open class WebLoginActivity : Activity() {
         private const val GEMINI_SIGN_IN_CLICK_MAX_ATTEMPTS = 2
         private const val GEMINI_NATIVE_COLLECTION_RESOURCE_DELAY_MS = 8_000L
         private const val GEMINI_NETWORK_CHANGED_RETRY_DELAY_MS = 750L
+        private const val GLM_COOKIE_MISMATCH_MAX_RECOVERIES = 2
         private const val CODEX_NATIVE_HEADER_FALLBACK_KEY = "*"
         private const val PAGE_CAPTURE_SCRIPT =
             "(function(){return (document.documentElement.innerText||document.title||'').slice(0,12000);})()"

@@ -78,9 +78,13 @@ object ProviderWebSessionClearPolicy {
         }
     }
 
-    fun expiringCookieHeaders(cookieHeader: String?, url: String? = null): List<String> {
+    fun expiringCookieHeaders(
+        cookieHeader: String?,
+        url: String? = null,
+        includeSharedGoogleIdentityParent: Boolean = false
+    ): List<String> {
         if (cookieHeader.isNullOrBlank()) return emptyList()
-        val domainVariants = cookieDomainVariants(url)
+        val domainVariants = cookieDomainVariants(url, includeSharedGoogleIdentityParent)
         val pathVariants = cookiePathVariants(url)
         return cookieHeader
             .split(";")
@@ -115,11 +119,13 @@ object ProviderWebSessionClearPolicy {
         return paths.distinct()
     }
 
-    private fun cookieDomainVariants(url: String?): List<String> {
+    private fun cookieDomainVariants(url: String?, includeSharedGoogleIdentityParent: Boolean): List<String> {
         val host = runCatching { URI(url.orEmpty()).host.orEmpty().lowercase() }.getOrDefault("")
         if (host.isBlank() || host == "localhost" || host == "127.0.0.1") return emptyList()
         val domains = mutableListOf(host, ".$host")
-        parentCookieDomain(host)?.takeUnless { isSharedGoogleIdentityParent(host, it) }?.let { parent ->
+        parentCookieDomain(host)
+            ?.takeUnless { !includeSharedGoogleIdentityParent && isSharedGoogleIdentityParent(host, it) }
+            ?.let { parent ->
             domains += parent
             domains += ".$parent"
         }

@@ -183,17 +183,37 @@ class GoogleProviderLoginRoutingTest {
         assertTrue(recover.contains("ProviderId.GLM"))
         assertTrue(recover.contains("\"accounts.google.com\""))
         assertTrue(recover.contains("\"/CookieMismatch\""))
-        assertTrue(recover.contains("glmCookieMismatchRecoveryAttempted = true"))
+        assertTrue(recover.contains("glmCookieMismatchRecoveryAttempts >= GLM_COOKIE_MISMATCH_MAX_RECOVERIES"))
+        assertTrue(recover.contains("glmCookieMismatchRecoveryAttempts += 1"))
         assertTrue(recover.contains("clearGoogleAuthCookies(CookieManager.getInstance())"))
         assertTrue(recover.contains("lastGoogleOAuthUrl ?: GlmProviderUrls.WEB_LOGIN_URL"))
         assertTrue(recover.contains("cookieMismatchRecovery=google_sso_retry"))
+        assertTrue(recover.contains("attempt=\$glmCookieMismatchRecoveryAttempts"))
         assertFalse(recover.contains("clearProviderWebSession"))
         assertFalse(recover.contains("removeAllCookies"))
         assertTrue(remember.contains("\"/o/oauth2/v2/auth\""))
         assertTrue(remember.contains("lastGoogleOAuthUrl = url"))
         assertTrue(clearGoogle.contains("ProviderWebSessionClearPolicy.googleAuthCookieUrls()"))
+        assertTrue(clearGoogle.contains("includeSharedGoogleIdentityParent = true"))
         assertFalse(clearGoogle.contains("removeAllCookies"))
         assertFalse(clearGoogle.contains("ProviderWebSessionClearPolicy.cookieUrls(ProviderId.GLM)"))
+    }
+
+    @Test
+    fun googleCookieParentDomainIsOnlyIncludedForExplicitRecovery() {
+        val defaultHeaders = ProviderWebSessionClearPolicy.expiringCookieHeaders(
+            cookieHeader = "SID=value",
+            url = "https://accounts.google.com"
+        )
+        val recoveryHeaders = ProviderWebSessionClearPolicy.expiringCookieHeaders(
+            cookieHeader = "SID=value",
+            url = "https://accounts.google.com",
+            includeSharedGoogleIdentityParent = true
+        )
+
+        assertFalse(defaultHeaders.any { it.contains("Domain=google.com") || it.contains("Domain=.google.com") })
+        assertTrue(recoveryHeaders.any { it.contains("Domain=google.com") })
+        assertTrue(recoveryHeaders.any { it.contains("Domain=.google.com") })
     }
 
     @Test
