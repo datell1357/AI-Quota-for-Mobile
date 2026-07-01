@@ -45,7 +45,8 @@ class GlmScriptProvider : ProviderScriptProvider {
 
 class OpenCodeScriptProvider : ProviderScriptProvider {
     override val metadata: ProviderScriptMetadata = ProviderScriptProviders.metadataFor(ProviderId.OPENCODE)
-    override fun collectorScript(collectorAssets: ProviderCollectorAssets): String = ProviderWebCollectorScripts.opencode()
+    override fun collectorScript(collectorAssets: ProviderCollectorAssets): String =
+        ProviderWebCollectorScripts.nativeProviderPayload(ProviderId.OPENCODE)
 }
 
 class CopilotScriptProvider : ProviderScriptProvider {
@@ -113,7 +114,7 @@ object ProviderScriptProviders {
             ProviderId.COPILOT -> "b260503"
             ProviderId.CODEX -> "e260503"
             ProviderId.GLM -> "glm260617-web"
-            ProviderId.OPENCODE -> "opencode260618-web"
+            ProviderId.OPENCODE -> "opencode260701-native"
             ProviderId.GEMINI -> "d260503"
             ProviderId.ANTIGRAVITY -> "c260503"
             ProviderId.CURSOR -> "cursor-local"

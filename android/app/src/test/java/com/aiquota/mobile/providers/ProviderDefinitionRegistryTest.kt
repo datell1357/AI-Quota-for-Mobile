@@ -26,9 +26,9 @@ class ProviderDefinitionRegistryTest {
         assertEquals(ProviderAuthStoreKind.NATIVE_TOKEN, definitionsByProvider[ProviderId.GLM]?.authStoreKind)
         assertEquals(ProviderCollectionKind.NATIVE_API, definitionsByProvider[ProviderId.GLM]?.collectionKind)
         assertEquals("https://opencode.ai/auth", definitionsByProvider[ProviderId.OPENCODE]?.loginStartUrl)
-        assertEquals("https://opencode.ai/auth", definitionsByProvider[ProviderId.OPENCODE]?.preferredUsageEndpoint)
+        assertEquals("https://opencode.ai/workspace/{workspaceId}/go", definitionsByProvider[ProviderId.OPENCODE]?.preferredUsageEndpoint)
         assertEquals(ProviderAuthStoreKind.WEBVIEW_PROFILE, definitionsByProvider[ProviderId.OPENCODE]?.authStoreKind)
-        assertEquals(ProviderCollectionKind.WEBVIEW_COLLECTOR, definitionsByProvider[ProviderId.OPENCODE]?.collectionKind)
+        assertEquals(ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE, definitionsByProvider[ProviderId.OPENCODE]?.collectionKind)
         assertEquals(
             "https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fgemini.google.com%2Fusage",
             definitionsByProvider[ProviderId.GEMINI]?.loginStartUrl

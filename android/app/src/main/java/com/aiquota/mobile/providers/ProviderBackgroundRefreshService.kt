@@ -398,13 +398,6 @@ class ProviderBackgroundRefreshService : Service() {
     }
 
     private fun resolveRuntimeRefreshJob(job: ProviderRefreshJob): ProviderRefreshJob {
-        if (job.providerId == ProviderId.OPENCODE) {
-            val usageUrl = ProviderScopedStateRepository(applicationContext).readOpenCodeUsageUrl()
-            if (!usageUrl.isNullOrBlank()) {
-                return job.copy(startUrl = usageUrl)
-            }
-            return job
-        }
         return GlmRuntimeRefreshJobs.resolve(
             job,
             GlmUsageRepository(applicationContext).connectionMode()
@@ -595,7 +588,7 @@ class ProviderBackgroundRefreshService : Service() {
     }
 
     private fun restoreDebugProviderSessionCookies(providerId: ProviderId, cookieManager: CookieManager) {
-        if (providerId == ProviderId.GEMINI) return
+        if (providerId == ProviderId.GEMINI || providerId == ProviderId.OPENCODE) return
         DebugProviderSessionCookieStore.restore(applicationContext, providerId, cookieManager, "background_collection")
     }
 
@@ -711,17 +704,6 @@ class ProviderBackgroundRefreshService : Service() {
         Log.d(TAG, "redirectUsage provider=gemini from=${hostOf(url)}${pathOf(url)}")
         view.stopLoading()
         view.loadUrl(usageUrl)
-        return true
-    }
-
-    private fun maybeRedirectOpenCodeRefreshToGo(active: ServiceWebRefreshJob, view: WebView, url: String): Boolean {
-        if (active.job.providerId != ProviderId.OPENCODE) return false
-        val goUsageUrl = OpenCodeUsagePageRoutes.goUsageUrlFrom(url) ?: return false
-        collectorInjectionKeys.removeAll { it.contains(":${ProviderId.OPENCODE.storageId}:") }
-        saveOpenCodeUsageUrl(goUsageUrl)
-        Log.d(TAG, "redirectUsage provider=opencode from=${hostOf(url)}${pathOf(url)}")
-        view.stopLoading()
-        view.loadUrl(goUsageUrl)
         return true
     }
 
@@ -858,7 +840,6 @@ class ProviderBackgroundRefreshService : Service() {
             val active = currentWebJobFor(ownerProviderId) ?: return
             recordWebJobUrl(active.requestId, url)
             if (isWebSessionWarmUpPage(active, url)) return
-            if (maybeRedirectOpenCodeRefreshToGo(active, view, url)) return
             if (maybeRedirectGeminiRefreshToUsage(active, view, url)) return
             if (isGeminiRefreshInteractiveSignInPage(active, url)) {
                 Log.d(TAG, "interactiveSignInRequired provider=gemini at=${hostOf(url)}${pathOf(url)}")
@@ -922,7 +903,6 @@ class ProviderBackgroundRefreshService : Service() {
             recordWebJobUrl(requestId, url)
             Log.d(TAG, "pageFinished provider=${ownerProviderId.storageId} url=${hostOf(url)}${pathOf(url)}")
             if (maybeCompleteWebSessionWarmUp(active, view, url)) return
-            if (maybeRedirectOpenCodeRefreshToGo(active, view, url)) return
             if (maybeRedirectGeminiRefreshToUsage(active, view, url)) return
             if (isGeminiRefreshInteractiveSignInPage(active, url)) {
                 Log.d(TAG, "interactiveSignInRequired provider=gemini at=${hostOf(url)}${pathOf(url)}")
@@ -1148,6 +1128,9 @@ class ProviderBackgroundRefreshService : Service() {
         private fun nativeUsageBridgePageUrl(providerId: ProviderId): String? {
             if (providerId == ProviderId.GEMINI) {
                 return ProviderScopedStateRepository(applicationContext).readGeminiUsageUrl()
+            }
+            if (providerId == ProviderId.OPENCODE) {
+                return ProviderScopedStateRepository(applicationContext).readOpenCodeUsageUrl()
             }
             return null
         }
@@ -1404,7 +1387,6 @@ class ProviderBackgroundRefreshService : Service() {
     private fun webSessionWarmUpUrl(job: ProviderRefreshJob): String? {
         return when (job.providerId) {
             ProviderId.COPILOT -> "https://github.com/"
-            ProviderId.OPENCODE -> "https://opencode.ai/"
             ProviderId.CURSOR -> "https://cursor.com/"
             else -> null
         }?.takeUnless { it == job.startUrl }

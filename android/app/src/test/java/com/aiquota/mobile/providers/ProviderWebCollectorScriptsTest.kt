@@ -23,9 +23,7 @@ class ProviderWebCollectorScriptsTest {
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CURSOR, "https://cursor.com/dashboard", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "https://z.ai/manage-apikey/coding-plan/personal/my-plan", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "https://chat.z.ai/", emptyMap(), "Coding Plan Usage"))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "https://opencode.ai/auth", emptyMap(), "OpenCode Go usage limits"))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "https://opencode.ai/zen/go/usage", emptyMap(), "Weekly limit"))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "https://opencode.ai/workspace/wrk_123/go", emptyMap(), "롤링 사용량"))
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "about:blank", emptyMap(), ""))
 
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CLAUDE, "https://claude.ai/login", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CLAUDE, "https://claude.ai/login", mapOf("lastActiveOrg" to "org_123"), "Claude"))
@@ -42,7 +40,9 @@ class ProviderWebCollectorScriptsTest {
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.ANTIGRAVITY, "about:blank", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.ANTIGRAVITY, "https://accounts.google.com/signin", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.ANTIGRAVITY, "https://antigravity.google/docs/plans", emptyMap(), "Antigravity"))
-        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "about:blank", emptyMap(), ""))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "https://opencode.ai/auth", emptyMap(), "OpenCode Go usage limits"))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "https://opencode.ai/zen/go/usage", emptyMap(), "Weekly limit"))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "https://opencode.ai/workspace/wrk_123/go", emptyMap(), "롤링 사용량"))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CURSOR, "about:blank", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CURSOR, "https://api.workos.com/sso/authorize", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "https://z.ai/login", emptyMap(), "Login"))
@@ -88,20 +88,20 @@ class ProviderWebCollectorScriptsTest {
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GEMINI, "about:blank"))
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.COPILOT, "about:blank"))
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GLM, "about:blank"))
+        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.OPENCODE, "about:blank"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CLAUDE, "https://claude.ai/new"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CODEX, "https://chatgpt.com/codex/settings/usage"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.COPILOT, "https://github.com/settings/copilot/features"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.ANTIGRAVITY, "about:blank"))
-        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.OPENCODE, "about:blank"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CURSOR, "about:blank"))
     }
 
     @Test
     fun aboutBlankNativeUsagePayloadPolicyIncludesOnlyScopedProviders() {
-        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT, ProviderId.GLM).forEach { providerId ->
+        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT, ProviderId.GLM, ProviderId.OPENCODE).forEach { providerId ->
             assertTrue(ProviderAboutBlankCollectorPolicy.isEnabled(providerId))
         }
-        listOf(ProviderId.ANTIGRAVITY, ProviderId.OPENCODE, ProviderId.CURSOR).forEach { providerId ->
+        listOf(ProviderId.ANTIGRAVITY, ProviderId.CURSOR).forEach { providerId ->
             assertFalse(ProviderAboutBlankCollectorPolicy.isEnabled(providerId))
         }
     }
@@ -113,7 +113,8 @@ class ProviderWebCollectorScriptsTest {
             ProviderId.CODEX to "about:blank",
             ProviderId.GEMINI to "about:blank",
             ProviderId.COPILOT to "about:blank",
-            ProviderId.GLM to "about:blank"
+            ProviderId.GLM to "about:blank",
+            ProviderId.OPENCODE to "about:blank"
         ).forEach { (providerId, pageUrl) ->
             val script = ProviderWebCollectorScripts.build(providerId, emptyMap(), "", pageUrl = pageUrl)
 
@@ -127,6 +128,8 @@ class ProviderWebCollectorScriptsTest {
             assertFalse(script.contains("scanClaudePageState"))
             assertFalse(script.contains("AIQuotaCodex collector started"))
             assertFalse(script.contains("AIQuotaCopilot collector_start"))
+            assertFalse(script.contains("__AIQuotaOpenCodeRows"))
+            assertFalse(script.contains("collectOpenCode"))
             assertFalse(script.contains("document.documentElement"))
             assertFalse(script.contains("document.scripts"))
             assertFalse(script.contains("localStorage"))
@@ -141,7 +144,8 @@ class ProviderWebCollectorScriptsTest {
             ProviderId.CLAUDE to "https://claude.ai/new",
             ProviderId.CODEX to "https://chatgpt.com/codex/settings/usage",
             ProviderId.GEMINI to "https://gemini.google.com/usage",
-            ProviderId.COPILOT to "https://github.com/settings/copilot/features"
+            ProviderId.COPILOT to "https://github.com/settings/copilot/features",
+            ProviderId.OPENCODE to "https://opencode.ai/workspace/wrk_123/go"
         ).forEach { (providerId, pageUrl) ->
             assertFalse(ProviderWebCollectorScripts.shouldRunCollector(providerId, pageUrl, mapOf("lastActiveOrg" to "org"), "Claude usage"))
             val script = ProviderWebCollectorScripts.build(providerId, emptyMap(), "", pageUrl = pageUrl)
@@ -150,12 +154,13 @@ class ProviderWebCollectorScriptsTest {
             assertFalse(script.contains("scanClaudePageState"))
             assertFalse(script.contains("extractCodexVisibleDomUsage"))
             assertFalse(script.contains("AIQuotaCopilot collector_start"))
+            assertFalse(script.contains("__AIQuotaOpenCodeRows"))
         }
     }
 
     @Test
     fun scopedProvidersDoNotFallBackToLegacyCollectorsWhenPageUrlIsMissing() {
-        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT).forEach { providerId ->
+        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT, ProviderId.OPENCODE).forEach { providerId ->
             val script = ProviderWebCollectorScripts.build(providerId, emptyMap(), "", pageUrl = "")
 
             assertFalse(script.contains("fetchNativeUsagePayload"))
@@ -163,6 +168,7 @@ class ProviderWebCollectorScriptsTest {
             assertFalse(script.contains("extractCodexVisibleDomUsage"))
             assertFalse(script.contains("parseCodexUsagePayload"))
             assertFalse(script.contains("AIQuotaCopilot collector_start"))
+            assertFalse(script.contains("__AIQuotaOpenCodeRows"))
             assertFalse(script.contains("window.fetch"))
             assertFalse(script.contains("XMLHttpRequest"))
         }
@@ -192,7 +198,7 @@ class ProviderWebCollectorScriptsTest {
     @Test
     fun serviceCollectorReinjectsOnlyProvidersThatNeedPageSettlePasses() {
         assertTrue(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.CLAUDE))
-        assertTrue(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.OPENCODE))
+        assertFalse(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.OPENCODE))
         assertTrue(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.COPILOT))
         assertTrue(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.CURSOR))
         assertTrue(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.GLM))
@@ -259,230 +265,19 @@ class ProviderWebCollectorScriptsTest {
     }
 
     @Test
-    fun opencodeCollectorConvertsVisibleDomUsageToTrustedPayload() {
-        val node = nodeCommandOrNull()
-        assumeTrue("node is required for injected OpenCode runtime checks", node != null)
+    fun opencodeAboutBlankCollectorUsesNativeBridgeOnly() {
+        val opencode = ProviderWebCollectorScripts.build(ProviderId.OPENCODE, emptyMap(), "", pageUrl = "about:blank")
 
-        val opencode = ProviderWebCollectorScripts.build(ProviderId.OPENCODE, emptyMap(), "")
-        val path = Files.createTempFile("ai-quota-opencode-runtime", ".js")
-        val runtime = """
-            const posted = [];
-            const errors = [];
-            const timers = [];
-            const pageText = [
-              "OpenCode Go",
-              "Usage limits",
-              "5 hour limit",
-              "${'$'}3 of ${'$'}12 used",
-              "75% remaining",
-              "Resets in 2h",
-              "Weekly limit",
-              "${'$'}12 of ${'$'}30 used",
-              "60% remaining",
-              "Monthly limit",
-              "${'$'}6 of ${'$'}60 used",
-              "90% remaining",
-              "Zen balance",
-              "${'$'}4.50 credits"
-            ].join("\n");
-            global.window = global;
-            global.location = {
-              hostname: "opencode.ai",
-              pathname: "/auth",
-              href: "https://opencode.ai/auth"
-            };
-            global.document = {
-              title: "OpenCode",
-              body: { innerText: pageText },
-              documentElement: { innerText: pageText },
-              scripts: [],
-              querySelectorAll: () => []
-            };
-            class StorageMock {
-              constructor(values) { this.values = values || {}; this.keys = Object.keys(this.values); this.length = this.keys.length; }
-              key(index) { return this.keys[index] || null; }
-              getItem(key) { return this.values[key] || ""; }
-            }
-            global.localStorage = new StorageMock({});
-            global.sessionStorage = new StorageMock({});
-            global.AIQuotaCollectorBridge = {
-              postUsagePayload: (value) => posted.push(JSON.parse(value)),
-              postCollectorError: (value) => errors.push(JSON.parse(value))
-            };
-            global.fetch = async function() {
-              return {
-                ok: true,
-                status: 200,
-                clone() { return { text: async () => "" }; },
-                text: async () => ""
-              };
-            };
-            global.XMLHttpRequest = function() {};
-            global.XMLHttpRequest.prototype = {
-              open() {},
-              send() {},
-              addEventListener() {}
-            };
-            global.setTimeout = function(fn) {
-              timers.push(fn);
-              return timers.length;
-            };
-            global.clearTimeout = function() {};
-            $opencode
-            (async function() {
-              for (let i = 0; i < 10 && posted.length === 0 && errors.length === 0; i += 1) {
-                while (timers.length > 0) timers.shift()();
-                await Promise.resolve();
-                await new Promise((resolve) => setImmediate(resolve));
-              }
-              const payload = posted[0];
-              const limits = payload && payload.data && payload.data.limits;
-              const credits = payload && payload.data && payload.data.credits;
-              if (payload.provider !== "opencode" || payload.source !== "visible-dom") {
-                console.error(JSON.stringify({ posted, errors }));
-                process.exit(1);
-              }
-              if (payload.plan !== "Go") {
-                console.error(JSON.stringify(payload));
-                process.exit(1);
-              }
-              if (!Array.isArray(limits) || limits.length !== 3) {
-                console.error(JSON.stringify(payload));
-                process.exit(1);
-              }
-              if (limits[0].label !== "Go 5 hour limit" || limits[0].remaining_percent !== 75) {
-                console.error(JSON.stringify(limits[0]));
-                process.exit(1);
-              }
-              if (limits[1].label !== "Go weekly limit" || limits[1].remaining_percent !== 60) {
-                console.error(JSON.stringify(limits[1]));
-                process.exit(1);
-              }
-              if (limits[2].label !== "Go monthly limit" || limits[2].remaining_percent !== 90) {
-                console.error(JSON.stringify(limits[2]));
-                process.exit(1);
-              }
-              if (!credits || credits.balance !== 4.5) {
-                console.error(JSON.stringify(credits));
-                process.exit(1);
-              }
-            })();
-        """.trimIndent()
-        try {
-            Files.write(path, runtime.toByteArray(StandardCharsets.UTF_8))
-            val process = ProcessBuilder(node!!, path.toString()).redirectErrorStream(true).start()
-            val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-            assertTrue("OpenCode visible usage DOM was not converted to usage payload:\n$output", process.waitFor() == 0)
-        } finally {
-            Files.deleteIfExists(path)
-        }
-    }
-
-    @Test
-    fun opencodeCollectorConvertsKoreanGoUsagePageToTrustedPayload() {
-        val node = nodeCommandOrNull()
-        assumeTrue("node is required for injected OpenCode runtime checks", node != null)
-
-        val opencode = ProviderWebCollectorScripts.build(ProviderId.OPENCODE, emptyMap(), "")
-        val path = Files.createTempFile("ai-quota-opencode-ko-runtime", ".js")
-        val runtime = """
-            const posted = [];
-            const errors = [];
-            const timers = [];
-            const pageText = [
-              "현재 OpenCode Go를 구독 중입니다.",
-              "롤링 사용량",
-              "0%",
-              "초기화까지 남은 시간: 5 시간 0 분",
-              "주간 사용량",
-              "0%",
-              "초기화까지 남은 시간: 3 일 18 시간",
-              "월간 사용량",
-              "0%",
-              "초기화까지 남은 시간: 29 일 23 시간"
-            ].join("\n");
-            global.window = global;
-            global.location = {
-              hostname: "opencode.ai",
-              pathname: "/workspace/wrk_123/go",
-              href: "https://opencode.ai/workspace/wrk_123/go"
-            };
-            global.document = {
-              title: "OpenCode",
-              body: { innerText: pageText },
-              documentElement: { innerText: pageText },
-              scripts: [],
-              querySelectorAll: () => []
-            };
-            class StorageMock {
-              constructor(values) { this.values = values || {}; this.keys = Object.keys(this.values); this.length = this.keys.length; }
-              key(index) { return this.keys[index] || null; }
-              getItem(key) { return this.values[key] || ""; }
-            }
-            global.localStorage = new StorageMock({});
-            global.sessionStorage = new StorageMock({});
-            global.AIQuotaCollectorBridge = {
-              postUsagePayload: (value) => posted.push(JSON.parse(value)),
-              postCollectorError: (value) => errors.push(JSON.parse(value))
-            };
-            global.fetch = async function() {
-              return {
-                ok: true,
-                status: 200,
-                clone() { return { text: async () => "" }; },
-                text: async () => ""
-              };
-            };
-            global.XMLHttpRequest = function() {};
-            global.XMLHttpRequest.prototype = {
-              open() {},
-              send() {},
-              addEventListener() {}
-            };
-            global.setTimeout = function(fn) {
-              timers.push(fn);
-              return timers.length;
-            };
-            global.clearTimeout = function() {};
-            $opencode
-            (async function() {
-              for (let i = 0; i < 10 && posted.length === 0 && errors.length === 0; i += 1) {
-                while (timers.length > 0) timers.shift()();
-                await Promise.resolve();
-                await new Promise((resolve) => setImmediate(resolve));
-              }
-              const payload = posted[0];
-              const limits = payload && payload.data && payload.data.limits;
-              if (payload.provider !== "opencode" || payload.source !== "visible-dom") {
-                console.error(JSON.stringify({ posted, errors }));
-                process.exit(1);
-              }
-              if (!Array.isArray(limits) || limits.length !== 3) {
-                console.error(JSON.stringify(payload));
-                process.exit(1);
-              }
-              if (limits[0].label !== "Go 5 hour limit" || limits[0].used_percent !== 0 || limits[0].reset_text !== "Resets in 5h 0m") {
-                console.error(JSON.stringify(limits[0]));
-                process.exit(1);
-              }
-              if (limits[1].label !== "Go weekly limit" || limits[1].used_percent !== 0 || limits[1].reset_text !== "Resets in 3d 18h") {
-                console.error(JSON.stringify(limits[1]));
-                process.exit(1);
-              }
-              if (limits[2].label !== "Go monthly limit" || limits[2].used_percent !== 0 || limits[2].reset_text !== "Resets in 29d 23h") {
-                console.error(JSON.stringify(limits[2]));
-                process.exit(1);
-              }
-            })();
-        """.trimIndent()
-        try {
-            Files.write(path, runtime.toByteArray(StandardCharsets.UTF_8))
-            val process = ProcessBuilder(node!!, path.toString()).redirectErrorStream(true).start()
-            val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-            assertTrue("OpenCode Korean Go DOM was not converted to usage payload:\n$output", process.waitFor() == 0)
-        } finally {
-            Files.deleteIfExists(path)
-        }
+        assertTrue(opencode.contains("fetchNativeUsagePayload"))
+        assertTrue(opencode.contains("native-bridge"))
+        assertFalse(opencode.contains("__AIQuotaOpenCodeRows"))
+        assertFalse(opencode.contains("visible-dom"))
+        assertFalse(opencode.contains("document.documentElement"))
+        assertFalse(opencode.contains("document.scripts"))
+        assertFalse(opencode.contains("localStorage"))
+        assertFalse(opencode.contains("sessionStorage"))
+        assertFalse(opencode.contains("XMLHttpRequest.prototype"))
+        assertFalse(opencode.contains("window.fetch = function"))
     }
 
     @Test
@@ -504,9 +299,11 @@ class ProviderWebCollectorScriptsTest {
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.OPENCODE, "https://opencode.ai/zen/go/usage"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.OPENCODE, "https://opencode.ai/workspace/wrk_123/go"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.OPENCODE, "https://opencode.ai/billing/credits"))
-        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.OPENCODE, "https://opencode.ai/workspace/wrk_123/go"))
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.OPENCODE, "https://opencode.ai/_server?id=7abeebee372f304e050aaaf92be863f4a86490e382f8c79db68fd94040d691b4&args=%5B%22wrk_123%22%5D"))
+        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.OPENCODE, "about:blank"))
 
         assertFalse(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.OPENCODE, "https://opencode.ai/docs/go/"))
+        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.OPENCODE, "https://opencode.ai/workspace/wrk_123/go"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.OPENCODE, "https://opencode.ai/auth"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.OPENCODE, "https://opencode.ai/docs/go/"))
     }

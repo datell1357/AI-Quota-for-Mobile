@@ -9,6 +9,7 @@ enum class ProviderAuthStoreKind {
 
 enum class ProviderCollectionKind {
     WEBVIEW_COLLECTOR,
+    NATIVE_WEBVIEW_BRIDGE,
     NATIVE_API,
     NATIVE_API_WITH_WEBVIEW_FALLBACK,
     BACKEND_GATEWAY

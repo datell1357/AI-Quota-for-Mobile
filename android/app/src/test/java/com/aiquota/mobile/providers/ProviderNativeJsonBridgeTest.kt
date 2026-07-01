@@ -3,6 +3,7 @@ package com.aiquota.mobile.providers
 import com.aiquota.mobile.local.ProviderId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -17,19 +18,37 @@ class ProviderNativeJsonBridgeTest {
         assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, "https://chatgpt.com/backend-api/wham/usage"))
         assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, "https://chatgpt.com/codex/cloud/settings/analytics"))
         assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.GEMINI, "https://gemini.google.com/usage"))
+        assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.OPENCODE, "https://opencode.ai/workspace/wrk_123/go"))
+        assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.OPENCODE, "https://opencode.ai/zen/go/usage"))
+        assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.OPENCODE, "https://opencode.ai/billing/credits"))
+        assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.OPENCODE, "https://opencode.ai/_server?id=7abeebee372f304e050aaaf92be863f4a86490e382f8c79db68fd94040d691b4&args=%5B%22wrk_123%22%5D"))
         assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.COPILOT, "https://github.com/github-copilot/chat/entitlement"))
         assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.COPILOT, "https://api.github.com/copilot_internal/user"))
         assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CLAUDE, "https://firebase.googleapis.com/relay"))
         assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, "https://admin.openai.com/analytics/codex"))
+        assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.OPENCODE, "https://opencode.ai/auth"))
+        assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.OPENCODE, "https://opencode.ai/docs/go/"))
         assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.COPILOT, "https://github.com/settings/profile"))
     }
 
     @Test
     fun nativeJsonBridgeExcludesNonScopedProviders() {
         assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.ANTIGRAVITY, "https://antigravity.google/usage"))
-        assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.GLM, "https://api.z.ai/api/monitor/usage/quota/limit"))
-        assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.OPENCODE, "https://opencode.ai/zen/go/usage"))
+        assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.GLM, "https://api.z.ai/api/monitor/usage/quota/limit"))
         assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CURSOR, "https://cursor.com/api/usage"))
+    }
+
+    @Test
+    fun nativeJsonBridgeFallsBackToOriginCookieWhenPathCookieIsBlank() {
+        assertEquals(
+            "auth=origin",
+            ProviderNativeJsonBridge.firstNonBlankCookieForTest("", "auth=origin")
+        )
+        assertEquals(
+            "auth=path",
+            ProviderNativeJsonBridge.firstNonBlankCookieForTest("auth=path", "auth=origin")
+        )
+        assertNull(ProviderNativeJsonBridge.firstNonBlankCookieForTest("", ""))
     }
 
     @Test

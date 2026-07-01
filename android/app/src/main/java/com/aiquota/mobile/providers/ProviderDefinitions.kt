@@ -114,9 +114,9 @@ object ProviderDefinitionRegistry {
                 "www.opencode.ai",
                 "auth.opencode.ai"
             ),
-            preferredUsageEndpoint = "https://opencode.ai/auth",
+            preferredUsageEndpoint = "https://opencode.ai/workspace/{workspaceId}/go",
             authStoreKind = ProviderAuthStoreKind.WEBVIEW_PROFILE,
-            collectionKind = ProviderCollectionKind.WEBVIEW_COLLECTOR,
+            collectionKind = ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE,
             sessionProbeUrl = "https://opencode.ai/auth"
         ),
         ProviderDefinition(

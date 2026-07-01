@@ -89,6 +89,7 @@ object ProviderRefreshPlan {
     private fun refreshModeFor(providerId: ProviderId): ProviderRefreshMode {
         return when (ProviderDefinitionRegistry.definitionFor(providerId).collectionKind) {
             ProviderCollectionKind.WEBVIEW_COLLECTOR -> ProviderRefreshMode.HIDDEN_WEB_COLLECTOR
+            ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE -> ProviderRefreshMode.HIDDEN_WEB_COLLECTOR
             ProviderCollectionKind.NATIVE_API_WITH_WEBVIEW_FALLBACK -> ProviderRefreshMode.HIDDEN_WEB_COLLECTOR
             ProviderCollectionKind.NATIVE_API -> ProviderRefreshMode.NATIVE_API
             ProviderCollectionKind.BACKEND_GATEWAY -> ProviderRefreshMode.NATIVE_API

@@ -12,6 +12,11 @@ class DebugProviderSessionCookieStoreTest {
         val source = File("src/main/java/com/aiquota/mobile/providers/DebugProviderSessionCookieStore.kt").readText()
 
         assertTrue(source.contains("if (!BuildConfig.DEBUG) return"))
+        assertTrue(source.contains("ENABLE_DEBUG_SESSION_COOKIE_REPLAY = false"))
+        assertTrue(source.contains("if (!ENABLE_DEBUG_SESSION_COOKIE_REPLAY) return"))
+        assertTrue(source.contains("if (!ENABLE_DEBUG_SESSION_COOKIE_REPLAY) return false"))
+        assertTrue(source.contains("if (!ENABLE_DEBUG_SESSION_COOKIE_REPLAY) return emptyMap()"))
+        assertTrue(source.contains("if (!ENABLE_DEBUG_SESSION_COOKIE_REPLAY) return null"))
         assertTrue(source.contains("SecureStringStore(context, PREFS).putString"))
         assertTrue(source.contains("getExternalFilesDir(EXTERNAL_DIR)"))
         assertTrue(source.contains("debug-session-cookies"))
@@ -118,23 +123,20 @@ class DebugProviderSessionCookieStoreTest {
     }
 
     @Test
-    fun backgroundRefreshRestoresAndCapturesDebugCookies() {
+    fun backgroundRefreshDebugCookieReplayIsDisabledAtStore() {
         val source = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val storeSource = File("src/main/java/com/aiquota/mobile/providers/DebugProviderSessionCookieStore.kt").readText()
 
         assertTrue(source.contains("restoreDebugProviderSessionCookies(providerId, cookieManager)"))
-        assertTrue(source.contains("if (providerId == ProviderId.GEMINI) return"))
         assertTrue(source.contains("DebugProviderSessionCookieStore.restore(applicationContext, providerId, cookieManager, \"background_collection\")"))
         assertFalse(source.contains("DebugProviderSessionCookieStore.restorableCookieHeader(applicationContext, ownerProviderId, url)"))
         assertTrue(source.contains("restoreCodexDebugNativeAuthContext(providerId)"))
         assertTrue(source.contains("DebugProviderSessionCookieStore.restoreNativeAuthContext(applicationContext, providerId)"))
-        assertTrue(source.contains("codexNativeFetchHeaders.putAll(restoredHeaders)"))
         assertTrue(source.contains("DebugProviderSessionCookieStore.capture("))
-        assertTrue(source.contains("shouldExportBackgroundDebugSnapshot(effectiveJob.providerId)"))
-        assertTrue(source.contains("return providerId != ProviderId.GEMINI"))
-        assertTrue(storeSource.contains("exportExternal: Boolean = true"))
-        assertTrue(storeSource.contains("val shouldExportExternal = exportExternal && isRestorableSnapshotReason(reason)"))
-        assertTrue(storeSource.contains("if (shouldExportExternal)"))
+        assertTrue(storeSource.contains("ENABLE_DEBUG_SESSION_COOKIE_REPLAY = false"))
+        assertTrue(storeSource.contains("if (!ENABLE_DEBUG_SESSION_COOKIE_REPLAY) return"))
+        assertTrue(storeSource.contains("if (!ENABLE_DEBUG_SESSION_COOKIE_REPLAY) return false"))
+        assertTrue(storeSource.contains("if (!ENABLE_DEBUG_SESSION_COOKIE_REPLAY) return emptyMap()"))
         assertTrue(source.contains("\"background_native_snapshot\""))
         assertTrue(source.contains("\"background_webview_snapshot\""))
         assertTrue(source.contains("\"background_webview_non_auth_failure\""))

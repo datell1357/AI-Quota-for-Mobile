@@ -49,7 +49,7 @@ class ProviderRefreshPlanTest {
         assertFalse(jobs.any { it.startUrl.contains("/auth/login") || it.startUrl.contains("/login") })
         assertEquals("about:blank", jobs.first { it.providerId == ProviderId.CLAUDE }.startUrl)
         assertEquals("https://chatgpt.com/api/auth/session", jobs.first { it.providerId == ProviderId.CODEX }.startUrl)
-        assertEquals("https://opencode.ai/auth", jobs.first { it.providerId == ProviderId.OPENCODE }.startUrl)
+        assertEquals("about:blank", jobs.first { it.providerId == ProviderId.OPENCODE }.startUrl)
         assertEquals("about:blank", jobs.first { it.providerId == ProviderId.GEMINI }.startUrl)
         assertEquals("about:blank", jobs.first { it.providerId == ProviderId.COPILOT }.startUrl)
         assertEquals("", jobs.first { it.providerId == ProviderId.ANTIGRAVITY }.startUrl)
@@ -80,10 +80,10 @@ class ProviderRefreshPlanTest {
         assertEquals("https://chatgpt.com/api/auth/session", ProviderRefreshPlan.manualJobFor(ProviderId.CODEX).startUrl)
         assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.GEMINI).startUrl)
         assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.COPILOT).startUrl)
+        assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.OPENCODE).startUrl)
 
         assertEquals("", ProviderRefreshPlan.manualJobFor(ProviderId.ANTIGRAVITY).startUrl)
         assertEquals("", ProviderRefreshPlan.manualJobFor(ProviderId.GLM).startUrl)
-        assertEquals("https://opencode.ai/auth", ProviderRefreshPlan.manualJobFor(ProviderId.OPENCODE).startUrl)
         assertEquals("https://cursor.com/dashboard", ProviderRefreshPlan.manualJobFor(ProviderId.CURSOR).startUrl)
     }
 

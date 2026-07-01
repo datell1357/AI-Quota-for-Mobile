@@ -120,21 +120,23 @@ class ProviderBackgroundRefreshServicePolicyTest {
     }
 
     @Test
-    fun opencodeRefreshReusesLastTrustedGoUsagePage() {
+    fun opencodeRefreshUsesLastTrustedGoUsagePageOnlyAsNativeBridgeTarget() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
-        val backgroundCollector = File("src/main/java/com/aiquota/mobile/ui/BackgroundProviderWebCollector.kt").readText()
         val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
         val stateRepository = File("src/main/java/com/aiquota/mobile/providers/ProviderScopedStateRepository.kt").readText()
         val runtimeResolver = service.substringAfter("private fun resolveRuntimeRefreshJob")
             .substringBefore("private fun handleRefreshAuthFailure")
+        val nativeBridgeUrl = service.substringAfter("private fun nativeUsageBridgePageUrl")
+            .substringBefore("private fun maybeStartCodexAboutBlankCollection")
 
         assertTrue(stateRepository.contains("fun saveOpenCodeUsageUrl"))
         assertTrue(stateRepository.contains("fun readOpenCodeUsageUrl"))
         assertTrue(login.contains("saveOpenCodeUsageUrl(pageUrl)"))
         assertTrue(login.contains("saveOpenCodeUsageUrl(goUsageUrl)"))
-        assertTrue(backgroundCollector.contains("saveOpenCodeUsageUrl(pageUrl)"))
-        assertTrue(runtimeResolver.contains("readOpenCodeUsageUrl()"))
-        assertTrue(runtimeResolver.contains("job.copy(startUrl = usageUrl)"))
+        assertFalse(runtimeResolver.contains("readOpenCodeUsageUrl()"))
+        assertFalse(runtimeResolver.contains("job.copy(startUrl = usageUrl)"))
+        assertTrue(nativeBridgeUrl.contains("providerId == ProviderId.OPENCODE"))
+        assertTrue(nativeBridgeUrl.contains("readOpenCodeUsageUrl()"))
     }
 
     @Test
@@ -183,21 +185,23 @@ class ProviderBackgroundRefreshServicePolicyTest {
     }
 
     @Test
-    fun opencodeBackgroundRefreshRedirectsWorkspaceShellToGoUsagePage() {
+    fun opencodeBackgroundRefreshDoesNotRedirectVisiblePagesOrRestoreSavedCookies() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
-        val redirect = service.substringAfter("private fun maybeRedirectOpenCodeRefreshToGo")
-            .substringBefore("private fun maybeRedirectGeminiRefreshToUsage")
+        val restoreDebugCookies = service.substringAfter("private fun restoreDebugProviderSessionCookies")
+            .substringBefore("private fun restoreCodexDebugNativeAuthContext")
+        val warmUp = service.substringAfter("private fun webSessionWarmUpUrl")
         val pageStarted = service.substringAfter("override fun onPageStarted")
             .substringBefore("override fun shouldOverrideUrlLoading")
         val pageFinished = service.substringAfter("override fun onPageFinished")
             .substringBefore("override fun onReceivedError")
 
-        assertTrue(redirect.contains("active.job.providerId != ProviderId.OPENCODE"))
-        assertTrue(redirect.contains("OpenCodeUsagePageRoutes.goUsageUrlFrom(url)"))
-        assertTrue(redirect.contains("saveOpenCodeUsageUrl(goUsageUrl)"))
-        assertTrue(redirect.contains("view.loadUrl(goUsageUrl)"))
-        assertTrue(pageStarted.contains("maybeRedirectOpenCodeRefreshToGo(active, view, url)"))
-        assertTrue(pageFinished.contains("maybeRedirectOpenCodeRefreshToGo(active, view, url)"))
+        assertFalse(service.contains("private fun maybeRedirectOpenCodeRefreshToGo"))
+        assertFalse(service.contains("OpenCodeUsagePageRoutes.goUsageUrlFrom(url)"))
+        assertFalse(pageStarted.contains("maybeRedirectOpenCodeRefreshToGo(active, view, url)"))
+        assertFalse(pageFinished.contains("maybeRedirectOpenCodeRefreshToGo(active, view, url)"))
+        assertFalse(warmUp.contains("ProviderId.OPENCODE"))
+        assertTrue(restoreDebugCookies.contains("providerId == ProviderId.OPENCODE"))
+        assertTrue(restoreDebugCookies.contains("return"))
     }
 
     @Test

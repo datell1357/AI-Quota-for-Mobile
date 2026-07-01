@@ -159,6 +159,282 @@ class ProviderNativeUsagePayloadFetcherTest {
     }
 
     @Test
+    fun opencodeNativeUsagePayloadFetchesStoredGoUrlThroughNativeBridge() {
+        val requestedUrls = mutableListOf<String>()
+        val payload = ProviderNativeUsagePayloadFetcher.openCodeUsagePayloadForTest(
+            userAgent = "test-agent",
+            bridgePageUrl = "https://opencode.ai/workspace/wrk_123/go",
+            fetchJson = { providerId, url, userAgent, headers ->
+                assertEquals(ProviderId.OPENCODE, providerId)
+                assertEquals("test-agent", userAgent)
+                assertTrue(headers.isEmpty())
+                requestedUrls += url
+                ProviderNativeJsonBridge.wrappedResponse(
+                    url,
+                    200,
+                    """
+                    {
+                      "data": {
+                        "plan": "OpenCode Go",
+                        "account": "user@example.com",
+                        "limits": [
+                          {"label": "Go 5 hour limit", "remaining_percent": 75, "used": 3, "limit": 12, "unit": "usd"},
+                          {"label": "Go weekly limit", "used": 12, "limit": 30, "unit": "usd"}
+                        ],
+                        "credits": {"balance": 4.5, "limit": 10}
+                      }
+                    }
+                    """.trimIndent()
+                ).toString()
+            }
+        )
+
+        assertEquals(listOf("https://opencode.ai/workspace/wrk_123/go"), requestedUrls)
+        assertNotNull(payload)
+        assertFalse(payload!!.contains("visible-dom"))
+
+        val snapshot = ProviderUsageNormalizer.normalize(
+            providerId = ProviderId.OPENCODE,
+            rawPayload = payload,
+            source = ProviderPayloadSource.NETWORK_RESPONSE,
+            fetchedAt = "2026-07-01T00:00:00Z"
+        )
+
+        assertNotNull(snapshot)
+        assertEquals("Go", snapshot!!.plan)
+        assertEquals("user@example.com", snapshot.account)
+        assertEquals(
+            listOf("Go 5-Hour Limit", "Go Weekly Limit", "Zen Credits"),
+            snapshot.lines.map { it.label }
+        )
+        assertEquals(0.75f, snapshot.lines.single { it.key == "opencode:go_5_hour_limit" }.remainingPercent ?: 0f, 0.001f)
+    }
+
+    @Test
+    fun opencodeNativeUsagePayloadExtractsEmbeddedUsageJsonFromFetchedGoHtml() {
+        val payload = ProviderNativeUsagePayloadFetcher.openCodeUsagePayloadForTest(
+            userAgent = "test-agent",
+            bridgePageUrl = "https://opencode.ai/workspace/wrk_123/go",
+            fetchJson = { _, url, _, _ ->
+                ProviderNativeJsonBridge.wrappedResponse(
+                    url,
+                    200,
+                    """
+                    <html>
+                      <head>
+                        <script type="application/json" data-hk="route">
+                          {
+                            "routeData": {
+                              "workspace": {
+                                "plan": "OpenCode Go",
+                                "account": "user@example.com",
+                                "goUsage": {
+                                  "displayName": "Go weekly usage",
+                                  "used": 12,
+                                  "limit": 30,
+                                  "unit": "usd"
+                                },
+                                "wallet": {
+                                  "balance": 4.5,
+                                  "limit": 10
+                                }
+                              }
+                            }
+                          }
+                        </script>
+                      </head>
+                    </html>
+                    """.trimIndent()
+                ).toString()
+            }
+        )
+
+        assertNotNull(payload)
+        assertFalse(payload!!.contains("<html"))
+
+        val snapshot = ProviderUsageNormalizer.normalize(
+            providerId = ProviderId.OPENCODE,
+            rawPayload = payload,
+            source = ProviderPayloadSource.NETWORK_RESPONSE,
+            fetchedAt = "2026-07-01T00:00:00Z"
+        )
+
+        assertNotNull(snapshot)
+        assertEquals("Go", snapshot!!.plan)
+        assertEquals("user@example.com", snapshot.account)
+        assertEquals(listOf("Go Weekly Limit", "Zen Credits"), snapshot.lines.map { it.label })
+        assertEquals(0.60f, snapshot.lines.single { it.key == "opencode:go_weekly_limit" }.remainingPercent ?: 0f, 0.001f)
+    }
+
+    @Test
+    fun opencodeNativeUsagePayloadExtractsServerUsageObjectFromFetchedGoHtml() {
+        val usageTextNoise = (1..35).joinToString("") {
+            """<span data-slot="usage-label">Usage</span>"""
+        }
+        val requestedUrls = mutableListOf<String>()
+        val payload = ProviderNativeUsagePayloadFetcher.openCodeUsagePayloadForTest(
+            userAgent = "test-agent",
+            bridgePageUrl = "https://opencode.ai/workspace/wrk_123/go",
+            fetchJson = { _, url, _, _ ->
+                requestedUrls += url
+                ProviderNativeJsonBridge.wrappedResponse(
+                    url,
+                    200,
+                    """
+                    <html>
+                      <body>$usageTextNoise</body>
+                      <script>
+                        ${'$'}R[28](${'$'}R[18],${'$'}R[35]={
+                          mine:!0,
+                          useBalance:!1,
+                          region:${'$'}R[36]=["us","eu","sg"],
+                          rollingUsage:${'$'}R[37]={status:"ok",resetInSec:3600,usagePercent:25},
+                          weeklyUsage:${'$'}R[38]={status:"ok",resetInSec:604800,usagePercent:40}
+                        });
+                      </script>
+                    </html>
+                    """.trimIndent()
+                ).toString()
+            }
+        )
+
+        assertEquals(listOf("https://opencode.ai/workspace/wrk_123/go"), requestedUrls)
+        assertNotNull(payload)
+        assertFalse(payload!!.contains("<html"))
+        assertFalse(payload.contains("rollingUsage"))
+        assertTrue(payload.contains("native-server-function"))
+
+        val snapshot = ProviderUsageNormalizer.normalize(
+            providerId = ProviderId.OPENCODE,
+            rawPayload = payload,
+            source = ProviderPayloadSource.NETWORK_RESPONSE,
+            fetchedAt = "2026-07-01T00:00:00Z"
+        )
+
+        assertNotNull(snapshot)
+        assertEquals(listOf("Go 5-Hour Limit", "Go Weekly Limit"), snapshot!!.lines.map { it.label })
+        assertEquals(0.75f, snapshot.lines.single { it.key == "opencode:go_5_hour_limit" }.remainingPercent ?: 0f, 0.001f)
+        assertEquals(0.60f, snapshot.lines.single { it.key == "opencode:go_weekly_limit" }.remainingPercent ?: 0f, 0.001f)
+    }
+
+    @Test
+    fun opencodeNativeUsagePayloadFetchesServerSubscriptionWhenGoHtmlHasNoUsageSignals() {
+        val requestedUrls = mutableListOf<String>()
+        val headersByUrl = linkedMapOf<String, Map<String, String>>()
+        val subscriptionUrl = "https://opencode.ai/_server?id=7abeebee372f304e050aaaf92be863f4a86490e382f8c79db68fd94040d691b4&args=%5B%22wrk_123%22%5D"
+        val payload = ProviderNativeUsagePayloadFetcher.openCodeUsagePayloadForTest(
+            userAgent = "test-agent",
+            bridgePageUrl = "https://opencode.ai/workspace/wrk_123/go",
+            fetchJson = { providerId, url, userAgent, headers ->
+                assertEquals(ProviderId.OPENCODE, providerId)
+                assertEquals("test-agent", userAgent)
+                requestedUrls += url
+                headersByUrl[url] = headers
+                val body = when (url) {
+                    "https://opencode.ai/workspace/wrk_123/go" ->
+                        """
+                        <html>
+                          <body>
+                            <a href="/github/authorize">Continue with GitHub</a>
+                          </body>
+                        </html>
+                        """.trimIndent()
+                    subscriptionUrl ->
+                        """
+                        export default {
+                          rollingUsage: { usagePercent: 25, resetInSec: 3600 },
+                          weeklyUsage: { usagePercent: 40, resetInSec: 604800 }
+                        }
+                        """.trimIndent()
+                    else -> ""
+                }
+                ProviderNativeJsonBridge.wrappedResponse(url, if (body.isBlank()) 404 else 200, body).toString()
+            }
+        )
+
+        assertEquals(listOf("https://opencode.ai/workspace/wrk_123/go", subscriptionUrl), requestedUrls)
+        assertEquals("7abeebee372f304e050aaaf92be863f4a86490e382f8c79db68fd94040d691b4", headersByUrl[subscriptionUrl]?.get("X-Server-Id"))
+        assertEquals("https://opencode.ai", headersByUrl[subscriptionUrl]?.get("Origin"))
+        assertEquals("https://opencode.ai/workspace/wrk_123/billing", headersByUrl[subscriptionUrl]?.get("Referer"))
+        assertNotNull(payload)
+        assertFalse(payload!!.contains("rollingUsage"))
+        assertFalse(payload.contains("<html"))
+
+        val snapshot = ProviderUsageNormalizer.normalize(
+            providerId = ProviderId.OPENCODE,
+            rawPayload = payload,
+            source = ProviderPayloadSource.NETWORK_RESPONSE,
+            fetchedAt = "2026-07-01T00:00:00Z"
+        )
+
+        assertNotNull(snapshot)
+        assertEquals(listOf("Go 5-Hour Limit", "Go Weekly Limit"), snapshot!!.lines.map { it.label })
+        assertEquals(0.75f, snapshot.lines.single { it.key == "opencode:go_5_hour_limit" }.remainingPercent ?: 0f, 0.001f)
+        assertEquals(0.60f, snapshot.lines.single { it.key == "opencode:go_weekly_limit" }.remainingPercent ?: 0f, 0.001f)
+        assertEquals("Resets in 1h", snapshot.lines.single { it.key == "opencode:go_5_hour_limit" }.resetText)
+    }
+
+    @Test
+    fun opencodeNativeUsagePayloadRejectsBootstrapJsonWithoutUsageMetrics() {
+        val payload = ProviderNativeUsagePayloadFetcher.openCodeUsagePayloadForTest(
+            userAgent = "test-agent",
+            bridgePageUrl = "https://opencode.ai/workspace/wrk_123/go",
+            fetchJson = { _, url, _, _ ->
+                ProviderNativeJsonBridge.wrappedResponse(
+                    url,
+                    200,
+                    """
+                    {
+                      "data": {
+                        "plan": "OpenCode Go",
+                        "limits": [
+                          {"label": "Go weekly limit"}
+                        ],
+                        "bootstrap": {
+                          "workspaceId": "wrk_123"
+                        }
+                      }
+                    }
+                    """.trimIndent()
+                ).toString()
+            }
+        )
+
+        assertNull(payload)
+    }
+
+    @Test
+    fun opencodeNativeUsagePayloadRejectsEmbeddedBootstrapBalanceWithoutCreditContext() {
+        val payload = ProviderNativeUsagePayloadFetcher.openCodeUsagePayloadForTest(
+            userAgent = "test-agent",
+            bridgePageUrl = "https://opencode.ai/workspace/wrk_123/go",
+            fetchJson = { _, url, _, _ ->
+                ProviderNativeJsonBridge.wrappedResponse(
+                    url,
+                    200,
+                    """
+                    <html>
+                      <script type="application/json">
+                        {
+                          "routeData": {
+                            "bootstrap": {
+                              "balance": 4.5,
+                              "limit": 10,
+                              "workspaceId": "wrk_123"
+                            }
+                          }
+                        }
+                      </script>
+                    </html>
+                    """.trimIndent()
+                ).toString()
+            }
+        )
+
+        assertNull(payload)
+    }
+
+    @Test
     fun codexNativeUsagePayloadUsesWhamUsageWhenDashboardHasNoUsage() {
         val requestedUrls = mutableListOf<String>()
         val payload = ProviderNativeUsagePayloadFetcher.codexUsagePayloadForTest(

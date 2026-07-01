@@ -44,8 +44,10 @@ object ProviderNativeJsonBridge {
                     .filterValues(String::isNotBlank)
                     .forEach { (name, value) -> setRequestProperty(name, value) }
                 if (!requestHeaders.keys.any { it.equals("Cookie", ignoreCase = true) }) {
-                    (CookieManager.getInstance().getCookie(url)
-                        ?: CookieManager.getInstance().getCookie(origin))
+                    firstNonBlankCookie(
+                        CookieManager.getInstance().getCookie(url),
+                        CookieManager.getInstance().getCookie(origin)
+                    )
                         ?.takeIf(String::isNotBlank)
                         ?.let { setRequestProperty("Cookie", it) }
                 }
@@ -95,6 +97,14 @@ object ProviderNativeJsonBridge {
             !normalized.equals("Connection", ignoreCase = true) &&
             !normalized.equals("Content-Length", ignoreCase = true) &&
             !normalized.equals("Accept-Encoding", ignoreCase = true)
+    }
+
+    private fun firstNonBlankCookie(primary: String?, fallback: String?): String? {
+        return primary?.takeIf(String::isNotBlank) ?: fallback?.takeIf(String::isNotBlank)
+    }
+
+    internal fun firstNonBlankCookieForTest(primary: String?, fallback: String?): String? {
+        return firstNonBlankCookie(primary, fallback)
     }
 
     private const val TAG = "AIQuotaNativeJson"

@@ -21,6 +21,7 @@ internal object DebugProviderSessionCookieStore {
         nativeAuthContext: Map<String, Map<String, String>> = emptyMap()
     ) {
         if (!BuildConfig.DEBUG) return
+        if (!ENABLE_DEBUG_SESSION_COOKIE_REPLAY) return
         val shouldExportExternal = exportExternal && isRestorableSnapshotReason(reason)
         val restorableNativeAuthContext = restorableNativeAuthContext(nativeAuthContext)
         val entries = ProviderWebSessionClearPolicy.cookieUrls(providerId)
@@ -61,6 +62,7 @@ internal object DebugProviderSessionCookieStore {
         reason: String
     ): Boolean {
         if (!BuildConfig.DEBUG) return false
+        if (!ENABLE_DEBUG_SESSION_COOKIE_REPLAY) return false
         val (payload, source) = readRestorableSnapshotPayload(context, providerId) ?: return false
         val cookies = runCatching { JSONObject(payload).optJSONArray("cookies") }.getOrNull() ?: return false
         var cookieCount = 0
@@ -90,6 +92,7 @@ internal object DebugProviderSessionCookieStore {
         providerId: ProviderId
     ): Map<String, Map<String, String>> {
         if (!BuildConfig.DEBUG) return emptyMap()
+        if (!ENABLE_DEBUG_SESSION_COOKIE_REPLAY) return emptyMap()
         val (payload, source) = readRestorableSnapshotPayload(context, providerId) ?: return emptyMap()
         val nativeAuthContext = nativeAuthContextFromPayload(payload)
         if (nativeAuthContext.isEmpty()) return emptyMap()
@@ -108,6 +111,7 @@ internal object DebugProviderSessionCookieStore {
         url: String
     ): String? {
         if (!BuildConfig.DEBUG) return null
+        if (!ENABLE_DEBUG_SESSION_COOKIE_REPLAY) return null
         val (payload, source) = readRestorableSnapshotPayload(context, providerId) ?: return null
         val header = cookieHeaderFromPayload(payload, url) ?: return null
         Log.i(TAG, "provider=${providerId.storageId} debugCookieHeaderRestore=true source=$source url=${originOf(url).orEmpty()}")
@@ -296,4 +300,5 @@ internal object DebugProviderSessionCookieStore {
     private const val TAG = "AIQuotaDebugCookie"
     private const val PREFS = "debug_provider_session_cookies"
     private const val EXTERNAL_DIR = "debug-session-cookies"
+    private const val ENABLE_DEBUG_SESSION_COOKIE_REPLAY = false
 }
