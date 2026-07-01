@@ -36,7 +36,7 @@ object ProviderRefreshPlan {
             ProviderId.CODEX -> CODEX_REFRESH_TIMEOUT_MILLIS
             ProviderId.OPENCODE -> OPENCODE_REFRESH_TIMEOUT_MILLIS
             ProviderId.GLM -> GLM_WEB_REFRESH_TIMEOUT_MILLIS
-            ProviderId.GEMINI -> GEMINI_WEB_REFRESH_TIMEOUT_MILLIS
+            ProviderId.GEMINI -> GOOGLE_REFRESH_TIMEOUT_MILLIS
             ProviderId.ANTIGRAVITY -> GOOGLE_REFRESH_TIMEOUT_MILLIS
             else -> PROVIDER_REFRESH_TIMEOUT_MILLIS
         }

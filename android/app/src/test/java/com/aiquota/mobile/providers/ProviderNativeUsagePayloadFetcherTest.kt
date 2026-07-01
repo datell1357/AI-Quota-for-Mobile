@@ -1,6 +1,7 @@
 package com.aiquota.mobile.providers
 
 import com.aiquota.mobile.local.ProviderId
+import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -9,6 +10,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProviderNativeUsagePayloadFetcherTest {
+    @Test
+    fun geminiIsNotCollectedThroughAboutBlankWebSessionFallback() {
+        val policy = File("src/main/java/com/aiquota/mobile/providers/ProviderAboutBlankCollectorPolicy.kt").readText()
+        val source = File("src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt").readText()
+
+        assertFalse(policy.contains("providerId == ProviderId.GEMINI"))
+        assertFalse(source.contains("GoogleWebSessionCodeAssistFetcher.fetchUsagePayload(ProviderId.GEMINI)"))
+        assertFalse(source.contains("GeminiUsagePageNativeFetcher.fetchUsagePayload"))
+    }
+
     @Test
     fun geminiUsagePageBatchExecutePayloadIncludesFiveHourAndWeeklyLimits() {
         val payload = GeminiUsagePageNativeFetcher.usagePayloadFromBatchExecuteForTest(

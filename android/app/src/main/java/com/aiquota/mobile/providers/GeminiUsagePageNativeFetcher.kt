@@ -19,17 +19,23 @@ internal object GeminiUsagePageNativeFetcher {
         val statuses: List<String> = emptyList()
     )
 
-    fun fetchUsagePayload(userAgent: String, sessionCookieHeader: String? = null): FetchResult {
+    fun fetchUsagePayload(
+        userAgent: String,
+        sessionCookieHeader: String? = null,
+        usagePageUrl: String = GEMINI_USAGE_PAGE_URL
+    ): FetchResult {
+        val requestUsagePageUrl = GeminiUsagePageRoutes.canonicalUsageUrl(usagePageUrl) ?: GEMINI_USAGE_PAGE_URL
+        val usagePath = usagePathForLog(requestUsagePageUrl)
         val cookieHeader = sessionCookieHeader?.takeIf(String::isNotBlank)
-            ?: CookieManager.getInstance().getCookie(GEMINI_USAGE_PAGE_URL)
+            ?: CookieManager.getInstance().getCookie(requestUsagePageUrl)
             ?: CookieManager.getInstance().getCookie(GEMINI_ORIGIN)
             ?: return FetchResult(null, "gemini_usage_cookie_unavailable")
         val requestUserAgent = userAgent.takeIf { it.isNotBlank() } ?: ProviderWebViewUserAgent.loginUserAgent()
-        val sessionResult = fetchUsagePageParams(cookieHeader, requestUserAgent)
+        val sessionResult = fetchUsagePageParams(cookieHeader, requestUserAgent, requestUsagePageUrl)
         val statuses = sessionResult.statuses.toMutableList()
         val params = sessionResult.params
             ?: return FetchResult(null, sessionResult.diagnostic, statuses)
-        val endpoint = batchExecuteUrl(params)
+        val endpoint = batchExecuteUrl(params, requestUsagePageUrl)
         val statusLabel = "gemini_usage_rpc"
         return runCatching {
             val body = if (params.at.isBlank()) {
@@ -48,7 +54,7 @@ internal object GeminiUsagePageNativeFetcher {
                 setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8")
                 setRequestProperty("Cookie", cookieHeader)
                 setRequestProperty("Origin", GEMINI_ORIGIN)
-                setRequestProperty("Referer", GEMINI_USAGE_PAGE_URL)
+                setRequestProperty("Referer", requestUsagePageUrl)
                 setRequestProperty("User-Agent", requestUserAgent)
                 setRequestProperty("X-Same-Domain", "1")
                 outputStream.use { it.write(bodyBytes) }
@@ -57,7 +63,7 @@ internal object GeminiUsagePageNativeFetcher {
             val stream = if (status in 200..299) connection.inputStream else connection.errorStream
             val text = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
             connection.disconnect()
-            Log.d(TAG, "geminiUsageRpc status=$status payloadBytes=${text.length}")
+            Log.d(TAG, "geminiUsageRpc usagePath=$usagePath status=$status payloadBytes=${text.length}")
             statuses += "$statusLabel:$status"
             if (status !in 200..299) {
                 return FetchResult(null, "gemini_usage_rpc_http_$status", statuses)
@@ -66,7 +72,7 @@ internal object GeminiUsagePageNativeFetcher {
                 ?: return FetchResult(null, "gemini_usage_rpc_unavailable", statuses)
             FetchResult(payload.toString(), "ok", statuses)
         }.getOrElse { error ->
-            Log.d(TAG, "geminiUsageRpc error=${error.javaClass.simpleName}")
+            Log.d(TAG, "geminiUsageRpc usagePath=$usagePath error=${error.javaClass.simpleName}")
             statuses += "$statusLabel:error"
             FetchResult(null, "gemini_usage_rpc_${error.javaClass.simpleName}", statuses)
         }
@@ -80,10 +86,15 @@ internal object GeminiUsagePageNativeFetcher {
         return usagePageParamsFromHtml(rawText, nowMillis)
     }
 
-    private fun fetchUsagePageParams(cookieHeader: String, userAgent: String): RpcSessionResult {
+    internal fun batchExecuteUrlForTest(params: GeminiUsagePageRpcSession.Params, usagePageUrl: String): String {
+        return batchExecuteUrl(params, usagePageUrl)
+    }
+
+    private fun fetchUsagePageParams(cookieHeader: String, userAgent: String, usagePageUrl: String): RpcSessionResult {
         val statusLabel = "gemini_usage_page_html"
+        val usagePath = usagePathForLog(usagePageUrl)
         return runCatching {
-            val connection = (URL(GEMINI_USAGE_PAGE_URL).openConnection() as HttpURLConnection).apply {
+            val connection = (URL(usagePageUrl).openConnection() as HttpURLConnection).apply {
                 connectTimeout = NETWORK_TIMEOUT_MS
                 readTimeout = NETWORK_TIMEOUT_MS
                 requestMethod = "GET"
@@ -97,7 +108,7 @@ internal object GeminiUsagePageNativeFetcher {
             val stream = if (status in 200..299) connection.inputStream else connection.errorStream
             val text = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
             connection.disconnect()
-            Log.d(TAG, "geminiUsagePageHtml status=$status payloadBytes=${text.length}")
+            Log.d(TAG, "geminiUsagePageHtml usagePath=$usagePath status=$status payloadBytes=${text.length}")
             if (status !in 200..299) {
                 return RpcSessionResult(null, "gemini_usage_page_http_$status", listOf("$statusLabel:$status"))
             }
@@ -105,7 +116,7 @@ internal object GeminiUsagePageNativeFetcher {
                 ?: return RpcSessionResult(null, "gemini_usage_page_rpc_params_unavailable", listOf("$statusLabel:$status"))
             RpcSessionResult(params, "ok", listOf("$statusLabel:$status"))
         }.getOrElse { error ->
-            Log.d(TAG, "geminiUsagePageHtml error=${error.javaClass.simpleName}")
+            Log.d(TAG, "geminiUsagePageHtml usagePath=$usagePath error=${error.javaClass.simpleName}")
             RpcSessionResult(null, "gemini_usage_page_${error.javaClass.simpleName}", listOf("$statusLabel:error"))
         }
     }
@@ -235,11 +246,12 @@ internal object GeminiUsagePageNativeFetcher {
         return runCatching { Instant.ofEpochSecond(seconds, nanos).toString() }.getOrNull()
     }
 
-    private fun batchExecuteUrl(params: GeminiUsagePageRpcSession.Params): String {
+    private fun batchExecuteUrl(params: GeminiUsagePageRpcSession.Params, usagePageUrl: String): String {
         val reqId = (System.currentTimeMillis() % 1_000_000L) + 100_000L
+        val sourcePath = usagePathForLog(usagePageUrl)
         return "$GEMINI_ORIGIN/_/BardChatUi/data/batchexecute" +
             "?rpcids=$JSF9QC_RPC_ID" +
-            "&source-path=%2Fusage" +
+            "&source-path=${encodeQuery(sourcePath)}" +
             "&bl=${encodeQuery(params.bl)}" +
             "&f.sid=${encodeQuery(params.fSid)}" +
             "&hl=${encodeQuery(params.hl)}" +
@@ -259,6 +271,10 @@ internal object GeminiUsagePageNativeFetcher {
 
     private fun encodeQuery(value: String): String {
         return java.net.URLEncoder.encode(value, StandardCharsets.UTF_8.name())
+    }
+
+    private fun usagePathForLog(usagePageUrl: String): String {
+        return runCatching { URL(usagePageUrl).path }.getOrDefault("/usage").ifBlank { "/usage" }
     }
 
     private data class RpcSessionResult(

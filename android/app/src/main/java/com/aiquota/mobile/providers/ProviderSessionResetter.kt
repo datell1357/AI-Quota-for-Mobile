@@ -36,6 +36,7 @@ class ProviderSessionResetter(context: Context) {
                 GoogleAppAuthTokenStore(appContext).clear(providerId)
                 GoogleIdentityCredentialStore(appContext).clear(providerId)
                 GeminiCliOAuthRepository(appContext).disconnect()
+                ProviderScopedStateRepository(appContext).clearGeminiUsageUrl()
             }
             ProviderId.ANTIGRAVITY -> {
                 GoogleAppAuthTokenStore(appContext).clear(providerId)

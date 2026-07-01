@@ -156,7 +156,10 @@ class DebugProviderSessionCookieStoreTest {
         assertTrue(refreshSource.contains("ContextCompat.startForegroundService"))
         assertTrue(refreshSource.contains("ProviderBackgroundRefreshService.createRefreshIntent"))
         assertTrue(refreshSource.contains("ProviderId.fromStorageId"))
+        assertTrue(loginSource.contains("GeminiCliLoopbackOAuthActivity.createIntent(this)"))
         assertTrue(loginSource.contains("WebLoginActivity.createIntent"))
+        assertTrue(loginSource.contains("EXTRA_START_URL"))
+        assertTrue(loginSource.contains("WebLoginActivity.createIntent(this, providerId, startUrl)"))
         assertTrue(loginSource.contains("ProviderId.fromStorageId"))
     }
 

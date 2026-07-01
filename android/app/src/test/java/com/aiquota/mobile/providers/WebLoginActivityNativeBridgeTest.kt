@@ -104,4 +104,29 @@ class WebLoginActivityNativeBridgeTest {
         assertFalse(script.contains("document.documentElement"))
         assertFalse(script.contains("settings/copilot"))
     }
+
+    @Test
+    fun geminiAboutBlankBridgeKeepsAccountScopedUsageUrl() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val refresh = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
+
+        assertTrue(login.contains("geminiNativeUsagePageUrl = canonicalUsageUrl"))
+        assertTrue(login.contains("saveGeminiUsageUrl(canonicalUsageUrl)"))
+        assertTrue(login.contains("bridgePageUrl = nativeUsageBridgePageUrl()"))
+        assertTrue(refresh.contains("saveGeminiUsageUrl(usageUrl)"))
+        assertTrue(refresh.contains("bridgePageUrl = nativeUsageBridgePageUrl(ownerProviderId)"))
+        assertTrue(refresh.contains("readGeminiUsageUrl()"))
+    }
+
+    @Test
+    fun geminiNativeStartWaitsForLastRedirectedUsageUrl() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+
+        assertTrue(login.contains("private var geminiExpectedUsagePageUrl = \"\""))
+        assertTrue(login.contains("geminiExpectedUsagePageUrl = GeminiUsagePageRoutes.canonicalUsageUrl(usageUrl).orEmpty()"))
+        assertTrue(login.contains("val expectedUsageUrl = geminiExpectedUsagePageUrl"))
+        assertTrue(login.contains("expectedUsageUrl.isNotBlank() && canonicalUsageUrl != expectedUsageUrl"))
+        assertTrue(login.contains("GeminiUsagePageRoutes.isUsageUrl(currentViewUrl)"))
+        assertTrue(login.contains("provider=gemini ignoreStaleRedirect"))
+    }
 }

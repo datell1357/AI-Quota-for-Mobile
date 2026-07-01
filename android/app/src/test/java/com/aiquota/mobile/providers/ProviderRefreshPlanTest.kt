@@ -16,7 +16,7 @@ class ProviderRefreshPlanTest {
         assertEquals(60_000L, ProviderRefreshPlan.timeoutMillisFor(ProviderId.CODEX))
         assertEquals(10_000L, ProviderRefreshPlan.timeoutMillisFor(ProviderId.CLAUDE))
         assertEquals(20_000L, ProviderRefreshPlan.timeoutMillisFor(ProviderId.GLM))
-        assertEquals(45_000L, ProviderRefreshPlan.timeoutMillisFor(ProviderId.GEMINI))
+        assertEquals(75_000L, ProviderRefreshPlan.timeoutMillisFor(ProviderId.GEMINI))
         assertEquals(10_000L, ProviderRefreshPlan.timeoutMillisFor(ProviderId.COPILOT))
         assertEquals(75_000L, ProviderRefreshPlan.timeoutMillisFor(ProviderId.ANTIGRAVITY))
         assertEquals(10_000L, ProviderRefreshPlan.timeoutMillisFor(ProviderId.CURSOR))
@@ -42,43 +42,44 @@ class ProviderRefreshPlanTest {
 
         assertTrue(
             jobs
-                .filterNot { it.providerId == ProviderId.ANTIGRAVITY }
+                .filterNot { it.providerId == ProviderId.ANTIGRAVITY || it.providerId == ProviderId.GEMINI }
                 .all { it.mode == ProviderRefreshMode.HIDDEN_WEB_COLLECTOR }
         )
+        assertEquals(ProviderRefreshMode.NATIVE_API, jobs.first { it.providerId == ProviderId.GEMINI }.mode)
         assertEquals(ProviderRefreshMode.NATIVE_API, jobs.first { it.providerId == ProviderId.ANTIGRAVITY }.mode)
         assertFalse(jobs.any { it.startUrl.contains("/auth/login") || it.startUrl.contains("/login") })
         assertEquals("about:blank", jobs.first { it.providerId == ProviderId.CLAUDE }.startUrl)
         assertEquals("https://chatgpt.com/api/auth/session", jobs.first { it.providerId == ProviderId.CODEX }.startUrl)
         assertEquals("https://opencode.ai/auth", jobs.first { it.providerId == ProviderId.OPENCODE }.startUrl)
-        assertEquals("about:blank", jobs.first { it.providerId == ProviderId.GEMINI }.startUrl)
+        assertEquals("", jobs.first { it.providerId == ProviderId.GEMINI }.startUrl)
         assertEquals("about:blank", jobs.first { it.providerId == ProviderId.COPILOT }.startUrl)
         assertEquals("", jobs.first { it.providerId == ProviderId.ANTIGRAVITY }.startUrl)
         assertEquals("https://cursor.com/dashboard", jobs.first { it.providerId == ProviderId.CURSOR }.startUrl)
     }
 
     @Test
-    fun geminiRefreshesThroughAboutBlankCollectorAndAntigravityRefreshesThroughNativeApi() {
+    fun geminiAndAntigravityRefreshThroughNativeApi() {
         val jobs = listOf(ProviderId.GEMINI, ProviderId.ANTIGRAVITY).map(ProviderRefreshPlan::manualJobFor)
 
-        assertEquals(ProviderRefreshMode.HIDDEN_WEB_COLLECTOR, jobs.first { it.providerId == ProviderId.GEMINI }.mode)
+        assertEquals(ProviderRefreshMode.NATIVE_API, jobs.first { it.providerId == ProviderId.GEMINI }.mode)
         assertEquals(ProviderRefreshMode.NATIVE_API, jobs.first { it.providerId == ProviderId.ANTIGRAVITY }.mode)
-        assertEquals("about:blank", jobs.first { it.providerId == ProviderId.GEMINI }.startUrl)
+        assertEquals("", jobs.first { it.providerId == ProviderId.GEMINI }.startUrl)
         assertEquals("", jobs.first { it.providerId == ProviderId.ANTIGRAVITY }.startUrl)
     }
 
     @Test
-    fun geminiRefreshUsesAboutBlankCollector() {
+    fun geminiRefreshUsesNativeApi() {
         val geminiJob = ProviderRefreshPlan.manualJobFor(ProviderId.GEMINI)
 
-        assertEquals(ProviderRefreshMode.HIDDEN_WEB_COLLECTOR, geminiJob.mode)
-        assertEquals("about:blank", geminiJob.startUrl)
+        assertEquals(ProviderRefreshMode.NATIVE_API, geminiJob.mode)
+        assertEquals("", geminiJob.startUrl)
     }
 
     @Test
     fun backgroundCollectorsUseAboutBlankOnlyForScopedNativeJsonProviders() {
         assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.CLAUDE).startUrl)
         assertEquals("https://chatgpt.com/api/auth/session", ProviderRefreshPlan.manualJobFor(ProviderId.CODEX).startUrl)
-        assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.GEMINI).startUrl)
+        assertEquals("", ProviderRefreshPlan.manualJobFor(ProviderId.GEMINI).startUrl)
         assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.COPILOT).startUrl)
 
         assertEquals("", ProviderRefreshPlan.manualJobFor(ProviderId.ANTIGRAVITY).startUrl)
@@ -94,12 +95,12 @@ class ProviderRefreshPlanTest {
             ProviderId.CODEX,
             ProviderId.GLM,
             ProviderId.OPENCODE,
-            ProviderId.GEMINI,
             ProviderId.COPILOT,
             ProviderId.CURSOR
         )
 
         assertTrue(retainedProviders.all(ProviderHiddenWebViewRetentionPolicy::shouldRetain))
+        assertFalse(ProviderHiddenWebViewRetentionPolicy.shouldRetain(ProviderId.GEMINI))
         assertFalse(ProviderHiddenWebViewRetentionPolicy.shouldRetain(ProviderId.ANTIGRAVITY))
         assertFalse(ProviderHiddenWebViewRetentionPolicy.shouldRecreateAfterFailure(ProviderRefreshFailureKind.TIMEOUT))
         assertFalse(ProviderHiddenWebViewRetentionPolicy.shouldRecreateAfterFailure(ProviderRefreshFailureKind.COLLECTOR_ERROR))

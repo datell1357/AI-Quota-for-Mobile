@@ -54,6 +54,8 @@ open class WebLoginActivity : Activity() {
     private var codexNativeCollectionStarted = false
     private var claudeNativeCollectionStarted = false
     private var geminiNativeCollectionStarted = false
+    private var geminiNativeUsagePageUrl = ""
+    private var geminiExpectedUsagePageUrl = ""
     @Volatile
     private var oauthCallbackHandled = false
     @Volatile
@@ -535,7 +537,11 @@ open class WebLoginActivity : Activity() {
             if (!isNativeFetchBridgePageAllowed(providerId)) {
                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
             }
-            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(providerId, currentBridgeUserAgent) { url ->
+            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(
+                providerId = providerId,
+                userAgent = currentBridgeUserAgent,
+                bridgePageUrl = nativeUsageBridgePageUrl()
+            ) { url ->
                 if (providerId == ProviderId.CODEX) codexNativeFetchHeadersFor(url) else emptyMap()
             }
         }
@@ -579,6 +585,14 @@ open class WebLoginActivity : Activity() {
             lastGeminiUsageRedirectAtMs = 0L
             return false
         }
+        val currentViewUrl = view.url.orEmpty()
+        if (currentViewUrl != url && GeminiUsagePageRoutes.isUsageUrl(currentViewUrl)) {
+            Log.d(
+                "AIQuotaLogin",
+                "provider=gemini ignoreStaleRedirect current=${pathOf(currentViewUrl)} callback=${pathOf(url)}"
+            )
+            return false
+        }
         val usageUrl = GeminiUsagePageRoutes.usageUrlFrom(url) ?: return false
         if (geminiUsageRedirectAttempts >= GEMINI_USAGE_REDIRECT_MAX_ATTEMPTS) return false
         val path = uri.path.orEmpty()
@@ -590,6 +604,7 @@ open class WebLoginActivity : Activity() {
         lastGeminiUsageRedirectKey = redirectKey
         lastGeminiUsageRedirectAtMs = now
         geminiUsageRedirectAttempts += 1
+        geminiExpectedUsagePageUrl = GeminiUsagePageRoutes.canonicalUsageUrl(usageUrl).orEmpty()
         collectorInjectionKeys.clear()
         Log.i("AIQuotaLogin", "provider=gemini postLoginRedirect=usage from=${hostOf(url)}${pathOf(url)}")
         view.stopLoading()
@@ -663,7 +678,18 @@ open class WebLoginActivity : Activity() {
         if (providerId != ProviderId.GEMINI || finished || geminiNativeCollectionStarted) return false
         if (!GeminiUsagePageRoutes.isUsageUrl(url)) return false
         if (ProviderWebCollectorScripts.isRefreshLoginPage(ProviderId.GEMINI, url, pageText)) return false
+        val canonicalUsageUrl = GeminiUsagePageRoutes.canonicalUsageUrl(url) ?: return false
+        val expectedUsageUrl = geminiExpectedUsagePageUrl
+        if (expectedUsageUrl.isNotBlank() && canonicalUsageUrl != expectedUsageUrl) {
+            Log.d(
+                "AIQuotaLogin",
+                "provider=gemini skipUsageUrl=unexpected expected=${pathOf(expectedUsageUrl)} actual=${pathOf(url)}"
+            )
+            return false
+        }
         geminiNativeCollectionStarted = true
+        geminiNativeUsagePageUrl = canonicalUsageUrl
+        saveGeminiUsageUrl(canonicalUsageUrl)
         CookieManager.getInstance().flush()
         collectorInjectionKeys.clear()
         noteBridgePageUrl("about:blank")
@@ -1035,6 +1061,20 @@ open class WebLoginActivity : Activity() {
     private fun saveOpenCodeUsageUrl(url: String) {
         if (providerId != ProviderId.OPENCODE) return
         ProviderScopedStateRepository(applicationContext).saveOpenCodeUsageUrl(url)
+    }
+
+    private fun saveGeminiUsageUrl(url: String) {
+        if (providerId != ProviderId.GEMINI) return
+        ProviderScopedStateRepository(applicationContext).saveGeminiUsageUrl(url)
+    }
+
+    private fun nativeUsageBridgePageUrl(): String? {
+        if (providerId == ProviderId.GEMINI) {
+            return geminiNativeUsagePageUrl.ifBlank {
+                ProviderScopedStateRepository(applicationContext).readGeminiUsageUrl().orEmpty()
+            }.ifBlank { currentBridgePageUrl }
+        }
+        return currentBridgePageUrl
     }
 
     private fun captureDebugProviderSessionCookies(reason: String, includeNativeAuthContext: Boolean = false) {

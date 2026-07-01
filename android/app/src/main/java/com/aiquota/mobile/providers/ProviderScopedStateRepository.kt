@@ -70,6 +70,31 @@ class ProviderScopedStateRepository(context: Context) {
         return OpenCodeUsagePageRoutes.canonicalGoUsageUrlFrom(raw)
     }
 
+    fun saveGeminiUsageUrl(url: String) {
+        val usageUrl = GeminiUsagePageRoutes.canonicalUsageUrl(url) ?: return
+        val stores = ProviderScriptProviders.storeNamesFor(ProviderId.GEMINI)
+        appContext.getSharedPreferences(stores.scriptData, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_GEMINI_USAGE_URL, usageUrl)
+            .apply()
+    }
+
+    fun readGeminiUsageUrl(): String? {
+        val stores = ProviderScriptProviders.storeNamesFor(ProviderId.GEMINI)
+        val raw = appContext.getSharedPreferences(stores.scriptData, Context.MODE_PRIVATE)
+            .getString(KEY_GEMINI_USAGE_URL, "")
+            .orEmpty()
+        return GeminiUsagePageRoutes.canonicalUsageUrl(raw)
+    }
+
+    fun clearGeminiUsageUrl() {
+        val stores = ProviderScriptProviders.storeNamesFor(ProviderId.GEMINI)
+        appContext.getSharedPreferences(stores.scriptData, Context.MODE_PRIVATE)
+            .edit()
+            .remove(KEY_GEMINI_USAGE_URL)
+            .apply()
+    }
+
     fun clearOpenCodeUsageUrl() {
         val stores = ProviderScriptProviders.storeNamesFor(ProviderId.OPENCODE)
         appContext.getSharedPreferences(stores.scriptData, Context.MODE_PRIVATE)
@@ -94,6 +119,7 @@ class ProviderScopedStateRepository(context: Context) {
         const val KEY_CONNECTION_STATE = "connection_state"
         const val KEY_SCRIPT_VERSION = "script_version"
         const val KEY_OPENCODE_USAGE_URL = "opencode_usage_url"
+        const val KEY_GEMINI_USAGE_URL = "gemini_usage_url"
         const val KEY_UPDATED_AT = "updated_at"
     }
 }

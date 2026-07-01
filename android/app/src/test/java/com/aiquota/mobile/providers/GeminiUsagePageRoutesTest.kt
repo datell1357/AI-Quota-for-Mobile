@@ -2,6 +2,7 @@ package com.aiquota.mobile.providers
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GeminiUsagePageRoutesTest {
@@ -16,11 +17,11 @@ class GeminiUsagePageRoutesTest {
             GeminiUsagePageRoutes.usageUrlFrom("https://gemini.google.com/app")
         )
         assertEquals(
-            GeminiUsagePageRoutes.USAGE_URL,
+            "https://gemini.google.com/u/0/usage",
             GeminiUsagePageRoutes.usageUrlFrom("https://gemini.google.com/u/0/app")
         )
         assertEquals(
-            GeminiUsagePageRoutes.USAGE_URL,
+            "https://gemini.google.com/u/1/usage",
             GeminiUsagePageRoutes.usageUrlFrom("https://gemini.google.com/u/1/app?hl=ko")
         )
         assertEquals(
@@ -32,8 +33,10 @@ class GeminiUsagePageRoutesTest {
     @Test
     fun usagePageAndLoginHostDoNotRedirectAgain() {
         assertNull(GeminiUsagePageRoutes.usageUrlFrom("https://gemini.google.com/usage"))
+        assertNull(GeminiUsagePageRoutes.usageUrlFrom("https://gemini.google.com/u/1/usage?pli=1"))
         assertNull(GeminiUsagePageRoutes.usageUrlFrom("https://gemini.google.com/usage?hl=ko"))
         assertNull(GeminiUsagePageRoutes.usageUrlFrom("https://accounts.google.com/v3/signin/identifier"))
         assertNull(GeminiUsagePageRoutes.usageUrlFrom("https://example.com/app"))
+        assertTrue(GeminiUsagePageRoutes.isUsageUrl("https://gemini.google.com/u/1/usage?pli=1"))
     }
 }

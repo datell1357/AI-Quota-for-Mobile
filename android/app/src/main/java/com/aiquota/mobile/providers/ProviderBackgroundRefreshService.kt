@@ -459,6 +459,30 @@ class ProviderBackgroundRefreshService : Service() {
                 )
             }
         }
+        if (job.providerId == ProviderId.GEMINI) {
+            val repository = GeminiCliOAuthRepository(applicationContext)
+            val payload = withContext(Dispatchers.IO) {
+                repository.fetchUsagePayloadFromStoredCredential()
+            }
+            val snapshot = payload?.let {
+                ProviderUsageNormalizer.normalize(
+                    job.providerId,
+                    it,
+                    ProviderPayloadSource.PROVIDER_API
+                )
+            }
+            return if (snapshot != null) {
+                ServiceRefreshOutcome.Snapshot(snapshot)
+            } else {
+                ServiceRefreshOutcome.Failure(
+                    ProviderRefreshFailure(
+                        ProviderRefreshFailureKind.NO_TRUSTED_PAYLOAD,
+                        repository.lastFailureDiagnostic()
+                            ?: "Gemini OAuth collection returned no trusted usage payload."
+                    )
+                )
+            }
+        }
         if (job.providerId == ProviderId.ANTIGRAVITY) {
             val payload = withContext(Dispatchers.IO) {
                 fetchAntigravityNativeOrWebSessionPayload()
@@ -658,6 +682,10 @@ class ProviderBackgroundRefreshService : Service() {
         ProviderScopedStateRepository(applicationContext).saveOpenCodeUsageUrl(url)
     }
 
+    private fun saveGeminiUsageUrl(url: String) {
+        ProviderScopedStateRepository(applicationContext).saveGeminiUsageUrl(url)
+    }
+
     private fun injectCollectorIfReady(providerId: ProviderId, view: WebView, url: String, pageText: String) {
         val active = currentWebJobFor(providerId) ?: return
         if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && url != "about:blank") return
@@ -713,6 +741,7 @@ class ProviderBackgroundRefreshService : Service() {
         active.lastGeminiRefreshRedirectAtMs = now
         active.geminiUsageRedirectAttempts += 1
         collectorInjectionKeys.removeAll { it.contains(":${ProviderId.GEMINI.storageId}:") }
+        saveGeminiUsageUrl(usageUrl)
         Log.d(TAG, "redirectUsage provider=gemini from=${hostOf(url)}${pathOf(url)}")
         view.stopLoading()
         view.loadUrl(usageUrl)
@@ -1126,6 +1155,7 @@ class ProviderBackgroundRefreshService : Service() {
             return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(
                 providerId = ownerProviderId,
                 userAgent = collectorUserAgent,
+                bridgePageUrl = nativeUsageBridgePageUrl(ownerProviderId),
                 requestHeadersForUrl = { url ->
                     if (ownerProviderId == ProviderId.CODEX) codexNativeFetchHeadersFor(url) else emptyMap()
                 }
@@ -1147,6 +1177,13 @@ class ProviderBackgroundRefreshService : Service() {
             val active = currentWebJobFor(providerId) ?: return false
             val pageUrl = webJobLastUrls[active.requestId].orEmpty().ifBlank { active.job.startUrl }
             return ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, pageUrl)
+        }
+
+        private fun nativeUsageBridgePageUrl(providerId: ProviderId): String? {
+            if (providerId == ProviderId.GEMINI) {
+                return ProviderScopedStateRepository(applicationContext).readGeminiUsageUrl()
+            }
+            return null
         }
 
     }

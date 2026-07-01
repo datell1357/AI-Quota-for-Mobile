@@ -13,13 +13,21 @@ object GeminiUsagePageRoutes {
         if (host == "myaccount.google.com") return USAGE_URL
         if (host != "gemini.google.com") return null
         if (isUsagePath(path)) return null
-        return if (isLandingPath(path)) USAGE_URL else null
+        return accountScopedUsageUrl(path) ?: if (isLandingPath(path)) USAGE_URL else null
     }
 
     fun isUsageUrl(url: String): Boolean {
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
         return host == "gemini.google.com" && isUsagePath(normalizedPath(uri))
+    }
+
+    fun canonicalUsageUrl(url: String): String? {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return null
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        if (host != "gemini.google.com") return null
+        val path = normalizedPath(uri)
+        return if (isUsagePath(path)) "https://gemini.google.com$path" else null
     }
 
     fun isLoginLandingUrl(url: String): Boolean {
@@ -33,7 +41,7 @@ object GeminiUsagePageRoutes {
     }
 
     private fun isUsagePath(path: String): Boolean {
-        return path == "/usage"
+        return path == "/usage" || Regex("""^/u/\d+/usage$""").matches(path)
     }
 
     private fun isLandingPath(path: String): Boolean {
@@ -41,6 +49,12 @@ object GeminiUsagePageRoutes {
             path == "/" ||
             path == "/app" ||
             path.startsWith("/app/") ||
-            path.startsWith("/u/")
+            Regex("""^/u/\d+/?$""").matches(path) ||
+            Regex("""^/u/\d+/app(?:/.*)?$""").matches(path)
+    }
+
+    private fun accountScopedUsageUrl(path: String): String? {
+        val match = Regex("""^(/u/\d+)(?:/app(?:/.*)?|/?)$""").matchEntire(path) ?: return null
+        return "https://gemini.google.com${match.groupValues[1]}/usage"
     }
 }

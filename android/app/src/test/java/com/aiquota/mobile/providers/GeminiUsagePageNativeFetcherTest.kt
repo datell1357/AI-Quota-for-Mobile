@@ -42,6 +42,24 @@ class GeminiUsagePageNativeFetcherTest {
     }
 
     @Test
+    fun accountScopedUsagePageSuppliesAccountScopedRpcSourcePath() {
+        val params = GeminiUsagePageRpcSession.Params(
+            at = "",
+            fSid = "-123",
+            bl = "boq_assistant",
+            hl = "ko",
+            capturedAtMillis = 1234L
+        )
+
+        val url = GeminiUsagePageNativeFetcher.batchExecuteUrlForTest(
+            params,
+            "https://gemini.google.com/u/1/usage?pli=1"
+        )
+
+        assertEquals(true, url.contains("source-path=%2Fu%2F1%2Fusage"))
+    }
+
+    @Test
     fun geminiNativeCollectionDoesNotDependOnUsagePageDomSessionCapture() {
         val loginSource = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
         val refreshSource = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
