@@ -53,7 +53,7 @@ class ProviderRefreshPlanTest {
         assertEquals("about:blank", jobs.first { it.providerId == ProviderId.GEMINI }.startUrl)
         assertEquals("about:blank", jobs.first { it.providerId == ProviderId.COPILOT }.startUrl)
         assertEquals("", jobs.first { it.providerId == ProviderId.ANTIGRAVITY }.startUrl)
-        assertEquals("https://cursor.com/dashboard", jobs.first { it.providerId == ProviderId.CURSOR }.startUrl)
+        assertEquals("about:blank", jobs.first { it.providerId == ProviderId.CURSOR }.startUrl)
     }
 
     @Test
@@ -84,7 +84,7 @@ class ProviderRefreshPlanTest {
 
         assertEquals("", ProviderRefreshPlan.manualJobFor(ProviderId.ANTIGRAVITY).startUrl)
         assertEquals("", ProviderRefreshPlan.manualJobFor(ProviderId.GLM).startUrl)
-        assertEquals("https://cursor.com/dashboard", ProviderRefreshPlan.manualJobFor(ProviderId.CURSOR).startUrl)
+        assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.CURSOR).startUrl)
     }
 
     @Test

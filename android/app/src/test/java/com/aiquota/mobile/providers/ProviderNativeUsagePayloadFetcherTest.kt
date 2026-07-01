@@ -37,6 +37,71 @@ class ProviderNativeUsagePayloadFetcherTest {
     }
 
     @Test
+    fun cursorIsCollectedThroughAboutBlankNativeWebSessionFetcher() {
+        val policy = File("src/main/java/com/aiquota/mobile/providers/ProviderAboutBlankCollectorPolicy.kt").readText()
+        val source = File("src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt").readText()
+        val cursorScript = ProviderWebCollectorScripts.cursor()
+
+        assertTrue(policy.contains("ProviderId.CURSOR"))
+        assertTrue(source.contains("ProviderId.CURSOR -> fetchCursorPayload"))
+        assertTrue(source.contains("CursorNativeUsageFetcher::fetchJson"))
+        listOf(
+            "__AIQuotaCursorNetworkRows",
+            "pushCursorNetworkRow",
+            "installCursorNetworkHook",
+            "scanCursorPageState",
+            "window.__NEXT_DATA__",
+            "/api/usage?user="
+        ).forEach { forbidden ->
+            assertFalse("$forbidden must not be part of Cursor native collection", cursorScript.contains(forbidden))
+        }
+    }
+
+    @Test
+    fun cursorNativeUsagePayloadNormalizesCurrentPeriodUsage() {
+        val payload = ProviderNativeUsagePayloadFetcher.cursorUsagePayloadForTest { url, body ->
+            when (url) {
+                "https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage" -> {
+                    assertEquals("{}", body)
+                    """
+                    {
+                      "ok": true,
+                      "status": 200,
+                      "json": {
+                        "membershipType": "Pro",
+                        "email": "user@example.com",
+                        "planUsage": {
+                          "totalPercentUsed": 17,
+                          "autoPercentUsed": 9,
+                          "apiPercentUsed": 2,
+                          "resetAt": 1781677951075
+                        }
+                      }
+                    }
+                    """.trimIndent()
+                }
+                else -> """{"ok":false,"status":404,"json":{}}"""
+            }
+        }
+
+        assertNotNull(payload)
+        val snapshot = ProviderUsageNormalizer.normalize(
+            providerId = ProviderId.CURSOR,
+            rawPayload = payload!!,
+            source = ProviderPayloadSource.NETWORK_RESPONSE,
+            fetchedAt = "2026-07-01T00:00:00Z"
+        )
+
+        assertNotNull(snapshot)
+        assertEquals("Pro", snapshot!!.plan)
+        assertEquals("user@example.com", snapshot.account)
+        assertEquals(listOf("Total usage", "Auto usage", "API usage"), snapshot.lines.map { it.label })
+        assertEquals(0.83f, snapshot.lines.single { it.label == "Total usage" }.remainingPercent ?: 0f, 0.001f)
+        assertEquals(0.91f, snapshot.lines.single { it.label == "Auto usage" }.remainingPercent ?: 0f, 0.001f)
+        assertEquals(0.98f, snapshot.lines.single { it.label == "API usage" }.remainingPercent ?: 0f, 0.001f)
+    }
+
+    @Test
     fun geminiNativeUsageSourceRejectsGenericOnlyCodeAssistAndDomFallbacks() {
         val nativeFetcher = File("src/main/java/com/aiquota/mobile/providers/GeminiUsagePageNativeFetcher.kt").readText()
         val nativeDispatcher = File("src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt").readText()
@@ -208,6 +273,49 @@ class ProviderNativeUsagePayloadFetcherTest {
             snapshot.lines.map { it.label }
         )
         assertEquals(0.75f, snapshot.lines.single { it.key == "opencode:go_5_hour_limit" }.remainingPercent ?: 0f, 0.001f)
+    }
+
+    @Test
+    fun cursorNativeUsagePayloadBuildsFromNativeFetchResultsWithoutDomFallback() {
+        val requested = mutableListOf<Pair<String, String?>>()
+        val payload = ProviderNativeUsagePayloadFetcher.cursorUsagePayloadForTest { url, body ->
+            requested += url to body
+            val response = when (url) {
+                "https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage" -> """
+                    {
+                      "membershipType": "Pro",
+                      "planUsage": {
+                        "totalPercentUsed": 25,
+                        "autoPercentUsed": 5,
+                        "apiPercentUsed": 2,
+                        "billingCycleEnd": "2026-07-15T00:00:00Z"
+                      },
+                      "requestUsage": {
+                        "premium": { "numRequests": 12, "maxRequestUsage": 100 }
+                      }
+                    }
+                """.trimIndent()
+                else -> "{}"
+            }
+            ProviderNativeJsonBridge.wrappedResponse(url, 200, response).toString()
+        }
+
+        assertTrue(requested.contains("https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage" to "{}"))
+        assertNotNull(payload)
+        assertFalse(payload!!.contains("__NEXT_DATA__"))
+        assertFalse(payload.contains("visible-dom"))
+
+        val snapshot = ProviderUsageNormalizer.normalize(
+            providerId = ProviderId.CURSOR,
+            rawPayload = payload,
+            source = ProviderPayloadSource.NETWORK_RESPONSE,
+            fetchedAt = "2026-07-01T00:00:00Z"
+        )
+
+        assertNotNull(snapshot)
+        assertEquals("Pro", snapshot!!.plan)
+        assertEquals(listOf("Total usage", "Requests", "Auto usage", "API usage"), snapshot.lines.map { it.label })
+        assertEquals(0.75f, snapshot.lines.single { it.key == "cursor:total" }.remainingPercent ?: 0f, 0.001f)
     }
 
     @Test

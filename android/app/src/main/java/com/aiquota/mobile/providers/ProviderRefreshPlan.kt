@@ -106,8 +106,8 @@ object ProviderRefreshPlan {
             ProviderId.OPENCODE -> "https://opencode.ai/auth"
             ProviderId.COPILOT -> "https://github.com/settings/copilot/features"
             ProviderId.ANTIGRAVITY -> "https://antigravity.google/"
-            ProviderId.CURSOR -> "https://cursor.com/dashboard"
             ProviderId.GEMINI -> "https://gemini.google.com/usage"
+            ProviderId.CURSOR -> "about:blank"
         }
     }
 

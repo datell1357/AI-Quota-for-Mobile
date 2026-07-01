@@ -20,7 +20,7 @@ class ProviderWebCollectorScriptsTest {
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "about:blank", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "https://github.com/settings/copilot", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "https://github.com/settings/billing/premium_requests_usage", emptyMap(), ""))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CURSOR, "https://cursor.com/dashboard", emptyMap(), ""))
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CURSOR, "about:blank", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "https://z.ai/manage-apikey/coding-plan/personal/my-plan", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "https://chat.z.ai/", emptyMap(), "Coding Plan Usage"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "about:blank", emptyMap(), ""))
@@ -43,7 +43,7 @@ class ProviderWebCollectorScriptsTest {
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "https://opencode.ai/auth", emptyMap(), "OpenCode Go usage limits"))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "https://opencode.ai/zen/go/usage", emptyMap(), "Weekly limit"))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "https://opencode.ai/workspace/wrk_123/go", emptyMap(), "롤링 사용량"))
-        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CURSOR, "about:blank", emptyMap(), ""))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CURSOR, "https://cursor.com/dashboard", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CURSOR, "https://api.workos.com/sso/authorize", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, "https://z.ai/login", emptyMap(), "Login"))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.OPENCODE, "https://opencode.ai/docs/go/", emptyMap(), "OpenCode Go"))
@@ -89,19 +89,20 @@ class ProviderWebCollectorScriptsTest {
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.COPILOT, "about:blank"))
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GLM, "about:blank"))
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.OPENCODE, "about:blank"))
+        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CURSOR, "about:blank"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CLAUDE, "https://claude.ai/new"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CODEX, "https://chatgpt.com/codex/settings/usage"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.COPILOT, "https://github.com/settings/copilot/features"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.ANTIGRAVITY, "about:blank"))
-        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CURSOR, "about:blank"))
+        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CURSOR, "https://cursor.com/dashboard"))
     }
 
     @Test
     fun aboutBlankNativeUsagePayloadPolicyIncludesOnlyScopedProviders() {
-        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT, ProviderId.GLM, ProviderId.OPENCODE).forEach { providerId ->
+        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT, ProviderId.GLM, ProviderId.OPENCODE, ProviderId.CURSOR).forEach { providerId ->
             assertTrue(ProviderAboutBlankCollectorPolicy.isEnabled(providerId))
         }
-        listOf(ProviderId.ANTIGRAVITY, ProviderId.CURSOR).forEach { providerId ->
+        listOf(ProviderId.ANTIGRAVITY).forEach { providerId ->
             assertFalse(ProviderAboutBlankCollectorPolicy.isEnabled(providerId))
         }
     }
@@ -114,7 +115,8 @@ class ProviderWebCollectorScriptsTest {
             ProviderId.GEMINI to "about:blank",
             ProviderId.COPILOT to "about:blank",
             ProviderId.GLM to "about:blank",
-            ProviderId.OPENCODE to "about:blank"
+            ProviderId.OPENCODE to "about:blank",
+            ProviderId.CURSOR to "about:blank"
         ).forEach { (providerId, pageUrl) ->
             val script = ProviderWebCollectorScripts.build(providerId, emptyMap(), "", pageUrl = pageUrl)
 
@@ -126,6 +128,9 @@ class ProviderWebCollectorScriptsTest {
             assertFalse(script.contains("parseCodexUsagePayload"))
             assertFalse(script.contains("extractCodexVisibleDomUsage"))
             assertFalse(script.contains("scanClaudePageState"))
+            assertFalse(script.contains("__AIQuotaCursorNetworkRows"))
+            assertFalse(script.contains("scanCursorPageState"))
+            assertFalse(script.contains("pushCursorNetworkRow"))
             assertFalse(script.contains("AIQuotaCodex collector started"))
             assertFalse(script.contains("AIQuotaCopilot collector_start"))
             assertFalse(script.contains("__AIQuotaOpenCodeRows"))
@@ -145,7 +150,8 @@ class ProviderWebCollectorScriptsTest {
             ProviderId.CODEX to "https://chatgpt.com/codex/settings/usage",
             ProviderId.GEMINI to "https://gemini.google.com/usage",
             ProviderId.COPILOT to "https://github.com/settings/copilot/features",
-            ProviderId.OPENCODE to "https://opencode.ai/workspace/wrk_123/go"
+            ProviderId.OPENCODE to "https://opencode.ai/workspace/wrk_123/go",
+            ProviderId.CURSOR to "https://cursor.com/dashboard"
         ).forEach { (providerId, pageUrl) ->
             assertFalse(ProviderWebCollectorScripts.shouldRunCollector(providerId, pageUrl, mapOf("lastActiveOrg" to "org"), "Claude usage"))
             val script = ProviderWebCollectorScripts.build(providerId, emptyMap(), "", pageUrl = pageUrl)
@@ -155,12 +161,14 @@ class ProviderWebCollectorScriptsTest {
             assertFalse(script.contains("extractCodexVisibleDomUsage"))
             assertFalse(script.contains("AIQuotaCopilot collector_start"))
             assertFalse(script.contains("__AIQuotaOpenCodeRows"))
+            assertFalse(script.contains("__AIQuotaCursorNetworkRows"))
+            assertFalse(script.contains("scanCursorPageState"))
         }
     }
 
     @Test
     fun scopedProvidersDoNotFallBackToLegacyCollectorsWhenPageUrlIsMissing() {
-        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT, ProviderId.OPENCODE).forEach { providerId ->
+        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT, ProviderId.OPENCODE, ProviderId.CURSOR).forEach { providerId ->
             val script = ProviderWebCollectorScripts.build(providerId, emptyMap(), "", pageUrl = "")
 
             assertFalse(script.contains("fetchNativeUsagePayload"))
@@ -169,6 +177,8 @@ class ProviderWebCollectorScriptsTest {
             assertFalse(script.contains("parseCodexUsagePayload"))
             assertFalse(script.contains("AIQuotaCopilot collector_start"))
             assertFalse(script.contains("__AIQuotaOpenCodeRows"))
+            assertFalse(script.contains("__AIQuotaCursorNetworkRows"))
+            assertFalse(script.contains("scanCursorPageState"))
             assertFalse(script.contains("window.fetch"))
             assertFalse(script.contains("XMLHttpRequest"))
         }
@@ -200,7 +210,7 @@ class ProviderWebCollectorScriptsTest {
         assertTrue(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.CLAUDE))
         assertFalse(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.OPENCODE))
         assertTrue(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.COPILOT))
-        assertTrue(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.CURSOR))
+        assertFalse(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.CURSOR))
         assertTrue(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.GLM))
         assertTrue(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.GEMINI))
         assertFalse(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.CODEX))
@@ -356,10 +366,11 @@ class ProviderWebCollectorScriptsTest {
     }
 
     @Test
-    fun cursorCollectorCanStartFromDashboardUsageResources() {
+    fun cursorCollectorOnlyAcceptsResourceTriggeredCollectionOnAboutBlank() {
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CURSOR, "https://cursor.com/api/usage?user=user_123"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CURSOR, "https://cursor.com/api/usage-summary"))
-        assertTrue(ProviderWebCollectorScripts.shouldRunCollectorFromResource(ProviderId.CURSOR, "https://cursor.com/dashboard", "https://cursor.com/api/usage?user=user_123"))
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollectorFromResource(ProviderId.CURSOR, "about:blank", "https://cursor.com/api/usage?user=user_123"))
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollectorFromResource(ProviderId.CURSOR, "https://cursor.com/dashboard", "https://cursor.com/api/usage?user=user_123"))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollectorFromResource(ProviderId.CURSOR, "https://cursor.com/login", "https://cursor.com/api/usage?user=user_123"))
     }
 
@@ -1155,44 +1166,42 @@ class ProviderWebCollectorScriptsTest {
     }
 
     @Test
-    fun cursorCollectorExtractsUsageFromWebViewState() {
+    fun cursorCollectorPostsNativeBridgePayloadOnAboutBlank() {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Cursor runtime checks", node != null)
 
-        val cursor = ProviderWebCollectorScripts.build(ProviderId.CURSOR, emptyMap(), "")
+        val cursor = ProviderWebCollectorScripts.build(ProviderId.CURSOR, emptyMap(), "", pageUrl = "about:blank")
         val path = Files.createTempFile("ai-quota-cursor-runtime", ".js")
         val runtime = """
             const posted = [];
             const errors = [];
             const timers = [];
             global.window = global;
-            global.location = { pathname: "/dashboard", href: "https://cursor.com/dashboard" };
+            global.location = { pathname: "", href: "about:blank" };
             global.document = {
               title: "Cursor",
-              documentElement: { innerText: "Cursor dashboard" },
+              documentElement: { innerText: "" },
               scripts: [],
               querySelector: () => null,
               getElementById: () => null
             };
-            global.__NEXT_DATA__ = {
-              props: {
-                pageProps: {
-                  dashboard: {
-                    membershipType: "Pro",
-                    billingCycleEnd: 1781677951075,
-                    planUsage: {
-                      totalPercentUsed: 6,
-                      autoPercentUsed: 3,
-                      apiPercentUsed: 1,
-                      resetAt: 1781677951075,
-                      breakdown: {
-                        onDemand: { remaining: 19, limit: 20 }
-                      }
-                    },
-                    requestUsage: {
-                      premium: { numRequests: 12, maxRequestUsage: 100 }
-                    }
+            const nativePayload = {
+              ok: true,
+              payload: {
+                provider: "cursor",
+                membershipType: "Pro",
+                billingCycleEnd: 1781677951075,
+                planUsage: {
+                  totalPercentUsed: 6,
+                  autoPercentUsed: 3,
+                  apiPercentUsed: 1,
+                  resetAt: 1781677951075,
+                  breakdown: {
+                    onDemand: { remaining: 19, limit: 20 }
                   }
+                },
+                requestUsage: {
+                  premium: { numRequests: 12, maxRequestUsage: 100 }
                 }
               }
             };
@@ -1206,7 +1215,7 @@ class ProviderWebCollectorScriptsTest {
             global.AIQuotaCollectorBridge = {
               postUsagePayload: (value) => posted.push(JSON.parse(value)),
               postCollectorError: (value) => errors.push(JSON.parse(value)),
-              fetchCursorJson: () => JSON.stringify({ ok: false, status: 404, json: {} })
+              fetchProviderUsagePayload: () => JSON.stringify(nativePayload)
             };
             global.fetch = async function() {
               return {
@@ -1239,6 +1248,10 @@ class ProviderWebCollectorScriptsTest {
                 process.exit(1);
               }
               const payload = posted[0];
+              if (payload.collectorMode !== "native-bridge") {
+                console.error(JSON.stringify(payload));
+                process.exit(1);
+              }
               if (payload.membershipType !== "Pro") {
                 console.error(JSON.stringify(payload));
                 process.exit(1);
@@ -1266,7 +1279,7 @@ class ProviderWebCollectorScriptsTest {
             Files.write(path, runtime.toByteArray(StandardCharsets.UTF_8))
             val process = ProcessBuilder(node!!, path.toString()).redirectErrorStream(true).start()
             val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-            assertTrue("Cursor WebView state was not converted to usage payload:\n$output", process.waitFor() == 0)
+            assertTrue("Cursor native bridge payload was not posted:\n$output", process.waitFor() == 0)
         } finally {
             Files.deleteIfExists(path)
         }
@@ -1386,7 +1399,7 @@ class ProviderWebCollectorScriptsTest {
         val claude = legacyScopedProviderCollectorForTest(ProviderId.CLAUDE, mapOf("lastActiveOrg" to "org_123"))
         val codex = legacyScopedProviderCollectorForTest(ProviderId.CODEX)
         val copilot = legacyScopedProviderCollectorForTest(ProviderId.COPILOT)
-        val cursor = ProviderWebCollectorScripts.build(ProviderId.CURSOR, emptyMap(), "")
+        val cursor = ProviderWebCollectorScripts.build(ProviderId.CURSOR, emptyMap(), "", pageUrl = "about:blank")
         val antigravity = ProviderWebCollectorScripts.build(ProviderId.ANTIGRAVITY, emptyMap(), "")
 
         assertTrue(claude.contains("/api/organizations/"))
@@ -1455,23 +1468,25 @@ class ProviderWebCollectorScriptsTest {
         assertTrue(copilot.contains("premium_billing"))
         assertTrue(copilot.contains("amountLimit !== null && amountLimit > 0"))
         assertFalse(copilot.contains("line.remaining = remaining"))
-        assertTrue(cursor.contains("/api/auth/stripe"))
-        assertTrue(cursor.contains("/api/usage"))
-        assertTrue(cursor.contains("/api/auth/usage"))
-        assertTrue(cursor.contains("__AIQuotaCursorNetworkRows"))
-        assertTrue(cursor.contains("pushCursorNetworkRow"))
-        assertTrue(cursor.contains("scanCursorPageState"))
-        assertTrue(cursor.contains("window.__NEXT_DATA__"))
-        assertTrue(cursor.contains("/api/usage?user="))
-        assertTrue(cursor.contains("hasTrustedCursorPayload"))
-        assertTrue(cursor.contains("hasTrustedRequestUsage"))
-        assertTrue(cursor.contains("fetchCursorJson"))
-        assertTrue(cursor.contains("api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage"))
-        assertTrue(cursor.contains("api2.cursor.sh/aiserver.v1.DashboardService/GetPlanInfo"))
-        assertTrue(cursor.contains("api2.cursor.sh/aiserver.v1.DashboardService/GetCreditGrantsBalance"))
-        assertTrue(cursor.contains("/api/dashboard/get-credit-grants-balance"))
-        assertTrue(cursor.contains("requestUsage"))
-        assertFalse(cursor.contains("cursor_usage_unavailable"))
+        assertTrue(cursor.contains("fetchNativeUsagePayload"))
+        assertTrue(cursor.contains("native-bridge"))
+        assertFalse(cursor.contains("/api/auth/stripe"))
+        assertFalse(cursor.contains("/api/usage"))
+        assertFalse(cursor.contains("/api/auth/usage"))
+        assertFalse(cursor.contains("__AIQuotaCursorNetworkRows"))
+        assertFalse(cursor.contains("pushCursorNetworkRow"))
+        assertFalse(cursor.contains("scanCursorPageState"))
+        assertFalse(cursor.contains("window.__NEXT_DATA__"))
+        assertFalse(cursor.contains("/api/usage?user="))
+        assertFalse(cursor.contains("hasTrustedCursorPayload"))
+        assertFalse(cursor.contains("hasTrustedRequestUsage"))
+        assertFalse(cursor.contains("fetchCursorJson"))
+        assertFalse(cursor.contains("api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage"))
+        assertFalse(cursor.contains("api2.cursor.sh/aiserver.v1.DashboardService/GetPlanInfo"))
+        assertFalse(cursor.contains("api2.cursor.sh/aiserver.v1.DashboardService/GetCreditGrantsBalance"))
+        assertFalse(cursor.contains("/api/dashboard/get-credit-grants-balance"))
+        assertFalse(cursor.contains("requestUsage"))
+        assertTrue(cursor.contains("cursor_native_usage_unavailable"))
         assertTrue(antigravity.contains("scanAntigravityPageState"))
         assertFalse(antigravity.contains("fetchAntigravityWebSessionUsagePayload"))
         assertFalse(antigravity.contains("postAntigravityBridgePayload"))
@@ -1483,14 +1498,23 @@ class ProviderWebCollectorScriptsTest {
         assertTrue(antigravity.contains("normalizePlan"))
         assertFalse(antigravity.contains("ANTIGRAVITY_PLUS"))
         assertFalse(antigravity.contains("antigravity_usage_unavailable"))
-        listOf(claude, codex, copilot, antigravity, cursor).forEach { script ->
+        listOf(claude, codex, copilot, antigravity).forEach { script ->
             assertTrue(script.contains("__AIQuotaStartProviderCollector"))
             assertTrue(script.contains("__AIQuotaProviderCollectorState"))
             assertTrue(script.contains("collectorStartTtlMs"))
             assertFalse(script.contains("__AIQuotaCollectorRunning"))
             assertFalse(script.contains("__AIQuotaProviderCollectorRunning_"))
-            assertTrue(script.contains("credentials: \"include\""))
             assertTrue(script.contains("AIQuotaCollectorBridge.postUsagePayload"))
+        }
+        assertTrue(cursor.contains("__AIQuotaStartProviderCollector"))
+        assertTrue(cursor.contains("__AIQuotaProviderCollectorState"))
+        assertTrue(cursor.contains("collectorStartTtlMs"))
+        assertTrue(cursor.contains("fetchProviderUsagePayload"))
+        assertTrue(cursor.contains("c.post(result.payload)"))
+        assertFalse(cursor.contains("__AIQuotaCollectorRunning"))
+        assertFalse(cursor.contains("__AIQuotaProviderCollectorRunning_"))
+        listOf(claude, codex, copilot, antigravity).forEach { script ->
+            assertTrue(script.contains("credentials: \"include\""))
         }
     }
 
@@ -2923,28 +2947,26 @@ class ProviderWebCollectorScriptsTest {
         val node = nodeCommandOrNull()
         assumeTrue("node is required for injected Cursor runtime checks", node != null)
 
-        val cursor = ProviderWebCollectorScripts.build(ProviderId.CURSOR, emptyMap(), "")
+        val cursor = ProviderWebCollectorScripts.build(ProviderId.CURSOR, emptyMap(), "", pageUrl = "about:blank")
         val path = Files.createTempFile("ai-quota-cursor-remaining-fraction-runtime", ".js")
         val runtime = """
             const posted = [];
             const timers = [];
             global.window = global;
-            global.location = { pathname: "/dashboard", href: "https://cursor.com/dashboard" };
+            global.location = { pathname: "", href: "about:blank" };
             global.document = {
               title: "Cursor",
-              documentElement: { innerText: "Cursor dashboard" },
+              documentElement: { innerText: "" },
               scripts: [],
               querySelector: () => null,
               getElementById: () => null
             };
-            global.__NEXT_DATA__ = {
-              props: {
-                pageProps: {
-                  dashboard: {
-                    membershipType: "Pro",
-                    planUsage: { remaining_fraction: 1 }
-                  }
-                }
+            const nativePayload = {
+              ok: true,
+              payload: {
+                provider: "cursor",
+                membershipType: "Pro",
+                planUsage: { remaining_fraction: 1 }
               }
             };
             class StorageMock {
@@ -2957,7 +2979,7 @@ class ProviderWebCollectorScriptsTest {
             global.AIQuotaCollectorBridge = {
               postUsagePayload: (value) => posted.push(JSON.parse(value)),
               postCollectorError: () => {},
-              fetchCursorJson: () => JSON.stringify({ ok: false, json: {} })
+              fetchProviderUsagePayload: () => JSON.stringify(nativePayload)
             };
             global.fetch = async function() {
               return {
@@ -3029,7 +3051,7 @@ class ProviderWebCollectorScriptsTest {
             ),
             "copilot" to ProviderWebCollectorScripts.build(ProviderId.COPILOT, emptyMap(), "", pageUrl = "about:blank"),
             "antigravity" to ProviderWebCollectorScripts.build(ProviderId.ANTIGRAVITY, emptyMap(), ""),
-            "cursor" to ProviderWebCollectorScripts.build(ProviderId.CURSOR, emptyMap(), "")
+            "cursor" to ProviderWebCollectorScripts.build(ProviderId.CURSOR, emptyMap(), "", pageUrl = "about:blank")
         )
 
         scripts.forEach { (provider, script) ->

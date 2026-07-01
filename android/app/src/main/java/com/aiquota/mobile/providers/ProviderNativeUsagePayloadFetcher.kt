@@ -10,6 +10,7 @@ import org.json.JSONObject
 import org.json.JSONTokener
 
 internal typealias NativeJsonFetcher = (ProviderId, String, String, Map<String, String>) -> String
+internal typealias CursorJsonFetcher = (String, String?) -> String
 
 object ProviderNativeUsagePayloadFetcher {
     fun bridgeUsagePayload(
@@ -53,6 +54,7 @@ object ProviderNativeUsagePayloadFetcher {
             }
             ProviderId.GLM -> fetchGlmPayload(cookieHeaderForUrl, requestHeadersForUrl)
             ProviderId.OPENCODE -> fetchOpenCodePayload(userAgent, bridgePageUrl, fetchJson)
+            ProviderId.CURSOR -> fetchCursorPayload()
             ProviderId.COPILOT -> NativePayloadResult(
                 payload = CopilotNativeUsageFetcher.fetchUsagePayload(),
                 diagnostic = "copilot_usage_unavailable"
@@ -84,6 +86,10 @@ object ProviderNativeUsagePayloadFetcher {
         fetchJson: NativeJsonFetcher
     ): String? {
         return fetchOpenCodePayload(userAgent, bridgePageUrl, fetchJson).payload
+    }
+
+    internal fun cursorUsagePayloadForTest(fetchJson: CursorJsonFetcher): String? {
+        return fetchCursorPayload(fetchJson).payload
     }
 
     private fun codexFetchedPayload(rawText: String, plan: String?, accountId: String?, account: String?): JSONObject? {
@@ -239,6 +245,149 @@ object ProviderNativeUsagePayloadFetcher {
                 rawText?.let { statuses + openCodeTextMetadata(it) } ?: statuses
             )
         return verifiedPayload(ProviderId.OPENCODE, payload, "opencode_usage_unavailable", statuses)
+    }
+
+    private fun fetchCursorPayload(
+        fetchJson: CursorJsonFetcher = CursorNativeUsageFetcher::fetchJson
+    ): NativePayloadResult {
+        val statuses = mutableListOf<String>()
+        val payload = JSONObject().put("provider", ProviderId.CURSOR.storageId)
+        CURSOR_NATIVE_PROBES.forEach { probe ->
+            val response = fetchCursorWrapped(probe.url, probe.body, statuses, fetchJson)
+            if (response.optBoolean("ok", false)) {
+                gatherCursorUsageData(response.jsonValue(), payload, 0)
+            }
+        }
+        return verifiedPayload(ProviderId.CURSOR, payload, "cursor_usage_unavailable", statuses)
+    }
+
+    private fun fetchCursorWrapped(
+        url: String,
+        body: String?,
+        statuses: MutableList<String>,
+        fetchJson: CursorJsonFetcher
+    ): JSONObject {
+        val wrapped = runCatching { JSONObject(fetchJson(url, body)) }
+            .getOrElse { JSONObject().put("ok", false).put("url", url).put("error", it.javaClass.simpleName) }
+        statuses += "${urlStatusLabel(url)}:${wrapped.optInt("status", -1)}:${wrapped.optString("error")}"
+        return wrapped
+    }
+
+    private fun gatherCursorUsageData(value: Any?, payload: JSONObject, depth: Int) {
+        if (depth > MAX_JSON_DEPTH || value == null || value == JSONObject.NULL) return
+        when (value) {
+            is JSONObject -> {
+                rememberCursorPlan(value, payload)
+                value.opt("billingCycleStart")?.takeIf { it != JSONObject.NULL && !payload.has("billingCycleStart") }
+                    ?.let { payload.put("billingCycleStart", it) }
+                value.opt("billingCycleEnd")?.takeIf { it != JSONObject.NULL && !payload.has("billingCycleEnd") }
+                    ?.let { payload.put("billingCycleEnd", it) }
+                value.optJSONObject("planUsage")?.let { planUsage ->
+                    if (!payload.has("planUsage")) {
+                        cursorCopyUsage(planUsage)?.let { payload.put("planUsage", it) }
+                    }
+                }
+                value.optJSONObject("individualUsage")?.let { individualUsage ->
+                    if (!payload.has("individualUsage")) {
+                        payload.put("individualUsage", JSONObject(individualUsage.toString()))
+                    }
+                }
+                if (!payload.has("planUsage") && cursorHasPlanUsageMetric(value)) {
+                    cursorCopyUsage(value)?.let { payload.put("planUsage", it) }
+                }
+                cursorCopyRequestBucket(value)?.let { bucket ->
+                    val requestUsage = payload.optJSONObject("requestUsage") ?: JSONObject().also {
+                        payload.put("requestUsage", it)
+                    }
+                    requestUsage.put("bucket_${requestUsage.length()}", bucket)
+                }
+                val keys = value.keys()
+                while (keys.hasNext()) {
+                    gatherCursorUsageData(value.opt(keys.next()), payload, depth + 1)
+                }
+            }
+            is JSONArray -> {
+                for (index in 0 until value.length()) {
+                    gatherCursorUsageData(value.opt(index), payload, depth + 1)
+                }
+            }
+        }
+    }
+
+    private fun rememberCursorPlan(source: JSONObject, payload: JSONObject) {
+        cursorFirst(source, CURSOR_PLAN_KEYS)?.let { plan ->
+            if (!payload.has("membershipType")) payload.put("membershipType", plan)
+        }
+        cursorFirst(source, CURSOR_ACCOUNT_KEYS)?.let { account ->
+            if (!payload.has("email")) payload.put("email", account)
+        }
+    }
+
+    private fun cursorCopyUsage(source: JSONObject): JSONObject? {
+        val output = JSONObject()
+        CURSOR_USAGE_KEYS.forEach { key ->
+            source.opt(key)?.takeIf { it != JSONObject.NULL }?.let { value ->
+                output.put(key, value)
+            }
+        }
+        return output.takeIf { it.length() > 0 }
+    }
+
+    private fun cursorCopyRequestBucket(source: JSONObject): JSONObject? {
+        val used = cursorFirstNumber(
+            source,
+            listOf("numRequests", "numRequestsTotal", "requestUsage", "currentRequestUsage", "requests", "used", "usage")
+        ) ?: return null
+        val limit = cursorFirstNumber(
+            source,
+            listOf("maxRequestUsage", "maxRequests", "requestLimit", "limit", "limitAmount")
+        ) ?: return null
+        return JSONObject()
+            .put("numRequests", used)
+            .put("maxRequestUsage", limit)
+    }
+
+    private fun cursorHasPlanUsageMetric(source: JSONObject): Boolean {
+        return listOf(
+            "totalPercentUsed",
+            "totalSpend",
+            "totalUsage",
+            "autoPercentUsed",
+            "auto_percent_used",
+            "apiPercentUsed",
+            "api_percent_used",
+            "remainingPercent",
+            "remaining_percent",
+            "remainingFraction",
+            "remaining_fraction",
+            "breakdown",
+            "usageBreakdown"
+        ).any { key -> source.hasNonNull(key) }
+    }
+
+    private fun cursorFirst(source: JSONObject, keys: List<String>): String? {
+        return keys.firstNotNullOfOrNull { key ->
+            source.opt(key)
+                ?.takeIf { it != JSONObject.NULL }
+                ?.toString()
+                ?.takeIf { it.isNotBlank() && it != "null" }
+        }
+    }
+
+    private fun cursorFirstNumber(source: JSONObject, keys: List<String>): Double? {
+        return keys.firstNotNullOfOrNull { key ->
+            source.opt(key)
+                ?.takeIf { it != JSONObject.NULL }
+                ?.let(::cursorNumber)
+        }
+    }
+
+    private fun cursorNumber(value: Any?): Double? {
+        return when (value) {
+            is Number -> value.toDouble()
+            is String -> value.toDoubleOrNull()
+            else -> null
+        }?.takeIf { it.isFinite() }
     }
 
     private fun fetchOpenCodeServerSubscriptionPayload(
@@ -818,6 +967,17 @@ object ProviderNativeUsagePayloadFetcher {
     private const val CODEX_SUBSCRIPTIONS_URL = "https://chatgpt.com/backend-api/subscriptions"
     private const val CODEX_WHAM_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage"
     private const val GEMINI_USAGE_PAGE_URL = "https://gemini.google.com/usage"
+    private const val CURSOR_STRIPE_URL = "https://cursor.com/api/auth/stripe"
+    private const val CURSOR_USAGE_URL = "https://cursor.com/api/usage"
+    private const val CURSOR_AUTH_USAGE_URL = "https://cursor.com/api/auth/usage"
+    private const val CURSOR_USAGE_SUMMARY_URL = "https://cursor.com/api/usage-summary"
+    private const val CURSOR_CREDIT_GRANTS_URL = "https://cursor.com/api/dashboard/get-credit-grants-balance"
+    private const val CURSOR_CURRENT_PERIOD_USAGE_URL =
+        "https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage"
+    private const val CURSOR_PLAN_INFO_URL = "https://api2.cursor.sh/aiserver.v1.DashboardService/GetPlanInfo"
+    private const val CURSOR_CREDIT_GRANTS_API_URL =
+        "https://api2.cursor.sh/aiserver.v1.DashboardService/GetCreditGrantsBalance"
+    private const val CURSOR_API_AUTH_USAGE_URL = "https://api2.cursor.sh/auth/usage"
     private const val OPENCODE_DEFAULT_USAGE_URL = "https://opencode.ai/zen/go/usage"
     private const val OPENCODE_SUBSCRIPTION_GET_ID =
         "7abeebee372f304e050aaaf92be863f4a86490e382f8c79db68fd94040d691b4"
@@ -873,6 +1033,77 @@ object ProviderNativeUsagePayloadFetcher {
         "account",
         "account_email",
         "accountemail"
+    )
+    private data class CursorProbe(val url: String, val body: String? = null)
+
+    private val CURSOR_NATIVE_PROBES = listOf(
+        CursorProbe(CURSOR_STRIPE_URL),
+        CursorProbe(CURSOR_USAGE_URL),
+        CursorProbe(CURSOR_AUTH_USAGE_URL),
+        CursorProbe(CURSOR_USAGE_SUMMARY_URL),
+        CursorProbe(CURSOR_CREDIT_GRANTS_URL),
+        CursorProbe(CURSOR_CURRENT_PERIOD_USAGE_URL, "{}"),
+        CursorProbe(CURSOR_PLAN_INFO_URL, "{}"),
+        CursorProbe(CURSOR_CREDIT_GRANTS_API_URL, "{}"),
+        CursorProbe(CURSOR_API_AUTH_USAGE_URL, "{}")
+    )
+    private val CURSOR_PLAN_KEYS = listOf(
+        "membershipType",
+        "plan",
+        "planName",
+        "plan_label",
+        "planType",
+        "limitType",
+        "subscription",
+        "tier"
+    )
+    private val CURSOR_ACCOUNT_KEYS = listOf("email", "account")
+    private val CURSOR_USAGE_KEYS = listOf(
+        "totalPercentUsed",
+        "usedPercent",
+        "used_percent",
+        "utilization",
+        "autoPercentUsed",
+        "auto_percent_used",
+        "autoUsagePercent",
+        "auto_usage_percent",
+        "apiPercentUsed",
+        "api_percent_used",
+        "apiUsagePercent",
+        "api_usage_percent",
+        "totalSpend",
+        "totalUsage",
+        "spend",
+        "used",
+        "usage",
+        "limit",
+        "monthlyLimit",
+        "totalLimit",
+        "remaining",
+        "remainingPercent",
+        "remaining_percent",
+        "remainingFraction",
+        "remaining_fraction",
+        "individualLimit",
+        "individualRemaining",
+        "individualUsed",
+        "individualUsage",
+        "onDemandLimit",
+        "onDemandRemaining",
+        "onDemandUsed",
+        "onDemandUsage",
+        "totalRemaining",
+        "balance",
+        "billingCycleStart",
+        "billingCycleEnd",
+        "resetAt",
+        "resetsAt",
+        "resetText",
+        "unit",
+        "breakdown",
+        "usageBreakdown",
+        "spendLimitUsage",
+        "onDemand"
     )
     private val OPENCODE_LIMIT_PERCENT_KEYS = setOf(
         "remaining_percent",

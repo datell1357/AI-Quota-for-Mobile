@@ -1387,7 +1387,6 @@ class ProviderBackgroundRefreshService : Service() {
     private fun webSessionWarmUpUrl(job: ProviderRefreshJob): String? {
         return when (job.providerId) {
             ProviderId.COPILOT -> "https://github.com/"
-            ProviderId.CURSOR -> "https://cursor.com/"
             else -> null
         }?.takeUnless { it == job.startUrl }
     }

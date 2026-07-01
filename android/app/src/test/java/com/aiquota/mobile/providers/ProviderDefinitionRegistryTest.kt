@@ -50,6 +50,7 @@ class ProviderDefinitionRegistryTest {
         assertEquals(ProviderAuthStoreKind.NATIVE_TOKEN, definitionsByProvider[ProviderId.ANTIGRAVITY]?.authStoreKind)
         assertEquals(ProviderCollectionKind.NATIVE_API, definitionsByProvider[ProviderId.ANTIGRAVITY]?.collectionKind)
         assertEquals("https://cursor.com/dashboard", definitionsByProvider[ProviderId.CURSOR]?.loginStartUrl)
+        assertEquals(ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE, definitionsByProvider[ProviderId.CURSOR]?.collectionKind)
     }
 
     @Test

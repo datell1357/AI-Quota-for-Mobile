@@ -235,7 +235,7 @@ object ProviderDefinitionRegistry {
             ),
             preferredUsageEndpoint = "https://api2.cursor.sh/auth/poll",
             authStoreKind = ProviderAuthStoreKind.TOKEN_OR_WEBVIEW_FALLBACK,
-            collectionKind = ProviderCollectionKind.NATIVE_API_WITH_WEBVIEW_FALLBACK,
+            collectionKind = ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE,
             sessionProbeUrl = "https://cursor.com/dashboard"
         )
     )

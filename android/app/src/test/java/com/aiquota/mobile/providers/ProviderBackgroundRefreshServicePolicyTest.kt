@@ -200,6 +200,7 @@ class ProviderBackgroundRefreshServicePolicyTest {
         assertFalse(pageStarted.contains("maybeRedirectOpenCodeRefreshToGo(active, view, url)"))
         assertFalse(pageFinished.contains("maybeRedirectOpenCodeRefreshToGo(active, view, url)"))
         assertFalse(warmUp.contains("ProviderId.OPENCODE"))
+        assertFalse(warmUp.contains("ProviderId.CURSOR"))
         assertTrue(restoreDebugCookies.contains("providerId == ProviderId.OPENCODE"))
         assertTrue(restoreDebugCookies.contains("return"))
     }
