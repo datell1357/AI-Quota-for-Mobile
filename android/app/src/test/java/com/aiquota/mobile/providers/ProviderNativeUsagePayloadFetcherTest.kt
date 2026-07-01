@@ -375,6 +375,43 @@ class ProviderNativeUsagePayloadFetcherTest {
     }
 
     @Test
+    fun opencodeNativeUsagePayloadFormatsResetSecondsWithSecondUnit() {
+        val payload = ProviderNativeUsagePayloadFetcher.openCodeUsagePayloadForTest(
+            userAgent = "test-agent",
+            bridgePageUrl = "https://opencode.ai/workspace/wrk_123/go",
+            fetchJson = { _, url, _, _ ->
+                ProviderNativeJsonBridge.wrappedResponse(
+                    url,
+                    200,
+                    """
+                    <html>
+                      <script>
+                        ${'$'}R[28](${'$'}R[18],${'$'}R[35]={
+                          rollingUsage:${'$'}R[37]={status:"ok",resetInSec:17280,usagePercent:25},
+                          weeklyUsage:${'$'}R[38]={status:"ok",resetInSec:381600,usagePercent:40}
+                        });
+                      </script>
+                    </html>
+                    """.trimIndent()
+                ).toString()
+            }
+        )
+
+        assertNotNull(payload)
+
+        val snapshot = ProviderUsageNormalizer.normalize(
+            providerId = ProviderId.OPENCODE,
+            rawPayload = payload!!,
+            source = ProviderPayloadSource.NETWORK_RESPONSE,
+            fetchedAt = "2026-07-01T00:00:00Z"
+        )
+
+        assertNotNull(snapshot)
+        assertEquals("Resets in 4h 48m", snapshot!!.lines.single { it.key == "opencode:go_5_hour_limit" }.resetText)
+        assertEquals("Resets in 4d 10h", snapshot.lines.single { it.key == "opencode:go_weekly_limit" }.resetText)
+    }
+
+    @Test
     fun opencodeNativeUsagePayloadRejectsBootstrapJsonWithoutUsageMetrics() {
         val payload = ProviderNativeUsagePayloadFetcher.openCodeUsagePayloadForTest(
             userAgent = "test-agent",

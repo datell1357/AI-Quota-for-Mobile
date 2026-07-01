@@ -407,14 +407,14 @@ object ProviderNativeUsagePayloadFetcher {
     private fun openCodeResetText(seconds: Double): String {
         val wholeSeconds = seconds.toLong().coerceAtLeast(0L)
         val days = wholeSeconds / 86_400L
-        val hours = wholeSeconds / 3_600L
-        val minutes = wholeSeconds / 60L
-        return when {
-            days > 0L -> "Resets in ${days}d"
-            hours > 0L -> "Resets in ${hours}h"
-            minutes > 0L -> "Resets in ${minutes}m"
-            else -> "Resets soon"
-        }
+        val hours = (wholeSeconds % 86_400L) / 3_600L
+        val minutes = (wholeSeconds % 3_600L) / 60L
+        val units = listOfNotNull(
+            days.takeIf { it > 0L }?.let { "${it}d" },
+            hours.takeIf { it > 0L }?.let { "${it}h" },
+            minutes.takeIf { it > 0L }?.let { "${it}m" }
+        )
+        return if (units.isEmpty()) "Resets soon" else "Resets in ${units.take(2).joinToString(" ")}"
     }
 
     private fun openCodePayloadFromValue(value: Any?): JSONObject? {
