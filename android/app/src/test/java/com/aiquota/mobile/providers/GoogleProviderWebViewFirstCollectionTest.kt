@@ -7,15 +7,15 @@ import org.junit.Test
 
 class GoogleProviderWebViewFirstCollectionTest {
     @Test
-    fun geminiUsesNativeTokenProfileAndRefreshesThroughProviderApi() {
+    fun geminiKeepsWebViewProfileAndRefreshesThroughProviderCollector() {
         val definitions = File("src/main/java/com/aiquota/mobile/providers/ProviderDefinitions.kt").readText()
         val gemini = definitions.substringAfter("providerId = ProviderId.GEMINI,")
             .substringBefore("ProviderDefinition(")
         val antigravity = definitions.substringAfter("providerId = ProviderId.ANTIGRAVITY,")
             .substringBefore("ProviderDefinition(")
 
-        assertTrue(gemini.contains("authStoreKind = ProviderAuthStoreKind.NATIVE_TOKEN"))
-        assertTrue(gemini.contains("collectionKind = ProviderCollectionKind.NATIVE_API"))
+        assertTrue(gemini.contains("authStoreKind = ProviderAuthStoreKind.WEBVIEW_PROFILE"))
+        assertTrue(gemini.contains("collectionKind = ProviderCollectionKind.WEBVIEW_COLLECTOR"))
         assertTrue(antigravity.contains("collectionKind = ProviderCollectionKind.NATIVE_API"))
         assertTrue(antigravity.contains("authStoreKind = ProviderAuthStoreKind.NATIVE_TOKEN"))
     }
@@ -30,7 +30,7 @@ class GoogleProviderWebViewFirstCollectionTest {
     }
 
     @Test
-    fun foregroundServiceRefreshUsesStoredGoogleOauthTokensWithoutBridgeFallback() {
+    fun foregroundServiceRefreshKeepsAntigravityNativeOAuthAndGeminiOutOfAppShellNativeCollection() {
         val appShell = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val nativeRefresh = service
@@ -38,12 +38,10 @@ class GoogleProviderWebViewFirstCollectionTest {
             .substringBefore("fun collectWebProviderUsage")
 
         assertFalse(nativeRefresh.contains("GoogleOAuthUsageBridge.bridgeUsagePayload"))
-        assertTrue(nativeRefresh.contains("GeminiCliOAuthRepository(applicationContext)"))
-        assertTrue(nativeRefresh.contains("repository.fetchUsagePayloadFromStoredCredential()"))
         assertTrue(nativeRefresh.contains("AntigravityOAuthRepository"))
         assertFalse(nativeRefresh.contains("AntigravityFirebaseConnector"))
         assertFalse(appShell.contains("fun collectNativeProviderUsage"))
-        assertTrue(appShell.contains("GeminiCliLoopbackOAuthActivity.createIntent"))
+        assertFalse(appShell.contains("GeminiCliLoopbackOAuthActivity.createIntent"))
         assertFalse(appShell.contains("BackgroundProviderWebCollector("))
     }
 }

@@ -77,7 +77,6 @@ import com.aiquota.mobile.local.ThemePreferencesRepository
 import com.aiquota.mobile.local.snapshotUpdatedAtForStatusTransition
 import com.aiquota.mobile.notification.UsageLimitNotificationController
 import com.aiquota.mobile.providers.AntigravityLoopbackOAuthActivity
-import com.aiquota.mobile.providers.GeminiCliLoopbackOAuthActivity
 import com.aiquota.mobile.providers.GlmApiKeyActivity
 import com.aiquota.mobile.providers.ProviderConnectorRegistry
 import com.aiquota.mobile.providers.ProviderHostAllowlist
@@ -270,33 +269,6 @@ fun AIQuotaAppShell(
         if (providerId == ProviderId.GLM) {
             val launchResult = runCatching {
                 val intent = GlmApiKeyActivity.createIntent(launchContext)
-                if (launchContext !is Activity) {
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                launchContext.startActivity(intent)
-            }
-
-            val nextSnapshot = launchResult.fold(
-                onSuccess = {
-                    null
-                },
-                onFailure = {
-                    ProviderUsageSnapshot(
-                        providerId = providerId,
-                        connectionState = ProviderConnectionState.ERROR,
-                        refreshState = ProviderRefreshState.IDLE,
-                        updatedAt = now,
-                        message = launchContext.getString(R.string.provider_login_open_failed_message)
-                    )
-                }
-            )
-            nextSnapshot?.let(::saveProviderSnapshot)
-            return
-        }
-
-        if (providerId == ProviderId.GEMINI) {
-            val launchResult = runCatching {
-                val intent = GeminiCliLoopbackOAuthActivity.createIntent(launchContext)
                 if (launchContext !is Activity) {
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }

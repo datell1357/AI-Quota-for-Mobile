@@ -15,7 +15,7 @@ class ProviderWebCollectorScriptsTest {
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CLAUDE, "about:blank", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CODEX, "https://chatgpt.com/", emptyMap(), "ChatGPT"))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CODEX, "about:blank", emptyMap(), ""))
-        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "about:blank", emptyMap(), ""))
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "about:blank", emptyMap(), ""))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "about:blank", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "https://github.com/settings/copilot", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.COPILOT, "https://github.com/settings/billing/premium_requests_usage", emptyMap(), ""))
@@ -85,7 +85,7 @@ class ProviderWebCollectorScriptsTest {
     fun collectorAcceptsAboutBlankOnlyForNativeJsonProviders() {
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CLAUDE, "about:blank"))
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CODEX, "about:blank"))
-        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GEMINI, "about:blank"))
+        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GEMINI, "about:blank"))
         assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.COPILOT, "about:blank"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CLAUDE, "https://claude.ai/new"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CODEX, "https://chatgpt.com/codex/settings/usage"))
@@ -98,10 +98,10 @@ class ProviderWebCollectorScriptsTest {
 
     @Test
     fun aboutBlankNativeUsagePayloadPolicyIncludesOnlyScopedProviders() {
-        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.COPILOT).forEach { providerId ->
+        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT).forEach { providerId ->
             assertTrue(ProviderAboutBlankCollectorPolicy.isEnabled(providerId))
         }
-        listOf(ProviderId.GEMINI, ProviderId.ANTIGRAVITY, ProviderId.GLM, ProviderId.OPENCODE, ProviderId.CURSOR).forEach { providerId ->
+        listOf(ProviderId.ANTIGRAVITY, ProviderId.GLM, ProviderId.OPENCODE, ProviderId.CURSOR).forEach { providerId ->
             assertFalse(ProviderAboutBlankCollectorPolicy.isEnabled(providerId))
         }
     }
@@ -111,6 +111,7 @@ class ProviderWebCollectorScriptsTest {
         mapOf(
             ProviderId.CLAUDE to "about:blank",
             ProviderId.CODEX to "about:blank",
+            ProviderId.GEMINI to "about:blank",
             ProviderId.COPILOT to "about:blank"
         ).forEach { (providerId, pageUrl) ->
             val script = ProviderWebCollectorScripts.build(providerId, emptyMap(), "", pageUrl = pageUrl)
@@ -136,6 +137,7 @@ class ProviderWebCollectorScriptsTest {
         mapOf(
             ProviderId.CLAUDE to "https://claude.ai/new",
             ProviderId.CODEX to "https://chatgpt.com/codex/settings/usage",
+            ProviderId.GEMINI to "https://gemini.google.com/usage",
             ProviderId.COPILOT to "https://github.com/settings/copilot/features"
         ).forEach { (providerId, pageUrl) ->
             assertFalse(ProviderWebCollectorScripts.shouldRunCollector(providerId, pageUrl, mapOf("lastActiveOrg" to "org"), "Claude usage"))
@@ -150,7 +152,7 @@ class ProviderWebCollectorScriptsTest {
 
     @Test
     fun scopedProvidersDoNotFallBackToLegacyCollectorsWhenPageUrlIsMissing() {
-        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.COPILOT).forEach { providerId ->
+        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT).forEach { providerId ->
             val script = ProviderWebCollectorScripts.build(providerId, emptyMap(), "", pageUrl = "")
 
             assertFalse(script.contains("fetchNativeUsagePayload"))
@@ -892,18 +894,17 @@ class ProviderWebCollectorScriptsTest {
     }
 
     @Test
-    fun geminiCollectorDoesNotRunThroughAboutBlankNativeBridge() {
-        assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "about:blank", emptyMap(), ""))
+    fun geminiCollectorRunsOnlyOnAboutBlankNativeBridge() {
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "about:blank", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "https://gemini.google.com/app", emptyMap(), "Gemini"))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "https://gemini.google.com/usage", emptyMap(), "Gemini usage"))
-        assertFalse(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.GEMINI, "https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota"))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.GEMINI, "https://gemini.google.com/app"))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.GEMINI, "https://gemini.google.com/usage"))
 
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GEMINI, "https://accounts.google.com/signin", emptyMap(), ""))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GEMINI, "https://accounts.google.com/signin"))
         assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GEMINI, "https://gemini.google.com/app"))
-        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GEMINI, "about:blank"))
+        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GEMINI, "about:blank"))
     }
 
     @Test

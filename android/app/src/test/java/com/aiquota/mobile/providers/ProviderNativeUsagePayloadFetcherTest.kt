@@ -11,13 +11,13 @@ import org.junit.Test
 
 class ProviderNativeUsagePayloadFetcherTest {
     @Test
-    fun geminiIsNotCollectedThroughAboutBlankWebSessionFallback() {
+    fun geminiIsCollectedThroughAboutBlankUsagePageNativeFetcher() {
         val policy = File("src/main/java/com/aiquota/mobile/providers/ProviderAboutBlankCollectorPolicy.kt").readText()
         val source = File("src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt").readText()
 
-        assertFalse(policy.contains("providerId == ProviderId.GEMINI"))
+        assertTrue(policy.contains("providerId == ProviderId.GEMINI"))
         assertFalse(source.contains("GoogleWebSessionCodeAssistFetcher.fetchUsagePayload(ProviderId.GEMINI)"))
-        assertFalse(source.contains("GeminiUsagePageNativeFetcher.fetchUsagePayload"))
+        assertTrue(source.contains("GeminiUsagePageNativeFetcher.fetchUsagePayload"))
     }
 
     @Test

@@ -44,6 +44,11 @@ object ProviderNativeUsagePayloadFetcher {
         val result = when (providerId) {
             ProviderId.CLAUDE -> fetchClaudePayload(userAgent)
             ProviderId.CODEX -> fetchCodexPayload(userAgent, requestHeadersForUrl, fetchJson)
+            ProviderId.GEMINI -> {
+                val usagePageUrl = GeminiUsagePageRoutes.canonicalUsageUrl(bridgePageUrl.orEmpty())
+                    ?: GEMINI_USAGE_PAGE_URL
+                fetchGeminiPayload(userAgent, cookieHeaderForUrl(usagePageUrl), usagePageUrl)
+            }
             ProviderId.COPILOT -> NativePayloadResult(
                 payload = CopilotNativeUsageFetcher.fetchUsagePayload(),
                 diagnostic = "copilot_usage_unavailable"
@@ -160,6 +165,25 @@ object ProviderNativeUsagePayloadFetcher {
             ?: findFirstString(me.jsonValue(), PLAN_KEYS)
         plan?.let { payload.put("plan", it) }
         return verifiedPayload(ProviderId.CODEX, payload, "codex_usage_unavailable", statuses)
+    }
+
+    private fun fetchGeminiPayload(
+        userAgent: String,
+        cookieHeader: String?,
+        usagePageUrl: String
+    ): NativePayloadResult {
+        val result = GeminiUsagePageNativeFetcher.fetchUsagePayload(userAgent, cookieHeader, usagePageUrl)
+        val payload = result.payload
+            ?: return NativePayloadResult(
+                payload = null,
+                diagnostic = result.diagnostic,
+                statuses = result.statuses
+            )
+        val json = runCatching { JSONObject(payload) }
+            .getOrElse {
+                return NativePayloadResult(null, "gemini_usage_invalid", result.statuses)
+            }
+        return verifiedPayload(ProviderId.GEMINI, json, "gemini_usage_unavailable", result.statuses)
     }
 
     private fun fetchWrapped(
@@ -340,6 +364,7 @@ object ProviderNativeUsagePayloadFetcher {
     private const val CODEX_ACCOUNT_CHECK_URL = "https://chatgpt.com/backend-api/accounts/check/v4-2023-04-27"
     private const val CODEX_SUBSCRIPTIONS_URL = "https://chatgpt.com/backend-api/subscriptions"
     private const val CODEX_WHAM_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage"
+    private const val GEMINI_USAGE_PAGE_URL = "https://gemini.google.com/usage"
     private val CLAUDE_ORG_ID_KEYS = setOf(
         "uuid",
         "id",

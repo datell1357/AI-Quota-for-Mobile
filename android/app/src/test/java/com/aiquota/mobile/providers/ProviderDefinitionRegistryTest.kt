@@ -30,15 +30,15 @@ class ProviderDefinitionRegistryTest {
         assertEquals(ProviderAuthStoreKind.WEBVIEW_PROFILE, definitionsByProvider[ProviderId.OPENCODE]?.authStoreKind)
         assertEquals(ProviderCollectionKind.WEBVIEW_COLLECTOR, definitionsByProvider[ProviderId.OPENCODE]?.collectionKind)
         assertEquals(
-            "aiquota://provider/gemini-oauth",
+            "https://gemini.google.com/usage",
             definitionsByProvider[ProviderId.GEMINI]?.loginStartUrl
         )
         assertEquals(
-            "https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota",
+            "https://gemini.google.com/usage",
             definitionsByProvider[ProviderId.GEMINI]?.preferredUsageEndpoint
         )
-        assertEquals(ProviderAuthStoreKind.NATIVE_TOKEN, definitionsByProvider[ProviderId.GEMINI]?.authStoreKind)
-        assertEquals(ProviderCollectionKind.NATIVE_API, definitionsByProvider[ProviderId.GEMINI]?.collectionKind)
+        assertEquals(ProviderAuthStoreKind.WEBVIEW_PROFILE, definitionsByProvider[ProviderId.GEMINI]?.authStoreKind)
+        assertEquals(ProviderCollectionKind.WEBVIEW_COLLECTOR, definitionsByProvider[ProviderId.GEMINI]?.collectionKind)
         assertEquals("https://github.com/settings/copilot/features", definitionsByProvider[ProviderId.COPILOT]?.loginStartUrl)
         assertEquals(ProviderAuthStoreKind.WEBVIEW_PROFILE, definitionsByProvider[ProviderId.COPILOT]?.authStoreKind)
         assertEquals(ProviderCollectionKind.WEBVIEW_COLLECTOR, definitionsByProvider[ProviderId.COPILOT]?.collectionKind)

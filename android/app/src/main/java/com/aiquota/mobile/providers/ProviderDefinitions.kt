@@ -117,7 +117,7 @@ object ProviderDefinitionRegistry {
         ),
         ProviderDefinition(
             providerId = ProviderId.GEMINI,
-            loginStartUrl = "aiquota://provider/gemini-oauth",
+            loginStartUrl = "https://gemini.google.com/usage",
             allowedHosts = setOf(
                 "accounts.google.com",
                 "myaccount.google.com",
@@ -134,12 +134,12 @@ object ProviderDefinitionRegistry {
                 "ssl.gstatic.com"
             ),
             collectorAllowedHosts = setOf(
-                "cloudcode-pa.googleapis.com"
+                "gemini.google.com"
             ),
-            preferredUsageEndpoint = "https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota",
-            authStoreKind = ProviderAuthStoreKind.NATIVE_TOKEN,
-            collectionKind = ProviderCollectionKind.NATIVE_API,
-            sessionProbeUrl = "https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist"
+            preferredUsageEndpoint = "https://gemini.google.com/usage",
+            authStoreKind = ProviderAuthStoreKind.WEBVIEW_PROFILE,
+            collectionKind = ProviderCollectionKind.WEBVIEW_COLLECTOR,
+            sessionProbeUrl = "https://gemini.google.com/usage"
         ),
         ProviderDefinition(
             providerId = ProviderId.COPILOT,

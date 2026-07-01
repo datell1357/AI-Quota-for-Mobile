@@ -304,14 +304,13 @@ class ProviderBackgroundRefreshServicePolicyTest {
     }
 
     @Test
-    fun nativeGoogleRefreshDoesNotBlockMainThread() {
+    fun nativeAntigravityRefreshDoesNotBlockMainThread() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val nativeRefresh = service.substringAfter("private suspend fun collectNativeProviderUsage")
             .substringBefore("private suspend fun collectWebProviderUsage")
 
         assertTrue(nativeRefresh.contains("withContext(Dispatchers.IO)"))
-        assertTrue(nativeRefresh.contains("GeminiCliOAuthRepository(applicationContext)"))
-        assertTrue(nativeRefresh.contains("repository.fetchUsagePayloadFromStoredCredential()"))
+        assertFalse(nativeRefresh.contains("GeminiCliOAuthRepository(applicationContext)"))
         assertTrue(nativeRefresh.contains("AntigravityOAuthRepository(applicationContext).fetchUsagePayloadFromStoredCredential()"))
     }
 

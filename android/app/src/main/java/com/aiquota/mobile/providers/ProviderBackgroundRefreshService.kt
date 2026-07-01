@@ -459,30 +459,6 @@ class ProviderBackgroundRefreshService : Service() {
                 )
             }
         }
-        if (job.providerId == ProviderId.GEMINI) {
-            val repository = GeminiCliOAuthRepository(applicationContext)
-            val payload = withContext(Dispatchers.IO) {
-                repository.fetchUsagePayloadFromStoredCredential()
-            }
-            val snapshot = payload?.let {
-                ProviderUsageNormalizer.normalize(
-                    job.providerId,
-                    it,
-                    ProviderPayloadSource.PROVIDER_API
-                )
-            }
-            return if (snapshot != null) {
-                ServiceRefreshOutcome.Snapshot(snapshot)
-            } else {
-                ServiceRefreshOutcome.Failure(
-                    ProviderRefreshFailure(
-                        ProviderRefreshFailureKind.NO_TRUSTED_PAYLOAD,
-                        repository.lastFailureDiagnostic()
-                            ?: "Gemini OAuth collection returned no trusted usage payload."
-                    )
-                )
-            }
-        }
         if (job.providerId == ProviderId.ANTIGRAVITY) {
             val payload = withContext(Dispatchers.IO) {
                 fetchAntigravityNativeOrWebSessionPayload()

@@ -36,7 +36,7 @@ class GeminiCliFirebaseGatewayTest {
 
         assertTrue(build.contains("681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"))
         assertTrue(build.contains("1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"))
-        assertTrue(appShell.contains("GeminiCliLoopbackOAuthActivity.createIntent"))
+        assertFalse(appShell.contains("GeminiCliLoopbackOAuthActivity.createIntent"))
         assertTrue(appShell.contains("AntigravityLoopbackOAuthActivity.createIntent"))
         assertTrue(geminiActivity.contains("WebView"))
         assertTrue(geminiActivity.contains("GeminiCliFirebaseGateway(applicationContext).startOAuth()"))
@@ -63,7 +63,7 @@ class GeminiCliFirebaseGatewayTest {
     }
 
     @Test
-    fun googleProvidersRefreshNativeApiUsingStoredTokens() {
+    fun antigravityRefreshesNativeApiUsingStoredTokensWhileGeminiUsesWebViewProfile() {
         val definitions = File("src/main/java/com/aiquota/mobile/providers/ProviderDefinitions.kt").readText()
         val refreshPlan = File("src/main/java/com/aiquota/mobile/providers/ProviderRefreshPlan.kt").readText()
         val geminiRepository = File("src/main/java/com/aiquota/mobile/providers/GeminiCliOAuthRepository.kt").readText()
@@ -78,8 +78,8 @@ class GeminiCliFirebaseGatewayTest {
         val antigravityDefinition = definitions.substringAfter("providerId = ProviderId.ANTIGRAVITY,")
             .substringBefore("ProviderDefinition(")
 
-        assertTrue(geminiDefinition.contains("authStoreKind = ProviderAuthStoreKind.NATIVE_TOKEN"))
-        assertTrue(geminiDefinition.contains("collectionKind = ProviderCollectionKind.NATIVE_API"))
+        assertTrue(geminiDefinition.contains("authStoreKind = ProviderAuthStoreKind.WEBVIEW_PROFILE"))
+        assertTrue(geminiDefinition.contains("collectionKind = ProviderCollectionKind.WEBVIEW_COLLECTOR"))
         assertTrue(antigravityDefinition.contains("authStoreKind = ProviderAuthStoreKind.NATIVE_TOKEN"))
         assertTrue(antigravityDefinition.contains("collectionKind = ProviderCollectionKind.NATIVE_API"))
         assertTrue(refreshPlan.contains("ProviderCollectionKind.NATIVE_API -> ProviderRefreshMode.NATIVE_API"))
@@ -87,8 +87,7 @@ class GeminiCliFirebaseGatewayTest {
         assertTrue(antigravityRepository.contains("AntigravityFirebaseGateway(appContext).refreshAccessToken(refreshToken)"))
         assertFalse(appShell.contains("GeminiCliOAuthRepository(appContext).fetchUsagePayloadFromStoredCredential()"))
         assertFalse(appShell.contains("AntigravityOAuthRepository(appContext).fetchUsagePayloadFromStoredCredential()"))
-        assertTrue(backgroundService.contains("GeminiCliOAuthRepository(applicationContext)"))
-        assertTrue(backgroundService.contains("repository.fetchUsagePayloadFromStoredCredential()"))
+        assertFalse(backgroundService.contains("GeminiCliOAuthRepository(applicationContext)"))
         assertTrue(backgroundService.contains("AntigravityOAuthRepository(applicationContext).fetchUsagePayloadFromStoredCredential()"))
     }
 
@@ -104,13 +103,10 @@ class GeminiCliFirebaseGatewayTest {
     }
 
     @Test
-    fun geminiCliOAuthStartFailureKeepsLoginActivityVisible() {
-        val geminiActivity = File("src/main/java/com/aiquota/mobile/providers/GeminiCliLoopbackOAuthActivity.kt").readText()
-        val startFailureBranch = geminiActivity.substringAfter("if (authorizationUrl.isNullOrBlank())")
-            .substringBefore("webView.loadUrl(authorizationUrl)")
+    fun appShellDoesNotUseGeminiCliOAuthForGeminiConnection() {
+        val appShell = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
 
-        assertTrue(startFailureBranch.contains("showStartupFailure"))
-        assertFalse(startFailureBranch.contains("failKeepingPrevious"))
-        assertFalse(startFailureBranch.contains("finish()"))
+        assertFalse(appShell.contains("GeminiCliLoopbackOAuthActivity.createIntent"))
+        assertTrue(appShell.contains("WebLoginActivity.createIntent(launchContext, providerId, loginStartUrl)"))
     }
 }
