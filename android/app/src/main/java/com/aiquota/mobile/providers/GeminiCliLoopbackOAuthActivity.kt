@@ -116,7 +116,7 @@ class GeminiCliLoopbackOAuthActivity : Activity() {
                 Log.w(TAG, "webviewOAuth startFailed=${error.javaClass.simpleName}")
             }.getOrNull()
             if (authorizationUrl.isNullOrBlank()) {
-                failKeepingPrevious(
+                showStartupFailure(
                     "Gemini CLI OAuth could not be started.",
                     "gemini_cli_oauth_start_failed"
                 )
@@ -191,6 +191,16 @@ class GeminiCliLoopbackOAuthActivity : Activity() {
         Log.w(TAG, "webviewOAuth errorKind=$errorKind usagePending=true")
         UsageSurfaceRefresher.refresh(applicationContext, repository)
         finish()
+    }
+
+    private fun showStartupFailure(message: String, errorKind: String) {
+        if (finished) return
+        val repository = LocalUsageRepository(applicationContext)
+        repository.failKeepingPrevious(ProviderId.GEMINI, message)
+        statusView.text = message
+        statusView.visibility = View.VISIBLE
+        Log.w(TAG, "webviewOAuth errorKind=$errorKind keptOpen=true")
+        UsageSurfaceRefresher.refresh(applicationContext, repository)
     }
 
     private fun failKeepingPrevious(message: String, errorKind: String) {

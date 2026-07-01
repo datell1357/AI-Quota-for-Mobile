@@ -102,4 +102,15 @@ class GeminiCliFirebaseGatewayTest {
         assertTrue(pendingFallback.contains("ProviderId.GEMINI"))
         assertFalse(pendingFallback.contains("ProviderUsageSnapshot.connected"))
     }
+
+    @Test
+    fun geminiCliOAuthStartFailureKeepsLoginActivityVisible() {
+        val geminiActivity = File("src/main/java/com/aiquota/mobile/providers/GeminiCliLoopbackOAuthActivity.kt").readText()
+        val startFailureBranch = geminiActivity.substringAfter("if (authorizationUrl.isNullOrBlank())")
+            .substringBefore("webView.loadUrl(authorizationUrl)")
+
+        assertTrue(startFailureBranch.contains("showStartupFailure"))
+        assertFalse(startFailureBranch.contains("failKeepingPrevious"))
+        assertFalse(startFailureBranch.contains("finish()"))
+    }
 }
