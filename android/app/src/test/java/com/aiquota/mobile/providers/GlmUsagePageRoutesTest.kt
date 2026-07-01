@@ -20,6 +20,10 @@ class GlmUsagePageRoutesTest {
             GlmProviderUrls.WEB_USAGE_URL,
             GlmUsagePageRoutes.usageUrlFrom("https://z.ai/manage-apikey/coding-plan/personal/my-plan/#usage")
         )
+        assertEquals(
+            GlmProviderUrls.WEB_USAGE_URL,
+            GlmUsagePageRoutes.usageUrlFrom("https://z.ai/chat")
+        )
     }
 
     @Test

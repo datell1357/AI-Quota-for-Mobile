@@ -57,6 +57,7 @@ open class WebLoginActivity : Activity() {
     private var glmNativeCollectionStarted = false
     private var glmAuthRecoveryAttempted = false
     private var glmCookieMismatchRecoveryAttempts = 0
+    private var glmRetainedWebSessionCookieHeader = ""
     private var lastGoogleOAuthUrl: String? = null
     private var openCodePostLoginRedirected = false
     private var codexPostLoginUsageRedirected = false
@@ -305,6 +306,9 @@ open class WebLoginActivity : Activity() {
             }
             if (ProviderLoginStrategy.isLoginComplete(providerId, url, cookiesFor(url), "")) {
                 view.post { handleLoginCompleteNavigation(view, url) }
+            }
+            if (isGlmAuthenticatedSessionResource(url)) {
+                view.post { saveGlmWebSessionCookieHeader("auth_resource") }
             }
             if (providerId == ProviderId.CLAUDE && ProviderLoginStrategy.shouldStartClaudeNativeCollectionFromResource(url)) {
                 view.post { maybeStartClaudeNativeCollection(view, url, "resource") }
@@ -573,7 +577,7 @@ open class WebLoginActivity : Activity() {
                 userAgent = currentBridgeUserAgent,
                 bridgePageUrl = nativeUsageBridgePageUrl(),
                 geminiRpcIds = geminiUsageRpcIds.toList(),
-                cookieHeaderForUrl = { url -> CookieManager.getInstance().getCookie(url) }
+                cookieHeaderForUrl = { url -> cookieHeaderForNativeUsage(url) }
             ) { url ->
                 if (providerId == ProviderId.CODEX) codexNativeFetchHeadersFor(url) else emptyMap()
             }
@@ -675,6 +679,7 @@ open class WebLoginActivity : Activity() {
         glmCookieMismatchRecoveryAttempts += 1
         glmNativeCollectionStarted = false
         glmPostLoginRedirected = false
+        glmRetainedWebSessionCookieHeader = ""
         collectorInjectionKeys.clear()
         clearGoogleAuthCookies(CookieManager.getInstance())
         val recoveryUrl = lastGoogleOAuthUrl ?: GlmProviderUrls.WEB_LOGIN_URL
@@ -860,12 +865,26 @@ open class WebLoginActivity : Activity() {
         glmAuthRecoveryAttempted = true
         glmNativeCollectionStarted = false
         glmPostLoginRedirected = false
+        glmRetainedWebSessionCookieHeader = ""
         collectorInjectionKeys.clear()
         clearProviderWebSession(CookieManager.getInstance(), providerId)
         Log.w("AIQuotaLogin", "provider=glm authRequiredRecovery=login")
         webView.stopLoading()
         webView.loadUrl(GlmProviderUrls.WEB_LOGIN_URL)
         return true
+    }
+
+    private fun isGlmAuthenticatedSessionResource(url: String): Boolean {
+        if (providerId != ProviderId.GLM) return false
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        return host == "z.ai" && uri.path.orEmpty() == "/api/auth/me"
+    }
+
+    private fun saveGlmWebSessionCookieHeader(reason: String) {
+        val cookieHeader = captureGlmWebSessionCookieHeader() ?: return
+        GlmUsageRepository(applicationContext).saveWebSessionCookieHeader(cookieHeader)
+        Log.i("AIQuotaLogin", "provider=glm webSessionCookieSaved=true reason=$reason")
     }
 
     private fun maybeRedirectOpenCodeToGo(view: WebView, url: String): Boolean {
@@ -1305,8 +1324,19 @@ open class WebLoginActivity : Activity() {
             Log.w("AIQuotaLogin", "provider=glm webSessionCookieCaptured=false cookieCount=0")
             return null
         }
+        val retainedCookieCount = GoogleWebSessionCodeAssistFetcher.parseCookieHeader(glmRetainedWebSessionCookieHeader).size
+        if (cookieCount > retainedCookieCount) {
+            glmRetainedWebSessionCookieHeader = cookieHeader
+        }
         Log.i("AIQuotaLogin", "provider=glm webSessionCookieCaptured=true cookieCount=$cookieCount")
-        return cookieHeader
+        return glmRetainedWebSessionCookieHeader.ifBlank { cookieHeader }
+    }
+
+    private fun cookieHeaderForNativeUsage(url: String): String? {
+        if (providerId == ProviderId.GLM && glmRetainedWebSessionCookieHeader.isNotBlank()) {
+            return glmRetainedWebSessionCookieHeader
+        }
+        return CookieManager.getInstance().getCookie(url)
     }
 
     private fun shouldKeepGoogleLoginRetryPending(errorKind: String, message: String): Boolean {
