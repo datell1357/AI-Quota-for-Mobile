@@ -1,0 +1,17 @@
+# Root OpenCode server preserve-data QA broadcast transcript
+timestamp_local=2026-07-01 Asia/Seoul
+safety=no pm clear; no uninstall; no data deletion; no saved-cookie reinjection; OpenCode provider_id only
+logcat_capture_window_seconds=210
+## clear logcat
+## reset broadcast
+Broadcasting: Intent { act=com.aiquota.mobile.debug.RESET_PROVIDER flg=0x400000 cmp=com.aiquota.mobile/.debug.ProviderStateDebugReceiver (has extras) }
+Broadcast completed: result=0
+## refresh broadcast
+Broadcasting: Intent { act=com.aiquota.mobile.debug.REFRESH_PROVIDER flg=0x400000 cmp=com.aiquota.mobile/.debug.ProviderRefreshDebugReceiver (has extras) }
+Broadcast completed: result=0
+capture_start_epoch=1782906534
+sleeping 210s before bounded logcat dump...
+capture_end_epoch=1782906744
+## logcat file
+.omo/evidence/B-opencode-preserve-data-qa/root-server-logcat-210s-20260701.txt
+3163 .omo/evidence/B-opencode-preserve-data-qa/root-server-logcat-210s-20260701.txt

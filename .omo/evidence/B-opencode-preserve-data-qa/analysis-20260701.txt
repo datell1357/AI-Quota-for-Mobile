@@ -1,0 +1,24 @@
+# B OpenCode preserve-data QA analysis
+status=FAIL
+reason=OpenCode native/about:blank path executed, but native usage payload was not accepted; no successful normalized snapshot was saved.
+raw_log=.omo/evidence/B-opencode-preserve-data-qa/logcat-210s-20260701.txt
+sanitized_opencode_excerpt=.omo/evidence/B-opencode-preserve-data-qa/opencode-filtered-sanitized-20260701.txt
+broadcast_transcript=.omo/evidence/B-opencode-preserve-data-qa/qa-broadcast-commands-20260701.txt
+build=.omo/evidence/B-opencode-preserve-data-qa/assemble-debug-20260701.txt
+install=.omo/evidence/B-opencode-preserve-data-qa/install-r-20260701.txt
+source_ready=.omo/evidence/B-opencode-preserve-data-qa/source-ready-20260701.txt
+## counts
+debug reset opencode: 1
+debug refresh opencode: 1
+opencode native json 200: 4
+opencode native ok true: 0
+opencode native ok false: 4
+opencode save snapshot: 0
+opencode visible dom legacy: 0
+opencode fallback/stale/fake accepted: 0
+opencode debug cookie restore: 0
+opencode debug cookie snapshot: 4
+## conclusion
+FAIL acceptance: required nativeUsage provider=opencode ok=true or equivalent saveSnapshot provider=opencode is absent.
+PASS path guard: reset/refresh were provider_id=opencode, load/inject/pageFinished use blank url, and no OpenCode visible-DOM legacy marker or debug cookie restore was observed.
+Residual note: existing live refresh produced unrelated all-provider cycles after the OpenCode-scoped broadcast; OpenCode markers in those cycles repeated the same native ok=false result.

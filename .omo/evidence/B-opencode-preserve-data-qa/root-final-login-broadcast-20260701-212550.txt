@@ -1,0 +1,9 @@
+stamp=20260701-212550
+capture_start_epoch=1782908788
+reset
+Broadcasting: Intent { act=com.aiquota.mobile.debug.RESET_PROVIDER flg=0x400000 cmp=com.aiquota.mobile/.debug.ProviderStateDebugReceiver (has extras) }
+Broadcast completed: result=0
+refresh
+Broadcasting: Intent { act=com.aiquota.mobile.debug.REFRESH_PROVIDER flg=0x400000 cmp=com.aiquota.mobile/.debug.ProviderRefreshDebugReceiver (has extras) }
+Broadcast completed: result=0
+capture_end_epoch=1782909000

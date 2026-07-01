@@ -1,0 +1,185 @@
+07-01 08:00:46.344 I/adbd    (  539): adbd service requested 'shell,v2,TERM=xterm-256color,raw:am broadcast -n com.aiquota.mobile/.debug.ProviderRefreshDebugReceiver -a com.aiquota.mobile.debug.REFRESH_PROVIDER --es provider_id glm'
+07-01 08:00:46.358 I/ActivityManager(  692): Broadcasting: Intent { act=com.aiquota.mobile.debug.REFRESH_PROVIDER flg=0x400000 cmp=com.aiquota.mobile/.debug.ProviderRefreshDebugReceiver (has extras) }
+07-01 08:00:46.360 I/ActivityManager(  692): Enqueued broadcast Intent { act=com.aiquota.mobile.debug.REFRESH_PROVIDER flg=0x400000 cmp=com.aiquota.mobile/.debug.ProviderRefreshDebugReceiver (has extras) }: 0
+07-01 08:00:46.360 D/ActivityManager(  692): sync unfroze 12970 com.aiquota.mobile for 3
+07-01 08:00:46.370 I/ActivityManager(  692): Background started FGS: Allowed [callingPackage: com.aiquota.mobile; callingUid: 10233; uidState: RCVR; uidBFSL: n/a; BFGS denied: false; intent: Intent { act=com.aiquota.mobile.action.REFRESH xflg=0x4 cmp=com.aiquota.mobile/.providers.ProviderBackgroundRefreshService (has extras) }; code:SYSTEM_ALLOW_LISTED; tempAllowListReason:<,reasonCode:SYSTEM_ALLOW_LISTED,duration:9223372036854775807,callingUid:-1>; allowWiu:-1; targetSdkVersion:35; callerTargetSdkVersion:35; startForegroundCount:0; bindFromPackage:null; isBindService:false]
+07-01 08:00:46.373 I/AIQuotaDebugRefresh(12970): debugProviderRefresh=true provider=glm
+07-01 08:00:46.384 W/.aiquota.mobile(12970): Loading /data/app/~~gRZDsxlqZCLB7oCd7TOaUA==/com.google.android.webview-YT9iMlxeDceFosa4dJznZw==/oat/x86_64/base.odex non-executable as it requires an image which we failed to load
+07-01 08:00:46.446 W/ActivityManager(  692): Foreground service started from background can not have location/camera/microphone access: service com.aiquota.mobile/.providers.ProviderBackgroundRefreshService
+07-01 08:00:46.471 D/AIQuotaBgRefreshService(12970): cycleStart providers=glm
+07-01 08:00:46.510 D/AIQuotaBgRefreshService(12970): outcome provider=glm type=Failure
+07-01 08:00:46.516 W/AIQuotaBgRefreshService(12970): failure provider=glm kind=INTERACTIVE_AUTH_REQUIRED message=GLM API key is invalid or expired.
+07-01 08:00:46.530 I/ActivityManager(  692): Start proc 13314:com.aiquota.mobile:glm_webview/u0a233 for started-service {com.aiquota.mobile/com.aiquota.mobile.providers.GlmIsolatedWebSessionService}
+07-01 08:00:46.548 I/Zygote  (13314): Process 13314 created for com.aiquota.mobile:glm_webview
+07-01 08:00:46.549 I/ile:glm_webview(13314): Late-enabling -Xcheck:jni
+07-01 08:00:46.559 I/ile:glm_webview(13314): Using generational CollectorTypeCMC GC.
+07-01 08:00:46.560 W/ile:glm_webview(13314): Unexpected CPU variant for x86: x86_64.
+07-01 08:00:46.560 W/ile:glm_webview(13314): Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, goldmont-without-sha-xsaves, tremont, kabylake, alderlake, pantherlake, default
+07-01 08:00:46.856 D/nativeloader(13314): Configuring clns-9 for other apk /data/app/~~bWufFhn9W0vKaXeL8yoYhw==/com.aiquota.mobile-sCE4k2J5pCYO4on5ZfdhmA==/base.apk. target_sdk_version=35, uses_libraries=, library_path=/data/app/~~bWufFhn9W0vKaXeL8yoYhw==/com.aiquota.mobile-sCE4k2J5pCYO4on5ZfdhmA==/lib/x86_64:/data/app/~~bWufFhn9W0vKaXeL8yoYhw==/com.aiquota.mobile-sCE4k2J5pCYO4on5ZfdhmA==/base.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/com.aiquota.mobile
+07-01 08:00:46.867 V/GraphicsEnvironment(13314): com.aiquota.mobile is not listed in per-application setting
+07-01 08:00:46.891 D/GlmIsolatedWebSession(13314): destroyWebView provider=glm hasWebView=false pid=13314
+07-01 08:00:46.892 D/GlmIsolatedWebSession(13314): clear provider=glm pid=13314
+07-01 08:00:46.904 W/ile:glm_webview(13314): Loading /data/app/~~gRZDsxlqZCLB7oCd7TOaUA==/com.google.android.webview-YT9iMlxeDceFosa4dJznZw==/oat/x86_64/base.odex non-executable as it requires an image which we failed to load
+07-01 08:00:46.983 I/ocessService0:0(13336): Using generational CollectorTypeCMC GC.
+07-01 08:00:46.991 I/ActivityManager(  692): Start proc 13336:com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0i6 for bound-service {com.aiquota.mobile/org.chromium.content.app.SandboxedProcessService0:0}
+07-01 08:00:47.016 W/ProcessStats(  692): Tracking association SourceState{4ade366 com.aiquota.mobile:glm_webview/10233 Service #5891} whose proc state 8 is better than process ProcessState{9dd9f22 com.google.android.gms/10203 pkg=com.google.android.gms} proc state 14 (32 skipped)
+07-01 08:00:47.028 D/AIQuotaBgRefreshService(12970): sessionReset provider=glm
+07-01 08:00:47.167 D/GlmIsolatedWebSession(13314): destroyWebView provider=glm hasWebView=false pid=13314
+07-01 08:00:47.167 D/GlmIsolatedWebSession(13314): stopSelf provider=glm reason=cleared pid=13314
+07-01 08:00:47.170 D/GlmIsolatedWebSession(13314): scheduleKill provider=glm reason=cleared pid=13314
+07-01 08:00:47.171 D/GlmIsolatedWebSession(13314): destroyWebView provider=glm hasWebView=false pid=13314
+07-01 08:00:47.472 W/GlmIsolatedWebSession(13314): killSelf provider=glm pid=13314
+07-01 08:00:47.484 I/ActivityManager(  692): Process com.aiquota.mobile:glm_webview (pid 13314) has died: cch CEM 
+07-01 08:00:48.535 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 22
+07-01 08:00:48.553 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 21
+07-01 08:00:48.556 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 20
+07-01 08:00:48.557 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 24
+07-01 08:00:48.824 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Crashpad/new size=8192 mod=1782892846 from UID=10233 used=249856 quota=43056700 ratio=58
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Crashpad/pending size=8192 mod=1782892846 from UID=10233 used=241664 quota=43056700 ratio=56
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Crashpad/completed size=8192 mod=1782892846 from UID=10233 used=233472 quota=43056700 ratio=54
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Crashpad/attachments size=8192 mod=1782892846 from UID=10233 used=225280 quota=43056700 ratio=52
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Crashpad size=8192 mod=1782892846 from UID=10233 used=217088 quota=43056700 ratio=50
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView size=8192 mod=1782892846 from UID=10233 used=208896 quota=43056700 ratio=48
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Default/HTTP Cache/Code Cache/wasm/index-dir/the-real-index size=8192 mod=1782892847 from UID=10233 used=200704 quota=43056700 ratio=46
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Default/HTTP Cache/Code Cache/js/index-dir/the-real-index size=8192 mod=1782892847 from UID=10233 used=192512 quota=43056700 ratio=44
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Default/HTTP Cache/Code Cache/wasm/index size=8192 mod=1782892847 from UID=10233 used=184320 quota=43056700 ratio=42
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Default/HTTP Cache/Code Cache/js/index size=8192 mod=1782892847 from UID=10233 used=176128 quota=43056700 ratio=40
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Default/HTTP Cache/Code Cache/js/index-dir size=8192 mod=1782892847 from UID=10233 used=167936 quota=43056700 ratio=39
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Default/HTTP Cache/Code Cache/wasm/index-dir size=8192 mod=1782892847 from UID=10233 used=159744 quota=43056700 ratio=37
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Default/HTTP Cache/Code Cache/js size=8192 mod=1782892847 from UID=10233 used=151552 quota=43056700 ratio=35
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Default/HTTP Cache/Code Cache/wasm size=8192 mod=1782892847 from UID=10233 used=143360 quota=43056700 ratio=33
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Default/HTTP Cache/Code Cache size=8192 mod=1782892847 from UID=10233 used=135168 quota=43056700 ratio=31
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/Crash Reports/ANR Variations/b20f63eeb2c1410df415cfbcb15a768d size=8192 mod=1782892847 from UID=10233 used=126976 quota=43056700 ratio=29
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Default/HTTP Cache size=8192 mod=1782892847 from UID=10233 used=118784 quota=43056700 ratio=27
+07-01 08:00:57.107 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/font_unique_name_table.pb size=28672 mod=1782892847 from UID=10233 used=110592 quota=43056700 ratio=25
+07-01 08:00:57.115 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/SafeBrowsing size=8192 mod=1782892847 from UID=10233 used=81920 quota=43056700 ratio=19
+07-01 08:00:57.115 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Default size=8192 mod=1782892847 from UID=10233 used=73728 quota=43056700 ratio=17
+07-01 08:00:57.115 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview/Crash Reports size=8192 mod=1782892847 from UID=10233 used=65536 quota=43056700 ratio=15
+07-01 08:00:57.115 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/Crash Reports/ANR Variations size=8192 mod=1782892847 from UID=10233 used=57344 quota=43056700 ratio=13
+07-01 08:00:57.115 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/webview_glm_webview size=8192 mod=1782892847 from UID=10233 used=49152 quota=43056700 ratio=11
+07-01 08:00:57.115 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/Crash Reports size=8192 mod=1782892847 from UID=10233 used=40960 quota=43056700 ratio=9
+07-01 08:01:46.463 D/AIQuotaBgRefreshService(12970): cycleStart providers=claude,codex,gemini,copilot
+07-01 08:01:46.521 I/ocessService0:0(13413): Using generational CollectorTypeCMC GC.
+07-01 08:01:46.524 E/chromium(12970): [ERROR:third_party/crashpad/crashpad/util/file/filesystem_posix.cc:63] mkdir /data/user/0/com.aiquota.mobile/cache/WebView/Crashpad: No such file or directory (2)
+07-01 08:01:46.529 I/ActivityManager(  692): Start proc 13413:com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0i7 for bound-service {com.aiquota.mobile/org.chromium.content.app.SandboxedProcessService0:0}
+07-01 08:01:46.632 D/ConnectivityService(  692): requestNetwork for uid/pid:10233/12970 activeRequest: null callbackRequest: 1089 [NetworkRequest [ REQUEST id=1090, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10233 RequestorUid: 10233 RequestorPkg: com.aiquota.mobile UnderlyingNetworks: Null] ]] callback flags: 0 order: 2147483647 isUidTracked: false declaredMethods: AVAIL|LOST|NC|LP
+07-01 08:01:46.635 D/WifiNetworkFactory(  692): got request NetworkRequest [ REQUEST id=1090, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10233 RequestorUid: 10233 RequestorPkg: com.aiquota.mobile UnderlyingNetworks: Null] ]
+07-01 08:01:46.636 D/UntrustedWifiNetworkFactory(  692): got request NetworkRequest [ REQUEST id=1090, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10233 RequestorUid: 10233 RequestorPkg: com.aiquota.mobile UnderlyingNetworks: Null] ]
+07-01 08:01:46.636 D/OemPaidWifiNetworkFactory(  692): got request NetworkRequest [ REQUEST id=1090, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10233 RequestorUid: 10233 RequestorPkg: com.aiquota.mobile UnderlyingNetworks: Null] ]
+07-01 08:01:46.637 D/MultiInternetWifiNetworkFactory(  692): got request NetworkRequest [ REQUEST id=1090, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10233 RequestorUid: 10233 RequestorPkg: com.aiquota.mobile UnderlyingNetworks: Null] ]
+07-01 08:01:46.841 I/AIQuotaDebugCookie(12970): provider=claude debugCookieRestore=true reason=background_collection source=external urlCount=10 cookieCount=216
+07-01 08:01:46.844 D/AIQuotaBgRefreshService(12970): load provider=claude start= warmUp=false request=1
+07-01 08:01:46.954 D/vulkan  (12970): searching for layers in '/data/app/~~bWufFhn9W0vKaXeL8yoYhw==/com.aiquota.mobile-sCE4k2J5pCYO4on5ZfdhmA==/lib/x86_64'
+07-01 08:01:46.955 D/vulkan  (12970): searching for layers in '/data/app/~~bWufFhn9W0vKaXeL8yoYhw==/com.aiquota.mobile-sCE4k2J5pCYO4on5ZfdhmA==/base.apk!/lib/x86_64'
+07-01 08:01:46.972 I/.aiquota.mobile(12970): hiddenapi: Accessing hidden field Landroid/graphics/Bitmap;->mNativePtr:J (runtime_flags=0, domain=platform, api=unsupported) from Lcom/android/webview/chromium/WebViewChromium; (domain=app, TargetSdkVersion=35) using JNI: allowed
+07-01 08:01:46.990 W/ProcessStats(  692): Tracking association SourceState{4b57975 com.aiquota.mobile/10233 Fgs #5924} whose proc state 3 is better than process ProcessState{9dd9f22 com.google.android.gms/10203 pkg=com.google.android.gms} proc state 14 (6 skipped)
+07-01 08:01:47.010 D/AIQuotaBgRefreshService(12970): inject provider=claude url=
+07-01 08:01:47.016 D/AIQuotaBgRefreshService(12970): pageFinished provider=claude url=
+07-01 08:01:48.514 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 22
+07-01 08:01:48.533 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 21
+07-01 08:01:48.534 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 20
+07-01 08:01:48.535 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 24
+07-01 08:01:48.787 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-01 08:01:48.888 D/AIQuotaNativeJson(12970): nativeJson provider=claude status=200 url=claude.ai/api/organizations cookieHost=claude.ai
+07-01 08:01:49.160 D/AIQuotaNativeJson(12970): nativeJson provider=claude status=200 url=claude.ai/api/account_profile cookieHost=claude.ai
+07-01 08:01:49.836 D/AIQuotaNativeJson(12970): nativeJson provider=claude status=200 url=claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/subscription_details cookieHost=claude.ai
+07-01 08:01:50.158 D/AIQuotaNativeJson(12970): nativeJson provider=claude status=200 url=claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/usage cookieHost=claude.ai
+07-01 08:01:50.166 D/AIQuotaNativeUsage(12970): nativeUsage provider=claude ok=true diagnostic=ok statuses=claude.ai/api/organizations:200:|claude.ai/api/account_profile:200:|claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/subscription_details:200:|claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/usage:200:
+07-01 08:01:50.170 D/AIQuotaBgRefreshService(12970): payload provider=claude url= summary=root=provider|organizationId|usage|collectorMode,provider=claude,collectorMode=native-bridge,lineCount=2,hasUsage=true,hasData=false,hasError=false
+07-01 08:01:50.174 D/AIQuotaBgRefreshService(12970): outcome provider=claude type=Payload
+07-01 08:01:50.177 D/AIQuotaBgRefreshService(12970): saveSnapshot provider=claude source=webview lineCount=3 planPresent=false accountPresent=false
+07-01 08:01:50.206 I/AIQuotaDebugCookie(12970): provider=claude debugCookieSnapshot=true reason=background_webview_snapshot urlCount=10 cookieCount=10 nativeAuthContextCount=0 nativeAuthHeaderCount=0
+07-01 08:01:50.498 I/AIQuotaDebugCookie(12970): provider=codex debugCookieRestore=true reason=background_collection source=external urlCount=20 cookieCount=406
+07-01 08:01:50.504 I/AIQuotaDebugCookie(12970): provider=codex debugNativeAuthRestore=true source=external nativeAuthContextCount=4 nativeAuthHeaderCount=12
+07-01 08:01:50.505 D/AIQuotaBgRefreshService(12970): load provider=codex start=chatgpt.com/api/auth/session warmUp=false request=2
+07-01 08:01:50.517 D/AIQuotaBgRefreshService(12970): capturedNativeHeaders provider=codex path=/api/auth/session names=Accept|Upgrade-Insecure-Requests|User-Agent|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+07-01 08:01:50.575 D/AIQuotaBgRefreshService(12970): redirectUsage provider=codex to=about:blank from=chatgpt.com/api/auth/session
+07-01 08:01:50.587 D/AIQuotaBgRefreshService(12970): pageFinished provider=codex url=chatgpt.com/api/auth/session
+07-01 08:01:50.601 D/AIQuotaBgRefreshService(12970): inject provider=codex url=
+07-01 08:01:50.601 D/AIQuotaBgRefreshService(12970): pageFinished provider=codex url=
+07-01 08:01:51.721 D/AIQuotaNativeJson(12970): nativeJson provider=codex status=403 url=chatgpt.com/api/auth/session cookieHost=chatgpt.com
+07-01 08:01:52.263 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 22
+07-01 08:01:52.268 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 21
+07-01 08:01:52.270 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 20
+07-01 08:01:52.271 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 24
+07-01 08:01:52.290 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-01 08:01:52.762 D/AIQuotaNativeJson(12970): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/me cookieHost=chatgpt.com
+07-01 08:01:53.312 D/AIQuotaNativeJson(12970): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/accounts/check/v4-2023-04-27 cookieHost=chatgpt.com
+07-01 08:01:54.351 D/AIQuotaNativeJson(12970): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/subscriptions cookieHost=chatgpt.com
+07-01 08:01:55.904 D/AIQuotaNativeJson(12970): nativeJson provider=codex status=200 url=chatgpt.com/backend-api/wham/usage cookieHost=chatgpt.com
+07-01 08:01:55.906 D/AIQuotaNativeUsage(12970): nativeUsage provider=codex ok=true diagnostic=ok statuses=chatgpt.com/api/auth/session:403:|chatgpt.com/backend-api/me:403:|chatgpt.com/backend-api/accounts/check/v4-2023-04-27:403:|chatgpt.com/backend-api/subscriptions:403:|chatgpt.com/backend-api/wham/usage:200:
+07-01 08:01:55.910 D/AIQuotaBgRefreshService(12970): payload provider=codex url= summary=root=provider|usage|collectorMode,provider=codex,collectorMode=native-bridge,lineCount=0,hasUsage=true,hasData=false,hasError=false
+07-01 08:01:55.922 D/AIQuotaBgRefreshService(12970): outcome provider=codex type=Payload
+07-01 08:01:55.924 D/AIQuotaBgRefreshService(12970): saveSnapshot provider=codex source=webview lineCount=2 planPresent=false accountPresent=false
+07-01 08:01:55.966 I/AIQuotaDebugCookie(12970): provider=codex debugCookieSnapshot=true reason=background_webview_snapshot urlCount=20 cookieCount=20 nativeAuthContextCount=4 nativeAuthHeaderCount=12
+07-01 08:01:56.010 D/AIQuotaBgRefreshService(12970): load provider=gemini start= warmUp=false request=3
+07-01 08:01:56.031 D/AIQuotaBgRefreshService(12970): inject provider=gemini url=
+07-01 08:01:56.044 D/AIQuotaBgRefreshService(12970): pageFinished provider=gemini url=
+07-01 08:01:57.188 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache/wasm/index-dir/the-real-index size=8192 mod=1782892906 from UID=10233 used=311296 quota=43056700 ratio=72
+07-01 08:01:57.188 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache/js/index-dir/the-real-index size=8192 mod=1782892906 from UID=10233 used=303104 quota=43056700 ratio=70
+07-01 08:01:57.188 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache/wasm/index size=8192 mod=1782892906 from UID=10233 used=294912 quota=43056700 ratio=68
+07-01 08:01:57.189 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache/js/index size=8192 mod=1782892906 from UID=10233 used=286720 quota=43056700 ratio=66
+07-01 08:01:57.189 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache/js/index-dir size=8192 mod=1782892906 from UID=10233 used=278528 quota=43056700 ratio=64
+07-01 08:01:57.189 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache/wasm/index-dir size=8192 mod=1782892906 from UID=10233 used=270336 quota=43056700 ratio=62
+07-01 08:01:57.189 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache/js size=8192 mod=1782892906 from UID=10233 used=262144 quota=43056700 ratio=60
+07-01 08:01:57.189 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache/wasm size=8192 mod=1782892906 from UID=10233 used=253952 quota=43056700 ratio=58
+07-01 08:01:57.190 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache size=8192 mod=1782892906 from UID=10233 used=245760 quota=43056700 ratio=57
+07-01 08:01:57.190 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/Crash Reports/ANR Variations/b20f63eeb2c1410df415cfbcb15a768d size=8192 mod=1782892906 from UID=10233 used=237568 quota=43056700 ratio=55
+07-01 08:01:57.190 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/font_unique_name_table.pb size=28672 mod=1782892906 from UID=10233 used=229376 quota=43056700 ratio=53
+07-01 08:01:57.190 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/SafeBrowsing size=8192 mod=1782892906 from UID=10233 used=200704 quota=43056700 ratio=46
+07-01 08:01:57.190 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/Crash Reports/ANR Variations size=8192 mod=1782892906 from UID=10233 used=192512 quota=43056700 ratio=44
+07-01 08:01:57.190 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/Crash Reports size=8192 mod=1782892906 from UID=10233 used=184320 quota=43056700 ratio=42
+07-01 08:01:57.190 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Crashpad/new size=8192 mod=1782892907 from UID=10233 used=176128 quota=43056700 ratio=40
+07-01 08:01:57.190 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Crashpad/pending size=8192 mod=1782892907 from UID=10233 used=167936 quota=43056700 ratio=39
+07-01 08:01:57.190 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Crashpad/completed size=8192 mod=1782892907 from UID=10233 used=159744 quota=43056700 ratio=37
+07-01 08:01:57.191 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Crashpad/attachments size=8192 mod=1782892907 from UID=10233 used=151552 quota=43056700 ratio=35
+07-01 08:01:57.191 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Crashpad size=8192 mod=1782892907 from UID=10233 used=143360 quota=43056700 ratio=33
+07-01 08:01:57.191 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Crash Reports size=8192 mod=1782892907 from UID=10233 used=135168 quota=43056700 ratio=31
+07-01 08:01:57.191 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Cache_Data/index-dir/the-real-index size=8192 mod=1782892910 from UID=10233 used=126976 quota=43056700 ratio=29
+07-01 08:01:57.191 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/No_Vary_Search/snapshot.baf size=8192 mod=1782892910 from UID=10233 used=118784 quota=43056700 ratio=27
+07-01 08:01:57.191 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/No_Vary_Search/journal.baj size=8192 mod=1782892910 from UID=10233 used=110592 quota=43056700 ratio=25
+07-01 08:01:57.191 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Cache_Data/index size=8192 mod=1782892910 from UID=10233 used=102400 quota=43056700 ratio=23
+07-01 08:01:57.191 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Cache_Data/index-dir size=8192 mod=1782892910 from UID=10233 used=94208 quota=43056700 ratio=21
+07-01 08:01:57.201 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/No_Vary_Search size=8192 mod=1782892910 from UID=10233 used=86016 quota=43056700 ratio=19
+07-01 08:01:57.201 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Cache_Data/565af7c8962d622f_0 size=8192 mod=1782892912 from UID=10233 used=77824 quota=43056700 ratio=18
+07-01 08:01:57.201 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Cache_Data size=8192 mod=1782892912 from UID=10233 used=69632 quota=43056700 ratio=16
+07-01 08:01:57.202 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache size=8192 mod=1782892912 from UID=10233 used=61440 quota=43056700 ratio=14
+07-01 08:01:57.202 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default size=8192 mod=1782892912 from UID=10233 used=53248 quota=43056700 ratio=12
+07-01 08:01:57.202 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView size=8192 mod=1782892912 from UID=10233 used=45056 quota=43056700 ratio=10
+07-01 08:01:57.854 D/AIQuotaGeminiUsageRpc(12970): geminiUsageHtmlDiscovery provider=gemini usagePath=/usage status=200 payloadBytes=807432 scriptSrcCount=0 batchexecuteCount=0 afInitCount=3 afDataCount=0 afShapes= usageSignalCount=15 candidateRpcCount=0 rpcIds=
+07-01 08:01:58.017 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 22
+07-01 08:01:58.022 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 21
+07-01 08:01:58.024 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 20
+07-01 08:01:58.026 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 24
+07-01 08:01:58.045 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-01 08:01:58.340 D/AIQuotaGeminiUsageRpc(12970): geminiUsageDiscovery provider=gemini usagePath=/usage rpcId=jSf9Qc status=200 payloadBytes=240 shape=array[3]:number|array[2]|boolean rowCount=2 labels=5-hour limit|Weekly limit remainingPercents=97.0|99.76 quotaSummaries=remaining=2323.0/used=0.03/limit=2323.03|remaining=48268.0/used=0./limit=48268. deepRowCount=2 deepRemainingPercents=97.0|99.76
+07-01 08:01:58.342 D/AIQuotaNativeUsage(12970): nativeUsage provider=gemini ok=true diagnostic=ok statuses=gemini_usage_page_html:200|gemini_usage_rpc_jSf9Qc:200
+07-01 08:01:58.345 D/AIQuotaBgRefreshService(12970): payload provider=gemini url= summary=root=provider|collectorMode|usage,provider=gemini,collectorMode=native-usage-page-rpc,lineCount=0,hasUsage=true,hasData=false,hasError=false
+07-01 08:01:58.347 D/AIQuotaBgRefreshService(12970): outcome provider=gemini type=Payload
+07-01 08:01:58.349 D/AIQuotaBgRefreshService(12970): saveSnapshot provider=gemini source=webview lineCount=2 planPresent=false accountPresent=false
+07-01 08:01:58.362 I/AIQuotaDebugCookie(12970): provider=gemini debugCookieSnapshot=true reason=background_webview_snapshot urlCount=7 cookieCount=7 nativeAuthContextCount=0 nativeAuthHeaderCount=0
+07-01 08:01:58.431 I/AIQuotaDebugCookie(12970): provider=copilot debugCookieRestore=true reason=background_collection source=external urlCount=3 cookieCount=33
+07-01 08:01:58.433 D/AIQuotaBgRefreshService(12970): load provider=copilot start=github.com/ warmUp=true request=4
+07-01 08:01:58.442 W/ProcessStats(  692): Tracking association SourceState{4b57975 com.aiquota.mobile/10233 Fgs #5945} whose proc state 3 is better than process ProcessState{9dd9f22 com.google.android.gms/10203 pkg=com.google.android.gms} proc state 14 (11 skipped)
+07-01 08:02:00.397 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 22
+07-01 08:02:00.402 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 21
+07-01 08:02:00.403 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 20
+07-01 08:02:00.405 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 24
+07-01 08:02:00.450 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-01 08:02:01.617 D/AIQuotaBgRefreshService(12970): pageFinished provider=copilot url=github.com/
+07-01 08:02:01.617 D/AIQuotaBgRefreshService(12970): warmUpComplete provider=copilot from=github.com/ to=
+07-01 08:02:01.823 D/AIQuotaBgRefreshService(12970): pageFinished provider=copilot url=github.com/
+07-01 08:02:01.900 D/AIQuotaBgRefreshService(12970): inject provider=copilot url=
+07-01 08:02:01.915 D/AIQuotaBgRefreshService(12970): pageFinished provider=copilot url=
+07-01 08:02:04.389 D/AIQuotaCopilot(12970): nativeFetch entitlement=200 token=422 internal=401
+07-01 08:02:04.390 D/AIQuotaNativeUsage(12970): nativeUsage provider=copilot ok=true diagnostic=copilot_usage_unavailable statuses=
+07-01 08:02:04.392 D/AIQuotaBgRefreshService(12970): payload provider=copilot url= summary=root=provider|plan|quotas|collectorMode,provider=copilot,collectorMode=native-bridge,lineCount=0,hasUsage=false,hasData=false,hasError=false
+07-01 08:02:04.406 D/AIQuotaBgRefreshService(12970): outcome provider=copilot type=Payload
+07-01 08:02:04.409 D/AIQuotaBgRefreshService(12970): saveSnapshot provider=copilot source=webview lineCount=1 planPresent=true accountPresent=false
+07-01 08:02:04.418 I/AIQuotaDebugCookie(12970): provider=copilot debugCookieSnapshot=true reason=background_webview_snapshot urlCount=3 cookieCount=3 nativeAuthContextCount=0 nativeAuthHeaderCount=0
+07-01 08:02:06.445 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 22
+07-01 08:02:06.449 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 21
+07-01 08:02:06.451 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 20
+07-01 08:02:06.452 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 24
+07-01 08:02:06.472 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 17

@@ -1,0 +1,1 @@
+    topResumedActivity=ActivityRecord{169088056 u0 com.aiquota.mobile/.providers.WebLoginActivity t578}

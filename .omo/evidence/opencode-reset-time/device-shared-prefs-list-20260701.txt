@@ -1,0 +1,18 @@
+total 140
+drwxrwx--x  2 u0_a233 u0_a233 4096 2026-07-01 13:46 .
+drwx------ 10 u0_a233 u0_a233 4096 2026-07-01 13:00 ..
+-rw-rw----  1 u0_a233 u0_a233  472 2026-07-01 12:57 AwOriginVisitLoggerPrefs.xml
+-rw-rw----  1 u0_a233 u0_a233  613 2026-07-01 12:56 FirebaseHeartBeatW0RFRkFVTFRd+MTo1NTAxMjMwMDM2Mzg6YW5kcm9pZDpiNzc3NzE3OTAxNzdkODE3ZWI1NmQ3.xml
+-rw-rw----  1 u0_a233 u0_a233  266 2026-07-01 13:12 WebViewChromiumPrefs.xml
+-rw-rw----  1 u0_a233 u0_a233  277 2026-07-01 13:45 account_data_opencode.xml
+-rw-rw----  1 u0_a233 u0_a233  124 2026-07-01 12:56 ai_quota_app_update.xml
+-rw-rw----  1 u0_a233 u0_a233  132 2026-07-01 13:46 ai_quota_app_update_refresh_cooldown.xml
+-rw-rw----  1 u0_a233 u0_a233  315 2026-07-01 13:45 ai_quota_background_refresh_state.xml
+-rw-rw----  1 u0_a233 u0_a233  130 2026-07-01 13:14 ai_quota_foreground_refresh.xml
+-rw-rw----  1 u0_a233 u0_a233 1819 2026-07-01 13:45 ai_quota_local_usage.xml
+-rw-rw----  1 u0_a233 u0_a233  209 2026-07-01 13:12 ai_quota_notifications.xml
+-rw-rw----  1 u0_a233 u0_a233  178 2026-07-01 12:56 ai_quota_theme_preferences.xml
+-rw-rw----  1 u0_a233 u0_a233 6396 2026-07-01 13:46 ai_quota_widget_cache.xml
+-rw-rw----  1 u0_a233 u0_a233  183 2026-07-01 12:56 com.google.firebase.appcheck.debug.store.W0RFRkFVTFRd+MTo1NTAxMjMwMDM2Mzg6YW5kcm9pZDpiNzc3NzE3OTAxNzdkODE3ZWI1NmQ3.xml
+-rw-rw----  1 u0_a233 u0_a233  362 2026-07-01 13:45 script_data_opencode.xml
+-rw-rw----  1 u0_a233 u0_a233 1925 2026-07-01 13:45 usage_data_opencode.xml

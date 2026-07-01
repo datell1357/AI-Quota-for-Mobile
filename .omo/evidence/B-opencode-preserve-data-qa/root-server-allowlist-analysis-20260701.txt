@@ -1,0 +1,13 @@
+nativeUsage ok true:
+nativeUsage ok false:
+4
+saveSnapshot:
+nativeJson status 200:
+8
+opencode_server_text:
+4
+blocked provider json endpoint:
+legacy DOM markers:
+debug native restore:
+3
+fallback stale fake:

@@ -1,0 +1,3 @@
+07-01 07:59:20.550 I/adbd    (  539): adbd service requested 'shell,v2,TERM=xterm-256color,raw:am broadcast -a com.aiquota.mobile.debug.REFRESH_PROVIDER --es provider_id glm'
+07-01 07:59:20.565 I/ActivityManager(  692): Broadcasting: Intent { act=com.aiquota.mobile.debug.REFRESH_PROVIDER flg=0x400000 (has extras) }
+07-01 07:59:20.567 I/ActivityManager(  692): Enqueued broadcast Intent { act=com.aiquota.mobile.debug.REFRESH_PROVIDER flg=0x400000 (has extras) }: 0

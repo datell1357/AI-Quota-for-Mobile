@@ -1,0 +1,8 @@
+07-01 13:53:00.256 17074 17512 D AIQuotaNativeUsage: nativeUsage provider=opencode ok=true diagnostic=ok statuses=opencode.ai/workspace/wrk_01KVCH0B246K4H9H3VF7QW8GKV/go:200:
+07-01 13:53:00.263 17074 17074 D AIQuotaBgRefreshService: saveSnapshot provider=opencode source=webview lineCount=2 planPresent=true accountPresent=false
+07-01 13:53:58.413 17074 17512 D AIQuotaNativeUsage: nativeUsage provider=opencode ok=true diagnostic=ok statuses=opencode.ai/workspace/wrk_01KVCH0B246K4H9H3VF7QW8GKV/go:200:
+07-01 13:53:58.421 17074 17074 D AIQuotaBgRefreshService: saveSnapshot provider=opencode source=webview lineCount=2 planPresent=true accountPresent=false
+07-01 13:54:58.441 17074 17512 D AIQuotaNativeUsage: nativeUsage provider=opencode ok=true diagnostic=ok statuses=opencode.ai/workspace/wrk_01KVCH0B246K4H9H3VF7QW8GKV/go:200:
+07-01 13:54:58.447 17074 17074 D AIQuotaBgRefreshService: saveSnapshot provider=opencode source=webview lineCount=2 planPresent=true accountPresent=false
+07-01 13:55:58.462 17074 17512 D AIQuotaNativeUsage: nativeUsage provider=opencode ok=true diagnostic=ok statuses=opencode.ai/workspace/wrk_01KVCH0B246K4H9H3VF7QW8GKV/go:200:
+07-01 13:55:58.475 17074 17074 D AIQuotaBgRefreshService: saveSnapshot provider=opencode source=webview lineCount=2 planPresent=true accountPresent=false

@@ -1,0 +1,163 @@
+# B OpenCode preserve-data QA source-ready evidence
+timestamp_local=2026-07-01 Asia/Seoul
+safety=source reads only; no app data mutation
+## git status relevant A modified files
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderAboutBlankCollectorPolicy.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderAuthStrategy.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderDefinitions.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderRefreshPlan.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderScriptProviders.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderWebCollectorScripts.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshServicePolicyTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderDefinitionRegistryTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeJsonBridgeTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderRefreshPlanTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderWebCollectorScriptsTest.kt
+## ProviderDefinitions.kt OpenCode definition
+    88	        ProviderDefinition(
+    89	            providerId = ProviderId.OPENCODE,
+    90	            loginStartUrl = "https://opencode.ai/auth",
+    91	            allowedHosts = setOf(
+    92	                "opencode.ai",
+    93	                "www.opencode.ai",
+    94	                "auth.opencode.ai",
+    95	                "accounts.google.com",
+    96	                "myaccount.google.com",
+    97	                "google.com",
+    98	                "www.google.com",
+    99	                "oauth2.googleapis.com",
+   100	                "accounts.youtube.com",
+   101	                "play.google.com",
+   102	                "github.com",
+   103	                "github.githubassets.com",
+   104	                "githubassets.com",
+   105	                "githubusercontent.com",
+   106	                "challenges.cloudflare.com",
+   107	                "www.recaptcha.net",
+   108	                "recaptcha.net",
+   109	                "ssl.gstatic.com",
+   110	                "www.gstatic.com"
+   111	            ),
+   112	            collectorAllowedHosts = setOf(
+   113	                "opencode.ai",
+   114	                "www.opencode.ai",
+   115	                "auth.opencode.ai"
+   116	            ),
+   117	            preferredUsageEndpoint = "https://opencode.ai/workspace/{workspaceId}/go",
+   118	            authStoreKind = ProviderAuthStoreKind.WEBVIEW_PROFILE,
+   119	            collectionKind = ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE,
+   120	            sessionProbeUrl = "https://opencode.ai/auth"
+   121	        ),
+## ProviderAboutBlankCollectorPolicy.kt
+     1	package com.aiquota.mobile.providers
+     2	
+     3	import com.aiquota.mobile.local.ProviderId
+     4	
+     5	object ProviderAboutBlankCollectorPolicy {
+     6	    fun isEnabled(providerId: ProviderId): Boolean {
+     7	        return providerId == ProviderId.CLAUDE ||
+     8	            providerId == ProviderId.CODEX ||
+     9	            providerId == ProviderId.GEMINI ||
+    10	            providerId == ProviderId.COPILOT ||
+    11	            providerId == ProviderId.GLM ||
+    12	            providerId == ProviderId.OPENCODE
+    13	    }
+    14	}
+## ProviderRefreshPlan.kt mapping
+    88	
+    89	    private fun refreshModeFor(providerId: ProviderId): ProviderRefreshMode {
+    90	        return when (ProviderDefinitionRegistry.definitionFor(providerId).collectionKind) {
+    91	            ProviderCollectionKind.WEBVIEW_COLLECTOR -> ProviderRefreshMode.HIDDEN_WEB_COLLECTOR
+    92	            ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE -> ProviderRefreshMode.HIDDEN_WEB_COLLECTOR
+    93	            ProviderCollectionKind.NATIVE_API_WITH_WEBVIEW_FALLBACK -> ProviderRefreshMode.HIDDEN_WEB_COLLECTOR
+    94	            ProviderCollectionKind.NATIVE_API -> ProviderRefreshMode.NATIVE_API
+    95	            ProviderCollectionKind.BACKEND_GATEWAY -> ProviderRefreshMode.NATIVE_API
+    96	        }
+    97	    }
+    98	
+    99	    private fun hiddenCollectorUrl(providerId: ProviderId): String {
+   100	        if (providerId == ProviderId.CODEX) return "https://chatgpt.com/api/auth/session"
+   101	        if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) return "about:blank"
+   102	        return when (providerId) {
+   103	            ProviderId.CLAUDE -> "https://claude.ai/"
+   104	            ProviderId.CODEX -> "https://chatgpt.com/"
+   105	            ProviderId.GLM -> GlmProviderUrls.WEB_OAUTH_URL
+   106	            ProviderId.OPENCODE -> "https://opencode.ai/auth"
+   107	            ProviderId.COPILOT -> "https://github.com/settings/copilot/features"
+   108	            ProviderId.ANTIGRAVITY -> "https://antigravity.google/"
+   109	            ProviderId.CURSOR -> "https://cursor.com/dashboard"
+   110	            ProviderId.GEMINI -> "https://gemini.google.com/usage"
+   111	        }
+   112	    }
+   113	
+   114	    private fun resetJobsFor(snapshots: List<ProviderUsageSnapshot>, now: Instant): List<ProviderRefreshJob> {
+   115	        return ProviderResetRefreshPolicy.requests(snapshots, now)
+   116	            .map { it.providerId }
+   117	            .distinct()
+   118	            .map(::resetJobFor)
+   119	    }
+   120	
+   121	    private fun jobFor(providerId: ProviderId, qos: Int): ProviderRefreshJob {
+   122	        val mode = refreshModeFor(providerId)
+   123	        return ProviderRefreshJob(
+   124	            providerId = providerId,
+   125	            mode = mode,
+   126	            startUrl = if (mode == ProviderRefreshMode.NATIVE_API) "" else hiddenCollectorUrl(providerId),
+## ProviderStateDebugReceiver reset safety
+     1	package com.aiquota.mobile.debug
+     2	
+     3	import android.content.BroadcastReceiver
+     4	import android.content.Context
+     5	import android.content.Intent
+     6	import android.util.Log
+     7	import com.aiquota.mobile.local.LocalUsageRepository
+     8	import com.aiquota.mobile.local.ProviderId
+     9	import com.aiquota.mobile.providers.DebugProviderSessionCookieStore
+    10	import com.aiquota.mobile.widget.WidgetRefreshActions
+    11	
+    12	class ProviderStateDebugReceiver : BroadcastReceiver() {
+    13	    override fun onReceive(context: Context, intent: Intent?) {
+    14	        if (intent?.action != ACTION_RESET_PROVIDER) return
+    15	        val appContext = context.applicationContext
+    16	        val requestedProvider = ProviderId.fromStorageId(
+    17	            intent.getStringExtra(EXTRA_PROVIDER_ID)
+    18	                ?: intent.getStringExtra(WidgetRefreshActions.EXTRA_PROVIDER_ID)
+    19	        )
+    20	        val providers = requestedProvider?.let(::listOf) ?: listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT)
+    21	        providers.forEach { providerId ->
+    22	            LocalUsageRepository(appContext).markSessionExpired(providerId, "Debug QA provider reset.")
+    23	            if (providerId == ProviderId.GEMINI) {
+    24	                DebugProviderSessionCookieStore.clear(appContext, providerId)
+    25	            }
+    26	        }
+    27	        Log.i(TAG, "debugProviderReset=true providers=${providers.joinToString(",") { it.storageId }}")
+    28	    }
+    29	
+    30	    companion object {
+    31	        const val ACTION_RESET_PROVIDER = "com.aiquota.mobile.debug.RESET_PROVIDER"
+    32	        const val EXTRA_PROVIDER_ID = "provider_id"
+    33	        private const val TAG = "AIQuotaDebugState"
+    34	    }
+    35	}
+## ProviderBackgroundRefreshService OpenCode no redirect/cookie restore tests markers
+   188	    fun opencodeBackgroundRefreshDoesNotRedirectVisiblePagesOrRestoreSavedCookies() {
+   189	        val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
+   190	        val restoreDebugCookies = service.substringAfter("private fun restoreDebugProviderSessionCookies")
+   191	            .substringBefore("private fun restoreCodexDebugNativeAuthContext")
+   192	        val warmUp = service.substringAfter("private fun webSessionWarmUpUrl")
+   193	        val pageStarted = service.substringAfter("override fun onPageStarted")
+   194	            .substringBefore("override fun shouldOverrideUrlLoading")
+   195	        val pageFinished = service.substringAfter("override fun onPageFinished")
+   196	            .substringBefore("override fun onReceivedError")
+   197	
+   198	        assertFalse(service.contains("private fun maybeRedirectOpenCodeRefreshToGo"))
+   199	        assertFalse(service.contains("OpenCodeUsagePageRoutes.goUsageUrlFrom(url)"))
+   200	        assertFalse(pageStarted.contains("maybeRedirectOpenCodeRefreshToGo(active, view, url)"))
+   201	        assertFalse(pageFinished.contains("maybeRedirectOpenCodeRefreshToGo(active, view, url)"))
+   202	        assertFalse(warmUp.contains("ProviderId.OPENCODE"))
+   203	        assertTrue(restoreDebugCookies.contains("providerId == ProviderId.OPENCODE"))
+   204	        assertTrue(restoreDebugCookies.contains("return"))
+   205	    }

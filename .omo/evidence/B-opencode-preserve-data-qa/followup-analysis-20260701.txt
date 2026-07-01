@@ -1,0 +1,28 @@
+# B OpenCode follow-up preserve-data QA analysis
+status=FAIL
+reason=OpenCode native/about:blank path executed, but native fetched HTML still contained no extractable usage markers; no successful normalized snapshot was saved.
+raw_log=.omo/evidence/B-opencode-preserve-data-qa/followup-logcat-210s-20260701.txt
+sanitized_opencode_excerpt=.omo/evidence/B-opencode-preserve-data-qa/followup-opencode-filtered-sanitized-20260701.txt
+broadcast_transcript=.omo/evidence/B-opencode-preserve-data-qa/followup-qa-broadcast-commands-20260701.txt
+build=.omo/evidence/B-opencode-preserve-data-qa/followup-assemble-debug-20260701.txt
+install=.omo/evidence/B-opencode-preserve-data-qa/followup-install-r-20260701.txt
+source_ready=.omo/evidence/B-opencode-preserve-data-qa/followup-source-ready-20260701.txt
+## counts
+debug reset opencode: 1
+debug refresh opencode: 1
+opencode native json 200: 4
+opencode native ok true: 0
+opencode native ok false: 4
+opencode_text metadata: 4
+opencode_text usage signals nonzero: 0
+opencode_text script json nonzero: 0
+opencode_text state markers nonzero: 0
+opencode save snapshot: 0
+opencode visible dom legacy: 0
+opencode fallback/stale/fake accepted: 0
+opencode debug cookie restore: 0
+opencode debug cookie snapshot: 4
+## conclusion
+FAIL acceptance: required nativeUsage provider=opencode ok=true or equivalent saveSnapshot provider=opencode is absent.
+Path guard still passes: provider-scoped reset/refresh, blank/native load, no OpenCode DOM legacy marker, no fallback/stale/fake accepted, no OpenCode debug cookie restore.
+Observed native text metadata: bytes=9395 html=true scriptJson=0 usageSignals=0 stateMarkers=0 on all OpenCode attempts, so the logged-in /go response did not expose the embedded usage fragments expected by the follow-up implementation.

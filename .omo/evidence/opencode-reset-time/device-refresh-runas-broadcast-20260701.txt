@@ -1,0 +1,21 @@
+Broadcasting: Intent { act=com.aiquota.mobile.action.REFRESH flg=0x400000 cmp=com.aiquota.mobile/.providers.ProviderRefreshReceiver (has extras) }
+
+Exception occurred while executing 'broadcast':
+java.lang.SecurityException: Permission Denial: broadcast asks to run as user -2 but is calling from uid u0a233; this requires android.permission.INTERACT_ACROSS_USERS_FULL or android.permission.INTERACT_ACROSS_USERS
+	at com.android.server.wm.Session$$ExternalSyntheticBUOutline1.m(R8$$SyntheticClass:0)
+	at com.android.server.am.UserController.handleIncomingUser(UserController.java:3421)
+	at com.android.server.am.BroadcastController.broadcastIntentLockedTraced(BroadcastController.java:1017)
+	at com.android.server.am.BroadcastController.broadcastIntentLocked(BroadcastController.java:877)
+	at com.android.server.am.BroadcastController.broadcastIntentWithFeature(BroadcastController.java:811)
+	at com.android.server.am.ActivityManagerService.broadcastIntentWithFeature(ActivityManagerService.java:15257)
+	at com.android.server.am.ActivityManagerShellCommand.runSendBroadcast(ActivityManagerShellCommand.java:1250)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:289)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:39)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:11183)
+	at android.os.Binder.shellCommand(Binder.java:1088)
+	at android.os.Binder.onTransact(Binder.java:946)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5876)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:3288)
+	at android.os.Binder.execTransactInternal(Binder.java:1369)
+	at android.os.Binder.execTransact(Binder.java:1323)

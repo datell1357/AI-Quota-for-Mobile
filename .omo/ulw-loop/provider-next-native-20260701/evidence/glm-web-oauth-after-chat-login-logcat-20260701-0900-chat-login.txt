@@ -1,0 +1,82 @@
+07-01 09:00:49.310   692  2048 V ActivityTaskManager: TaskLaunchParamsModifier: phase=3 task=Task{db293dd #573 type=standard A=10233:com.aiquota.mobile} activity=ActivityRecord{119318967 u0 com.aiquota.mobile/.providers.WebLoginActivity t-1} display-area-from-source=DefaultTaskDisplayArea@146288658 display-id=0 task-display-area-windowing-mode=1 suggested-display-area=DefaultTaskDisplayArea@146288658 inherit-from-source=fullscreen non-freeform-task-display-area display-area=DefaultTaskDisplayArea@146288658 skip-bounds-fullscreen
+07-01 09:00:49.310   692  2048 I ActivityTaskManager: START u0 {xflg=0x4 cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras)} with LAUNCH_MULTIPLE from uid 10233 (com.aiquota.mobile) (sr=38292056) (BAL_ALLOW_VISIBLE_WINDOW) result code=0
+07-01 09:00:49.450 19300 19467 D AIQuotaLogin: provider=glm resource=https://z.ai/chat
+07-01 09:00:49.552 19300 19300 D VRI[WebLoginActivity]: WindowInsets changed: 1080x2400 statusBars:[0,132,0,0] navigationBars:[0,0,0,63] mandatorySystemGestures:[0,164,0,84] 
+07-01 09:00:49.554   692   707 D CoreBackPreview: Window{30b8125 u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@f09afdd, mPriority=0, mIsAnimationCallback=false, mOverrideBehavior=0}
+07-01 09:00:49.556   692   707 D WindowManager: setClientSurface Surface(name=VRI-com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity#447)/@0xca36752 for 30b8125 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity
+07-01 09:00:49.559 19300 19300 I Surface : Creating surface for consumer VRI[WebLoginActivity]#2(BLAST Consumer)2 with slotExpansion=1 for 64 slots
+07-01 09:00:49.632   692   712 I ActivityTaskManager: Displayed com.aiquota.mobile/.providers.WebLoginActivity for user 0: +323ms
+07-01 09:00:49.632   976  1041 V WindowManagerShell:         {m=OPEN f=FILLS_TASK leash=Surface(name=ActivityRecord{119318967 u0 com.aiquota.mobile/.providers.WebLoginActivity t573}#445)/@0x956dd8 sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=-1->0 r=-1->0:-1 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}, taskId = 573, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},
+07-01 09:00:49.633   692   712 V WindowManager:         {m=OPEN f=FILLS_TASK leash=Surface(name=ActivityRecord{119318967 u0 com.aiquota.mobile/.providers.WebLoginActivity t573}#445)/@0x63b457f sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=-1->0 r=-1->0:-1 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}, taskId = 573, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},
+07-01 09:00:50.862 19300 19467 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/media/74fa777cac189696-s.p.ttf
+07-01 09:00:50.863 19300 19468 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/media/98320d588ee45fe2-s.p.ttf
+07-01 09:00:50.864 19300 19475 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/media/f3082694476a79c3-s.p.ttf
+07-01 09:00:50.864 19300 19474 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/css/bde391a2dc0c5f50.css
+07-01 09:00:50.865 19300 19469 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/media/a40c83c38559db55-s.p.ttf
+07-01 09:00:50.866 19300 19516 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/css/a70e7aab4c4dbcdb.css
+07-01 09:00:50.867 19300 19467 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/css/38a00db3df158e74.css
+07-01 09:00:50.868 19300 19468 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/css/3730f9ae63252c5f.css
+07-01 09:00:50.869 19300 19517 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/css/06eee677ceaf36a2.css
+07-01 09:00:50.874 19300 19476 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/css/2177b086ad2c1db5.css
+07-01 09:00:50.907 19300 19467 D AIQuotaLogin: provider=glm resource=https://www.googletagmanager.com/gtag/js?keys=id
+07-01 09:00:50.935 19300 19469 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/webpack-774745fcebbc8a87.js
+07-01 09:00:50.936 19300 19467 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/52bcc53e-060b90e4f28c19f7.js
+07-01 09:00:50.936 19300 19474 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/8106-d02730666dcb8b9a.js
+07-01 09:00:50.937 19300 19476 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/main-app-ba8cdb9db4962606.js
+07-01 09:00:50.937 19300 19475 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/5090-606c6480d2a07138.js
+07-01 09:00:50.938 19300 19500 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/1358-35e6ad417a978a81.js
+07-01 09:00:50.940 19300 19518 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/4385-bf59bbcbdd5c4cb8.js
+07-01 09:00:50.940 19300 19517 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/3126-0c2e709614a8fce7.js
+07-01 09:00:50.940 19300 19474 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/1979-abfd6cd997875590.js
+07-01 09:00:50.942 19300 19467 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/3581-62c7b103ece6917a.js
+07-01 09:00:50.942 19300 19469 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/389-cec8c4baf567a095.js
+07-01 09:00:50.945 19300 19469 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/7073-1dc850bdca5f4b3b.js
+07-01 09:00:50.946 19300 19467 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/4129-5b016b7f4cb7e10f.js
+07-01 09:00:50.946 19300 19469 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/023c1e32-edc217937ce9565a.js
+07-01 09:00:50.946 19300 19474 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/page-3454e96dedaa2f07.js
+07-01 09:00:50.946 19300 19475 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/7014-920ab5fa231b1646.js
+07-01 09:00:50.948 19300 19467 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/6866-f4f5d0ba8ff8ba6a.js
+07-01 09:00:50.949 19300 19474 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/3601-acc5a58b8f9dcb1f.js
+07-01 09:00:50.949 19300 19469 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/1840-85f6a39ffe848586.js
+07-01 09:00:50.949 19300 19475 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/7923-c1d174e27010fdea.js
+07-01 09:00:50.950 19300 19467 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/2337-0720e5b49ccd9af0.js
+07-01 09:00:50.951 19300 19516 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/7368-24d21e801857a37e.js
+07-01 09:00:50.951 19300 19500 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/156-620d5eaa0de405b3.js
+07-01 09:00:50.952 19300 19476 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/4945-ab7f1b51380da770.js
+07-01 09:00:50.952 19300 19468 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/2687-3ab6788441360e84.js
+07-01 09:00:50.953 19300 19524 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/2719-ea0853b306e59c7a.js
+07-01 09:00:50.954 19300 19517 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/3827-fc5e7c25854c8696.js
+07-01 09:00:50.954 19300 19518 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/layout-4a60927bd8cdc3cc.js
+07-01 09:00:50.954 19300 19527 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/6051-2d89bcc8bd48c3e0.js
+07-01 09:00:50.955 19300 19474 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/error-dfcf8060dc2e423b.js
+07-01 09:00:50.956 19300 19526 D AIQuotaLogin: provider=glm resource=https://z.ai/_next/static/chunks/1898-a1832797cc46e1a6.js
+07-01 09:00:51.428 19300 19467 D AIQuotaLogin: provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:00:52.585 19300 19300 I AIQuotaLoginTiming: glm pageFinished=3244ms host=z.ai
+07-01 09:00:52.608 19300 19300 I AIQuotaLogin: provider=glm webSessionCookieCaptured=true cookieCount=1
+07-01 09:00:52.610 19300 19467 D AIQuotaLogin: provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:00:52.615 19300 19468 D AIQuotaLogin: provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:00:52.618 19300 19300 I AIQuotaLogin: provider=glm nativeCollectorStart=aboutblank reason=page_finished from=z.ai/chat
+07-01 09:00:52.649 19300 19300 I AIQuotaCollector: provider=glm collectorMode=webview-js inject host=about:blank
+07-01 09:00:54.339 19300 19488 D AIQuotaNativeUsage: nativeUsage provider=glm ok=false diagnostic=glm_auth_required statuses=
+07-01 09:00:54.342 19300 19300 W AIQuotaCollector: provider=glm collectorMode=webview-js errorKind=glm_auth_required keptPreviousSnapshot=true
+07-01 09:00:54.356 19300 19300 I AIQuotaLogin: provider=glm reauthWebSessionCleared=true
+07-01 09:00:54.356 19300 19300 W AIQuotaLogin: provider=glm authRequiredRecovery=login
+07-01 09:00:54.361 19300 19469 D AIQuotaLogin: provider=glm resource=https://z.ai/chat
+07-01 09:00:54.517 19300 19467 D AIQuotaLogin: provider=glm resource=https://www.googletagmanager.com/gtag/js?keys=id
+07-01 09:00:54.587 19300 19467 D AIQuotaLogin: provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:00:54.616 19300 19467 D AIQuotaLogin: provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:00:54.635 19300 19467 D AIQuotaLogin: provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:00:54.641 19300 19300 I AIQuotaLogin: provider=glm webSessionCookieCaptured=true cookieCount=1
+07-01 09:00:54.651 19300 19300 I AIQuotaLogin: provider=glm nativeCollectorStart=aboutblank reason=page_finished from=z.ai/chat
+07-01 09:00:54.674 19300 19300 I AIQuotaCollector: provider=glm collectorMode=webview-js inject host=about:blank
+07-01 09:00:54.875 19300 19488 D AIQuotaNativeUsage: nativeUsage provider=glm ok=false diagnostic=glm_auth_required statuses=
+07-01 09:00:54.876 19300 19300 W AIQuotaCollector: provider=glm collectorMode=webview-js errorKind=glm_auth_required keptPreviousSnapshot=true
+07-01 09:00:54.902 19300 19300 I AIQuotaDebugCookie: provider=glm debugCookieSnapshot=true reason=connected_without_usage urlCount=8 cookieCount=8 nativeAuthContextCount=0 nativeAuthHeaderCount=0
+07-01 09:00:54.906 19300 19300 I AIQuotaLogin: provider=glm webSessionCookieCaptured=true cookieCount=1
+07-01 09:00:54.915 19300 19300 W AIQuotaLogin: provider=glm errorKind=glm_auth_required usageUnavailable=true
+07-01 09:00:55.177   692   712 V WindowManager:         {m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{119318967 u0 com.aiquota.mobile/.providers.WebLoginActivity t573}#445)/@0x63b457f sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}, taskId = 573, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},
+07-01 09:00:55.177   976  1041 V WindowManagerShell:         {m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{119318967 u0 com.aiquota.mobile/.providers.WebLoginActivity t573}#445)/@0x7caf3e3 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}, taskId = 573, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},
+07-01 09:00:55.179   976  1041 V WindowManagerShell: Transition doesn't have explicit remote, search filters for match for {id=59 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{119318967 u0 com.aiquota.mobile/.providers.WebLoginActivity t573}#445)/@0x7caf3e3 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}, taskId = 573, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},{m=TO_FRONT f=FILLS_TASK leash=Surface(name=ActivityRecord{39639988 u0 com.aiquota.mobile/.MainActivity t573}#423)/@0xc4b31e0 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.MainActivity}, taskId = 573, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}}]}
+07-01 09:00:55.180   976  1041 V WindowManagerShell: start default transition animation, info = {id=59 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{119318967 u0 com.aiquota.mobile/.providers.WebLoginActivity t573}#445)/@0x7caf3e3 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}, taskId = 573, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},{m=TO_FRONT f=FILLS_TASK leash=Surface(name=ActivityRecord{39639988 u0 com.aiquota.mobile/.MainActivity t573}#423)/@0xc4b31e0 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.MainActivity}, taskId = 573, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}}]}
+07-01 09:00:55.665 19300 19300 D VRI[WebLoginActivity]: visibilityChanged oldVisibility=true newVisibility=false
+07-01 09:00:55.689   692  2077 D CoreBackPreview: Window{30b8125 u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}: Setting back callback null

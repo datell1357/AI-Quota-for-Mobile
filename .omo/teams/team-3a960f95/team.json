@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 2,
+  "teamId": "4cbe3760-867f-40ef-a399-a48c3bb71965",
+  "teamName": "gemini-fraction-row-refresh",
+  "sessionName": "gemini fraction row refresh",
+  "sessionId": "team-3a960f95",
+  "threadTitleConvention": "[gemini-fraction-row-refresh] <member name>",
+  "status": "active",
+  "createdAt": "2026-07-01T07:13:45.347Z",
+  "updatedAt": "2026-07-01T07:15:37.732Z",
+  "archivedAt": null,
+  "leader": {
+    "kind": "main-session",
+    "sessionId": "team-3a960f95"
+  },
+  "communication": {
+    "memberLanguage": "english",
+    "replyToUserInUserLanguage": true
+  },
+  "worktree": {
+    "enabled": false,
+    "baseBranch": "dev",
+    "root": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-3a960f95\\worktrees"
+  },
+  "paths": {
+    "dir": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-3a960f95",
+    "team": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-3a960f95\\team.json",
+    "guide": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-3a960f95\\guide.md",
+    "artifacts": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-3a960f95\\artifacts"
+  },
+  "members": [
+    {
+      "id": "A",
+      "name": "gemini-fraction-impl",
+      "focus": "Gemini jSf9Qc direct row fraction parser and focused unit tests",
+      "lens": "area",
+      "deliverable": "Minimal code/tests for 0.02 used fraction -> used_percent 2 and remaining_percent 98, preserving amount rows and no DOM/fallback paths",
+      "threadId": "019f1c87-99d2-7641-bc50-089aab0af14e",
+      "threadTitle": "[gemini-fraction-row-refresh] gemini-fraction-impl",
+      "cwd": "D:/Vibe Project/AI Usage for Mobile",
+      "worktree": {
+        "path": null,
+        "branch": null
+      },
+      "status": "active"
+    },
+    {
+      "id": "B",
+      "name": "gemini-fraction-qa-review",
+      "focus": "Gemini preserve-data device QA, source guard, and final review evidence",
+      "lens": "perspective",
+      "deliverable": "Independent QA/review evidence after implementation: focused regression, source guard, adb install -r refresh, logcat/snapshot proof, and review verdict",
+      "threadId": null,
+      "threadTitle": "[gemini-fraction-row-refresh] gemini-fraction-qa-review",
+      "cwd": null,
+      "worktree": {
+        "path": null,
+        "branch": null
+      },
+      "status": "pending"
+    }
+  ],
+  "log": [
+    {
+      "ts": "2026-07-01T07:13:45.347Z",
+      "event": "created",
+      "detail": "team gemini-fraction-row-refresh"
+    },
+    {
+      "ts": "2026-07-01T07:14:10.816Z",
+      "event": "add-member",
+      "detail": "member A (area): Gemini jSf9Qc direct row fraction parser and focused unit tests"
+    },
+    {
+      "ts": "2026-07-01T07:14:11.394Z",
+      "event": "add-member",
+      "detail": "member B (perspective): Gemini preserve-data device QA, source guard, and final review evidence"
+    },
+    {
+      "ts": "2026-07-01T07:14:49.396Z",
+      "event": "bind-thread",
+      "detail": "member A -> thread 019f1c87-99d2-7641-bc50-089aab0af14e"
+    },
+    {
+      "ts": "2026-07-01T07:14:49.566Z",
+      "event": "set-status",
+      "detail": "member A -> active: Implementation thread created and assigned Todo 1-2."
+    },
+    {
+      "ts": "2026-07-01T07:15:37.732Z",
+      "event": "set-status",
+      "detail": "member A -> active: WORKING: read guide/plan; starting RED test for direct jSf9Qc fraction row."
+    }
+  ]
+}

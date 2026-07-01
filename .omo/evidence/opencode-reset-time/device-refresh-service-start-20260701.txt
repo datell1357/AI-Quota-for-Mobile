@@ -1,0 +1,2 @@
+Starting service: Intent { act=com.aiquota.mobile.action.REFRESH cmp=com.aiquota.mobile/.providers.ProviderBackgroundRefreshService (has extras) }
+Error: Requires permission not exported from uid 10233

@@ -1,0 +1,20 @@
+# B OpenCode follow-up preserve-data QA broadcast transcript
+timestamp_local=2026-07-01 Asia/Seoul
+safety=no pm clear; no uninstall; no data deletion; no saved-cookie reinjection; OpenCode provider_id only
+logcat_capture_window_seconds=210
+## clear logcat
+## reset broadcast
+adb -s emulator-5554 shell am broadcast -a com.aiquota.mobile.debug.RESET_PROVIDER -n com.aiquota.mobile/.debug.ProviderStateDebugReceiver --es provider_id opencode
+Broadcasting: Intent { act=com.aiquota.mobile.debug.RESET_PROVIDER flg=0x400000 cmp=com.aiquota.mobile/.debug.ProviderStateDebugReceiver (has extras) }
+Broadcast completed: result=0
+## refresh broadcast
+adb -s emulator-5554 shell am broadcast -a com.aiquota.mobile.debug.REFRESH_PROVIDER -n com.aiquota.mobile/.debug.ProviderRefreshDebugReceiver --es provider_id opencode
+Broadcasting: Intent { act=com.aiquota.mobile.debug.REFRESH_PROVIDER flg=0x400000 cmp=com.aiquota.mobile/.debug.ProviderRefreshDebugReceiver (has extras) }
+Broadcast completed: result=0
+capture_start_epoch=1782905069
+sleeping 210s before bounded logcat dump...
+capture_end_epoch=1782905279
+## logcat file
+.omo/evidence/B-opencode-preserve-data-qa/followup-logcat-210s-20260701.txt
+3372 .omo/evidence/B-opencode-preserve-data-qa/followup-logcat-210s-20260701.txt
+exitCode=0

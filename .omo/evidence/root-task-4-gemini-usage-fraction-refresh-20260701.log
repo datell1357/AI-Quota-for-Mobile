@@ -1,0 +1,63 @@
+--------- beginning of main
+07-01 07:24:19.898 I/AIQuotaDebugRefresh(10293): debugProviderRefresh=true provider=gemini
+07-01 07:24:20.000 D/AIQuotaBgRefreshService(10293): cycleStart providers=gemini
+07-01 07:24:20.183 D/AIQuotaBgRefreshService(10293): load provider=gemini start= warmUp=false request=1
+07-01 07:24:20.427 D/AIQuotaBgRefreshService(10293): inject provider=gemini url=
+07-01 07:24:20.436 D/AIQuotaBgRefreshService(10293): pageFinished provider=gemini url=
+07-01 07:24:22.326 D/AIQuotaGeminiUsageRpc(10293): geminiUsageHtmlDiscovery provider=gemini usagePath=/usage status=200 payloadBytes=807419 scriptSrcCount=0 batchexecuteCount=0 afInitCount=3 afDataCount=0 afShapes= usageSignalCount=15 candidateRpcCount=0 rpcIds=
+07-01 07:24:22.854 D/AIQuotaGeminiUsageRpc(10293): geminiUsageDiscovery provider=gemini usagePath=/usage rpcId=jSf9Qc status=200 payloadBytes=240 shape=array[3]:number|array[2]|boolean rowCount=2 labels=5-hour limit|Weekly limit remainingPercents=98.0|99.83 quotaSummaries=remaining=2357.0/used=0.02/limit=2357.02|remaining=48302.0/used=0./limit=48302. deepRowCount=2 deepRemainingPercents=98.0|99.83
+07-01 07:24:22.866 D/AIQuotaNativeUsage(10293): nativeUsage provider=gemini ok=true diagnostic=ok statuses=gemini_usage_page_html:200|gemini_usage_rpc_jSf9Qc:200
+07-01 07:24:22.870 D/AIQuotaBgRefreshService(10293): payload provider=gemini url= summary=root=provider|collectorMode|usage,provider=gemini,collectorMode=native-usage-page-rpc,lineCount=0,hasUsage=true,hasData=false,hasError=false
+07-01 07:24:22.873 D/AIQuotaBgRefreshService(10293): outcome provider=gemini type=Payload
+07-01 07:24:22.879 D/AIQuotaBgRefreshService(10293): saveSnapshot provider=gemini source=webview lineCount=2 planPresent=false accountPresent=false
+07-01 07:25:20.004 D/AIQuotaBgRefreshService(10293): cycleStart providers=claude,codex,gemini,copilot
+07-01 07:25:20.205 D/AIQuotaBgRefreshService(10293): load provider=claude start= warmUp=false request=2
+07-01 07:25:20.255 D/AIQuotaBgRefreshService(10293): inject provider=claude url=
+07-01 07:25:20.256 D/AIQuotaBgRefreshService(10293): pageFinished provider=claude url=
+07-01 07:25:22.773 D/AIQuotaNativeUsage(10293): nativeUsage provider=claude ok=true diagnostic=ok statuses=claude.ai/api/organizations:200:|claude.ai/api/account_profile:200:|claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/subscription_details:200:|claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/usage:200:
+07-01 07:25:22.776 D/AIQuotaBgRefreshService(10293): payload provider=claude url= summary=root=provider|organizationId|usage|collectorMode,provider=claude,collectorMode=native-bridge,lineCount=2,hasUsage=true,hasData=false,hasError=false
+07-01 07:25:22.777 D/AIQuotaBgRefreshService(10293): outcome provider=claude type=Payload
+07-01 07:25:22.779 D/AIQuotaBgRefreshService(10293): saveSnapshot provider=claude source=webview lineCount=3 planPresent=false accountPresent=false
+07-01 07:25:23.128 D/AIQuotaBgRefreshService(10293): load provider=codex start=chatgpt.com/api/auth/session warmUp=false request=3
+07-01 07:25:23.143 D/AIQuotaBgRefreshService(10293): capturedNativeHeaders provider=codex path=/api/auth/session names=Accept|Upgrade-Insecure-Requests|User-Agent|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+07-01 07:25:23.188 D/AIQuotaBgRefreshService(10293): redirectUsage provider=codex to=about:blank from=chatgpt.com/api/auth/session
+07-01 07:25:23.195 D/AIQuotaBgRefreshService(10293): pageFinished provider=codex url=chatgpt.com/api/auth/session
+07-01 07:25:23.199 D/AIQuotaBgRefreshService(10293): inject provider=codex url=
+07-01 07:25:23.203 D/AIQuotaBgRefreshService(10293): pageFinished provider=codex url=
+07-01 07:25:27.994 D/AIQuotaNativeUsage(10293): nativeUsage provider=codex ok=true diagnostic=ok statuses=chatgpt.com/api/auth/session:403:|chatgpt.com/backend-api/me:403:|chatgpt.com/backend-api/accounts/check/v4-2023-04-27:403:|chatgpt.com/backend-api/subscriptions:403:|chatgpt.com/backend-api/wham/usage:200:
+07-01 07:25:27.998 D/AIQuotaBgRefreshService(10293): payload provider=codex url= summary=root=provider|usage|collectorMode,provider=codex,collectorMode=native-bridge,lineCount=0,hasUsage=true,hasData=false,hasError=false
+07-01 07:25:28.007 D/AIQuotaBgRefreshService(10293): outcome provider=codex type=Payload
+07-01 07:25:28.016 D/AIQuotaBgRefreshService(10293): saveSnapshot provider=codex source=webview lineCount=2 planPresent=false accountPresent=false
+07-01 07:25:28.100 D/AIQuotaBgRefreshService(10293): load provider=gemini start= warmUp=false request=4
+07-01 07:25:28.112 D/AIQuotaBgRefreshService(10293): inject provider=gemini url=
+07-01 07:25:28.115 D/AIQuotaBgRefreshService(10293): pageFinished provider=gemini url=
+07-01 07:25:28.462 D/AIQuotaGeminiUsageRpc(10293): geminiUsageHtmlDiscovery provider=gemini usagePath=/usage status=200 payloadBytes=807417 scriptSrcCount=0 batchexecuteCount=0 afInitCount=3 afDataCount=0 afShapes= usageSignalCount=15 candidateRpcCount=0 rpcIds=
+07-01 07:25:28.972 D/AIQuotaGeminiUsageRpc(10293): geminiUsageDiscovery provider=gemini usagePath=/usage rpcId=jSf9Qc status=200 payloadBytes=241 shape=array[3]:number|array[2]|boolean rowCount=2 labels=5-hour limit|Weekly limit remainingPercents=98.0|99.83 quotaSummaries=remaining=2357.0/used=0.02/limit=2357.02|remaining=48302.0/used=0./limit=48302. deepRowCount=2 deepRemainingPercents=98.0|99.83
+07-01 07:25:28.973 D/AIQuotaNativeUsage(10293): nativeUsage provider=gemini ok=true diagnostic=ok statuses=gemini_usage_page_html:200|gemini_usage_rpc_jSf9Qc:200
+07-01 07:25:28.975 D/AIQuotaBgRefreshService(10293): payload provider=gemini url= summary=root=provider|collectorMode|usage,provider=gemini,collectorMode=native-usage-page-rpc,lineCount=0,hasUsage=true,hasData=false,hasError=false
+07-01 07:25:28.976 D/AIQuotaBgRefreshService(10293): outcome provider=gemini type=Payload
+07-01 07:25:28.979 D/AIQuotaBgRefreshService(10293): saveSnapshot provider=gemini source=webview lineCount=2 planPresent=false accountPresent=false
+07-01 07:25:29.056 D/AIQuotaBgRefreshService(10293): load provider=copilot start=github.com/ warmUp=true request=5
+07-01 07:25:32.879 D/AIQuotaBgRefreshService(10293): pageFinished provider=copilot url=github.com/
+07-01 07:25:32.879 D/AIQuotaBgRefreshService(10293): warmUpComplete provider=copilot from=github.com/ to=
+07-01 07:25:32.910 D/AIQuotaBgRefreshService(10293): pageFinished provider=copilot url=github.com/
+07-01 07:25:32.932 D/AIQuotaBgRefreshService(10293): inject provider=copilot url=
+07-01 07:25:32.932 D/AIQuotaBgRefreshService(10293): pageFinished provider=copilot url=
+07-01 07:25:36.839 D/AIQuotaNativeUsage(10293): nativeUsage provider=copilot ok=true diagnostic=copilot_usage_unavailable statuses=
+07-01 07:25:36.842 D/AIQuotaBgRefreshService(10293): payload provider=copilot url= summary=root=provider|plan|quotas|collectorMode,provider=copilot,collectorMode=native-bridge,lineCount=0,hasUsage=false,hasData=false,hasError=false
+07-01 07:25:36.849 D/AIQuotaBgRefreshService(10293): outcome provider=copilot type=Payload
+07-01 07:25:36.852 D/AIQuotaBgRefreshService(10293): saveSnapshot provider=copilot source=webview lineCount=1 planPresent=true accountPresent=false
+07-01 07:26:20.007 D/AIQuotaBgRefreshService(10293): cycleStart providers=claude,codex,gemini,copilot
+07-01 07:26:20.183 D/AIQuotaBgRefreshService(10293): load provider=claude start= warmUp=false request=6
+07-01 07:26:20.215 D/AIQuotaBgRefreshService(10293): inject provider=claude url=
+07-01 07:26:20.215 D/AIQuotaBgRefreshService(10293): pageFinished provider=claude url=
+07-01 07:26:21.860 D/AIQuotaNativeUsage(10293): nativeUsage provider=claude ok=true diagnostic=ok statuses=claude.ai/api/organizations:200:|claude.ai/api/account_profile:200:|claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/subscription_details:200:|claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/usage:200:
+07-01 07:26:21.863 D/AIQuotaBgRefreshService(10293): payload provider=claude url= summary=root=provider|organizationId|usage|collectorMode,provider=claude,collectorMode=native-bridge,lineCount=2,hasUsage=true,hasData=false,hasError=false
+07-01 07:26:21.865 D/AIQuotaBgRefreshService(10293): outcome provider=claude type=Payload
+07-01 07:26:21.867 D/AIQuotaBgRefreshService(10293): saveSnapshot provider=claude source=webview lineCount=3 planPresent=false accountPresent=false
+07-01 07:26:22.175 D/AIQuotaBgRefreshService(10293): load provider=codex start=chatgpt.com/api/auth/session warmUp=false request=7
+07-01 07:26:22.184 D/AIQuotaBgRefreshService(10293): capturedNativeHeaders provider=codex path=/api/auth/session names=Accept|Upgrade-Insecure-Requests|User-Agent|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+07-01 07:26:22.232 D/AIQuotaBgRefreshService(10293): redirectUsage provider=codex to=about:blank from=chatgpt.com/api/auth/session
+07-01 07:26:22.247 D/AIQuotaBgRefreshService(10293): pageFinished provider=codex url=chatgpt.com/api/auth/session
+07-01 07:26:22.252 D/AIQuotaBgRefreshService(10293): inject provider=codex url=
+07-01 07:26:22.254 D/AIQuotaBgRefreshService(10293): pageFinished provider=codex url=

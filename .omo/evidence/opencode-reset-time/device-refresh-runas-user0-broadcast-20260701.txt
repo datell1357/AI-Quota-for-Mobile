@@ -1,0 +1,2 @@
+Broadcasting: Intent { act=com.aiquota.mobile.action.REFRESH flg=0x400000 cmp=com.aiquota.mobile/.providers.ProviderRefreshReceiver (has extras) }
+Broadcast completed: result=0

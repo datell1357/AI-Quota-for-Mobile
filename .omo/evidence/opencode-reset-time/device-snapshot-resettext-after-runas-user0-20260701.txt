@@ -1,0 +1,3 @@
+provider=opencode state=CONNECTED refresh=IDLE lineCount=2
+opencode:go_5_hour_limit | Go 5-Hour Limit | Resets in 4h 27m | 0.99
+opencode:go_weekly_limit | Go Weekly Limit | Resets in 4d 10h | 1

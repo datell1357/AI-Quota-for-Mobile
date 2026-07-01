@@ -1,0 +1,44 @@
+07-01 11:01:19.462 I/adbd    (  539): adbd service requested 'shell,v2,TERM=dumb,raw:am broadcast -a com.aiquota.mobile.debug.RESET_PROVIDER -n com.aiquota.mobile/.debug.ProviderStateDebugReceiver --es provider_id opencode'
+07-01 11:01:19.486 I/AIQuotaDebugState(32260): debugProviderReset=true providers=opencode
+07-01 11:01:21.615 I/adbd    (  539): adbd service requested 'shell,v2,TERM=dumb,raw:am broadcast -a com.aiquota.mobile.debug.REFRESH_PROVIDER -n com.aiquota.mobile/.debug.ProviderRefreshDebugReceiver --es provider_id opencode'
+07-01 11:01:21.686 I/AIQuotaDebugRefresh(32260): debugProviderRefresh=true provider=opencode
+07-01 11:01:21.865 D/AIQuotaBgRefreshService(32260): cycleStart providers=opencode
+07-01 11:01:22.153 D/AIQuotaBgRefreshService(32260): load provider=opencode start= warmUp=false request=1
+07-01 11:01:22.379 D/AIQuotaBgRefreshService(32260): inject provider=opencode url=
+07-01 11:01:22.384 D/AIQuotaBgRefreshService(32260): pageFinished provider=opencode url=
+07-01 11:01:25.994 D/AIQuotaNativeJson(32260): nativeJson provider=opencode status=200 url=opencode.ai/workspace/wrk_REDACTED/go cookieHost=opencode.ai
+07-01 11:01:25.996 D/AIQuotaNativeUsage(32260): nativeUsage provider=opencode ok=false diagnostic=opencode_usage_unavailable statuses=opencode.ai/workspace/wrk_REDACTED/go:200:
+07-01 11:01:26.000 D/AIQuotaBgRefreshService(32260): collectorError provider=opencode errorKind=opencode_usage_unavailable retry=0 url= summary=root=provider|errorKind|message,provider=opencode,collectorMode=none,lineCount=0,hasUsage=false,hasData=false,hasError=true
+07-01 11:01:26.002 D/AIQuotaBgRefreshService(32260): outcome provider=opencode type=Failure
+07-01 11:01:26.007 W/AIQuotaBgRefreshService(32260): failure provider=opencode kind=COLLECTOR_ERROR message=Background collector failed: opencode_usage_unavailable
+07-01 11:01:26.020 I/AIQuotaDebugCookie(32260): provider=opencode debugCookieSnapshot=false reason=background_webview_non_auth_failure cookieCount=0
+07-01 11:02:21.862 D/AIQuotaBgRefreshService(32260): cycleStart providers=claude,codex,glm,opencode,gemini,copilot
+07-01 11:02:32.507 D/AIQuotaBgRefreshService(32260): load provider=opencode start= warmUp=false request=4
+07-01 11:02:32.519 D/AIQuotaBgRefreshService(32260): inject provider=opencode url=
+07-01 11:02:32.519 D/AIQuotaBgRefreshService(32260): pageFinished provider=opencode url=
+07-01 11:02:33.479 D/AIQuotaNativeJson(32260): nativeJson provider=opencode status=200 url=opencode.ai/workspace/wrk_REDACTED/go cookieHost=opencode.ai
+07-01 11:02:33.480 D/AIQuotaNativeUsage(32260): nativeUsage provider=opencode ok=false diagnostic=opencode_usage_unavailable statuses=opencode.ai/workspace/wrk_REDACTED/go:200:
+07-01 11:02:33.483 D/AIQuotaBgRefreshService(32260): collectorError provider=opencode errorKind=opencode_usage_unavailable retry=0 url= summary=root=provider|errorKind|message,provider=opencode,collectorMode=none,lineCount=0,hasUsage=false,hasData=false,hasError=true
+07-01 11:02:33.483 D/AIQuotaBgRefreshService(32260): outcome provider=opencode type=Failure
+07-01 11:02:33.486 W/AIQuotaBgRefreshService(32260): failure provider=opencode kind=COLLECTOR_ERROR message=Background collector failed: opencode_usage_unavailable
+07-01 11:02:33.503 I/AIQuotaDebugCookie(32260): provider=opencode debugCookieSnapshot=true reason=background_webview_non_auth_failure urlCount=6 cookieCount=6 nativeAuthContextCount=0 nativeAuthHeaderCount=0
+07-01 11:03:21.864 D/AIQuotaBgRefreshService(32260): cycleStart providers=claude,codex,glm,opencode,gemini,copilot
+07-01 11:03:32.059 D/AIQuotaBgRefreshService(32260): load provider=opencode start= warmUp=false request=9
+07-01 11:03:32.076 D/AIQuotaBgRefreshService(32260): inject provider=opencode url=
+07-01 11:03:32.076 D/AIQuotaBgRefreshService(32260): pageFinished provider=opencode url=
+07-01 11:03:35.514 D/AIQuotaNativeJson(32260): nativeJson provider=opencode status=200 url=opencode.ai/workspace/wrk_REDACTED/go cookieHost=opencode.ai
+07-01 11:03:35.514 D/AIQuotaNativeUsage(32260): nativeUsage provider=opencode ok=false diagnostic=opencode_usage_unavailable statuses=opencode.ai/workspace/wrk_REDACTED/go:200:
+07-01 11:03:35.518 D/AIQuotaBgRefreshService(32260): collectorError provider=opencode errorKind=opencode_usage_unavailable retry=0 url= summary=root=provider|errorKind|message,provider=opencode,collectorMode=none,lineCount=0,hasUsage=false,hasData=false,hasError=true
+07-01 11:03:35.518 D/AIQuotaBgRefreshService(32260): outcome provider=opencode type=Failure
+07-01 11:03:35.520 W/AIQuotaBgRefreshService(32260): failure provider=opencode kind=COLLECTOR_ERROR message=Background collector failed: opencode_usage_unavailable
+07-01 11:03:35.535 I/AIQuotaDebugCookie(32260): provider=opencode debugCookieSnapshot=true reason=background_webview_non_auth_failure urlCount=9 cookieCount=9 nativeAuthContextCount=0 nativeAuthHeaderCount=0
+07-01 11:04:21.865 D/AIQuotaBgRefreshService(32260): cycleStart providers=claude,codex,glm,opencode,gemini,copilot
+07-01 11:04:33.416 D/AIQuotaBgRefreshService(32260): load provider=opencode start= warmUp=false request=14
+07-01 11:04:33.432 D/AIQuotaBgRefreshService(32260): inject provider=opencode url=
+07-01 11:04:33.434 D/AIQuotaBgRefreshService(32260): pageFinished provider=opencode url=
+07-01 11:04:36.385 D/AIQuotaNativeJson(32260): nativeJson provider=opencode status=200 url=opencode.ai/workspace/wrk_REDACTED/go cookieHost=opencode.ai
+07-01 11:04:36.385 D/AIQuotaNativeUsage(32260): nativeUsage provider=opencode ok=false diagnostic=opencode_usage_unavailable statuses=opencode.ai/workspace/wrk_REDACTED/go:200:
+07-01 11:04:36.389 D/AIQuotaBgRefreshService(32260): collectorError provider=opencode errorKind=opencode_usage_unavailable retry=0 url= summary=root=provider|errorKind|message,provider=opencode,collectorMode=none,lineCount=0,hasUsage=false,hasData=false,hasError=true
+07-01 11:04:36.389 D/AIQuotaBgRefreshService(32260): outcome provider=opencode type=Failure
+07-01 11:04:36.392 W/AIQuotaBgRefreshService(32260): failure provider=opencode kind=COLLECTOR_ERROR message=Background collector failed: opencode_usage_unavailable
+07-01 11:04:36.412 I/AIQuotaDebugCookie(32260): provider=opencode debugCookieSnapshot=true reason=background_webview_non_auth_failure urlCount=9 cookieCount=9 nativeAuthContextCount=0 nativeAuthHeaderCount=0

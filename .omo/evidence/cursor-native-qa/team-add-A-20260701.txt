@@ -1,0 +1,10 @@
+added member A to team team-b725da90.
+
+Send this as the new thread's first message (title the thread "[cursor-native-final] cursor-native-source"):
+---
+You are member A (cursor-native-source) of team cursor-native-final - owner of: Cursor provider source/tests for native about:blank collection. Your thread title is `[cursor-native-final] cursor-native-source`.
+FIRST read your field manual at `D:\Vibe Project\AI Usage for Mobile\.omo\teams\team-b725da90\guide.md`, then the team state at `D:\Vibe Project\AI Usage for Mobile\.omo\teams\team-b725da90\team.json`; they define your scope, deliverable, the leader, the artifacts directory, and the communication rules.
+Work from the repository root unless your manual assigns a worktree.
+Communicate with the team and leader in English; reply to the end user in the user's own language.
+Start now. Push updates to the leader and relevant peers with `codex_app.send_message_to_thread` as you work - findings, `WORKING:` heartbeats, and `BLOCKED:` the instant you stall - never just one report at the end.
+---

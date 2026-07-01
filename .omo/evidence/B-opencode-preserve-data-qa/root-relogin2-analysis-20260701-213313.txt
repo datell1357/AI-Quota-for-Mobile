@@ -1,0 +1,140 @@
+stamp=20260701-213313
+nativeUsage ok true:
+0
+nativeUsage ok false:
+4
+saveSnapshot:
+0
+nativeJson status 200:
+8
+opencode_server_text:
+4
+blocked provider json endpoint:
+0
+legacy DOM markers:
+0
+opencode debug restore:
+0
+fallback stale fake:
+0
+first 120 filtered lines:
+2:07-01 12:32:52.872 I/adbd    (  539): adbd service requested 'shell,v2,TERM=xterm-256color,raw:am broadcast -a com.aiquota.mobile.debug.REFRESH_PROVIDER -n com.aiquota.mobile/.debug.ProviderRefreshDebugReceiver --es provider_id opencode'
+6:07-01 12:32:52.914 I/AIQuotaDebugRefresh( 9782): debugProviderRefresh=true provider=opencode
+8:07-01 12:32:52.968 D/AIQuotaBgRefreshService( 9782): cycleStart providers=opencode
+20:07-01 12:32:53.127 D/AIQuotaBgRefreshService( 9782): load provider=opencode start= warmUp=false request=64
+31:07-01 12:32:53.267 D/AIQuotaBgRefreshService( 9782): inject provider=opencode url=
+32:07-01 12:32:53.271 D/AIQuotaBgRefreshService( 9782): pageFinished provider=opencode url=
+34:07-01 12:32:54.332 D/AIQuotaNativeJson( 9782): nativeJson provider=opencode status=200 url=opencode.ai/workspace/wrk_REDACTED/go cookieHost=opencode.ai
+35:07-01 12:32:54.901 D/AIQuotaNativeJson( 9782): nativeJson provider=opencode status=200 url=opencode.ai/_server cookieHost=opencode.ai
+36:07-01 12:32:54.912 D/AIQuotaNativeUsage( 9782): nativeUsage provider=opencode ok=false diagnostic=opencode_usage_unavailable statuses=opencode.ai/workspace/wrk_REDACTED/go:200:|opencode.ai/_server:200:|opencode_server_text:bytes=16196:rollingUsage=false:weeklyUsage=false:resetInSec=false|opencode_text:bytes=16065:html=true:scriptJson=0:usageSignals=39:stateMarkers=0
+37:07-01 12:32:54.918 D/AIQuotaBgRefreshService( 9782): collectorError provider=opencode errorKind=opencode_usage_unavailable retry=0 url= summary=root=provider|errorKind|message,provider=opencode,collectorMode=none,lineCount=0,hasUsage=false,hasData=false,hasError=true
+38:07-01 12:32:54.918 D/AIQuotaBgRefreshService( 9782): outcome provider=opencode type=Failure
+39:07-01 12:32:54.925 W/AIQuotaBgRefreshService( 9782): failure provider=opencode kind=COLLECTOR_ERROR message=Background collector failed: opencode_usage_unavailable
+40:07-01 12:32:54.974 I/AIQuotaDebugCookie( 9782): provider=opencode debugCookieSnapshot=true reason=background_webview_non_auth_failure urlCount=12 cookieCount=12 nativeAuthContextCount=0 nativeAuthHeaderCount=0
+953:07-01 12:33:52.971 D/AIQuotaBgRefreshService( 9782): cycleStart providers=claude,codex,glm,opencode,gemini,copilot
+955:07-01 12:33:53.249 I/AIQuotaDebugCookie( 9782): provider=claude debugCookieRestore=true reason=background_collection source=external urlCount=10 cookieCount=146
+956:07-01 12:33:53.252 D/AIQuotaBgRefreshService( 9782): load provider=claude start= warmUp=false request=65
+958:07-01 12:33:53.312 D/AIQuotaBgRefreshService( 9782): inject provider=claude url=
+959:07-01 12:33:53.316 D/AIQuotaBgRefreshService( 9782): pageFinished provider=claude url=
+965:07-01 12:33:54.347 D/AIQuotaNativeJson( 9782): nativeJson provider=claude status=200 url=claude.ai/api/organizations cookieHost=claude.ai
+974:07-01 12:33:54.617 D/AIQuotaNativeJson( 9782): nativeJson provider=claude status=200 url=claude.ai/api/account_profile cookieHost=claude.ai
+980:07-01 12:33:55.225 D/AIQuotaNativeJson( 9782): nativeJson provider=claude status=200 url=claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/subscription_details cookieHost=claude.ai
+1011:07-01 12:33:55.538 D/AIQuotaNativeJson( 9782): nativeJson provider=claude status=200 url=claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/usage cookieHost=claude.ai
+1012:07-01 12:33:55.544 D/AIQuotaNativeUsage( 9782): nativeUsage provider=claude ok=true diagnostic=ok statuses=claude.ai/api/organizations:200:|claude.ai/api/account_profile:200:|claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/subscription_details:200:|claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/usage:200:
+1013:07-01 12:33:55.551 D/AIQuotaBgRefreshService( 9782): payload provider=claude url= summary=root=provider|organizationId|usage|collectorMode,provider=claude,collectorMode=native-bridge,lineCount=2,hasUsage=true,hasData=false,hasError=false
+1014:07-01 12:33:55.557 D/AIQuotaBgRefreshService( 9782): outcome provider=claude type=Payload
+1015:07-01 12:33:55.565 D/AIQuotaBgRefreshService( 9782): saveSnapshot provider=claude source=webview lineCount=3 planPresent=false accountPresent=false
+1016:07-01 12:33:55.603 I/AIQuotaDebugCookie( 9782): provider=claude debugCookieSnapshot=true reason=background_webview_snapshot urlCount=10 cookieCount=10 nativeAuthContextCount=0 nativeAuthHeaderCount=0
+1036:07-01 12:33:56.385 I/AIQuotaDebugCookie( 9782): provider=codex debugCookieRestore=true reason=background_collection source=external urlCount=20 cookieCount=336
+1037:07-01 12:33:56.396 I/AIQuotaDebugCookie( 9782): provider=codex debugNativeAuthRestore=true source=external nativeAuthContextCount=4 nativeAuthHeaderCount=12
+1038:07-01 12:33:56.400 D/AIQuotaBgRefreshService( 9782): load provider=codex start=chatgpt.com/api/auth/session warmUp=false request=66
+1039:07-01 12:33:56.418 D/AIQuotaBgRefreshService( 9782): capturedNativeHeaders provider=codex path=/api/auth/session names=Accept|Upgrade-Insecure-Requests|User-Agent|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+1042:07-01 12:33:56.508 D/AIQuotaBgRefreshService( 9782): redirectUsage provider=codex to=about:blank from=chatgpt.com/api/auth/session
+1043:07-01 12:33:56.518 D/AIQuotaBgRefreshService( 9782): pageFinished provider=codex url=chatgpt.com/api/auth/session
+1045:07-01 12:33:56.544 D/AIQuotaBgRefreshService( 9782): inject provider=codex url=
+1046:07-01 12:33:56.549 D/AIQuotaBgRefreshService( 9782): pageFinished provider=codex url=
+1047:07-01 12:33:57.525 D/AIQuotaNativeJson( 9782): nativeJson provider=codex status=403 url=chatgpt.com/api/auth/session cookieHost=chatgpt.com
+1055:07-01 12:33:58.124 D/AIQuotaNativeJson( 9782): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/me cookieHost=chatgpt.com
+1056:07-01 12:33:59.153 D/AIQuotaNativeJson( 9782): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/accounts/check/v4-2023-04-27 cookieHost=chatgpt.com
+1059:07-01 12:34:00.206 D/AIQuotaNativeJson( 9782): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/subscriptions cookieHost=chatgpt.com
+1091:07-01 12:34:01.944 D/AIQuotaNativeJson( 9782): nativeJson provider=codex status=200 url=chatgpt.com/backend-api/wham/usage cookieHost=chatgpt.com
+1092:07-01 12:34:01.950 D/AIQuotaNativeUsage( 9782): nativeUsage provider=codex ok=true diagnostic=ok statuses=chatgpt.com/api/auth/session:403:|chatgpt.com/backend-api/me:403:|chatgpt.com/backend-api/accounts/check/v4-2023-04-27:403:|chatgpt.com/backend-api/subscriptions:403:|chatgpt.com/backend-api/wham/usage:200:
+1093:07-01 12:34:01.955 D/AIQuotaBgRefreshService( 9782): payload provider=codex url= summary=root=provider|usage|collectorMode,provider=codex,collectorMode=native-bridge,lineCount=0,hasUsage=true,hasData=false,hasError=false
+1094:07-01 12:34:01.960 D/AIQuotaBgRefreshService( 9782): outcome provider=codex type=Payload
+1095:07-01 12:34:01.966 D/AIQuotaBgRefreshService( 9782): saveSnapshot provider=codex source=webview lineCount=2 planPresent=false accountPresent=false
+1096:07-01 12:34:02.042 I/AIQuotaDebugCookie( 9782): provider=codex debugCookieSnapshot=true reason=background_webview_snapshot urlCount=20 cookieCount=20 nativeAuthContextCount=4 nativeAuthHeaderCount=12
+1115:07-01 12:34:03.766 D/AIQuotaBgRefreshService( 9782): outcome provider=glm type=Snapshot
+1116:07-01 12:34:03.772 D/AIQuotaBgRefreshService( 9782): saveSnapshot provider=glm source=native lineCount=3 planPresent=false accountPresent=true
+1117:07-01 12:34:03.796 I/AIQuotaDebugCookie( 9782): provider=glm debugCookieSnapshot=false reason=background_native_snapshot cookieCount=0
+1119:07-01 12:34:03.938 D/AIQuotaBgRefreshService( 9782): load provider=opencode start= warmUp=false request=67
+1120:07-01 12:34:03.983 D/AIQuotaBgRefreshService( 9782): inject provider=opencode url=
+1121:07-01 12:34:03.988 D/AIQuotaBgRefreshService( 9782): pageFinished provider=opencode url=
+1127:07-01 12:34:04.268 D/AIQuotaNativeJson( 9782): nativeJson provider=opencode status=200 url=opencode.ai/workspace/wrk_REDACTED/go cookieHost=opencode.ai
+1130:07-01 12:34:04.852 D/AIQuotaNativeJson( 9782): nativeJson provider=opencode status=200 url=opencode.ai/_server cookieHost=opencode.ai
+1131:07-01 12:34:04.856 D/AIQuotaNativeUsage( 9782): nativeUsage provider=opencode ok=false diagnostic=opencode_usage_unavailable statuses=opencode.ai/workspace/wrk_REDACTED/go:200:|opencode.ai/_server:200:|opencode_server_text:bytes=16196:rollingUsage=false:weeklyUsage=false:resetInSec=false|opencode_text:bytes=16065:html=true:scriptJson=0:usageSignals=39:stateMarkers=0
+1132:07-01 12:34:04.864 D/AIQuotaBgRefreshService( 9782): collectorError provider=opencode errorKind=opencode_usage_unavailable retry=0 url= summary=root=provider|errorKind|message,provider=opencode,collectorMode=none,lineCount=0,hasUsage=false,hasData=false,hasError=true
+1133:07-01 12:34:04.864 D/AIQuotaBgRefreshService( 9782): outcome provider=opencode type=Failure
+1134:07-01 12:34:04.872 W/AIQuotaBgRefreshService( 9782): failure provider=opencode kind=COLLECTOR_ERROR message=Background collector failed: opencode_usage_unavailable
+1135:07-01 12:34:04.909 I/AIQuotaDebugCookie( 9782): provider=opencode debugCookieSnapshot=true reason=background_webview_non_auth_failure urlCount=12 cookieCount=12 nativeAuthContextCount=0 nativeAuthHeaderCount=0
+1137:07-01 12:34:05.062 D/AIQuotaBgRefreshService( 9782): load provider=gemini start= warmUp=false request=68
+1138:07-01 12:34:05.108 D/AIQuotaBgRefreshService( 9782): inject provider=gemini url=
+1139:07-01 12:34:05.112 D/AIQuotaBgRefreshService( 9782): pageFinished provider=gemini url=
+1140:07-01 12:34:05.119 D/AIQuotaNativeUsage( 9782): nativeUsage provider=gemini ok=false diagnostic=gemini_usage_cookie_unavailable statuses=
+1141:07-01 12:34:05.122 D/AIQuotaBgRefreshService( 9782): collectorError provider=gemini errorKind=gemini_usage_cookie_unavailable retry=0 url= summary=root=provider|errorKind|message,provider=gemini,collectorMode=none,lineCount=0,hasUsage=false,hasData=false,hasError=true
+1142:07-01 12:34:05.123 D/AIQuotaBgRefreshService( 9782): outcome provider=gemini type=Failure
+1143:07-01 12:34:05.128 W/AIQuotaBgRefreshService( 9782): failure provider=gemini kind=COLLECTOR_ERROR message=Background collector failed: gemini_usage_cookie_unavailable
+1144:07-01 12:34:05.156 I/AIQuotaDebugCookie( 9782): provider=gemini debugCookieSnapshot=true reason=background_webview_non_auth_failure urlCount=6 cookieCount=6 nativeAuthContextCount=0 nativeAuthHeaderCount=0
+1145:07-01 12:34:05.322 I/AIQuotaDebugCookie( 9782): provider=copilot debugCookieRestore=true reason=background_collection source=external urlCount=3 cookieCount=48
+1146:07-01 12:34:05.325 D/AIQuotaBgRefreshService( 9782): load provider=copilot start=github.com/ warmUp=true request=69
+1197:07-01 12:34:07.321 D/AIQuotaBgRefreshService( 9782): pageFinished provider=copilot url=github.com/
+1198:07-01 12:34:07.323 D/AIQuotaBgRefreshService( 9782): warmUpComplete provider=copilot from=github.com/ to=
+1199:07-01 12:34:07.358 D/AIQuotaBgRefreshService( 9782): pageFinished provider=copilot url=github.com/
+1200:07-01 12:34:07.427 D/AIQuotaBgRefreshService( 9782): inject provider=copilot url=
+1201:07-01 12:34:07.435 D/AIQuotaBgRefreshService( 9782): pageFinished provider=copilot url=
+1219:07-01 12:34:10.506 D/AIQuotaNativeUsage( 9782): nativeUsage provider=copilot ok=true diagnostic=copilot_usage_unavailable statuses=
+1220:07-01 12:34:10.516 D/AIQuotaBgRefreshService( 9782): payload provider=copilot url= summary=root=provider|plan|quotas|collectorMode,provider=copilot,collectorMode=native-bridge,lineCount=0,hasUsage=false,hasData=false,hasError=false
+1221:07-01 12:34:10.520 D/AIQuotaBgRefreshService( 9782): outcome provider=copilot type=Payload
+1222:07-01 12:34:10.524 D/AIQuotaBgRefreshService( 9782): saveSnapshot provider=copilot source=webview lineCount=1 planPresent=true accountPresent=false
+1223:07-01 12:34:10.550 I/AIQuotaDebugCookie( 9782): provider=copilot debugCookieSnapshot=true reason=background_webview_snapshot urlCount=3 cookieCount=3 nativeAuthContextCount=0 nativeAuthHeaderCount=0
+1704:07-01 12:34:52.973 D/AIQuotaBgRefreshService( 9782): cycleStart providers=claude,codex,glm,opencode,gemini,copilot
+1706:07-01 12:34:53.219 I/AIQuotaDebugCookie( 9782): provider=claude debugCookieRestore=true reason=background_collection source=external urlCount=10 cookieCount=146
+1707:07-01 12:34:53.221 D/AIQuotaBgRefreshService( 9782): load provider=claude start= warmUp=false request=70
+1708:07-01 12:34:53.285 D/AIQuotaBgRefreshService( 9782): inject provider=claude url=
+1709:07-01 12:34:53.289 D/AIQuotaBgRefreshService( 9782): pageFinished provider=claude url=
+1711:07-01 12:34:54.845 D/AIQuotaNativeJson( 9782): nativeJson provider=claude status=200 url=claude.ai/api/organizations cookieHost=claude.ai
+1714:07-01 12:34:55.127 D/AIQuotaNativeJson( 9782): nativeJson provider=claude status=200 url=claude.ai/api/account_profile cookieHost=claude.ai
+1749:07-01 12:34:55.770 D/AIQuotaNativeJson( 9782): nativeJson provider=claude status=200 url=claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/subscription_details cookieHost=claude.ai
+1750:07-01 12:34:56.108 D/AIQuotaNativeJson( 9782): nativeJson provider=claude status=200 url=claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/usage cookieHost=claude.ai
+1751:07-01 12:34:56.114 D/AIQuotaNativeUsage( 9782): nativeUsage provider=claude ok=true diagnostic=ok statuses=claude.ai/api/organizations:200:|claude.ai/api/account_profile:200:|claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/subscription_details:200:|claude.ai/api/organizations/6d7e7f53-6216-45b3-93bb-764f73f98c92/usage:200:
+1752:07-01 12:34:56.124 D/AIQuotaBgRefreshService( 9782): payload provider=claude url= summary=root=provider|organizationId|usage|collectorMode,provider=claude,collectorMode=native-bridge,lineCount=2,hasUsage=true,hasData=false,hasError=false
+1753:07-01 12:34:56.130 D/AIQuotaBgRefreshService( 9782): outcome provider=claude type=Payload
+1754:07-01 12:34:56.140 D/AIQuotaBgRefreshService( 9782): saveSnapshot provider=claude source=webview lineCount=3 planPresent=false accountPresent=false
+1755:07-01 12:34:56.197 I/AIQuotaDebugCookie( 9782): provider=claude debugCookieSnapshot=true reason=background_webview_snapshot urlCount=10 cookieCount=10 nativeAuthContextCount=0 nativeAuthHeaderCount=0
+1774:07-01 12:34:57.150 I/AIQuotaDebugCookie( 9782): provider=codex debugCookieRestore=true reason=background_collection source=external urlCount=20 cookieCount=336
+1775:07-01 12:34:57.167 I/AIQuotaDebugCookie( 9782): provider=codex debugNativeAuthRestore=true source=external nativeAuthContextCount=4 nativeAuthHeaderCount=12
+1776:07-01 12:34:57.172 D/AIQuotaBgRefreshService( 9782): load provider=codex start=chatgpt.com/api/auth/session warmUp=false request=71
+1777:07-01 12:34:57.185 D/AIQuotaBgRefreshService( 9782): capturedNativeHeaders provider=codex path=/api/auth/session names=Accept|Upgrade-Insecure-Requests|User-Agent|sec-ch-ua|sec-ch-ua-mobile|sec-ch-ua-platform
+1780:07-01 12:34:57.336 D/AIQuotaBgRefreshService( 9782): redirectUsage provider=codex to=about:blank from=chatgpt.com/api/auth/session
+1781:07-01 12:34:57.391 D/AIQuotaBgRefreshService( 9782): pageFinished provider=codex url=chatgpt.com/api/auth/session
+1782:07-01 12:34:57.414 D/AIQuotaBgRefreshService( 9782): inject provider=codex url=
+1784:07-01 12:34:57.419 D/AIQuotaBgRefreshService( 9782): pageFinished provider=codex url=
+1790:07-01 12:34:58.407 D/AIQuotaNativeJson( 9782): nativeJson provider=codex status=403 url=chatgpt.com/api/auth/session cookieHost=chatgpt.com
+1793:07-01 12:34:59.474 D/AIQuotaNativeJson( 9782): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/me cookieHost=chatgpt.com
+1811:07-01 12:35:00.524 D/AIQuotaNativeJson( 9782): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/accounts/check/v4-2023-04-27 cookieHost=chatgpt.com
+1812:07-01 12:35:01.575 D/AIQuotaNativeJson( 9782): nativeJson provider=codex status=403 url=chatgpt.com/backend-api/subscriptions cookieHost=chatgpt.com
+1844:07-01 12:35:03.256 D/AIQuotaNativeJson( 9782): nativeJson provider=codex status=200 url=chatgpt.com/backend-api/wham/usage cookieHost=chatgpt.com
+1845:07-01 12:35:03.258 D/AIQuotaNativeUsage( 9782): nativeUsage provider=codex ok=true diagnostic=ok statuses=chatgpt.com/api/auth/session:403:|chatgpt.com/backend-api/me:403:|chatgpt.com/backend-api/accounts/check/v4-2023-04-27:403:|chatgpt.com/backend-api/subscriptions:403:|chatgpt.com/backend-api/wham/usage:200:
+1846:07-01 12:35:03.271 D/AIQuotaBgRefreshService( 9782): payload provider=codex url= summary=root=provider|usage|collectorMode,provider=codex,collectorMode=native-bridge,lineCount=0,hasUsage=true,hasData=false,hasError=false
+1847:07-01 12:35:03.276 D/AIQuotaBgRefreshService( 9782): outcome provider=codex type=Payload
+1848:07-01 12:35:03.283 D/AIQuotaBgRefreshService( 9782): saveSnapshot provider=codex source=webview lineCount=2 planPresent=false accountPresent=false
+1849:07-01 12:35:03.356 I/AIQuotaDebugCookie( 9782): provider=codex debugCookieSnapshot=true reason=background_webview_snapshot urlCount=20 cookieCount=20 nativeAuthContextCount=4 nativeAuthHeaderCount=12
+1851:07-01 12:35:05.172 D/AIQuotaBgRefreshService( 9782): outcome provider=glm type=Snapshot
+1852:07-01 12:35:05.179 D/AIQuotaBgRefreshService( 9782): saveSnapshot provider=glm source=native lineCount=3 planPresent=false accountPresent=true
+1853:07-01 12:35:05.201 I/AIQuotaDebugCookie( 9782): provider=glm debugCookieSnapshot=false reason=background_native_snapshot cookieCount=0
+1854:07-01 12:35:05.304 D/AIQuotaBgRefreshService( 9782): load provider=opencode start= warmUp=false request=72
+1883:07-01 12:35:05.413 D/AIQuotaBgRefreshService( 9782): inject provider=opencode url=
+1884:07-01 12:35:05.414 D/AIQuotaBgRefreshService( 9782): pageFinished provider=opencode url=
+1906:07-01 12:35:07.127 D/AIQuotaNativeJson( 9782): nativeJson provider=opencode status=200 url=opencode.ai/workspace/wrk_REDACTED/go cookieHost=opencode.ai
+1908:07-01 12:35:07.710 D/AIQuotaNativeJson( 9782): nativeJson provider=opencode status=200 url=opencode.ai/_server cookieHost=opencode.ai
+1909:07-01 12:35:07.716 D/AIQuotaNativeUsage( 9782): nativeUsage provider=opencode ok=false diagnostic=opencode_usage_unavailable statuses=opencode.ai/workspace/wrk_REDACTED/go:200:|opencode.ai/_server:200:|opencode_server_text:bytes=16196:rollingUsage=false:weeklyUsage=false:resetInSec=false|opencode_text:bytes=16065:html=true:scriptJson=0:usageSignals=39:stateMarkers=0
+1910:07-01 12:35:07.723 D/AIQuotaBgRefreshService( 9782): collectorError provider=opencode errorKind=opencode_usage_unavailable retry=0 url= summary=root=provider|errorKind|message,provider=opencode,collectorMode=none,lineCount=0,hasUsage=false,hasData=false,hasError=true

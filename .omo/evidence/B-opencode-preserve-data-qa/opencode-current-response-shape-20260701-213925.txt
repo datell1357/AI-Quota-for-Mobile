@@ -1,0 +1,1 @@
+error=ENOENT: no such file or directory, open 'D:\Vibe Project\AI Usage for Mobile\.omo\evidence\B-opencode-preserve-data-qa\opencode-debug-cookie-snapshot-relogin2-20260701-213925.json'

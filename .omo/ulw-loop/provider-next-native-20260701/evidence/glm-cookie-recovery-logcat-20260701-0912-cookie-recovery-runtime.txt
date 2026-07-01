@@ -1,0 +1,4 @@
+07-01 09:12:03.064   692  2048 I ActivityTaskManager: START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.aiquota.mobile/.MainActivity} with LAUNCH_MULTIPLE from uid 2000 (com.android.shell) (BAL_ALLOW_PERMISSION) result code=0
+07-01 09:12:05.323   692   712 I ActivityTaskManager: Displayed com.aiquota.mobile/.MainActivity for user 0: +2s271ms
+07-01 09:12:15.966   692  1240 I ActivityTaskManager: START u0 {act=android.content.pm.action.CONFIRM_PIN_APPWIDGET flg=0x10008000 xflg=0x4 cmp=com.google.android.apps.nexuslauncher/com.android.launcher3.QuickstepAddItemActivity (has extras)} with LAUNCH_MULTIPLE from uid 1000 (android) (BAL_ALLOW_ALLOWLISTED_UID) result code=0
+07-01 09:12:16.118   692   712 I ActivityTaskManager: Displayed com.google.android.apps.nexuslauncher/com.android.launcher3.QuickstepAddItemActivity for user 0: +154ms

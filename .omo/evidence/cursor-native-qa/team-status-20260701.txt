@@ -1,0 +1,3 @@
+Team cursor-native-final [active] - leader: main session - 2 member(s)
+  A (area) Cursor provider source/tests for native about:blank collection -> Source readiness findings and minimal implementation/test DoneClaim if Cursor is not native/about:blank [pending]
+  B (ownership) Preserve-data Android Cursor refresh QA after user login -> Metadata-only PASS/FAIL evidence for Cursor refresh without data wipe or cookie injection [pending]

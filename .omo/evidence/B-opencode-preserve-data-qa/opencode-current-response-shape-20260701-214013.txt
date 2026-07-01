@@ -1,0 +1,15 @@
+snapshotCapturedAt=2026-07-01T10:59:21.237872Z
+snapshotReason=background_webview_snapshot
+cookiePairCount=0
+status=200
+finalHost=auth.opencode.ai
+bytes=9395
+rollingUsage=false
+weeklyUsage=false
+usagePercent=false
+resetInSec=false
+OpenCode Go=false
+5-Hour=false
+Weekly=false
+html=true
+snippets:

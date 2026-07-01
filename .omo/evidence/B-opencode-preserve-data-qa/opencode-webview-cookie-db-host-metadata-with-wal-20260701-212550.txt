@@ -1,0 +1,7 @@
+stamp=20260701-212550
+sizes:
+4096 /tmp/tmp.gvcneXBLJv/Cookies
+  64 /tmp/tmp.gvcneXBLJv/Cookies-shm
+  64 /tmp/tmp.gvcneXBLJv/Cookies-wal
+4224 total
+metadata:

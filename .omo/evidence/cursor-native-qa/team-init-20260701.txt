@@ -1,0 +1,3 @@
+created: D:\Vibe Project\AI Usage for Mobile\.omo\teams\team-b725da90
+team.json + guide.md written; artifacts/ ready. session id: team-b725da90
+next: add-member --team team-b725da90 --id A --name "<short role>" --focus "<part/ownership/perspective>" --lens area|ownership|perspective --deliverable "<...>"

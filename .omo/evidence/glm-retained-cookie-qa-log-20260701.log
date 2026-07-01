@@ -1,0 +1,160 @@
+07-01 09:47:41.922 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/chat
+07-01 09:47:43.534 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/media/74fa777cac189696-s.p.ttf
+07-01 09:47:43.535 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/media/98320d588ee45fe2-s.p.ttf
+07-01 09:47:43.535 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/media/a40c83c38559db55-s.p.ttf
+07-01 09:47:43.536 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/media/f3082694476a79c3-s.p.ttf
+07-01 09:47:43.537 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/css/bde391a2dc0c5f50.css
+07-01 09:47:43.538 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/css/a70e7aab4c4dbcdb.css
+07-01 09:47:43.538 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/css/38a00db3df158e74.css
+07-01 09:47:43.538 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/css/06eee677ceaf36a2.css
+07-01 09:47:43.539 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/css/3730f9ae63252c5f.css
+07-01 09:47:43.541 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/css/2177b086ad2c1db5.css
+07-01 09:47:43.549 D/AIQuotaLogin(25220): provider=glm resource=https://www.googletagmanager.com/gtag/js?keys=id
+07-01 09:47:43.565 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/webpack-774745fcebbc8a87.js
+07-01 09:47:43.565 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/52bcc53e-060b90e4f28c19f7.js
+07-01 09:47:43.567 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/8106-d02730666dcb8b9a.js
+07-01 09:47:43.568 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/main-app-ba8cdb9db4962606.js
+07-01 09:47:43.569 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/5090-606c6480d2a07138.js
+07-01 09:47:43.571 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/1358-35e6ad417a978a81.js
+07-01 09:47:43.571 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/4385-bf59bbcbdd5c4cb8.js
+07-01 09:47:43.572 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/3126-0c2e709614a8fce7.js
+07-01 09:47:43.573 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/1979-abfd6cd997875590.js
+07-01 09:47:43.573 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/389-cec8c4baf567a095.js
+07-01 09:47:43.573 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/3581-62c7b103ece6917a.js
+07-01 09:47:43.574 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/7073-1dc850bdca5f4b3b.js
+07-01 09:47:43.574 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/4129-5b016b7f4cb7e10f.js
+07-01 09:47:43.574 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/page-3454e96dedaa2f07.js
+07-01 09:47:43.575 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/7014-920ab5fa231b1646.js
+07-01 09:47:43.575 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/6866-f4f5d0ba8ff8ba6a.js
+07-01 09:47:43.576 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/023c1e32-edc217937ce9565a.js
+07-01 09:47:43.577 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/3601-acc5a58b8f9dcb1f.js
+07-01 09:47:43.578 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/2337-0720e5b49ccd9af0.js
+07-01 09:47:43.578 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/4945-ab7f1b51380da770.js
+07-01 09:47:43.577 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/1840-85f6a39ffe848586.js
+07-01 09:47:43.579 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/7368-24d21e801857a37e.js
+07-01 09:47:43.579 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/156-620d5eaa0de405b3.js
+07-01 09:47:43.581 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/7923-c1d174e27010fdea.js
+07-01 09:47:43.581 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/2687-3ab6788441360e84.js
+07-01 09:47:43.582 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/2719-ea0853b306e59c7a.js
+07-01 09:47:43.582 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/1898-a1832797cc46e1a6.js
+07-01 09:47:43.582 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/3827-fc5e7c25854c8696.js
+07-01 09:47:43.583 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/6051-2d89bcc8bd48c3e0.js
+07-01 09:47:43.583 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/error-dfcf8060dc2e423b.js
+07-01 09:47:43.583 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/layout-4a60927bd8cdc3cc.js
+07-01 09:47:44.068 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:45.082 I/AIQuotaLogin(25220): provider=glm postLoginRedirect=usage from=z.ai/chat
+07-01 09:47:45.089 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/manage-apikey/coding-plan/personal/usage
+07-01 09:47:45.092 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:45.098 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:45.163 D/AIQuotaLoginConsole(25220): provider=glm consoleLevel=ERROR line=1
+07-01 09:47:45.165 D/AIQuotaLogin(25220): provider=glm resource=https://static.ads-twitter.com/uwt.js
+07-01 09:47:45.165 D/AIQuotaLoginConsole(25220): provider=glm consoleLevel=LOG line=1
+07-01 09:47:45.169 D/AIQuotaLogin(25220): provider=glm resource=https://api.z.ai/api/biz/userBehaviorTracking
+07-01 09:47:45.180 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/890d931a.4a817e39733f763c.js
+07-01 09:47:45.191 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/api/auth/me
+07-01 09:47:45.196 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/favicon.ico
+07-01 09:47:45.200 I/AIQuotaLogin(25220): provider=glm webSessionCookieCaptured=true cookieCount=1
+07-01 09:47:45.201 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:45.217 I/AIQuotaLogin(25220): provider=glm webSessionCookieSaved=true reason=auth_resource
+07-01 09:47:45.255 I/AIQuotaLogin(25220): provider=glm webSessionCookieCaptured=true cookieCount=1
+07-01 09:47:45.257 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:45.257 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:45.257 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:45.260 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:45.260 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:45.263 I/AIQuotaLogin(25220): provider=glm nativeCollectorStart=aboutblank reason=page_finished from=z.ai/chat
+07-01 09:47:45.366 E/AIQuotaLogin(25220): provider=glm http status=404 url=https://z.ai/favicon.ico
+07-01 09:47:45.394 D/AIQuotaLogin(25220): provider=glm resource=https://www.google.com/measurement/conversion?keys=random|cv|tid|fst|fmt|en|gtm|gcd|dma|tag_exp|u_w|u_h
+07-01 09:47:45.406 D/AIQuotaLogin(25220): provider=glm resource=https://www.google.com/measurement/conversion?keys=random|cv|tid|fst|fmt|en|gtm|gcd|dma|tag_exp|u_w|u_h
+07-01 09:47:45.423 D/AIQuotaLogin(25220): provider=glm resource=https://www.google.com/measurement/conversion?keys=random|cv|tid|fst|fmt|en|gtm|gcd|dma|tag_exp|u_w|u_h
+07-01 09:47:45.445 D/AIQuotaLogin(25220): provider=glm resource=https://analytics.google.com/g/collect?keys=v|tid|gtm|_p|_gaz|gcd|npa|dma|_eu|_prs|are|cid
+07-01 09:47:45.451 D/AIQuotaLogin(25220): provider=glm resource=https://stats.g.doubleclick.net/g/collect?keys=v|tid|cid|gtm|rcb|aip|dma|gcd|npa|frm|tag_exp
+07-01 09:47:45.451 D/AIQuotaLogin(25220): provider=glm resource=https://www.google.co.kr/ads/ga-audiences?keys=v|t|slf_rd|_r|tid|cid|gtm|rcb|aip|dma|gcd|npa
+07-01 09:47:45.457 D/AIQuotaLoginConsole(25220): provider=glm consoleLevel=ERROR line=1
+07-01 09:47:45.470 D/AIQuotaLogin(25220): provider=glm resource=https://www.google.com/g/collect?keys=v|tid|gtm|_p|_gaz|gcd|npa|dma|_eu|_prs|are|cid
+07-01 09:47:45.487 D/AIQuotaLogin(25220): provider=glm resource=https://api.z.ai/api/auth/logout
+07-01 09:47:45.488 D/AIQuotaLogin(25220): provider=glm resource=https://api.z.ai/api/biz/customer/getCustomerInfo
+07-01 09:47:45.519 I/AIQuotaCollector(25220): provider=glm collectorMode=webview-js inject host=about:blank
+07-01 09:47:45.779 D/AIQuotaLogin(25220): provider=glm resource=https://api.z.ai/api/biz/userBehaviorTracking
+07-01 09:47:46.048 D/AIQuotaNativeUsage(25220): nativeUsage provider=glm ok=false diagnostic=glm_auth_required statuses=
+07-01 09:47:46.050 W/AIQuotaCollector(25220): provider=glm collectorMode=webview-js errorKind=glm_auth_required keptPreviousSnapshot=true
+07-01 09:47:46.074 I/AIQuotaLogin(25220): provider=glm reauthWebSessionCleared=true
+07-01 09:47:46.074 W/AIQuotaLogin(25220): provider=glm authRequiredRecovery=login
+07-01 09:47:46.079 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/chat
+07-01 09:47:46.219 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/css/bde391a2dc0c5f50.css
+07-01 09:47:46.219 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/css/a70e7aab4c4dbcdb.css
+07-01 09:47:46.219 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/css/06eee677ceaf36a2.css
+07-01 09:47:46.219 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/css/3730f9ae63252c5f.css
+07-01 09:47:46.219 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/css/38a00db3df158e74.css
+07-01 09:47:46.219 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/css/2177b086ad2c1db5.css
+07-01 09:47:46.235 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/webpack-774745fcebbc8a87.js
+07-01 09:47:46.235 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/52bcc53e-060b90e4f28c19f7.js
+07-01 09:47:46.235 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/8106-d02730666dcb8b9a.js
+07-01 09:47:46.236 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/main-app-ba8cdb9db4962606.js
+07-01 09:47:46.236 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/5090-606c6480d2a07138.js
+07-01 09:47:46.238 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/4385-bf59bbcbdd5c4cb8.js
+07-01 09:47:46.238 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/1358-35e6ad417a978a81.js
+07-01 09:47:46.240 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/3126-0c2e709614a8fce7.js
+07-01 09:47:46.242 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/1979-abfd6cd997875590.js
+07-01 09:47:46.243 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/389-cec8c4baf567a095.js
+07-01 09:47:46.244 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/3581-62c7b103ece6917a.js
+07-01 09:47:46.245 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/7073-1dc850bdca5f4b3b.js
+07-01 09:47:46.246 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/page-3454e96dedaa2f07.js
+07-01 09:47:46.246 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/023c1e32-edc217937ce9565a.js
+07-01 09:47:46.246 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/4129-5b016b7f4cb7e10f.js
+07-01 09:47:46.246 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/7014-920ab5fa231b1646.js
+07-01 09:47:46.247 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/1840-85f6a39ffe848586.js
+07-01 09:47:46.247 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/3601-acc5a58b8f9dcb1f.js
+07-01 09:47:46.247 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/6866-f4f5d0ba8ff8ba6a.js
+07-01 09:47:46.247 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/7923-c1d174e27010fdea.js
+07-01 09:47:46.247 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/7368-24d21e801857a37e.js
+07-01 09:47:46.248 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/4945-ab7f1b51380da770.js
+07-01 09:47:46.249 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/2337-0720e5b49ccd9af0.js
+07-01 09:47:46.249 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/156-620d5eaa0de405b3.js
+07-01 09:47:46.249 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/2719-ea0853b306e59c7a.js
+07-01 09:47:46.251 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/1898-a1832797cc46e1a6.js
+07-01 09:47:46.251 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/3827-fc5e7c25854c8696.js
+07-01 09:47:46.252 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/2687-3ab6788441360e84.js
+07-01 09:47:46.253 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/layout-4a60927bd8cdc3cc.js
+07-01 09:47:46.253 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/6051-2d89bcc8bd48c3e0.js
+07-01 09:47:46.254 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/error-dfcf8060dc2e423b.js
+07-01 09:47:46.277 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:46.403 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:46.403 I/AIQuotaLogin(25220): provider=glm postLoginRedirect=usage from=z.ai/chat
+07-01 09:47:46.406 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/manage-apikey/coding-plan/personal/usage
+07-01 09:47:46.413 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:46.454 D/AIQuotaLoginConsole(25220): provider=glm consoleLevel=ERROR line=1
+07-01 09:47:46.455 D/AIQuotaLoginConsole(25220): provider=glm consoleLevel=LOG line=1
+07-01 09:47:46.456 D/AIQuotaLogin(25220): provider=glm resource=https://static.ads-twitter.com/uwt.js
+07-01 09:47:46.463 D/AIQuotaLogin(25220): provider=glm resource=https://api.z.ai/api/biz/userBehaviorTracking
+07-01 09:47:46.469 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/api/auth/me
+07-01 09:47:46.470 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/_next/static/chunks/890d931a.4a817e39733f763c.js
+07-01 09:47:46.475 D/AIQuotaLogin(25220): provider=glm resource=https://z.ai/favicon.ico
+07-01 09:47:46.492 I/AIQuotaLogin(25220): provider=glm webSessionCookieCaptured=true cookieCount=1
+07-01 09:47:46.502 I/AIQuotaLogin(25220): provider=glm webSessionCookieSaved=true reason=auth_resource
+07-01 09:47:46.520 I/AIQuotaLogin(25220): provider=glm webSessionCookieCaptured=true cookieCount=1
+07-01 09:47:46.521 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:46.526 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:46.527 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:46.527 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:46.527 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:46.527 D/AIQuotaLogin(25220): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 09:47:46.529 I/AIQuotaLogin(25220): provider=glm nativeCollectorStart=aboutblank reason=page_finished from=z.ai/chat
+07-01 09:47:46.575 D/AIQuotaLogin(25220): provider=glm resource=https://www.google.com/measurement/conversion?keys=random|cv|tid|fst|fmt|en|gtm|gcd|dma|tag_exp|u_w|u_h
+07-01 09:47:46.587 D/AIQuotaLogin(25220): provider=glm resource=https://www.google.com/measurement/conversion?keys=random|cv|tid|fst|fmt|en|gtm|gcd|dma|tag_exp|u_w|u_h
+07-01 09:47:46.599 D/AIQuotaLogin(25220): provider=glm resource=https://www.google.com/measurement/conversion?keys=random|cv|tid|fst|fmt|en|gtm|gcd|dma|tag_exp|u_w|u_h
+07-01 09:47:46.613 E/AIQuotaLogin(25220): provider=glm http status=404 url=https://z.ai/favicon.ico
+07-01 09:47:46.622 D/AIQuotaLogin(25220): provider=glm resource=https://www.google.co.kr/ads/ga-audiences?keys=v|t|slf_rd|_r|tid|cid|gtm|rcb|aip|dma|gcd|npa
+07-01 09:47:46.623 D/AIQuotaLogin(25220): provider=glm resource=https://analytics.google.com/g/collect?keys=v|tid|gtm|_p|_gaz|gcd|npa|dma|_eu|_prs|are|cid
+07-01 09:47:46.623 D/AIQuotaLogin(25220): provider=glm resource=https://stats.g.doubleclick.net/g/collect?keys=v|tid|cid|gtm|rcb|aip|dma|gcd|npa|frm|tag_exp
+07-01 09:47:46.635 D/AIQuotaLoginConsole(25220): provider=glm consoleLevel=ERROR line=1
+07-01 09:47:46.637 D/AIQuotaLogin(25220): provider=glm resource=https://www.google.com/g/collect?keys=v|tid|gtm|_p|_gaz|gcd|npa|dma|_eu|_prs|are|cid
+07-01 09:47:46.642 D/AIQuotaLogin(25220): provider=glm resource=https://api.z.ai/api/auth/logout
+07-01 09:47:46.646 D/AIQuotaLogin(25220): provider=glm resource=https://api.z.ai/api/biz/customer/getCustomerInfo
+07-01 09:47:46.668 I/AIQuotaCollector(25220): provider=glm collectorMode=webview-js inject host=about:blank
+07-01 09:47:46.758 E/AIQuotaLogin(25220): provider=glm error url=https://api.z.ai/api/biz/userBehaviorTracking description=net::ERR_FAILED
+07-01 09:47:46.948 D/AIQuotaNativeUsage(25220): nativeUsage provider=glm ok=false diagnostic=glm_auth_required statuses=
+07-01 09:47:46.950 W/AIQuotaCollector(25220): provider=glm collectorMode=webview-js errorKind=glm_auth_required keptPreviousSnapshot=true
+07-01 09:47:46.979 I/AIQuotaDebugCookie(25220): provider=glm debugCookieSnapshot=true reason=connected_without_usage urlCount=17 cookieCount=17 nativeAuthContextCount=0 nativeAuthHeaderCount=0
+07-01 09:47:46.983 I/AIQuotaLogin(25220): provider=glm webSessionCookieCaptured=true cookieCount=4
+07-01 09:47:46.991 W/AIQuotaLogin(25220): provider=glm errorKind=glm_auth_required usageUnavailable=true

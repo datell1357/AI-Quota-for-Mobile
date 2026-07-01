@@ -1,0 +1,1 @@
+    topResumedActivity=ActivityRecord{224092152 u0 com.aiquota.mobile/.providers.GlmApiKeyActivity t577}

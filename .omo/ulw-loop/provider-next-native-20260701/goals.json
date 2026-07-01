@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "createdAt": "2026-07-01T07:41:27.102Z",
+  "updatedAt": "2026-07-01T10:34:05.130Z",
+  "briefPath": ".omo/ulw-loop/provider-next-native-20260701/brief.md",
+  "goalsPath": ".omo/ulw-loop/provider-next-native-20260701/goals.json",
+  "ledgerPath": ".omo/ulw-loop/provider-next-native-20260701/ledger.jsonl",
+  "codexGoalMode": "aggregate",
+  "goals": [
+    {
+      "id": "G001-implement-and-verify-the-remaining-p",
+      "title": "Implement and verify the remaining providers GLM, OpenCode, and Curso...",
+      "objective": "Implement and verify the remaining providers GLM, OpenCode, and Cursor one at a time so their initial and refresh usage collection matches the Claude/Codex-style native/about:blank approach: no DOM collection, no visible-page DOM scan, no fallback usage saved as normal, no saved-cookie reinjection, and no app data wipe. Start with GLM, then OpenCode, then Cursor only after the prior provider passes. Preserve existing foreground service and battery optimization state by using adb install -r only. If provider auth is missing or expired, stop at the exact point user login is required and report the narrow user action. Commit and push each verified provider work unit atomically on the current branch, staging only related files.",
+      "status": "blocked",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "GLM preserve-data Android QA: adb install -r debug APK, trigger provider-scoped GLM refresh, capture 180s logcat and local usage snapshot; PASS when GLM usage is collected through native/API or about:blank-native path, app remains connected, and logs contain no DOM collector, visible-page scan, fallback-saved-as-normal, saved-cookie reinjection, or data-wipe evidence.",
+          "userModel": "happy",
+          "expectedEvidence": ".omo/ulw-loop/provider-next-native-20260701/evidence/glm-native-refresh-qa.txt plus GLM local usage snapshot and cleanup receipt.",
+          "essential": true,
+          "capturedEvidence": ".omo/ulw-loop/provider-next-native-20260701/evidence/glm-native-refresh-qa.txt | cleanup: no tmux/browser/server/temp process spawned; adb/logcat exited; no app data wipe",
+          "status": "pass",
+          "capturedAt": "2026-07-01T10:34:05.130Z",
+          "notes": "User must reconnect GLM with a valid API key or complete GLM Web OAuth on this updated build, then rerun GLM preserve-data refresh QA before commit/push."
+        },
+        {
+          "id": "C002",
+          "scenario": "OpenCode preserve-data Android QA after GLM PASS: adb install -r debug APK, trigger provider-scoped OpenCode refresh/login if required, capture logcat and local usage snapshot; PASS when OpenCode initial/refresh usage is native/about:blank and logs contain no DOM collector, visible-page scan, network-hook fallback, saved-cookie reinjection, or data-wipe evidence.",
+          "userModel": "edge",
+          "expectedEvidence": ".omo/ulw-loop/provider-next-native-20260701/evidence/opencode-native-refresh-qa.txt plus OpenCode local usage snapshot and cleanup receipt.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "Cursor preserve-data Android QA after OpenCode PASS: adb install -r debug APK, trigger provider-scoped Cursor refresh/login if required, capture logcat and local usage snapshot; PASS when Cursor initial/refresh usage is native/about:blank using native endpoint fetches and logs contain no DOM collector, visible-page page-state scan, network-hook fallback, saved-cookie reinjection, or data-wipe evidence.",
+          "userModel": "regression",
+          "expectedEvidence": ".omo/ulw-loop/provider-next-native-20260701/evidence/cursor-native-refresh-qa.txt plus Cursor local usage snapshot and cleanup receipt.",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 1,
+      "createdAt": "2026-07-01T07:41:27.102Z",
+      "updatedAt": "2026-07-01T10:34:05.130Z",
+      "startedAt": "2026-07-01T07:42:43.989Z",
+      "blockedReason": "GLM implementation and focused verification are complete, but real-device GLM QA is blocked by explicit auth evidence: provider-scoped refresh returned INTERACTIVE_AUTH_REQUIRED because the stored GLM API key is invalid or expired. Waiting for user to reconnect GLM on the updated build; no data wipe occurred."
+    }
+  ],
+  "codexObjective": "Complete the durable ulw-loop plan in .omo/ulw-loop/provider-next-native-20260701/goals.json, including later accepted/appended stories, under the original brief constraints; use .omo/ulw-loop/provider-next-native-20260701/ledger.jsonl as the audit trail."
+}

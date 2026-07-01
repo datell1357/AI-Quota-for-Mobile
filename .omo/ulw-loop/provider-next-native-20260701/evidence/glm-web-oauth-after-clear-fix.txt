@@ -1,0 +1,163 @@
+--- activity ---
+    mLastPausedActivity: ActivityRecord{101751292 u0 com.aiquota.mobile/.providers.WebLoginActivity t-1 f}}
+    topResumedActivity=ActivityRecord{242329820 u0 com.aiquota.mobile/.MainActivity t571}
+    * Hist  #0: ActivityRecord{242329820 u0 com.aiquota.mobile/.MainActivity t571}
+      Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.aiquota.mobile/.MainActivity }
+      mActivityComponent=com.aiquota.mobile/.MainActivity
+      windows=[Window{c6382d4 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}]
+    Resumed: ActivityRecord{242329820 u0 com.aiquota.mobile/.MainActivity t571}
+  ResumedActivity: ActivityRecord{242329820 u0 com.aiquota.mobile/.MainActivity t571}
+  deepestLastOrientationSource=ActivityRecord{242329820 u0 com.aiquota.mobile/.MainActivity t571}
+  mImeLayeringTarget=Window{c6382d4 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+  mImeInputTarget=Window{c6382d4 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+  mImeControlTarget=Window{c6382d4 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+  mImeParent=ActivityRecord{242329820 u0 com.aiquota.mobile/.MainActivity t571}
+  mCurrentFocus=Window{c6382d4 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+  mFocusedApp=ActivityRecord{242329820 u0 com.aiquota.mobile/.MainActivity t571}
+  mObscuringWindow=Window{c6382d4 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+        * ActivityRecord{242329820 u0 com.aiquota.mobile/.MainActivity t571}
+    mFocusedWindow=Window{c6382d4 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+    mTopFullscreenOpaqueWindowState=Window{c6382d4 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+    mSystemUiControllingWindow=Window{c6382d4 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+    mSystemBarColorApps={ActivityRecord{242329820 u0 com.aiquota.mobile/.MainActivity t571}}
+    mNavBarColorWindowCandidate=Window{c6382d4 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+    mNavBarBackgroundWindowCandidate=Window{c6382d4 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+      Window{c6382d4 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+      Window{c6382d4 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}:
+        mControlTarget=Window{c6382d4 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+        mControlTarget=Window{c6382d4 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+        mControlTarget=Window{c6382d4 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+--- processes ---
+u0_a233      18197   464   41646852  89180 0                   0 S com.aiquota.mobile
+--- logs ---
+07-01 08:53:21.732 V/ActivityTaskManager(  692): TaskLaunchParamsModifier: phase=3 task=Task{e001de5 #571 type=standard A=10233:com.aiquota.mobile} activity=ActivityRecord{101751292 u0 com.aiquota.mobile/.providers.WebLoginActivity t-1} display-area-from-source=DefaultTaskDisplayArea@146288658 display-id=0 task-display-area-windowing-mode=1 suggested-display-area=DefaultTaskDisplayArea@146288658 inherit-from-source=fullscreen non-freeform-task-display-area display-area=DefaultTaskDisplayArea@146288658 skip-bounds-fullscreen
+07-01 08:53:21.732 I/ActivityTaskManager(  692): START u0 {xflg=0x4 cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras)} with LAUNCH_MULTIPLE from uid 10233 (com.aiquota.mobile) (sr=227964405) (BAL_ALLOW_VISIBLE_WINDOW) result code=0
+07-01 08:53:21.733 V/WindowManagerShell(  976): Transition requested (#44): android.os.BinderProxy@232e750 TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=571 effectiveUid=10233 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.aiquota.mobile/.MainActivity } baseActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.MainActivity} topActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity} origActivity=null realActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.MainActivity} realActivityIsAppLockEnabled=false numActivities=3 lastActiveTime=8868089 supportsMultiWindow=true supportsMultiWindowWithoutConstraints=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.os.BinderProxy@387a648} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 0 - 0, 0) topActivityInfo=ActivityInfo{a070d49 com.aiquota.mobile.providers.WebLoginActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isInteractive=true isVisible=true isVisibleRequested=true isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false isActivityStackTransparent=false lastNonFullscreenBounds=null leafTaskBoundsFromOptions= false capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=503 topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false isLeafTask= true eligibleForLetterboxEducation= false isLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 1080, 2400) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null topNonResizableActivityAspectRatio=-1.0} topActivityMainWindowFrame=null isAppBubble=false}, pipChange = null, remoteTransitionInfo = null, displayChanges = null, requestedLocation = null, userChange = null, windowingLayerChange = null, fullscreenRequestChange = null, flags = 0, debugId = 44 }
+07-01 08:53:21.878 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/manage-apikey/coding-plan/personal/my-plan
+07-01 08:53:21.968 D/VRI[WebLoginActivity](18197): WindowInsets changed: 1080x2400 statusBars:[0,132,0,0] navigationBars:[0,0,0,63] mandatorySystemGestures:[0,164,0,84] 
+07-01 08:53:21.973 D/CoreBackPreview(  692): Window{8c26692 u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@8a817bf, mPriority=0, mIsAnimationCallback=false, mOverrideBehavior=0}
+07-01 08:53:21.977 D/WindowManager(  692): setClientSurface Surface(name=VRI-com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity#357)/@0x3887e8c for 8c26692 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity
+07-01 08:53:21.987 I/Surface (18197): Creating surface for consumer VRI[WebLoginActivity]#2(BLAST Consumer)2 with slotExpansion=1 for 64 slots
+07-01 08:53:22.070 I/ActivityTaskManager(  692): Displayed com.aiquota.mobile/.providers.WebLoginActivity for user 0: +337ms
+07-01 08:53:22.070 V/WindowManagerShell(  976):         {m=OPEN f=FILLS_TASK leash=Surface(name=ActivityRecord{101751292 u0 com.aiquota.mobile/.providers.WebLoginActivity t571}#355)/@0xa83164e sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=-1->0 r=-1->0:-1 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}, taskId = 571, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},
+07-01 08:53:22.070 V/WindowManagerShell(  976):         {m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{227964405 u0 com.aiquota.mobile/.providers.GlmApiKeyActivity t571}#347)/@0x8f0736f sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.GlmApiKeyActivity}, taskId = 571, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}}
+07-01 08:53:22.071 V/WindowManagerShell(  976): Transition doesn't have explicit remote, search filters for match for {id=44 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=OPEN f=FILLS_TASK leash=Surface(name=ActivityRecord{101751292 u0 com.aiquota.mobile/.providers.WebLoginActivity t571}#355)/@0xa83164e sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=-1->0 r=-1->0:-1 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}, taskId = 571, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},{m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{227964405 u0 com.aiquota.mobile/.providers.GlmApiKeyActivity t571}#347)/@0x8f0736f sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.GlmApiKeyActivity}, taskId = 571, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}}]}
+07-01 08:53:22.072 V/WindowManagerShell(  976): start default transition animation, info = {id=44 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=OPEN f=FILLS_TASK leash=Surface(name=ActivityRecord{101751292 u0 com.aiquota.mobile/.providers.WebLoginActivity t571}#355)/@0xa83164e sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=-1->0 r=-1->0:-1 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}, taskId = 571, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},{m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{227964405 u0 com.aiquota.mobile/.providers.GlmApiKeyActivity t571}#347)/@0x8f0736f sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.GlmApiKeyActivity}, taskId = 571, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}}]}
+07-01 08:53:22.075 V/WindowManager(  692): Sent Transition (#44) createdAt=07-01 08:53:21.726 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=571 effectiveUid=10233 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.aiquota.mobile/.MainActivity } baseActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.MainActivity} topActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity} origActivity=null realActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.MainActivity} realActivityIsAppLockEnabled=false numActivities=3 lastActiveTime=8868089 supportsMultiWindow=true supportsMultiWindowWithoutConstraints=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{45b4c37 Task{e001de5 #571 type=standard A=10233:com.aiquota.mobile}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 0 - 0, 0) topActivityInfo=ActivityInfo{85b3fb7 com.aiquota.mobile.providers.WebLoginActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isInteractive=true isVisible=true isVisibleRequested=true isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false isActivityStackTransparent=false lastNonFullscreenBounds=null leafTaskBoundsFromOptions= false capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=503 topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false isLeafTask= true eligibleForLetterboxEducation= false isLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 1080, 2400) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null topNonResizableActivityAspectRatio=-1.0} topActivityMainWindowFrame=null isAppBubble=false}, pipChange = null, remoteTransitionInfo = null, displayChanges = null, requestedLocation = null, userChange = null, windowingLayerChange = null, fullscreenRequestChange = null, flags = 0, debugId = 44 }
+07-01 08:53:22.075 V/WindowManager(  692):         {m=OPEN f=FILLS_TASK leash=Surface(name=ActivityRecord{101751292 u0 com.aiquota.mobile/.providers.WebLoginActivity t571}#355)/@0x2d41e51 sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=-1->0 r=-1->0:-1 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}, taskId = 571, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},
+07-01 08:53:22.075 V/WindowManager(  692):         {m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{227964405 u0 com.aiquota.mobile/.providers.GlmApiKeyActivity t571}#347)/@0xb778dcf sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.GlmApiKeyActivity}, taskId = 571, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}}
+07-01 08:53:22.549 D/VRI[GlmApiKeyActivity](18197): visibilityChanged oldVisibility=true newVisibility=false
+07-01 08:53:22.571 D/CoreBackPreview(  692): Window{1c69a56 u0 com.aiquota.mobile/com.aiquota.mobile.providers.GlmApiKeyActivity}: Setting back callback null
+07-01 08:53:23.479 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/media/74fa777cac189696-s.p.ttf
+07-01 08:53:23.483 I/AIQuotaLogin(18197): provider=glm postLoginRedirect=usage from=z.ai/manage-apikey/coding-plan/personal/my-plan
+07-01 08:53:23.491 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/media/98320d588ee45fe2-s.p.ttf
+07-01 08:53:23.493 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/media/a40c83c38559db55-s.p.ttf
+07-01 08:53:23.494 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/css/bde391a2dc0c5f50.css
+07-01 08:53:23.497 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/manage-apikey/coding-plan/personal/usage
+07-01 08:53:23.497 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/media/f3082694476a79c3-s.p.ttf
+07-01 08:53:23.501 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/css/a70e7aab4c4dbcdb.css
+07-01 08:53:23.503 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/css/06eee677ceaf36a2.css
+07-01 08:53:23.503 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/css/38a00db3df158e74.css
+07-01 08:53:23.507 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/css/3730f9ae63252c5f.css
+07-01 08:53:23.509 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/css/08cdc15a8194b1a1.css
+07-01 08:53:23.512 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/css/ff252f4e5dce3fd6.css
+07-01 08:53:23.515 D/AIQuotaLogin(18197): provider=glm resource=https://www.googletagmanager.com/gtag/js?keys=id
+07-01 08:53:23.544 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/webpack-774745fcebbc8a87.js
+07-01 08:53:23.551 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/52bcc53e-060b90e4f28c19f7.js
+07-01 08:53:23.552 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/8106-d02730666dcb8b9a.js
+07-01 08:53:23.552 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/main-app-ba8cdb9db4962606.js
+07-01 08:53:23.553 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/5090-606c6480d2a07138.js
+07-01 08:53:23.553 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/(auth-pages)/layout-fb044eed84687dc6.js
+07-01 08:53:23.554 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/1358-35e6ad417a978a81.js
+07-01 08:53:23.554 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/7014-920ab5fa231b1646.js
+07-01 08:53:23.555 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/6866-f4f5d0ba8ff8ba6a.js
+07-01 08:53:23.554 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/4385-bf59bbcbdd5c4cb8.js
+07-01 08:53:23.556 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/7923-c1d174e27010fdea.js
+07-01 08:53:23.556 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/7368-24d21e801857a37e.js
+07-01 08:53:23.557 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/4945-ab7f1b51380da770.js
+07-01 08:53:23.557 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/8463-1f7afd6ac5c0c867.js
+07-01 08:53:23.558 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/6051-2d89bcc8bd48c3e0.js
+07-01 08:53:23.560 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/(auth-pages)/manage-apikey/layout-ccc6fb0b0537c574.js
+07-01 08:53:23.561 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/3126-0c2e709614a8fce7.js
+07-01 08:53:23.563 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/3601-acc5a58b8f9dcb1f.js
+07-01 08:53:23.563 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/1840-85f6a39ffe848586.js
+07-01 08:53:23.564 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/2337-0720e5b49ccd9af0.js
+07-01 08:53:23.564 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/9015-4281c40ef624955e.js
+07-01 08:53:23.565 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/2687-3ab6788441360e84.js
+07-01 08:53:23.565 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/156-620d5eaa0de405b3.js
+07-01 08:53:23.566 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/5921-6f04ff325f17e750.js
+07-01 08:53:23.567 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/1069-62808d2653fafb24.js
+07-01 08:53:23.568 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/2994-fbf3a60c35d6c1e6.js
+07-01 08:53:23.568 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/1928-7ff7a801c5d22cb0.js
+07-01 08:53:23.568 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/(auth-pages)/manage-apikey/coding-plan/personal/my-plan/page-b5b4374be57b8bb1.js
+07-01 08:53:23.568 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/1979-abfd6cd997875590.js
+07-01 08:53:23.569 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/023c1e32-edc217937ce9565a.js
+07-01 08:53:23.569 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/5815-3a5050b4de863dbf.js
+07-01 08:53:23.569 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/389-cec8c4baf567a095.js
+07-01 08:53:23.569 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/2719-ea0853b306e59c7a.js
+07-01 08:53:23.569 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/3581-62c7b103ece6917a.js
+07-01 08:53:23.569 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/1898-a1832797cc46e1a6.js
+07-01 08:53:23.570 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/layout-4a60927bd8cdc3cc.js
+07-01 08:53:23.570 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/3827-fc5e7c25854c8696.js
+07-01 08:53:23.571 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/error-dfcf8060dc2e423b.js
+07-01 08:53:23.883 E/AIQuotaLogin(18197): provider=glm error url=https://z.ai/_next/static/css/38a00db3df158e74.css description=net::ERR_FAILED
+07-01 08:53:23.887 I/AIQuotaLoginTiming(18197): glm pageFinished=2121ms host=z.ai
+07-01 08:53:23.917 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/media/74fa777cac189696-s.p.ttf
+07-01 08:53:23.918 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/media/98320d588ee45fe2-s.p.ttf
+07-01 08:53:23.919 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/media/a40c83c38559db55-s.p.ttf
+07-01 08:53:23.919 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/media/f3082694476a79c3-s.p.ttf
+07-01 08:53:23.919 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/css/a70e7aab4c4dbcdb.css
+07-01 08:53:23.920 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/css/bde391a2dc0c5f50.css
+07-01 08:53:23.922 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/css/3730f9ae63252c5f.css
+07-01 08:53:23.922 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/css/08cdc15a8194b1a1.css
+07-01 08:53:23.923 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/css/38a00db3df158e74.css
+07-01 08:53:23.924 D/AIQuotaLogin(18197): provider=glm resource=https://www.googletagmanager.com/gtag/js?keys=id
+07-01 08:53:23.943 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/webpack-774745fcebbc8a87.js
+07-01 08:53:23.944 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/8106-d02730666dcb8b9a.js
+07-01 08:53:23.944 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/5090-606c6480d2a07138.js
+07-01 08:53:23.944 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/main-app-ba8cdb9db4962606.js
+07-01 08:53:23.945 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/1358-35e6ad417a978a81.js
+07-01 08:53:23.945 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/(auth-pages)/layout-fb044eed84687dc6.js
+07-01 08:53:23.946 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/52bcc53e-060b90e4f28c19f7.js
+07-01 08:53:23.946 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/7014-920ab5fa231b1646.js
+07-01 08:53:23.946 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/4385-bf59bbcbdd5c4cb8.js
+07-01 08:53:23.946 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/6866-f4f5d0ba8ff8ba6a.js
+07-01 08:53:23.946 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/7923-c1d174e27010fdea.js
+07-01 08:53:23.947 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/7368-24d21e801857a37e.js
+07-01 08:53:23.947 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/4945-ab7f1b51380da770.js
+07-01 08:53:23.947 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/8463-1f7afd6ac5c0c867.js
+07-01 08:53:23.947 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/6051-2d89bcc8bd48c3e0.js
+07-01 08:53:23.947 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/(auth-pages)/manage-apikey/layout-ccc6fb0b0537c574.js
+07-01 08:53:23.947 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/3126-0c2e709614a8fce7.js
+07-01 08:53:23.948 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/1840-85f6a39ffe848586.js
+07-01 08:53:23.948 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/3601-acc5a58b8f9dcb1f.js
+07-01 08:53:23.948 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/2337-0720e5b49ccd9af0.js
+07-01 08:53:23.948 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/1979-abfd6cd997875590.js
+07-01 08:53:23.949 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/9015-4281c40ef624955e.js
+07-01 08:53:23.949 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/2719-ea0853b306e59c7a.js
+07-01 08:53:23.949 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/281-32a7b8f074f27fb2.js
+07-01 08:53:23.950 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/7953-c412efd8223c8d74.js
+07-01 08:53:23.953 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/6678-8bcc19fbabb68ce5.js
+07-01 08:53:23.954 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/023c1e32-edc217937ce9565a.js
+07-01 08:53:23.954 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/(auth-pages)/manage-apikey/coding-plan/personal/usage/page-c1c056972027374e.js
+07-01 08:53:23.955 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/156-620d5eaa0de405b3.js
+07-01 08:53:23.956 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/389-cec8c4baf567a095.js
+07-01 08:53:23.956 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/3581-62c7b103ece6917a.js
+07-01 08:53:23.958 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/3827-fc5e7c25854c8696.js
+07-01 08:53:23.958 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/1898-a1832797cc46e1a6.js
+07-01 08:53:23.958 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/2687-3ab6788441360e84.js
+07-01 08:53:23.958 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/layout-4a60927bd8cdc3cc.js
+07-01 08:53:23.959 D/AIQuotaLogin(18197): provider=glm resource=https://z.ai/_next/static/chunks/app/[locale]/error-dfcf8060dc2e423b.js
+07-01 08:53:24.488 D/AIQuotaLogin(18197): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 08:53:25.390 I/AIQuotaLogin(18197): provider=glm webSessionCookieCaptured=true cookieCount=1
+07-01 08:53:25.400 I/AIQuotaLogin(18197): provider=glm nativeCollectorStart=aboutblank reason=page_finished from=z.ai/manage-apikey/coding-plan/personal/usage
+07-01 08:53:25.420 D/AIQuotaLogin(18197): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 08:53:25.422 D/AIQuotaLogin(18197): provider=glm resource=https://z-cdn.chatglm.cn/z-ai/static/logo.svg
+07-01 08:53:27.107 I/AIQuotaLogin(18197): provider=glm webSessionCookieCaptured=true cookieCount=1
+07-01 08:53:27.116 W/AIQuotaLogin(18197): provider=glm errorKind=glm_auth_required usageUnavailable=true
+07-01 08:53:27.329 V/WindowManager(  692):         {m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{101751292 u0 com.aiquota.mobile/.providers.WebLoginActivity t571}#355)/@0x2d41e51 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}, taskId = 571, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},
+07-01 08:53:27.330 V/WindowManagerShell(  976):         {m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{101751292 u0 com.aiquota.mobile/.providers.WebLoginActivity t571}#355)/@0x1bdadb1 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}, taskId = 571, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},
+07-01 08:53:27.331 V/WindowManagerShell(  976): Transition doesn't have explicit remote, search filters for match for {id=45 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{101751292 u0 com.aiquota.mobile/.providers.WebLoginActivity t571}#355)/@0x1bdadb1 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}, taskId = 571, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},{m=TO_FRONT f=FILLS_TASK leash=Surface(name=ActivityRecord{242329820 u0 com.aiquota.mobile/.MainActivity t571}#333)/@0x951296 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.MainActivity}, taskId = 571, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}}]}
+07-01 08:53:27.331 V/WindowManagerShell(  976): start default transition animation, info = {id=45 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{101751292 u0 com.aiquota.mobile/.providers.WebLoginActivity t571}#355)/@0x1bdadb1 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}, taskId = 571, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},{m=TO_FRONT f=FILLS_TASK leash=Surface(name=ActivityRecord{242329820 u0 com.aiquota.mobile/.MainActivity t571}#333)/@0x951296 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=fffafafa activity=ActivityTransitionInfo { component = ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.MainActivity}, taskId = 571, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}}]}
+07-01 08:53:27.815 D/VRI[WebLoginActivity](18197): visibilityChanged oldVisibility=true newVisibility=false
+07-01 08:53:27.842 D/CoreBackPreview(  692): Window{8c26692 u0 com.aiquota.mobile/com.aiquota.mobile.providers.WebLoginActivity}: Setting back callback null

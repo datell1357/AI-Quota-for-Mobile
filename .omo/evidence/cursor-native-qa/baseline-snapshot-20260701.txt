@@ -1,0 +1,4 @@
+provider=cursor state=CONNECTED refresh=IDLE lineCount=3 plan=free
+cursor:total | Total usage |  | 0.83 | 83% left
+cursor:auto | Auto usage |  | 0.66 | 66% left
+cursor:api | API usage |  | 1 | 100% left

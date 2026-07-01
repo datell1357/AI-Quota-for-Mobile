@@ -1,0 +1,12 @@
+07-01 08:00:46.373 I/AIQuotaDebugRefresh(12970): debugProviderRefresh=true provider=glm
+07-01 08:00:46.471 D/AIQuotaBgRefreshService(12970): cycleStart providers=glm
+07-01 08:00:46.510 D/AIQuotaBgRefreshService(12970): outcome provider=glm type=Failure
+07-01 08:00:46.516 W/AIQuotaBgRefreshService(12970): failure provider=glm kind=INTERACTIVE_AUTH_REQUIRED message=GLM API key is invalid or expired.
+07-01 08:00:46.530 I/ActivityManager(  692): Start proc 13314:com.aiquota.mobile:glm_webview/u0a233 for started-service {com.aiquota.mobile/com.aiquota.mobile.providers.GlmIsolatedWebSessionService}
+07-01 08:00:46.891 D/GlmIsolatedWebSession(13314): destroyWebView provider=glm hasWebView=false pid=13314
+07-01 08:00:46.892 D/GlmIsolatedWebSession(13314): clear provider=glm pid=13314
+07-01 08:00:47.167 D/GlmIsolatedWebSession(13314): destroyWebView provider=glm hasWebView=false pid=13314
+07-01 08:00:47.167 D/GlmIsolatedWebSession(13314): stopSelf provider=glm reason=cleared pid=13314
+07-01 08:00:47.170 D/GlmIsolatedWebSession(13314): scheduleKill provider=glm reason=cleared pid=13314
+07-01 08:00:47.171 D/GlmIsolatedWebSession(13314): destroyWebView provider=glm hasWebView=false pid=13314
+07-01 08:00:47.472 W/GlmIsolatedWebSession(13314): killSelf provider=glm pid=13314

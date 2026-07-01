@@ -1,0 +1,9 @@
+--- activity ---
+      topResumedActivity=ActivityRecord{168847309 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t2}
+  ResumedActivity: ActivityRecord{168847309 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t2}
+--- processes ---
+u0_a233      17326   464   16664196  49608 0                   0 S com.aiquota.mobile
+--- logs ---
+07-01 08:47:41.335 I/adbd    (  539): adbd service requested 'shell,v2,TERM=xterm-256color,raw:am start -n com.aiquota.mobile/.providers.WebLoginActivity --es providerId glm --es startUrl https://z.ai/manage-apikey/coding-plan/personal/my-plan'
+07-01 08:47:41.352 W/ActivityTaskManager(  692): Permission Denial: starting Intent { flg=0x10000000 xflg=0x4 cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras) } from null (pid=17411, uid=2000) not exported from uid 10233
+07-01 08:47:41.352 I/ActivityTaskManager(  692): START u0 {flg=0x10000000 xflg=0x4 cmp=com.aiquota.mobile/.providers.WebLoginActivity (has extras)} with LAUNCH_MULTIPLE from uid 2000 (com.android.shell) result code=0

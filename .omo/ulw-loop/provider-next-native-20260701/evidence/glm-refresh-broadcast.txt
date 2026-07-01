@@ -1,0 +1,2 @@
+Broadcasting: Intent { act=com.aiquota.mobile.debug.REFRESH_PROVIDER flg=0x400000 (has extras) }
+Broadcast completed: result=0

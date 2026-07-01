@@ -1,0 +1,18 @@
+# adb install -r for B OpenCode preserve-data QA
+package=com.aiquota.mobile
+apk=android/app/build/outputs/apk/debug/app-debug.apk
+safety=adb install -r only; no uninstall; no pm clear
+## before install package version
+    versionCode=25 minSdk=26 targetSdk=35
+    versionName=1.1.0
+    lastUpdateTime=2026-07-01 10:14:17
+      firstInstallTime=2026-06-20 10:06:27
+## install command
+Performing Streamed Install
+Success
+## after install package version
+    versionCode=25 minSdk=26 targetSdk=35
+    versionName=1.1.0
+    lastUpdateTime=2026-07-01 11:00:14
+      firstInstallTime=2026-06-20 10:06:27
+exitCode=0

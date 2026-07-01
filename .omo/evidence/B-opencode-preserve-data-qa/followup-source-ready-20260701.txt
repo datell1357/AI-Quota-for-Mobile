@@ -1,0 +1,391 @@
+# B OpenCode follow-up source-ready evidence
+timestamp_local=2026-07-01 Asia/Seoul
+safety=source/evidence reads only; no app data mutation
+## A follow-up evidence summary
+### .omo/teams/team-aff1a0d0/artifacts/A-opencode-native-source-followup-red.txt
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:processDebugGoogleServices UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:compileDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac UP-TO-DATE
+> Task :app:bundleDebugClassesToRuntimeJar UP-TO-DATE
+> Task :app:bundleDebugClassesToCompileJar UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:compileDebugUnitTestKotlin
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes UP-TO-DATE
+
+> Task :app:testDebugUnitTest FAILED
+
+ProviderNativeUsagePayloadFetcherTest > opencodeNativeUsagePayloadExtractsEmbeddedUsageJsonFromFetchedGoHtml FAILED
+    java.lang.AssertionError at ProviderNativeUsagePayloadFetcherTest.kt:251
+
+12 tests completed, 1 failed
+
+[Incubating] Problems report is available at: file:///D:/Vibe%20Project/AI%20Usage%20for%20Mobile/android/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:testDebugUnitTest'.
+> There were failing tests. See the report at: file:///D:/Vibe%20Project/AI%20Usage%20for%20Mobile/android/app/build/reports/tests/testDebugUnitTest/index.html
+
+* Try:
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.6.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 4s
+25 actionable tasks: 2 executed, 23 up-to-date
+### .omo/teams/team-aff1a0d0/artifacts/A-opencode-native-source-followup-green-native-fetcher.txt
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:processDebugGoogleServices UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:compileDebugKotlin
+> Task :app:compileDebugJavaWithJavac UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:compileDebugUnitTestKotlin UP-TO-DATE
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :app:testDebugUnitTest
+
+[Incubating] Problems report is available at: file:///D:/Vibe%20Project/AI%20Usage%20for%20Mobile/android/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.6.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 4s
+25 actionable tasks: 4 executed, 21 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.6.0/userguide/configuration_cache_enabling.html
+### .omo/teams/team-aff1a0d0/artifacts/A-opencode-native-source-followup-green.txt
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:processDebugGoogleServices UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:compileDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac UP-TO-DATE
+> Task :app:bundleDebugClassesToRuntimeJar UP-TO-DATE
+> Task :app:bundleDebugClassesToCompileJar UP-TO-DATE
+> Task :app:compileDebugUnitTestKotlin UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :app:testDebugUnitTest
+
+[Incubating] Problems report is available at: file:///D:/Vibe%20Project/AI%20Usage%20for%20Mobile/android/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.6.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 6s
+25 actionable tasks: 1 executed, 24 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.6.0/userguide/configuration_cache_enabling.html
+### .omo/teams/team-aff1a0d0/artifacts/A-opencode-native-source-followup-diff-check.txt
+warning: in the working copy of '.omo/boulder.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderAboutBlankCollectorPolicy.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderAuthStrategy.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderDefinitions.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderRefreshPlan.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderScriptProviders.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderWebCollectorScripts.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshServicePolicyTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/ProviderDefinitionRegistryTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeJsonBridgeTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/ProviderRefreshPlanTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/ProviderWebCollectorScriptsTest.kt', LF will be replaced by CRLF the next time Git touches it
+### .omo/teams/team-aff1a0d0/artifacts/A-opencode-native-source-followup-legacy-guard.txt
+android/app/src/main/java/com/aiquota/mobile/providers/ProviderUsageNormalizer.kt:161:        val opencodeSource = if (json.optionalString("source") == "visible-dom" || data.optionalString("source") == "visible-dom") {
+### .omo/teams/team-aff1a0d0/artifacts/A-opencode-native-source-followup-zero-guard.txt
+## Source markers
+   220	            }
+   221	        return verifiedPayload(ProviderId.GLM, json, "glm_usage_unavailable", emptyList())
+   222	    }
+   223	
+   224	    private fun fetchOpenCodePayload(
+   225	        userAgent: String,
+   226	        bridgePageUrl: String?,
+   227	        fetchJson: NativeJsonFetcher
+   228	    ): NativePayloadResult {
+   229	        val statuses = mutableListOf<String>()
+   230	        val targetUrl = openCodeNativeUsageUrl(bridgePageUrl)
+   231	        val response = fetchWrapped(ProviderId.OPENCODE, targetUrl, statuses, userAgent, emptyMap(), fetchJson)
+   232	        val rawText = response.rawText()
+   233	        val payload = openCodePayloadFromValue(response.jsonValue())
+   234	            ?: rawText?.let(::openCodePayloadFromText)
+   235	            ?: return NativePayloadResult(
+   236	                null,
+   237	                "opencode_usage_unavailable",
+   238	                rawText?.let { statuses + openCodeTextMetadata(it) } ?: statuses
+   239	            )
+   240	        return verifiedPayload(ProviderId.OPENCODE, payload, "opencode_usage_unavailable", statuses)
+   241	    }
+   242	
+   243	    private fun openCodeNativeUsageUrl(bridgePageUrl: String?): String {
+   244	        val pageUrl = bridgePageUrl.orEmpty()
+   245	        return OpenCodeUsagePageRoutes.canonicalGoUsageUrlFrom(pageUrl)
+   246	            ?: pageUrl.takeIf { ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.OPENCODE, it) }
+   247	            ?: OPENCODE_DEFAULT_USAGE_URL
+   248	    }
+   249	
+   250	    private fun openCodePayloadFromText(text: String): JSONObject? {
+   251	        runCatching { JSONTokener(text).nextValue() }
+   252	            .getOrNull()
+   253	            ?.let(::openCodePayloadFromValue)
+   254	            ?.let { return it }
+   255	        val values = openCodeJsonValuesFromText(text)
+   256	        if (values.isNotEmpty()) {
+   257	            val aggregate = JSONArray()
+   258	            values.forEach(aggregate::put)
+   259	            return openCodePayloadFromValue(aggregate)
+   260	        }
+   261	        return null
+   262	    }
+   263	
+   264	    private fun openCodePayloadFromValue(value: Any?): JSONObject? {
+   265	        val data = JSONObject()
+   266	        val limits = JSONArray()
+   267	        val seenLimits = mutableSetOf<String>()
+   268	        gatherOpenCodeUsageData(value, data, limits, seenLimits, "", 0)
+   269	        if (limits.length() > 0) {
+   270	            data.put("limits", limits)
+   271	        }
+   272	        if (limits.length() == 0 && data.optJSONObject("credits") == null) return null
+   273	        findFirstString(value, OPENCODE_PLAN_KEYS)?.let { data.put("plan", it) }
+   274	        findFirstString(value, OPENCODE_ACCOUNT_KEYS)?.let { data.put("account", it) }
+   275	        val payload = JSONObject()
+   276	            .put("provider", ProviderId.OPENCODE.storageId)
+   277	            .put("source", "native-bridge")
+   278	            .put("data", data)
+   279	        findFirstString(value, OPENCODE_ACCOUNT_KEYS)?.let { payload.put("account", it) }
+   280	        findFirstString(value, OPENCODE_PLAN_KEYS)?.let { payload.put("plan", it) }
+   281	        return payload
+   282	    }
+   283	
+   284	    private fun gatherOpenCodeUsageData(
+   285	        value: Any?,
+   360	        val hintText = value.lowercase(Locale.US)
+   361	        return hintText.contains("credit") ||
+   362	            hintText.contains("balance") ||
+   363	            hintText.contains("wallet") ||
+   364	            hintText.contains("zen")
+   365	    }
+   366	
+   367	    private fun JSONObject.hasNonNull(key: String): Boolean {
+   368	        return has(key) && opt(key) != JSONObject.NULL && optString(key).isNotBlank()
+   369	    }
+   370	
+   371	    private fun openCodeNumber(value: Any?): Double? {
+   372	        return when (value) {
+   373	            is Number -> value.toDouble()
+   374	            is String -> Regex("""-?\d+(?:\.\d+)?""").find(value.replace(",", ""))?.value?.toDoubleOrNull()
+   375	            else -> null
+   376	        }
+   377	    }
+   378	
+   379	    private fun openCodeJsonValuesFromText(text: String): List<Any> {
+   380	        val values = mutableListOf<Any>()
+   381	        OPENCODE_SCRIPT_JSON_PATTERN.findAll(text).forEach { match ->
+   382	            parseOpenCodeJsonValue(htmlTextDecode(match.groupValues[1]))?.let(values::add)
+   383	        }
+   384	        OPENCODE_STATE_MARKERS.forEach { marker ->
+   385	            var searchFrom = 0
+   386	            while (values.size < MAX_OPENCODE_TEXT_JSON_VALUES) {
+   387	                val markerIndex = text.indexOf(marker, searchFrom)
+   388	                if (markerIndex < 0) break
+   389	                parseJsonContainerAtOrAfter(text, markerIndex + marker.length)?.let(values::add)
+   390	                searchFrom = markerIndex + marker.length
+   391	            }
+   392	        }
+   393	        OPENCODE_USAGE_CONTEXT_PATTERN.findAll(text).take(MAX_OPENCODE_CONTEXT_MATCHES).forEach { match ->
+   394	            parseJsonContainerBefore(text, match.range.first, '{')?.let(values::add)
+   395	            parseJsonContainerBefore(text, match.range.first, '[')?.let(values::add)
+   396	        }
+   397	        return values.take(MAX_OPENCODE_TEXT_JSON_VALUES)
+   398	    }
+   399	
+   400	    private fun parseJsonContainerAtOrAfter(text: String, startIndex: Int): Any? {
+   401	        val objectStart = text.indexOf('{', startIndex)
+   402	        val arrayStart = text.indexOf('[', startIndex)
+   403	        val start = listOf(objectStart, arrayStart).filter { it >= 0 }.minOrNull() ?: return null
+   404	        return parseBalancedJsonContainer(text, start)
+   405	    }
+   406	
+   407	    private fun parseJsonContainerBefore(text: String, index: Int, open: Char): Any? {
+   408	        var start = text.lastIndexOf(open, index)
+   409	        val floor = (index - OPENCODE_JSON_CONTEXT_WINDOW).coerceAtLeast(0)
+   410	        while (start >= floor) {
+   411	            parseBalancedJsonContainer(text, start)?.let { return it }
+   412	            start = text.lastIndexOf(open, start - 1)
+   413	        }
+   414	        return null
+   415	    }
+   416	
+   417	    private fun parseBalancedJsonContainer(text: String, start: Int): Any? {
+   418	        val close = when (text.getOrNull(start)) {
+   419	            '{' -> '}'
+   420	            '[' -> ']'
+   421	            else -> return null
+   422	        }
+   423	        val end = balancedJsonEnd(text, start, text[start], close) ?: return null
+   424	        return parseOpenCodeJsonValue(htmlTextDecode(text.substring(start, end + 1)))
+   425	    }
+   426	
+   427	    private fun parseOpenCodeJsonValue(text: String): Any? {
+   428	        return runCatching { JSONTokener(text.trim()).nextValue() }
+   429	            .getOrNull()
+   430	            ?.takeIf { it is JSONObject || it is JSONArray }
+   431	    }
+   432	
+   433	    private fun balancedJsonEnd(value: String, start: Int, open: Char, close: Char): Int? {
+   434	        var depth = 0
+   435	        var inString = false
+   436	        var escaped = false
+   437	        for (index in start until value.length) {
+   438	            val char = value[index]
+   439	            if (inString) {
+   440	                when {
+   441	                    escaped -> escaped = false
+   442	                    char == '\\' -> escaped = true
+   443	                    char == '"' -> inString = false
+   444	                }
+   445	                continue
+   446	            }
+   447	            when (char) {
+   448	                '"' -> inString = true
+   449	                open -> depth += 1
+   450	                close -> {
+   451	                    depth -= 1
+   452	                    if (depth == 0) return index
+   453	                }
+   454	            }
+   455	        }
+   456	        return null
+   457	    }
+   458	
+   459	    private fun htmlTextDecode(value: String): String {
+   460	        return value
+   461	            .replace("&quot;", "\"")
+   462	            .replace("&#34;", "\"")
+   463	            .replace("&#x22;", "\"")
+   464	            .replace("&amp;", "&")
+   465	            .replace("&lt;", "<")
+   466	            .replace("&gt;", ">")
+   467	    }
+   468	
+   469	    private fun openCodeTextMetadata(text: String): String {
+   470	        return "opencode_text:" +
+   471	            "bytes=${text.length}:" +
+   472	            "html=${text.contains("<html", ignoreCase = true)}:" +
+   473	            "scriptJson=${OPENCODE_SCRIPT_JSON_PATTERN.findAll(text).count()}:" +
+   474	            "usageSignals=${OPENCODE_USAGE_CONTEXT_PATTERN.findAll(text).count()}:" +
+   475	            "stateMarkers=${OPENCODE_STATE_MARKERS.count { marker -> text.contains(marker) }}"
+   476	    }
+   477	
+   478	    private fun fetchWrapped(
+   479	        providerId: ProviderId,
+   480	        url: String,
+   586	        webView.onResume()
+   587	        webView.resumeTimers()
+   588	    }
+   589	
+   590	    private fun restoreDebugProviderSessionCookies(providerId: ProviderId, cookieManager: CookieManager) {
+   591	        if (providerId == ProviderId.GEMINI || providerId == ProviderId.OPENCODE) return
+   592	        DebugProviderSessionCookieStore.restore(applicationContext, providerId, cookieManager, "background_collection")
+   593	    }
+   594	
+   595	    private fun restoreCodexDebugNativeAuthContext(providerId: ProviderId) {
+   596	        if (providerId != ProviderId.CODEX) return
+  1126	        }
+  1127	
+  1128	        private fun nativeUsageBridgePageUrl(providerId: ProviderId): String? {
+  1129	            if (providerId == ProviderId.GEMINI) {
+  1130	                return ProviderScopedStateRepository(applicationContext).readGeminiUsageUrl()
+  1131	            }
+  1132	            if (providerId == ProviderId.OPENCODE) {
+  1133	                return ProviderScopedStateRepository(applicationContext).readOpenCodeUsageUrl()
+  1134	            }
+  1135	            return null
+  1136	        }
+  1137	
+  1138	    }
+  1139	
+  1140	    private class ServiceCollectorChromeClient : WebChromeClient()
+## Zero guard grep
+android/app/src/test/java/com/aiquota/mobile/providers\ProviderBackgroundRefreshServicePolicyTest.kt:198:        assertFalse(service.contains("private fun maybeRedirectOpenCodeRefreshToGo"))
+android/app/src/test/java/com/aiquota/mobile/providers\ProviderBackgroundRefreshServicePolicyTest.kt:200:        assertFalse(pageStarted.contains("maybeRedirectOpenCodeRefreshToGo(active, view, url)"))
+android/app/src/test/java/com/aiquota/mobile/providers\ProviderBackgroundRefreshServicePolicyTest.kt:201:        assertFalse(pageFinished.contains("maybeRedirectOpenCodeRefreshToGo(active, view, url)"))
+android/app/src/test/java/com/aiquota/mobile/providers\ProviderWebCollectorScriptsTest.kt:131:            assertFalse(script.contains("__AIQuotaOpenCodeRows"))
+android/app/src/test/java/com/aiquota/mobile/providers\ProviderWebCollectorScriptsTest.kt:132:            assertFalse(script.contains("collectOpenCode"))
+android/app/src/test/java/com/aiquota/mobile/providers\ProviderWebCollectorScriptsTest.kt:157:            assertFalse(script.contains("__AIQuotaOpenCodeRows"))
+android/app/src/test/java/com/aiquota/mobile/providers\ProviderWebCollectorScriptsTest.kt:171:            assertFalse(script.contains("__AIQuotaOpenCodeRows"))
+android/app/src/test/java/com/aiquota/mobile/providers\ProviderWebCollectorScriptsTest.kt:273:        assertFalse(opencode.contains("__AIQuotaOpenCodeRows"))
+android/app/src/test/java/com/aiquota/mobile/providers\ProviderWebCollectorScriptsTest.kt:274:        assertFalse(opencode.contains("visible-dom"))
+android/app/src/main/java/com/aiquota/mobile/providers\ProviderUsageNormalizer.kt:161:        val opencodeSource = if (json.optionalString("source") == "visible-dom" || data.optionalString("source") == "visible-dom") {

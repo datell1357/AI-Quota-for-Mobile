@@ -1,0 +1,9 @@
+before_first_install=      firstInstallTime=2026-06-20 10:06:27
+Performing Streamed Install
+Success
+after_first_install=      firstInstallTime=2026-06-20 10:06:27
+Broadcasting: Intent { act=com.aiquota.mobile.debug.REFRESH_PROVIDER flg=0x400000 (has extras) }
+Broadcast completed: result=0
+07-01 13:46:14.363   692 10174 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms, role: android.app.role.WALLET, user: 0
+07-01 13:46:14.412   488   488 I RanchuHwc: logCompositionFallbackIfChanged: layer 228 CompositionType fallback from 2 to 1
+07-01 13:46:14.412   488   488 I RanchuHwc: logCompositionFallbackIfChanged: layer 229 CompositionType fallback from 2 to 1

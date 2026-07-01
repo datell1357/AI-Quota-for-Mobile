@@ -1,0 +1,3 @@
+.omo/evidence/B-opencode-preserve-data-qa/opencode-debug-cookie-snapshot-after-login-20260701-211154.json
+.omo/evidence/B-opencode-preserve-data-qa/opencode-debug-cookie-snapshot-current.json
+.omo/evidence/B-opencode-preserve-data-qa/opencode-debug-cookie-snapshot-relogin2-20260701-214013.json

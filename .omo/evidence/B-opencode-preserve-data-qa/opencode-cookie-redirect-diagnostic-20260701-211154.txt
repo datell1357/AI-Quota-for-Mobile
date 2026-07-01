@@ -1,0 +1,9 @@
+cookieHosts=accounts.google.com|accounts.youtube.com|api.github.com|auth.opencode.ai|github.com|google.com|myaccount.google.com|opencode.ai|play.google.com|www.github.com|www.google.com
+chain=200:opencode.ai/workspace/wrk_01KVCH0B246K4H9H3VF7QW8GKV/go
+final=opencode.ai/workspace/wrk_01KVCH0B246K4H9H3VF7QW8GKV/go
+status=200
+bytes=16068
+openAuth=false
+githubAuthorize=false
+rollingUsage=true
+weeklyUsage=true

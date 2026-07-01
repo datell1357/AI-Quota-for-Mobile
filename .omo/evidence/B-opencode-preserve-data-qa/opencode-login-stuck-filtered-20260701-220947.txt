@@ -1,0 +1,65 @@
+15:07-01 13:03:11.094 I/adbd    (  539): adbd service requested 'shell,v2,TERM=xterm-256color,raw:am broadcast -a com.aiquota.mobile.debug.REFRESH_PROVIDER -n com.aiquota.mobile/.debug.ProviderRefreshDebugReceiver --es provider_id opencode'
+27:07-01 13:03:11.188 I/AIQuotaDebugRefresh(14745): debugProviderRefresh=true provider=opencode
+50:07-01 13:03:11.361 D/AIQuotaBgRefreshService(14745): cycleStart providers=opencode
+109:07-01 13:03:11.991 D/AIQuotaBgRefreshService(14745): load provider=opencode start= warmUp=false request=1
+185:07-01 13:03:12.488 D/AIQuotaBgRefreshService(14745): inject provider=opencode url=
+186:07-01 13:03:12.500 D/AIQuotaBgRefreshService(14745): pageFinished provider=opencode url=
+197:07-01 13:03:14.100 D/AIQuotaNativeJson(14745): nativeJson provider=opencode status=200 url=opencode.ai/workspace/wrk_REDACTED/go cookieHost=opencode.ai
+198:07-01 13:03:14.127 D/AIQuotaNativeUsage(14745): nativeUsage provider=opencode ok=true diagnostic=ok statuses=opencode.ai/workspace/wrk_REDACTED/go:200:
+199:07-01 13:03:14.140 D/AIQuotaBgRefreshService(14745): payload provider=opencode url= summary=root=provider|source|collectorMode|plan|data,provider=opencode,collectorMode=native-server-function,lineCount=0,hasUsage=false,hasData=true,hasError=false
+200:07-01 13:03:14.155 D/AIQuotaBgRefreshService(14745): outcome provider=opencode type=Payload
+202:07-01 13:03:14.160 D/AIQuotaBgRefreshService(14745): saveSnapshot provider=opencode source=webview lineCount=2 planPresent=true accountPresent=false
+750:07-01 13:04:11.383 D/AIQuotaBgRefreshService(14745): cycleStart providers=opencode
+752:07-01 13:04:11.532 D/AIQuotaBgRefreshService(14745): load provider=opencode start= warmUp=false request=2
+754:07-01 13:04:11.604 D/AIQuotaBgRefreshService(14745): inject provider=opencode url=
+755:07-01 13:04:11.607 D/AIQuotaBgRefreshService(14745): pageFinished provider=opencode url=
+771:07-01 13:04:11.923 D/AIQuotaNativeJson(14745): nativeJson provider=opencode status=200 url=opencode.ai/workspace/wrk_REDACTED/go cookieHost=opencode.ai
+774:07-01 13:04:11.928 D/AIQuotaNativeUsage(14745): nativeUsage provider=opencode ok=true diagnostic=ok statuses=opencode.ai/workspace/wrk_REDACTED/go:200:
+781:07-01 13:04:11.942 D/AIQuotaBgRefreshService(14745): payload provider=opencode url= summary=root=provider|source|collectorMode|plan|data,provider=opencode,collectorMode=native-server-function,lineCount=0,hasUsage=false,hasData=true,hasError=false
+785:07-01 13:04:11.947 D/AIQuotaBgRefreshService(14745): outcome provider=opencode type=Payload
+787:07-01 13:04:11.951 D/AIQuotaBgRefreshService(14745): saveSnapshot provider=opencode source=webview lineCount=2 planPresent=true accountPresent=false
+1306:07-01 13:05:11.389 D/AIQuotaBgRefreshService(14745): cycleStart providers=opencode
+1307:07-01 13:05:11.406 D/AIQuotaBgRefreshService(14745): load provider=opencode start= warmUp=false request=3
+1309:07-01 13:05:11.556 D/AIQuotaBgRefreshService(14745): inject provider=opencode url=
+1310:07-01 13:05:11.557 D/AIQuotaBgRefreshService(14745): pageFinished provider=opencode url=
+1318:07-01 13:05:11.876 D/AIQuotaNativeJson(14745): nativeJson provider=opencode status=200 url=opencode.ai/workspace/wrk_REDACTED/go cookieHost=opencode.ai
+1320:07-01 13:05:11.879 D/AIQuotaNativeUsage(14745): nativeUsage provider=opencode ok=true diagnostic=ok statuses=opencode.ai/workspace/wrk_REDACTED/go:200:
+1324:07-01 13:05:11.888 D/AIQuotaBgRefreshService(14745): payload provider=opencode url= summary=root=provider|source|collectorMode|plan|data,provider=opencode,collectorMode=native-server-function,lineCount=0,hasUsage=false,hasData=true,hasError=false
+1327:07-01 13:05:11.893 D/AIQuotaBgRefreshService(14745): outcome provider=opencode type=Payload
+1331:07-01 13:05:11.898 D/AIQuotaBgRefreshService(14745): saveSnapshot provider=opencode source=webview lineCount=2 planPresent=true accountPresent=false
+1842:07-01 13:06:11.394 D/AIQuotaBgRefreshService(14745): cycleStart providers=opencode
+1843:07-01 13:06:11.408 D/AIQuotaBgRefreshService(14745): load provider=opencode start= warmUp=false request=4
+1846:07-01 13:06:11.566 D/AIQuotaBgRefreshService(14745): inject provider=opencode url=
+1847:07-01 13:06:11.569 D/AIQuotaBgRefreshService(14745): pageFinished provider=opencode url=
+1864:07-01 13:06:11.892 D/AIQuotaNativeJson(14745): nativeJson provider=opencode status=200 url=opencode.ai/workspace/wrk_REDACTED/go cookieHost=opencode.ai
+1867:07-01 13:06:11.896 D/AIQuotaNativeUsage(14745): nativeUsage provider=opencode ok=true diagnostic=ok statuses=opencode.ai/workspace/wrk_REDACTED/go:200:
+1872:07-01 13:06:11.907 D/AIQuotaBgRefreshService(14745): payload provider=opencode url= summary=root=provider|source|collectorMode|plan|data,provider=opencode,collectorMode=native-server-function,lineCount=0,hasUsage=false,hasData=true,hasError=false
+1874:07-01 13:06:11.913 D/AIQuotaBgRefreshService(14745): outcome provider=opencode type=Payload
+1878:07-01 13:06:11.923 D/AIQuotaBgRefreshService(14745): saveSnapshot provider=opencode source=webview lineCount=2 planPresent=true accountPresent=false
+2896:07-01 13:07:11.395 D/AIQuotaBgRefreshService(14745): cycleStart providers=opencode
+2899:07-01 13:07:11.404 D/AIQuotaBgRefreshService(14745): load provider=opencode start= warmUp=false request=5
+2901:07-01 13:07:11.528 D/AIQuotaBgRefreshService(14745): inject provider=opencode url=
+2902:07-01 13:07:11.529 D/AIQuotaBgRefreshService(14745): pageFinished provider=opencode url=
+2951:07-01 13:07:12.996 D/AIQuotaNativeJson(14745): nativeJson provider=opencode status=200 url=opencode.ai/workspace/wrk_REDACTED/go cookieHost=opencode.ai
+2952:07-01 13:07:12.997 D/AIQuotaNativeUsage(14745): nativeUsage provider=opencode ok=true diagnostic=ok statuses=opencode.ai/workspace/wrk_REDACTED/go:200:
+2953:07-01 13:07:12.999 D/AIQuotaBgRefreshService(14745): payload provider=opencode url= summary=root=provider|source|collectorMode|plan|data,provider=opencode,collectorMode=native-server-function,lineCount=0,hasUsage=false,hasData=true,hasError=false
+2954:07-01 13:07:13.016 D/AIQuotaBgRefreshService(14745): outcome provider=opencode type=Payload
+2955:07-01 13:07:13.017 D/AIQuotaBgRefreshService(14745): saveSnapshot provider=opencode source=webview lineCount=2 planPresent=true accountPresent=false
+3465:07-01 13:08:11.399 D/AIQuotaBgRefreshService(14745): cycleStart providers=opencode
+3466:07-01 13:08:11.407 D/AIQuotaBgRefreshService(14745): load provider=opencode start= warmUp=false request=6
+3485:07-01 13:08:11.531 D/AIQuotaBgRefreshService(14745): inject provider=opencode url=
+3486:07-01 13:08:11.531 D/AIQuotaBgRefreshService(14745): pageFinished provider=opencode url=
+3489:07-01 13:08:11.827 D/AIQuotaNativeJson(14745): nativeJson provider=opencode status=200 url=opencode.ai/workspace/wrk_REDACTED/go cookieHost=opencode.ai
+3490:07-01 13:08:11.838 D/AIQuotaNativeUsage(14745): nativeUsage provider=opencode ok=true diagnostic=ok statuses=opencode.ai/workspace/wrk_REDACTED/go:200:
+3491:07-01 13:08:11.864 D/AIQuotaBgRefreshService(14745): payload provider=opencode url= summary=root=provider|source|collectorMode|plan|data,provider=opencode,collectorMode=native-server-function,lineCount=0,hasUsage=false,hasData=true,hasError=false
+3492:07-01 13:08:11.882 D/AIQuotaBgRefreshService(14745): outcome provider=opencode type=Payload
+3493:07-01 13:08:11.883 D/AIQuotaBgRefreshService(14745): saveSnapshot provider=opencode source=webview lineCount=2 planPresent=true accountPresent=false
+3986:07-01 13:09:11.402 D/AIQuotaBgRefreshService(14745): cycleStart providers=opencode
+3987:07-01 13:09:11.412 D/AIQuotaBgRefreshService(14745): load provider=opencode start= warmUp=false request=7
+3988:07-01 13:09:11.541 D/AIQuotaBgRefreshService(14745): inject provider=opencode url=
+3989:07-01 13:09:11.542 D/AIQuotaBgRefreshService(14745): pageFinished provider=opencode url=
+4011:07-01 13:09:11.821 D/AIQuotaNativeJson(14745): nativeJson provider=opencode status=200 url=opencode.ai/workspace/wrk_REDACTED/go cookieHost=opencode.ai
+4012:07-01 13:09:11.822 D/AIQuotaNativeUsage(14745): nativeUsage provider=opencode ok=true diagnostic=ok statuses=opencode.ai/workspace/wrk_REDACTED/go:200:
+4013:07-01 13:09:11.831 D/AIQuotaBgRefreshService(14745): payload provider=opencode url= summary=root=provider|source|collectorMode|plan|data,provider=opencode,collectorMode=native-server-function,lineCount=0,hasUsage=false,hasData=true,hasError=false
+4014:07-01 13:09:11.833 D/AIQuotaBgRefreshService(14745): outcome provider=opencode type=Payload
+4015:07-01 13:09:11.835 D/AIQuotaBgRefreshService(14745): saveSnapshot provider=opencode source=webview lineCount=2 planPresent=true accountPresent=false

@@ -1,0 +1,15 @@
+stamp=20260701-211154
+filtered lines:
+126 .omo/evidence/B-opencode-preserve-data-qa/root-after-login-opencode-filtered-sanitized-20260701-211154.txt
+nativeUsage ok true:
+nativeUsage ok false:
+4
+saveSnapshot:
+nativeJson status 200:
+8
+opencode_server_text:
+4
+blocked provider json endpoint:
+legacy DOM markers:
+opencode debug restore:
+fallback stale fake:

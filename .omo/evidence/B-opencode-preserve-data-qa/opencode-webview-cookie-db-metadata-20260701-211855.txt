@@ -1,0 +1,233 @@
+stamp=20260701-211855
+sqlite3 availability:
+cookie db files:
+.
+./app_textures
+./app_webview
+./app_webview/BrowserMetrics-spare.pma
+./app_webview/Default
+./app_webview/Default/Cookies
+./app_webview/Default/Cookies-journal
+./app_webview/Default/IndexedDB
+./app_webview/Default/IndexedDB/https_claude.ai_0.indexeddb.leveldb
+./app_webview/Default/IndexedDB/https_claude.ai_0.indexeddb.leveldb/000005.ldb
+./app_webview/Default/IndexedDB/https_claude.ai_0.indexeddb.leveldb/000006.log
+./app_webview/Default/IndexedDB/https_claude.ai_0.indexeddb.leveldb/CURRENT
+./app_webview/Default/IndexedDB/https_claude.ai_0.indexeddb.leveldb/LOCK
+./app_webview/Default/IndexedDB/https_claude.ai_0.indexeddb.leveldb/LOG
+./app_webview/Default/IndexedDB/https_claude.ai_0.indexeddb.leveldb/LOG.old
+./app_webview/Default/IndexedDB/https_claude.ai_0.indexeddb.leveldb/MANIFEST-000004
+./app_webview/Default/IndexedDB/https_z.ai_0.indexeddb.leveldb
+./app_webview/Default/IndexedDB/https_z.ai_0.indexeddb.leveldb/000009.ldb
+./app_webview/Default/IndexedDB/https_z.ai_0.indexeddb.leveldb/000011.ldb
+./app_webview/Default/IndexedDB/https_z.ai_0.indexeddb.leveldb/000013.log
+./app_webview/Default/IndexedDB/https_z.ai_0.indexeddb.leveldb/000015.ldb
+./app_webview/Default/IndexedDB/https_z.ai_0.indexeddb.leveldb/CURRENT
+./app_webview/Default/IndexedDB/https_z.ai_0.indexeddb.leveldb/LOCK
+./app_webview/Default/IndexedDB/https_z.ai_0.indexeddb.leveldb/LOG
+./app_webview/Default/IndexedDB/https_z.ai_0.indexeddb.leveldb/LOG.old
+./app_webview/Default/IndexedDB/https_z.ai_0.indexeddb.leveldb/MANIFEST-000010
+./app_webview/Default/Local Storage
+./app_webview/Default/Local Storage/leveldb
+./app_webview/Default/Local Storage/leveldb/000210.ldb
+./app_webview/Default/Local Storage/leveldb/000215.ldb
+./app_webview/Default/Local Storage/leveldb/000231.log
+./app_webview/Default/Local Storage/leveldb/CURRENT
+./app_webview/Default/Local Storage/leveldb/LOCK
+./app_webview/Default/Local Storage/leveldb/LOG
+./app_webview/Default/Local Storage/leveldb/LOG.old
+./app_webview/Default/Local Storage/leveldb/MANIFEST-000229
+./app_webview/Default/PersistentOriginTrials
+./app_webview/Default/PersistentOriginTrials/LOCK
+./app_webview/Default/PersistentOriginTrials/LOG
+./app_webview/Default/PersistentOriginTrials/LOG.old
+./app_webview/Default/Preferences
+./app_webview/Default/Service Worker
+./app_webview/Default/Service Worker/Database
+./app_webview/Default/Service Worker/Database/000192.ldb
+./app_webview/Default/Service Worker/Database/000194.ldb
+./app_webview/Default/Service Worker/Database/000197.ldb
+./app_webview/Default/Service Worker/Database/000198.log
+./app_webview/Default/Service Worker/Database/CURRENT
+./app_webview/Default/Service Worker/Database/LOCK
+./app_webview/Default/Service Worker/Database/LOG
+./app_webview/Default/Service Worker/Database/LOG.old
+./app_webview/Default/Service Worker/Database/MANIFEST-000196
+./app_webview/Default/Service Worker/ScriptCache
+./app_webview/Default/Service Worker/ScriptCache/2cc80dabc69f58b6_0
+./app_webview/Default/Service Worker/ScriptCache/4cb013792b196a35_0
+./app_webview/Default/Service Worker/ScriptCache/index
+./app_webview/Default/Service Worker/ScriptCache/index-dir
+./app_webview/Default/Service Worker/ScriptCache/index-dir/the-real-index
+./app_webview/Default/Session Storage
+./app_webview/Default/Session Storage/000003.log
+./app_webview/Default/Session Storage/CURRENT
+./app_webview/Default/Session Storage/LOCK
+./app_webview/Default/Session Storage/LOG
+./app_webview/Default/Session Storage/MANIFEST-000002
+./app_webview/Default/Shared Dictionary
+./app_webview/Default/Shared Dictionary/cache
+./app_webview/Default/Shared Dictionary/cache/index
+./app_webview/Default/Shared Dictionary/cache/index-dir
+./app_webview/Default/Shared Dictionary/cache/index-dir/the-real-index
+./app_webview/Default/Shared Dictionary/db
+./app_webview/Default/Shared Dictionary/db-journal
+./app_webview/Default/VideoDecodeStats
+./app_webview/Default/VideoDecodeStats/LOCK
+./app_webview/Default/VideoDecodeStats/LOG
+./app_webview/Default/WebStorage
+./app_webview/Default/WebStorage/QuotaManager
+./app_webview/Default/WebStorage/QuotaManager-journal
+./app_webview/Default/blob_storage
+./app_webview/Default/blob_storage/10977f3c-2a54-4adb-9c5e-1246eb7dc05f
+./app_webview/Default/shared_proto_db
+./app_webview/Default/shared_proto_db/000192.log
+./app_webview/Default/shared_proto_db/CURRENT
+./app_webview/Default/shared_proto_db/LOCK
+./app_webview/Default/shared_proto_db/LOG
+./app_webview/Default/shared_proto_db/LOG.old
+./app_webview/Default/shared_proto_db/MANIFEST-000190
+./app_webview/Default/shared_proto_db/metadata
+./app_webview/Default/shared_proto_db/metadata/000224.ldb
+./app_webview/Default/shared_proto_db/metadata/000226.ldb
+./app_webview/Default/shared_proto_db/metadata/000229.ldb
+./app_webview/Default/shared_proto_db/metadata/000232.ldb
+./app_webview/Default/shared_proto_db/metadata/000233.log
+./app_webview/Default/shared_proto_db/metadata/CURRENT
+./app_webview/Default/shared_proto_db/metadata/LOCK
+./app_webview/Default/shared_proto_db/metadata/LOG
+./app_webview/Default/shared_proto_db/metadata/LOG.old
+./app_webview/Default/shared_proto_db/metadata/MANIFEST-000231
+./app_webview/last-exit-info
+./app_webview/pref_store
+./app_webview/variations_seed_new
+./app_webview/variations_stamp
+./app_webview/webview_data.lock
+./app_webview_glm_webview
+./app_webview_glm_webview/Default
+./app_webview_glm_webview/Default/Cookies
+./app_webview_glm_webview/Default/Cookies-journal
+./app_webview_glm_webview/Default/Local Storage
+./app_webview_glm_webview/Default/Local Storage/leveldb
+./app_webview_glm_webview/Default/Local Storage/leveldb/000005.ldb
+./app_webview_glm_webview/Default/Local Storage/leveldb/000006.log
+./app_webview_glm_webview/Default/Local Storage/leveldb/CURRENT
+./app_webview_glm_webview/Default/Local Storage/leveldb/LOCK
+./app_webview_glm_webview/Default/Local Storage/leveldb/LOG
+./app_webview_glm_webview/Default/Local Storage/leveldb/LOG.old
+./app_webview_glm_webview/Default/Local Storage/leveldb/MANIFEST-000004
+./app_webview_glm_webview/Default/PersistentOriginTrials
+./app_webview_glm_webview/Default/PersistentOriginTrials/LOCK
+./app_webview_glm_webview/Default/PersistentOriginTrials/LOG
+./app_webview_glm_webview/Default/PersistentOriginTrials/LOG.old
+./app_webview_glm_webview/Default/Session Storage
+./app_webview_glm_webview/Default/Session Storage/000005.ldb
+./app_webview_glm_webview/Default/Session Storage/000006.log
+./app_webview_glm_webview/Default/Session Storage/CURRENT
+./app_webview_glm_webview/Default/Session Storage/LOCK
+./app_webview_glm_webview/Default/Session Storage/LOG
+./app_webview_glm_webview/Default/Session Storage/LOG.old
+./app_webview_glm_webview/Default/Session Storage/MANIFEST-000004
+./app_webview_glm_webview/Default/Shared Dictionary
+./app_webview_glm_webview/Default/Shared Dictionary/cache
+./app_webview_glm_webview/Default/Shared Dictionary/cache/index
+./app_webview_glm_webview/Default/Shared Dictionary/cache/index-dir
+./app_webview_glm_webview/Default/Shared Dictionary/cache/index-dir/the-real-index
+./app_webview_glm_webview/Default/Shared Dictionary/db
+./app_webview_glm_webview/Default/Shared Dictionary/db-journal
+./app_webview_glm_webview/Default/WebStorage
+./app_webview_glm_webview/Default/WebStorage/QuotaManager
+./app_webview_glm_webview/Default/WebStorage/QuotaManager-journal
+./app_webview_glm_webview/Default/blob_storage
+./app_webview_glm_webview/Default/blob_storage/5a9372e8-ea1c-4f9b-857f-4589b5a93448
+./app_webview_glm_webview/Default/shared_proto_db
+./app_webview_glm_webview/Default/shared_proto_db/000011.log
+./app_webview_glm_webview/Default/shared_proto_db/CURRENT
+./app_webview_glm_webview/Default/shared_proto_db/LOCK
+./app_webview_glm_webview/Default/shared_proto_db/LOG
+./app_webview_glm_webview/Default/shared_proto_db/LOG.old
+./app_webview_glm_webview/Default/shared_proto_db/MANIFEST-000010
+./app_webview_glm_webview/Default/shared_proto_db/metadata
+./app_webview_glm_webview/Default/shared_proto_db/metadata/000015.log
+./app_webview_glm_webview/Default/shared_proto_db/metadata/000016.ldb
+./app_webview_glm_webview/Default/shared_proto_db/metadata/CURRENT
+./app_webview_glm_webview/Default/shared_proto_db/metadata/LOCK
+./app_webview_glm_webview/Default/shared_proto_db/metadata/LOG
+./app_webview_glm_webview/Default/shared_proto_db/metadata/LOG.old
+./app_webview_glm_webview/Default/shared_proto_db/metadata/MANIFEST-000013
+./app_webview_glm_webview/last-exit-info
+./app_webview_glm_webview/pref_store
+./app_webview_glm_webview/variations_seed_new
+./app_webview_glm_webview/variations_stamp
+./app_webview_glm_webview/webview_data.lock
+./cache
+./cache/WebView
+./cache/WebView/Default
+./cache/WebView/Default/HTTP Cache
+./cache/WebView/Default/HTTP Cache/Cache_Data
+./cache/WebView/Default/HTTP Cache/Cache_Data/565af7c8962d622f_0
+./cache/WebView/Default/HTTP Cache/Cache_Data/696001838a2b7793_0
+./cache/WebView/Default/HTTP Cache/Cache_Data/7d9ecbb4b9baf622_0
+./cache/WebView/Default/HTTP Cache/Cache_Data/da38d3de1d53a1d3_0
+./cache/WebView/Default/HTTP Cache/Cache_Data/index-dir
+./cache/WebView/Default/HTTP Cache/Cache_Data/index-dir/the-real-index
+./cache/WebView/Default/HTTP Cache/Code Cache
+./cache/WebView/Default/HTTP Cache/Code Cache/js
+./cache/WebView/Default/HTTP Cache/Code Cache/js/index-dir
+./cache/WebView/Default/HTTP Cache/Code Cache/js/index-dir/the-real-index
+./code_cache
+./databases
+./files
+./files/datastore
+./files/datastore/GlanceAppWidgetManager.preferences_pb
+./files/datastore/appWidgetLayout-17
+./files/profileInstalled
+./no_backup
+./no_backup/androidx.work.workdb
+./no_backup/androidx.work.workdb-shm
+./no_backup/androidx.work.workdb-wal
+./no_backup/com.google.android.gms.appid-no-backup
+./shared_prefs
+./shared_prefs/AwOriginVisitLoggerPrefs.xml
+./shared_prefs/FirebaseHeartBeatW0RFRkFVTFRd+MTo1NTAxMjMwMDM2Mzg6YW5kcm9pZDpiNzc3NzE3OTAxNzdkODE3ZWI1NmQ3.xml
+./shared_prefs/WebViewChromiumPrefs.xml
+./shared_prefs/account_data_claude.xml
+./shared_prefs/account_data_codex.xml
+./shared_prefs/account_data_copilot.xml
+./shared_prefs/account_data_gemini.xml
+./shared_prefs/account_data_glm.xml
+./shared_prefs/account_data_opencode.xml
+./shared_prefs/ai_quota_app_update.xml
+./shared_prefs/ai_quota_app_update_refresh_cooldown.xml
+./shared_prefs/ai_quota_background_refresh_state.xml
+./shared_prefs/ai_quota_foreground_refresh.xml
+./shared_prefs/ai_quota_gemini_oauth.xml
+./shared_prefs/ai_quota_glm_api_key.xml
+./shared_prefs/ai_quota_glm_connection.xml
+./shared_prefs/ai_quota_glm_web_session.xml
+./shared_prefs/ai_quota_glm_web_session_fallback.xml
+./shared_prefs/ai_quota_glm_web_session_headers.xml
+./shared_prefs/ai_quota_google_appauth.xml
+./shared_prefs/ai_quota_google_identity.xml
+./shared_prefs/ai_quota_local_usage.xml
+./shared_prefs/ai_quota_notifications.xml
+./shared_prefs/ai_quota_provider_preferences.xml
+./shared_prefs/ai_quota_theme_preferences.xml
+./shared_prefs/ai_quota_widget_cache.xml
+./shared_prefs/com.google.firebase.appcheck.debug.store.W0RFRkFVTFRd+MTo1NTAxMjMwMDM2Mzg6YW5kcm9pZDpiNzc3NzE3OTAxNzdkODE3ZWI1NmQ3.xml
+./shared_prefs/com.google.firebase.auth.api.Store.W0RFRkFVTFRd+MTo1NTAxMjMwMDM2Mzg6YW5kcm9pZDpiNzc3NzE3OTAxNzdkODE3ZWI1NmQ3.xml
+./shared_prefs/debug_provider_session_cookies.xml
+./shared_prefs/script_data_claude.xml
+./shared_prefs/script_data_codex.xml
+./shared_prefs/script_data_copilot.xml
+./shared_prefs/script_data_gemini.xml
+./shared_prefs/script_data_glm.xml
+./shared_prefs/script_data_opencode.xml
+./shared_prefs/usage_data_claude.xml
+./shared_prefs/usage_data_codex.xml
+./shared_prefs/usage_data_copilot.xml
+./shared_prefs/usage_data_gemini.xml
+./shared_prefs/usage_data_glm.xml
+./shared_prefs/usage_data_opencode.xml
+cookie metadata:
+/system/bin/sh: syntax error: unexpected 'do'

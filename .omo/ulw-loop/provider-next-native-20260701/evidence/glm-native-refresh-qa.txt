@@ -1,0 +1,12 @@
+GLM C001 PASS reconciliation after user completed GLM login on updated build.
+
+Evidence sources:
+- Commit: d60e81baa fix(provider): GLM 웹 세션 인증 헤더 보존 pushed to origin/25version-code.
+- Focused tests: gradle -p android :app:testDebugUnitTest --tests GlmUsageFetcherTest --tests GlmUsagePageRoutesTest --tests GlmWebSessionClearPolicyTest --tests ProviderWebCollectorScriptsTest --tests ProviderNativeUsagePayloadFetcherTest => BUILD SUCCESSFUL.
+- Build/install: gradle -p android :app:assembleDebug => BUILD SUCCESSFUL; adb install -r android/app/build/outputs/apk/debug/app-debug.apk => Success.
+- Runtime initial collection evidence: .omo/evidence/glm-persisted-auth-usage-20260701.log contains capturedNativeHeaders with Authorization, nativeCollectorStart=aboutblank, AIQuotaCollector inject host=about:blank, nativeUsage provider=glm ok=true, rawPayloadPresent=true, source=structured-script.
+- Runtime refresh evidence: .omo/evidence/glm-persisted-auth-debug-refresh-20260701.log contains AIQuotaDebugRefresh debugProviderRefresh=true provider=glm, cycleStart providers=glm, outcome provider=glm type=Snapshot, saveSnapshot provider=glm source=native, and no auth failure.
+- Local usage snapshot after refresh shows providerId=glm, connectionState=CONNECTED, message=null, source=provider-api for GLM lines.
+- Negative checks: no data wipe was performed; install used adb install -r only; no saved-cookie reinjection was used for GLM. Grep target logs for visible-DOM/fallback markers found no GLM DOM collector, visible-page scan, or fallback-saved-as-normal success path.
+
+Cleanup receipt: no tmux/browser/server/temp process was spawned for this reconciliation; adb/logcat commands exited; no app data wipe.

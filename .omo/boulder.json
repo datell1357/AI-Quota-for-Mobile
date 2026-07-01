@@ -1,16 +1,36 @@
-﻿{
-    "schema_version":  2,
-    "active_work_id":  "codex-login-usage-auth-recovery",
-    "works":  {
-                  "codex-login-usage-auth-recovery":  {
-                                                          "work_id":  "codex-login-usage-auth-recovery",
-                                                          "active_plan":  ".omo/plans/codex-login-usage-auth-recovery.md",
-                                                          "plan_name":  "codex-login-usage-auth-recovery",
-                                                          "session_ids":  [
-                                                                              "codex:019f132b-48a7-7812-8c79-74541e487332"
-                                                                          ],
-                                                          "status":  "completed",
-                                                          "worktree_path":  null
-                                                      }
-              }
+{
+  "schema_version": 2,
+  "active_work_id": "gemini-usage-fraction-row-refresh",
+  "works": {
+    "codex-login-usage-auth-recovery": {
+      "work_id": "codex-login-usage-auth-recovery",
+      "active_plan": ".omo/plans/codex-login-usage-auth-recovery.md",
+      "plan_name": "codex-login-usage-auth-recovery",
+      "session_ids": [
+        "codex:019f132b-48a7-7812-8c79-74541e487332"
+      ],
+      "status": "completed",
+      "worktree_path": null
+    },
+    "gemini-native-usage-page-rpc-realignment": {
+      "work_id": "gemini-native-usage-page-rpc-realignment",
+      "active_plan": ".omo/plans/gemini-native-usage-page-rpc-realignment.md",
+      "plan_name": "gemini-native-usage-page-rpc-realignment",
+      "session_ids": [
+        "codex:019f132b-48a7-7812-8c79-74541e487332"
+      ],
+      "status": "active",
+      "worktree_path": null
+    },
+    "gemini-usage-fraction-row-refresh": {
+      "work_id": "gemini-usage-fraction-row-refresh",
+      "active_plan": ".omo/plans/gemini-usage-fraction-row-refresh.md",
+      "plan_name": "gemini-usage-fraction-row-refresh",
+      "session_ids": [
+        "codex:019f132b-48a7-7812-8c79-74541e487332"
+      ],
+      "status": "active",
+      "worktree_path": null
+    }
+  }
 }

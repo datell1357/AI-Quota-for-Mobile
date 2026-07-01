@@ -1,0 +1,84 @@
+assemble_exit=0
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:packageDebug UP-TO-DATE
+> Task :app:createDebugApkListingFileRedirect UP-TO-DATE
+> Task :app:assembleDebug UP-TO-DATE
+
+[Incubating] Problems report is available at: file:///D:/Vibe%20Project/AI%20Usage%20for%20Mobile/android/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.6.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 2s
+38 actionable tasks: 38 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.6.0/userguide/configuration_cache_enabling.html
+before_first_install=      firstInstallTime=2026-06-20 10:06:27
+Performing Streamed Install
+Success
+after_first_install=      firstInstallTime=2026-06-20 10:06:27
+Broadcasting: Intent { act=com.aiquota.mobile.action.REFRESH flg=0x400000 cmp=com.aiquota.mobile/.providers.ProviderRefreshReceiver (has extras) }
+Broadcast completed: result=0
+07-01 14:03:59.148   488   569 I RanchuHwc: logCompositionFallbackIfChanged: layer 239 CompositionType fallback from 2 to 1
+07-01 14:03:59.148   488   569 I RanchuHwc: logCompositionFallbackIfChanged: layer 240 CompositionType fallback from 2 to 1
+07-01 14:03:59.755   692 10174 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms.supervision, role: android.app.role.SYSTEM_SUPERVISION, user: 0
+07-01 14:03:59.791   692 10174 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms, role: android.app.role.SYSTEM_DEPENDENCY_INSTALLER, user: 0
+07-01 14:03:59.859   692 10174 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms, role: android.app.role.WALLET, user: 0
+07-01 14:04:02.910 18434 18434 D AIQuotaBgRefreshService: cycleStart providers=cursor
+07-01 14:04:03.254 18434 18434 D AIQuotaBgRefreshService: load provider=cursor start=cursor.com/ warmUp=true request=1
+07-01 14:04:06.868 18434 18434 D AIQuotaBgRefreshService: pageFinished provider=cursor url=cursor.com/agents
+07-01 14:04:06.869 18434 18434 D AIQuotaBgRefreshService: warmUpComplete provider=cursor from=cursor.com/agents to=cursor.com/dashboard
+07-01 14:04:06.952 18434 18434 D AIQuotaBgRefreshService: pageFinished provider=cursor url=cursor.com/agents
+07-01 14:04:07.006 18434 18434 D AIQuotaBgRefreshService: skipInject provider=cursor url=cursor.com/agents reason=host=cursor.com path=/agents page=len=165,signIn=false,usage=true,limit=true,quota=false,error=false
+07-01 14:04:08.215 18434 18434 D AIQuotaBgRefreshService: inject provider=cursor url=cursor.com/dashboard
+07-01 14:04:08.302 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:04:08.332 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:04:08.878 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:04:09.950 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:04:11.325 18434 18434 D AIQuotaBgRefreshService: pageFinished provider=cursor url=cursor.com/dashboard
+07-01 14:04:11.364 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:04:11.420 18434 18434 D AIQuotaBgRefreshService: pageFinished provider=cursor url=cursor.com/dashboard
+07-01 14:04:11.844 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:04:11.993 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:04:12.012 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:04:12.275 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:04:12.361 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:04:12.366 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:04:15.233 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:04:15.240 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:04:15.244 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:04:15.247 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:04:15.251 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:04:15.286 18434 18434 D AIQuotaBgRefreshService: payload provider=cursor url=cursor.com/dashboard summary=root=provider|membershipType|email|billingCycleStart|billingCycleEnd|individualUsage|planUsage|requestUsage|collectorMode,provider=cursor,collectorMode=webview-js,lineCount=0,hasUsage=false,hasData=false,hasError=false
+07-01 14:04:15.288 18434 18434 D AIQuotaBgRefreshService: outcome provider=cursor type=Payload
+07-01 14:04:15.299 18434 18434 D AIQuotaBgRefreshService: saveSnapshot provider=cursor source=webview lineCount=3 planPresent=true accountPresent=true
+07-01 14:05:02.906 18434 18434 D AIQuotaBgRefreshService: cycleStart providers=cursor
+07-01 14:05:02.929 18434 18434 D AIQuotaBgRefreshService: load provider=cursor start=cursor.com/ warmUp=true request=2
+07-01 14:05:05.058 18434 18434 D AIQuotaBgRefreshService: pageFinished provider=cursor url=cursor.com/agents
+07-01 14:05:05.058 18434 18434 D AIQuotaBgRefreshService: warmUpComplete provider=cursor from=cursor.com/agents to=cursor.com/dashboard
+07-01 14:05:05.084 18434 18434 D AIQuotaBgRefreshService: pageFinished provider=cursor url=cursor.com/agents
+07-01 14:05:05.157 18434 18434 D AIQuotaBgRefreshService: skipInject provider=cursor url=cursor.com/agents reason=host=cursor.com path=/agents page=len=165,signIn=false,usage=true,limit=true,quota=false,error=false
+07-01 14:05:05.452 18434 18434 D AIQuotaBgRefreshService: inject provider=cursor url=cursor.com/dashboard
+07-01 14:05:05.940 18434 18434 D AIQuotaBgRefreshService: pageFinished provider=cursor url=cursor.com/dashboard
+07-01 14:05:05.991 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:05:06.516 18434 18434 D AIQuotaBgRefreshService: pageFinished provider=cursor url=cursor.com/dashboard
+07-01 14:05:06.529 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:05:06.557 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:05:06.571 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:05:06.851 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:05:07.263 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:05:07.280 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:05:10.135 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:05:10.144 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:05:10.151 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:05:10.168 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:05:10.175 18434 18434 D AIQuotaBgRefreshService: reinject provider=cursor url=cursor.com/dashboard
+07-01 14:05:10.179 18434 18434 D AIQuotaBgRefreshService: payload provider=cursor url=cursor.com/dashboard summary=root=provider|membershipType|email|billingCycleStart|billingCycleEnd|individualUsage|planUsage|requestUsage|collectorMode,provider=cursor,collectorMode=webview-js,lineCount=0,hasUsage=false,hasData=false,hasError=false
+07-01 14:05:10.200 18434 18434 D AIQuotaBgRefreshService: outcome provider=cursor type=Payload
+07-01 14:05:10.201 18434 18434 D AIQuotaBgRefreshService: saveSnapshot provider=cursor source=webview lineCount=3 planPresent=true accountPresent=true

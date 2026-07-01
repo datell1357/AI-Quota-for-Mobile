@@ -1,0 +1,4 @@
+stamp=20260701-212550
+host sqlite3:
+/c/Users/datell1357/Tools/android-reversing/android-sdk/platform-tools/sqlite3
+metadata:

@@ -1,0 +1,8 @@
+# Gemini snapshot summary (sanitized)
+raw_xml_bytes=1953
+pref_keys=provider_id,snapshot,updated_at
+pref_updated_at=2026-07-01T07:26:28.425325Z
+top_keys=providers
+candidate_line_count=2
+line_path=root.providers[0].lines[0] {"label": "5-hour limit", "remainingPercent": 0.98, "remainingText": "98% left", "resetsAt": "2026-07-01T09:26:14.292676Z", "usedPercent": 2}
+line_path=root.providers[0].lines[1] {"label": "Weekly limit", "remainingPercent": 1, "remainingText": "100% left", "resetsAt": "2026-07-07T03:26:14.292755Z", "usedPercent": 0}

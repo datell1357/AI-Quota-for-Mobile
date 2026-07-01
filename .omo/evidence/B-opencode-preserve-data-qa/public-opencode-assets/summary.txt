@@ -1,0 +1,7 @@
+html bytes:
+9395 .omo/evidence/B-opencode-preserve-data-qa/public-opencode-assets/go.html
+asset refs:
+href="https://openauth.js.org/favicon.ico
+href="https://openauth.js.org/favicon.svg
+href="https://openauth.js.org/favicon-dark.svg
+server ids:

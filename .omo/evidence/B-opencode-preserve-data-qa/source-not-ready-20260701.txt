@@ -1,0 +1,118 @@
+# B OpenCode preserve-data QA BLOCKED evidence - source not ready
+timestamp_local=2026-07-01 Asia/Seoul
+safety=no pm clear, no uninstall, no app-data deletion, no saved-cookie reinjection, no refresh broadcast sent
+device_probe=adb devices and pm list packages only
+
+## adb devices
+List of devices attached
+emulator-5554	device
+
+## installed package probe
+package:com.aiquota.mobile
+## ProviderDefinitions.kt OpenCode definition (lines 88-121)
+    88	        ProviderDefinition(
+    89	            providerId = ProviderId.OPENCODE,
+    90	            loginStartUrl = "https://opencode.ai/auth",
+    91	            allowedHosts = setOf(
+    92	                "opencode.ai",
+    93	                "www.opencode.ai",
+    94	                "auth.opencode.ai",
+    95	                "accounts.google.com",
+    96	                "myaccount.google.com",
+    97	                "google.com",
+    98	                "www.google.com",
+    99	                "oauth2.googleapis.com",
+   100	                "accounts.youtube.com",
+   101	                "play.google.com",
+   102	                "github.com",
+   103	                "github.githubassets.com",
+   104	                "githubassets.com",
+   105	                "githubusercontent.com",
+   106	                "challenges.cloudflare.com",
+   107	                "www.recaptcha.net",
+   108	                "recaptcha.net",
+   109	                "ssl.gstatic.com",
+   110	                "www.gstatic.com"
+   111	            ),
+   112	            collectorAllowedHosts = setOf(
+   113	                "opencode.ai",
+   114	                "www.opencode.ai",
+   115	                "auth.opencode.ai"
+   116	            ),
+   117	            preferredUsageEndpoint = "https://opencode.ai/auth",
+   118	            authStoreKind = ProviderAuthStoreKind.WEBVIEW_PROFILE,
+   119	            collectionKind = ProviderCollectionKind.WEBVIEW_COLLECTOR,
+   120	            sessionProbeUrl = "https://opencode.ai/auth"
+   121	        ),
+## ProviderRefreshPlan.kt hidden collector mapping (lines 88-126)
+    88	
+    89	    private fun refreshModeFor(providerId: ProviderId): ProviderRefreshMode {
+    90	        return when (ProviderDefinitionRegistry.definitionFor(providerId).collectionKind) {
+    91	            ProviderCollectionKind.WEBVIEW_COLLECTOR -> ProviderRefreshMode.HIDDEN_WEB_COLLECTOR
+    92	            ProviderCollectionKind.NATIVE_API_WITH_WEBVIEW_FALLBACK -> ProviderRefreshMode.HIDDEN_WEB_COLLECTOR
+    93	            ProviderCollectionKind.NATIVE_API -> ProviderRefreshMode.NATIVE_API
+    94	            ProviderCollectionKind.BACKEND_GATEWAY -> ProviderRefreshMode.NATIVE_API
+    95	        }
+    96	    }
+    97	
+    98	    private fun hiddenCollectorUrl(providerId: ProviderId): String {
+    99	        if (providerId == ProviderId.CODEX) return "https://chatgpt.com/api/auth/session"
+   100	        if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) return "about:blank"
+   101	        return when (providerId) {
+   102	            ProviderId.CLAUDE -> "https://claude.ai/"
+   103	            ProviderId.CODEX -> "https://chatgpt.com/"
+   104	            ProviderId.GLM -> GlmProviderUrls.WEB_OAUTH_URL
+   105	            ProviderId.OPENCODE -> "https://opencode.ai/auth"
+   106	            ProviderId.COPILOT -> "https://github.com/settings/copilot/features"
+   107	            ProviderId.ANTIGRAVITY -> "https://antigravity.google/"
+   108	            ProviderId.CURSOR -> "https://cursor.com/dashboard"
+   109	            ProviderId.GEMINI -> "https://gemini.google.com/usage"
+   110	        }
+   111	    }
+   112	
+   113	    private fun resetJobsFor(snapshots: List<ProviderUsageSnapshot>, now: Instant): List<ProviderRefreshJob> {
+   114	        return ProviderResetRefreshPolicy.requests(snapshots, now)
+   115	            .map { it.providerId }
+   116	            .distinct()
+   117	            .map(::resetJobFor)
+   118	    }
+   119	
+   120	    private fun jobFor(providerId: ProviderId, qos: Int): ProviderRefreshJob {
+   121	        val mode = refreshModeFor(providerId)
+   122	        return ProviderRefreshJob(
+   123	            providerId = providerId,
+   124	            mode = mode,
+   125	            startUrl = if (mode == ProviderRefreshMode.NATIVE_API) "" else hiddenCollectorUrl(providerId),
+   126	            qos = qos
+## ProviderWebCollectorScriptsTest.kt about:blank policy (lines 86-107)
+    86	        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CLAUDE, "about:blank"))
+    87	        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CODEX, "about:blank"))
+    88	        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GEMINI, "about:blank"))
+    89	        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.COPILOT, "about:blank"))
+    90	        assertTrue(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.GLM, "about:blank"))
+    91	        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CLAUDE, "https://claude.ai/new"))
+    92	        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CODEX, "https://chatgpt.com/codex/settings/usage"))
+    93	        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.COPILOT, "https://github.com/settings/copilot/features"))
+    94	        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.ANTIGRAVITY, "about:blank"))
+    95	        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.OPENCODE, "about:blank"))
+    96	        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CURSOR, "about:blank"))
+    97	    }
+    98	
+    99	    @Test
+   100	    fun aboutBlankNativeUsagePayloadPolicyIncludesOnlyScopedProviders() {
+   101	        listOf(ProviderId.CLAUDE, ProviderId.CODEX, ProviderId.GEMINI, ProviderId.COPILOT, ProviderId.GLM).forEach { providerId ->
+   102	            assertTrue(ProviderAboutBlankCollectorPolicy.isEnabled(providerId))
+   103	        }
+   104	        listOf(ProviderId.ANTIGRAVITY, ProviderId.OPENCODE, ProviderId.CURSOR).forEach { providerId ->
+   105	            assertFalse(ProviderAboutBlankCollectorPolicy.isEnabled(providerId))
+   106	        }
+   107	    }
+## ProviderNativeUsagePayloadFetcher.kt native log marker (lines 257-264)
+   257	            Log.d(
+   258	                TAG,
+   259	                "nativeUsage provider=${providerId.storageId} ok=${result.payload != null} " +
+   260	                    "diagnostic=${result.diagnostic} statuses=$statusSummary"
+   261	            )
+   262	        }
+   263	        return json.toString()
+   264	    }

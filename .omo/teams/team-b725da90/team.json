@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 2,
+  "teamId": "830cc2c1-3deb-4a5d-a64f-30c4886ae6f9",
+  "teamName": "cursor-native-final",
+  "sessionName": "cursor-native-final-20260701",
+  "sessionId": "team-b725da90",
+  "threadTitleConvention": "[cursor-native-final] <member name>",
+  "status": "active",
+  "createdAt": "2026-07-01T14:02:11.020Z",
+  "updatedAt": "2026-07-01T14:03:16.393Z",
+  "archivedAt": null,
+  "leader": {
+    "kind": "main-session",
+    "sessionId": "team-b725da90"
+  },
+  "communication": {
+    "memberLanguage": "english",
+    "replyToUserInUserLanguage": true
+  },
+  "worktree": {
+    "enabled": false,
+    "baseBranch": "dev",
+    "root": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-b725da90\\worktrees"
+  },
+  "paths": {
+    "dir": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-b725da90",
+    "team": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-b725da90\\team.json",
+    "guide": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-b725da90\\guide.md",
+    "artifacts": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-b725da90\\artifacts"
+  },
+  "members": [
+    {
+      "id": "A",
+      "name": "cursor-native-source",
+      "focus": "Cursor provider source/tests for native about:blank collection",
+      "lens": "area",
+      "deliverable": "Source readiness findings and minimal implementation/test DoneClaim if Cursor is not native/about:blank",
+      "threadId": "019f1dfd-3f45-78a1-92a0-87be523c1e26",
+      "threadTitle": "[cursor-native-final] cursor-native-source",
+      "cwd": "D:\\Vibe Project\\AI Usage for Mobile",
+      "worktree": {
+        "path": null,
+        "branch": null
+      },
+      "status": "active"
+    },
+    {
+      "id": "B",
+      "name": "cursor-preserve-qa",
+      "focus": "Preserve-data Android Cursor refresh QA after user login",
+      "lens": "ownership",
+      "deliverable": "Metadata-only PASS/FAIL evidence for Cursor refresh without data wipe or cookie injection",
+      "threadId": "019f1dfd-67d6-7982-a54f-7391d9d9f99a",
+      "threadTitle": "[cursor-native-final] cursor-preserve-qa",
+      "cwd": "D:\\Vibe Project\\AI Usage for Mobile",
+      "worktree": {
+        "path": null,
+        "branch": null
+      },
+      "status": "active"
+    }
+  ],
+  "log": [
+    {
+      "ts": "2026-07-01T14:02:11.020Z",
+      "event": "created",
+      "detail": "team cursor-native-final"
+    },
+    {
+      "ts": "2026-07-01T14:02:23.869Z",
+      "event": "add-member",
+      "detail": "member A (area): Cursor provider source/tests for native about:blank collection"
+    },
+    {
+      "ts": "2026-07-01T14:02:23.973Z",
+      "event": "add-member",
+      "detail": "member B (ownership): Preserve-data Android Cursor refresh QA after user login"
+    },
+    {
+      "ts": "2026-07-01T14:03:16.292Z",
+      "event": "bind-thread",
+      "detail": "member A -> thread 019f1dfd-3f45-78a1-92a0-87be523c1e26"
+    },
+    {
+      "ts": "2026-07-01T14:03:16.393Z",
+      "event": "bind-thread",
+      "detail": "member B -> thread 019f1dfd-67d6-7982-a54f-7391d9d9f99a"
+    }
+  ]
+}

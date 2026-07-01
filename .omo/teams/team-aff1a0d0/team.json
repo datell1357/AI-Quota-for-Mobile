@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 2,
+  "teamId": "c6c80f59-592c-4ddd-b534-1c4090682f3e",
+  "teamName": "opencode-native-usage",
+  "sessionName": "OpenCode native usage C002",
+  "sessionId": "team-aff1a0d0",
+  "threadTitleConvention": "[opencode-native-usage] <member name>",
+  "status": "active",
+  "createdAt": "2026-07-01T10:36:29.142Z",
+  "updatedAt": "2026-07-01T10:37:53.347Z",
+  "archivedAt": null,
+  "leader": {
+    "kind": "main-session",
+    "sessionId": "team-aff1a0d0"
+  },
+  "communication": {
+    "memberLanguage": "english",
+    "replyToUserInUserLanguage": true
+  },
+  "worktree": {
+    "enabled": false,
+    "baseBranch": "25version-code",
+    "root": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-aff1a0d0\\worktrees"
+  },
+  "paths": {
+    "dir": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-aff1a0d0",
+    "team": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-aff1a0d0\\team.json",
+    "guide": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-aff1a0d0\\guide.md",
+    "artifacts": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-aff1a0d0\\artifacts"
+  },
+  "members": [
+    {
+      "id": "A",
+      "name": "opencode-native-source",
+      "focus": "OpenCode provider source/test conversion from visible DOM collector to about:blank native usage collection without fallback",
+      "lens": "ownership",
+      "deliverable": "TDD evidence, scoped implementation summary, focused Gradle results, and no staging/commit/push",
+      "threadId": "019f1d41-304c-7261-9622-2991f47162d5",
+      "threadTitle": "[opencode-native-usage] opencode-native-source",
+      "cwd": "D:/Vibe Project/AI Usage for Mobile",
+      "worktree": {
+        "path": null,
+        "branch": null
+      },
+      "status": "active"
+    },
+    {
+      "id": "B",
+      "name": "opencode-preserve-data-qa",
+      "focus": "OpenCode Android preserve-data QA with user-completed login, no app data wipe, no saved cookie reinjection, no DOM or fallback acceptance",
+      "lens": "perspective",
+      "deliverable": "metadata-only QA evidence with adb install -r, debug reset/refresh, logcat assertions, and PASS/BLOCKED result",
+      "threadId": "019f1d41-5563-72a2-8d02-6733e3452117",
+      "threadTitle": "[opencode-native-usage] opencode-preserve-data-qa",
+      "cwd": "D:/Vibe Project/AI Usage for Mobile",
+      "worktree": {
+        "path": null,
+        "branch": null
+      },
+      "status": "active"
+    }
+  ],
+  "log": [
+    {
+      "ts": "2026-07-01T10:36:29.142Z",
+      "event": "created",
+      "detail": "team opencode-native-usage"
+    },
+    {
+      "ts": "2026-07-01T10:36:37.108Z",
+      "event": "add-member",
+      "detail": "member A (ownership): OpenCode provider source/test conversion from visible DOM collector to about:blank native usage collection without fallback"
+    },
+    {
+      "ts": "2026-07-01T10:36:43.404Z",
+      "event": "add-member",
+      "detail": "member B (perspective): OpenCode Android preserve-data QA with user-completed login, no app data wipe, no saved cookie reinjection, no DOM or fallback acceptance"
+    },
+    {
+      "ts": "2026-07-01T10:37:48.146Z",
+      "event": "bind-thread",
+      "detail": "member A -> thread 019f1d41-304c-7261-9622-2991f47162d5"
+    },
+    {
+      "ts": "2026-07-01T10:37:53.347Z",
+      "event": "bind-thread",
+      "detail": "member B -> thread 019f1d41-5563-72a2-8d02-6733e3452117"
+    }
+  ]
+}

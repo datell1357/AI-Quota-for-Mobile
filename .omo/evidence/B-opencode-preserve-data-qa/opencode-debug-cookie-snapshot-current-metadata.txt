@@ -1,0 +1,17 @@
+snapshotPresent=true
+provider=opencode
+reason=background_webview_snapshot
+capturedAt=2026-07-01T10:59:21.237872Z
+urlEntryCount=12
+url=https://opencode.ai cookieCount=1 names=auth
+url=https://opencode.ai/auth cookieCount=1 names=auth
+url=https://auth.opencode.ai cookieCount=1 names=provider
+url=https://accounts.google.com cookieCount=21 names=ACCOUNT_CHOOSER|APISID|GOOGLE_ABUSE_EXEMPTION|HSID|LSID|NID|OTZ|SAPISID|SID|SIDCC|SMSV|SSID|__Host-1PLSID|__Host-3PLSID|__Host-GAPS|__Secure-1PAPISID|__Secure-1PSID|__Secure-1PSIDCC|__Secure-3PAPISID|__Secure-3PSID|__Secure-3PSIDCC
+url=https://myaccount.google.com cookieCount=14 names=APISID|GOOGLE_ABUSE_EXEMPTION|HSID|NID|SAPISID|SID|SIDCC|SSID|__Secure-1PAPISID|__Secure-1PSID|__Secure-1PSIDCC|__Secure-3PAPISID|__Secure-3PSID|__Secure-3PSIDCC
+url=https://google.com cookieCount=14 names=APISID|GOOGLE_ABUSE_EXEMPTION|HSID|NID|SAPISID|SID|SIDCC|SSID|__Secure-1PAPISID|__Secure-1PSID|__Secure-1PSIDCC|__Secure-3PAPISID|__Secure-3PSID|__Secure-3PSIDCC
+url=https://www.google.com cookieCount=14 names=APISID|GOOGLE_ABUSE_EXEMPTION|HSID|NID|SAPISID|SID|SIDCC|SSID|__Secure-1PAPISID|__Secure-1PSID|__Secure-1PSIDCC|__Secure-3PAPISID|__Secure-3PSID|__Secure-3PSIDCC
+url=https://accounts.youtube.com cookieCount=11 names=APISID|HSID|SAPISID|SID|SSID|__Secure-1PAPISID|__Secure-1PSID|__Secure-1PSIDTS|__Secure-3PAPISID|__Secure-3PSID|__Secure-3PSIDTS
+url=https://play.google.com cookieCount=14 names=APISID|GOOGLE_ABUSE_EXEMPTION|HSID|NID|SAPISID|SID|SIDCC|SSID|__Secure-1PAPISID|__Secure-1PSID|__Secure-1PSIDCC|__Secure-3PAPISID|__Secure-3PSID|__Secure-3PSIDCC
+url=https://github.com cookieCount=20 names=__Host-user_session_same_site|_device_id|_gh_sess|_octo|_octo|color_mode|color_mode|cpu_bucket|cpu_bucket|dotcom_user|dotcom_user|last_write_ms|logged_in|logged_in|preferred_color_mode|preferred_color_mode|saved_user_sessions|tz|tz|user_session
+url=https://www.github.com cookieCount=14 names=_octo|_octo|color_mode|color_mode|cpu_bucket|cpu_bucket|dotcom_user|dotcom_user|logged_in|logged_in|preferred_color_mode|preferred_color_mode|tz|tz
+url=https://api.github.com cookieCount=14 names=_octo|_octo|color_mode|color_mode|cpu_bucket|cpu_bucket|dotcom_user|dotcom_user|logged_in|logged_in|preferred_color_mode|preferred_color_mode|tz|tz

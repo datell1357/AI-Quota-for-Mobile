@@ -1,0 +1,24 @@
+# Gemini refresh metadata only (sanitized)
+2026-07-01T16:26:20+09:00
+device=emulator-5554
+broadcast=com.aiquota.mobile.debug.REFRESH_PROVIDER provider_id=gemini result=0
+## filtered Gemini logcat
+07-01 07:24:19.898 I/AIQuotaDebugRefresh(10293): debugProviderRefresh=true provider=gemini
+07-01 07:24:20.183 D/AIQuotaBgRefreshService(10293): load provider=gemini start= warmUp=false request=1
+07-01 07:24:20.427 D/AIQuotaBgRefreshService(10293): inject provider=gemini url=
+07-01 07:24:20.436 D/AIQuotaBgRefreshService(10293): pageFinished provider=gemini url=
+07-01 07:24:22.326 D/AIQuotaGeminiUsageRpc(10293): geminiUsageHtmlDiscovery provider=gemini usagePath=/usage status=200 payloadBytes=807419 scriptSrcCount=0 batchexecuteCount=0 afInitCount=3 afDataCount=0 afShapes= usageSignalCount=15 candidateRpcCount=0 rpcIds=
+07-01 07:24:22.854 D/AIQuotaGeminiUsageRpc(10293): geminiUsageDiscovery provider=gemini usagePath=/usage rpcId=jSf9Qc status=200 payloadBytes=240 shape=array[3]:number|array[2]|boolean rowCount=2 labels=5-hour limit|Weekly limit remainingPercents=98.0|99.83 quotaSummaries=remaining=2357.0/used=0.02/limit=2357.02|remaining=48302.0/used=0./limit=48302. deepRowCount=2 deepRemainingPercents=98.0|99.83
+07-01 07:24:22.866 D/AIQuotaNativeUsage(10293): nativeUsage provider=gemini ok=true diagnostic=ok statuses=gemini_usage_page_html:200|gemini_usage_rpc_jSf9Qc:200
+07-01 07:24:22.870 D/AIQuotaBgRefreshService(10293): payload provider=gemini url= summary=root=provider|collectorMode|usage,provider=gemini,collectorMode=native-usage-page-rpc,lineCount=0,hasUsage=true,hasData=false,hasError=false
+07-01 07:24:22.873 D/AIQuotaBgRefreshService(10293): outcome provider=gemini type=Payload
+07-01 07:24:22.879 D/AIQuotaBgRefreshService(10293): saveSnapshot provider=gemini source=webview lineCount=2 planPresent=false accountPresent=false
+07-01 07:25:28.100 D/AIQuotaBgRefreshService(10293): load provider=gemini start= warmUp=false request=4
+07-01 07:25:28.112 D/AIQuotaBgRefreshService(10293): inject provider=gemini url=
+07-01 07:25:28.115 D/AIQuotaBgRefreshService(10293): pageFinished provider=gemini url=
+07-01 07:25:28.462 D/AIQuotaGeminiUsageRpc(10293): geminiUsageHtmlDiscovery provider=gemini usagePath=/usage status=200 payloadBytes=807417 scriptSrcCount=0 batchexecuteCount=0 afInitCount=3 afDataCount=0 afShapes= usageSignalCount=15 candidateRpcCount=0 rpcIds=
+07-01 07:25:28.972 D/AIQuotaGeminiUsageRpc(10293): geminiUsageDiscovery provider=gemini usagePath=/usage rpcId=jSf9Qc status=200 payloadBytes=241 shape=array[3]:number|array[2]|boolean rowCount=2 labels=5-hour limit|Weekly limit remainingPercents=98.0|99.83 quotaSummaries=remaining=2357.0/used=0.02/limit=2357.02|remaining=48302.0/used=0./limit=48302. deepRowCount=2 deepRemainingPercents=98.0|99.83
+07-01 07:25:28.973 D/AIQuotaNativeUsage(10293): nativeUsage provider=gemini ok=true diagnostic=ok statuses=gemini_usage_page_html:200|gemini_usage_rpc_jSf9Qc:200
+07-01 07:25:28.975 D/AIQuotaBgRefreshService(10293): payload provider=gemini url= summary=root=provider|collectorMode|usage,provider=gemini,collectorMode=native-usage-page-rpc,lineCount=0,hasUsage=true,hasData=false,hasError=false
+07-01 07:25:28.976 D/AIQuotaBgRefreshService(10293): outcome provider=gemini type=Payload
+07-01 07:25:28.979 D/AIQuotaBgRefreshService(10293): saveSnapshot provider=gemini source=webview lineCount=2 planPresent=false accountPresent=false

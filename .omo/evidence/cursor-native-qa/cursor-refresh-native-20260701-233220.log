@@ -1,0 +1,151 @@
+07-01 14:32:00.787 I/Finsky  ( 4822): [2] AIM: AppInfoCacheUpdater -> invalidating apps: [com.aiquota.mobile]
+07-01 14:32:00.795 D/ImsResolver( 1119): maybeAddedImsService, packageName: com.aiquota.mobile
+07-01 14:32:00.795 V/ImsResolver( 1119): searchForImsServices: package=com.aiquota.mobile, users=[UserHandle{0}]
+07-01 14:32:00.795 I/Finsky  ( 4822): [56] A library licensing entry already exists for com.aiquota.mobile.
+07-01 14:32:00.795 I/Finsky  ( 4822): [56] AIM: AppInfoManager-Perf > OnDeviceAppInfo > cacheHitCount=0, cacheMissCount=1. Missed  in cache (limit 10) : [com.aiquota.mobile]
+07-01 14:32:00.796 V/ImsResolver( 1119): searchForImsServices: package=com.aiquota.mobile, users=[UserHandle{0}]
+07-01 14:32:00.831 W/VvmPkgInstalledRcvr( 1119): carrierVvmPkgAdded: carrier vvm packages doesn't contain com.aiquota.mobile
+07-01 14:32:00.899 I/adbd    (  539): adbd service requested 'shell,v2,TERM=xterm-256color,raw:run-as com.aiquota.mobile am broadcast --user 0 -n com.aiquota.mobile/.providers.ProviderRefreshReceiver -a com.aiquota.mobile.action.REFRESH --es provider_id cursor'
+07-01 14:32:00.905 D/SatelliteController( 1119): packageStateChanged: package:com.aiquota.mobile defaultSmsPackageName: com.google.android.apps.messaging satelliteGatewayServicePackageName: 
+07-01 14:32:00.965 I/ActivityManager(  692): Broadcasting: Intent { act=com.aiquota.mobile.action.REFRESH flg=0x400000 cmp=com.aiquota.mobile/.providers.ProviderRefreshReceiver (has extras) }
+07-01 14:32:01.020 W/ActivityManager(  692): Skipping manifest association check for null package. SourceUid: 10233, SourcePkg: null, TargetUid: 10233, TargetPkg: com.aiquota.mobile
+07-01 14:32:01.029 I/ActivityManager(  692): Enqueued broadcast Intent { act=com.aiquota.mobile.action.REFRESH cmp=com.aiquota.mobile/.providers.ProviderRefreshReceiver (has extras) }: 0
+07-01 14:32:01.034 I/ProximityAuth( 1331): [RecentAppsMediator] Package added: (user=UserHandle{0}) com.aiquota.mobile
+07-01 14:32:01.073 I/AiAiEcho( 4430): AppIndexer Package:[com.aiquota.mobile] UserProfile:[0] Enabled:[true].
+07-01 14:32:01.075 I/AiAiEcho( 4430): AppFetcherImplV2 updateApps package:[com.aiquota.mobile], userId:[0], reason:[package is updated.].
+07-01 14:32:01.157 W/SQLiteLog(22578): (28) double-quoted string literal: "com.aiquota.mobile"
+07-01 14:32:01.629 D/nativeloader(20394): Configuring clns-9 for other apk /data/app/~~uRkn3fJGXamRjZNZBHlpug==/com.aiquota.mobile-bKlWFQscn3S9ygGBvhfisA==/base.apk. target_sdk_version=35, uses_libraries=, library_path=/data/app/~~uRkn3fJGXamRjZNZBHlpug==/com.aiquota.mobile-bKlWFQscn3S9ygGBvhfisA==/lib/x86_64:/data/app/~~uRkn3fJGXamRjZNZBHlpug==/com.aiquota.mobile-bKlWFQscn3S9ygGBvhfisA==/base.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/com.aiquota.mobile
+07-01 14:32:01.656 V/GraphicsEnvironment(20394): com.aiquota.mobile is not listed in per-application setting
+07-01 14:32:02.515 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{43562a3 com.google.android.apps.maps/10168} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{43562a3 com.google.android.apps.maps/10168} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{249c605 com.google.android.apps.photos/10171} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{249c605 com.google.android.apps.photos/10171} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{9d065a com.google.android.apps.youtube.music/10183} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{9d065a com.google.android.apps.youtube.music/10183} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{36ae746 com.google.android.calendar/10160} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{36ae746 com.google.android.calendar/10160} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{e67508b com.google.android.contacts/10165} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{e67508b com.google.android.contacts/10165} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{e67508b com.google.android.contacts/10165} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{e67508b com.google.android.contacts/10165} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{309d568 com.google.android.deskclock/10173} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{309d568 com.google.android.deskclock/10173} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{309d568 com.google.android.deskclock/10173} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{309d568 com.google.android.deskclock/10173} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{309d568 com.google.android.deskclock/10173} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{a5bd81 com.google.android.gm/10174} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{9152e26 com.google.android.settings.intelligence/10157} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{9786a67 com.google.android.youtube/10182} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{9786a67 com.google.android.youtube/10182} BLOCKED
+07-01 14:32:02.518 I/AppsFilter(  692): interaction: PackageSetting{4eca00d com.aiquota.mobile/10233} -> PackageSetting{b5ae014 u.sage/10231} BLOCKED
+07-01 14:32:03.067 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 22
+07-01 14:32:03.212 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 21
+07-01 14:32:03.214 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 20
+07-01 14:32:03.216 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 24
+07-01 14:32:03.216 W/ActivityManager(  692): Skipping manifest association check for null package. SourceUid: 10233, SourcePkg: null, TargetUid: 10233, TargetPkg: com.aiquota.mobile
+07-01 14:32:03.287 I/ActivityManager(  692): Background started FGS: Allowed [callingPackage: com.aiquota.mobile; callingUid: 10233; uidState: RCVR; uidBFSL: n/a; BFGS denied: false; intent: Intent { act=com.aiquota.mobile.action.REFRESH xflg=0x4 cmp=com.aiquota.mobile/.providers.ProviderBackgroundRefreshService (has extras) }; code:SYSTEM_ALLOW_LISTED; tempAllowListReason:<,reasonCode:SYSTEM_ALLOW_LISTED,duration:9223372036854775807,callingUid:-1>; allowWiu:-1; targetSdkVersion:35; callerTargetSdkVersion:35; startForegroundCount:0; bindFromPackage:null; isBindService:false]
+07-01 14:32:03.345 W/.aiquota.mobile(20394): Loading /data/app/~~gRZDsxlqZCLB7oCd7TOaUA==/com.google.android.webview-YT9iMlxeDceFosa4dJznZw==/oat/x86_64/base.odex non-executable as it requires an image which we failed to load
+07-01 14:32:03.456 W/ActivityManager(  692): Foreground service started from background can not have location/camera/microphone access: service com.aiquota.mobile/.providers.ProviderBackgroundRefreshService
+07-01 14:32:03.494 D/AIQuotaBgRefreshService(20394): cycleStart providers=cursor
+07-01 14:32:03.599 I/ActivityManager(  692): Start proc 20500:com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0i52 for bound-service {com.aiquota.mobile/org.chromium.content.app.SandboxedProcessService0:0}
+07-01 14:32:03.761 D/ConnectivityService(  692): requestNetwork for uid/pid:10233/20394 activeRequest: null callbackRequest: 4356 [NetworkRequest [ REQUEST id=4357, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10233 RequestorUid: 10233 RequestorPkg: com.aiquota.mobile UnderlyingNetworks: Null] ]] callback flags: 0 order: 2147483647 isUidTracked: false declaredMethods: AVAIL|LOST|NC|LP
+07-01 14:32:03.765 D/WifiNetworkFactory(  692): got request NetworkRequest [ REQUEST id=4357, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10233 RequestorUid: 10233 RequestorPkg: com.aiquota.mobile UnderlyingNetworks: Null] ]
+07-01 14:32:03.765 D/UntrustedWifiNetworkFactory(  692): got request NetworkRequest [ REQUEST id=4357, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10233 RequestorUid: 10233 RequestorPkg: com.aiquota.mobile UnderlyingNetworks: Null] ]
+07-01 14:32:03.765 D/OemPaidWifiNetworkFactory(  692): got request NetworkRequest [ REQUEST id=4357, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10233 RequestorUid: 10233 RequestorPkg: com.aiquota.mobile UnderlyingNetworks: Null] ]
+07-01 14:32:03.766 D/MultiInternetWifiNetworkFactory(  692): got request NetworkRequest [ REQUEST id=4357, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10233 RequestorUid: 10233 RequestorPkg: com.aiquota.mobile UnderlyingNetworks: Null] ]
+07-01 14:32:03.823 D/AIQuotaBgRefreshService(20394): load provider=cursor start= warmUp=false request=1
+07-01 14:32:03.949 D/vulkan  (20394): searching for layers in '/data/app/~~uRkn3fJGXamRjZNZBHlpug==/com.aiquota.mobile-bKlWFQscn3S9ygGBvhfisA==/lib/x86_64'
+07-01 14:32:03.950 D/vulkan  (20394): searching for layers in '/data/app/~~uRkn3fJGXamRjZNZBHlpug==/com.aiquota.mobile-bKlWFQscn3S9ygGBvhfisA==/base.apk!/lib/x86_64'
+07-01 14:32:04.001 I/.aiquota.mobile(20394): hiddenapi: Accessing hidden field Landroid/graphics/Bitmap;->mNativePtr:J (runtime_flags=0, domain=platform, api=unsupported) from Lcom/android/webview/chromium/WebViewChromium; (domain=app, TargetSdkVersion=35) using JNI: allowed
+07-01 14:32:04.099 D/AIQuotaBgRefreshService(20394): inject provider=cursor url=
+07-01 14:32:04.100 D/AIQuotaBgRefreshService(20394): pageFinished provider=cursor url=
+07-01 14:32:04.468 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-01 14:32:04.859 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 22
+07-01 14:32:04.879 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 21
+07-01 14:32:04.880 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 20
+07-01 14:32:04.883 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 24
+07-01 14:32:04.938 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-01 14:32:07.946 D/ProfileInstaller(20394): Installing profile for com.aiquota.mobile
+07-01 14:32:09.632 D/AIQuotaNativeUsage(20394): nativeUsage provider=cursor ok=true diagnostic=ok statuses=cursor.com/api/auth/stripe:200:|cursor.com/api/usage:200:|cursor.com/api/auth/usage:200:|cursor.com/api/usage-summary:200:|cursor.com/api/dashboard/get-credit-grants-balance:200:|api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage:401:|api2.cursor.sh/aiserver.v1.DashboardService/GetPlanInfo:401:|api2.cursor.sh/aiserver.v1.DashboardService/GetCreditGrantsBalance:401:|api2.cursor.sh/auth/usage:404:
+07-01 14:32:09.643 D/AIQuotaBgRefreshService(20394): payload provider=cursor url= summary=root=provider|membershipType|billingCycleStart|billingCycleEnd|individualUsage|planUsage|requestUsage|collectorMode,provider=cursor,collectorMode=native-bridge,lineCount=0,hasUsage=false,hasData=false,hasError=false
+07-01 14:32:09.644 D/AIQuotaBgRefreshService(20394): outcome provider=cursor type=Payload
+07-01 14:32:09.646 D/AIQuotaBgRefreshService(20394): saveSnapshot provider=cursor source=webview lineCount=3 planPresent=true accountPresent=false
+07-01 14:32:11.688 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 22
+07-01 14:32:11.730 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:32:11.772 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 21
+07-01 14:32:11.783 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 20
+07-01 14:32:11.791 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 24
+07-01 14:32:11.822 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-01 14:32:12.034 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:32:15.288 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:32:15.295 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:32:19.119 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:32:19.126 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:32:41.132 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Cache_Data/index-dir/the-real-index size=12288 mod=1782916304 from UID=10233 used=319488 quota=43477083 ratio=73
+07-01 14:32:41.134 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Cache_Data/index-dir size=8192 mod=1782916304 from UID=10233 used=307200 quota=43477083 ratio=70
+07-01 14:32:41.134 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Cache_Data size=8192 mod=1782916304 from UID=10233 used=299008 quota=43477083 ratio=68
+07-01 14:32:41.134 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/data/user/0/com.aiquota.mobile/no_backup/androidx.work.workdb.lck size=4096 mod=1782916322 from UID=10233 used=290816 quota=43477083 ratio=66
+07-01 14:32:41.135 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/data/user/0/com.aiquota.mobile/no_backup size=8192 mod=1782916322 from UID=10233 used=286720 quota=43477083 ratio=65
+07-01 14:32:41.135 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/data/user/0/com.aiquota.mobile size=8192 mod=1782916322 from UID=10233 used=278528 quota=43477083 ratio=64
+07-01 14:32:41.136 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/data/user/0 size=8192 mod=1782916322 from UID=10233 used=270336 quota=43477083 ratio=62
+07-01 14:32:41.136 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/data/user size=8192 mod=1782916322 from UID=10233 used=262144 quota=43477083 ratio=60
+07-01 14:32:41.137 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/data size=8192 mod=1782916322 from UID=10233 used=253952 quota=43477083 ratio=58
+07-01 14:32:41.137 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache/wasm/index-dir/the-real-index size=8192 mod=1782916323 from UID=10233 used=245760 quota=43477083 ratio=56
+07-01 14:32:41.137 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache/js/index-dir/the-real-index size=8192 mod=1782916323 from UID=10233 used=237568 quota=43477083 ratio=54
+07-01 14:32:41.137 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache/wasm/index size=8192 mod=1782916323 from UID=10233 used=229376 quota=43477083 ratio=52
+07-01 14:32:41.138 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache/js/index size=8192 mod=1782916323 from UID=10233 used=221184 quota=43477083 ratio=50
+07-01 14:32:41.138 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache/js/index-dir size=8192 mod=1782916323 from UID=10233 used=212992 quota=43477083 ratio=48
+07-01 14:32:41.138 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache/wasm/index-dir size=8192 mod=1782916323 from UID=10233 used=204800 quota=43477083 ratio=47
+07-01 14:32:41.138 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache/js size=8192 mod=1782916323 from UID=10233 used=196608 quota=43477083 ratio=45
+07-01 14:32:41.138 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache/wasm size=8192 mod=1782916323 from UID=10233 used=188416 quota=43477083 ratio=43
+07-01 14:32:41.138 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache/Code Cache size=8192 mod=1782916323 from UID=10233 used=180224 quota=43477083 ratio=41
+07-01 14:32:41.138 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/Crash Reports/ANR Variations/b20f63eeb2c1410df415cfbcb15a768d size=8192 mod=1782916323 from UID=10233 used=172032 quota=43477083 ratio=39
+07-01 14:32:41.138 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default/HTTP Cache size=8192 mod=1782916323 from UID=10233 used=163840 quota=43477083 ratio=37
+07-01 14:32:41.138 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Crashpad/new size=8192 mod=1782916323 from UID=10233 used=155648 quota=43477083 ratio=35
+07-01 14:32:41.138 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Crashpad/pending size=8192 mod=1782916323 from UID=10233 used=147456 quota=43477083 ratio=33
+07-01 14:32:41.138 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Crashpad/completed size=8192 mod=1782916323 from UID=10233 used=139264 quota=43477083 ratio=32
+07-01 14:32:41.139 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Crashpad/attachments size=8192 mod=1782916323 from UID=10233 used=131072 quota=43477083 ratio=30
+07-01 14:32:41.139 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/font_unique_name_table.pb size=28672 mod=1782916323 from UID=10233 used=122880 quota=43477083 ratio=28
+07-01 14:32:41.139 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Default size=8192 mod=1782916323 from UID=10233 used=94208 quota=43477083 ratio=21
+07-01 14:32:41.147 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Crashpad size=8192 mod=1782916323 from UID=10233 used=86016 quota=43477083 ratio=19
+07-01 14:32:41.147 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/SafeBrowsing size=8192 mod=1782916323 from UID=10233 used=77824 quota=43477083 ratio=17
+07-01 14:32:41.147 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/Crash Reports/ANR Variations size=8192 mod=1782916323 from UID=10233 used=69632 quota=43477083 ratio=16
+07-01 14:32:41.147 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/Crash Reports size=8192 mod=1782916323 from UID=10233 used=61440 quota=43477083 ratio=14
+07-01 14:32:41.147 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView/Crash Reports size=8192 mod=1782916324 from UID=10233 used=53248 quota=43477083 ratio=12
+07-01 14:32:41.147 D/installd(  590): Purging /data/data/com.aiquota.mobile/cache/WebView size=8192 mod=1782916324 from UID=10233 used=45056 quota=43477083 ratio=10
+07-01 14:32:42.398 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:32:42.405 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:32:43.802 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:32:43.808 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:32:46.588 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:32:46.600 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:32:54.619 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:32:54.629 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:32:59.139 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:32:59.147 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:33:02.511 I/PlayCore(20394): UID: [10233]  PID: [20394] AppUpdateService : requestUpdateInfo(com.aiquota.mobile)
+07-01 14:33:02.527 I/Finsky  ( 4822): [1049] com.aiquota.mobile is installed but certificate mismatch
+07-01 14:33:02.568 I/WM-WorkerWrapper(20394): Worker result SUCCESS for Work [ id=b3785d32-ec4d-436d-881e-ce7ef660f00e, tags={ com.aiquota.mobile.sync.ForegroundRefreshHealthWorker } ]
+07-01 14:33:03.490 D/AIQuotaBgRefreshService(20394): cycleStart providers=cursor
+07-01 14:33:03.507 D/AIQuotaBgRefreshService(20394): load provider=cursor start= warmUp=false request=2
+07-01 14:33:03.557 D/AIQuotaBgRefreshService(20394): inject provider=cursor url=
+07-01 14:33:03.557 D/AIQuotaBgRefreshService(20394): pageFinished provider=cursor url=
+07-01 14:33:03.565 I/WM-WorkerWrapper(20394): Worker result SUCCESS for Work [ id=09d03117-3eca-41db-b3ba-105745fa3769, tags={ com.aiquota.mobile.update.AppUpdateCheckWorker } ]
+07-01 14:33:05.524 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 22
+07-01 14:33:05.594 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 21
+07-01 14:33:05.597 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 20
+07-01 14:33:05.601 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 24
+07-01 14:33:05.916 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-01 14:33:06.356 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:33:06.364 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:33:06.699 D/AIQuotaNativeUsage(20394): nativeUsage provider=cursor ok=true diagnostic=ok statuses=cursor.com/api/auth/stripe:200:|cursor.com/api/usage:200:|cursor.com/api/auth/usage:200:|cursor.com/api/usage-summary:200:|cursor.com/api/dashboard/get-credit-grants-balance:200:|api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage:401:|api2.cursor.sh/aiserver.v1.DashboardService/GetPlanInfo:401:|api2.cursor.sh/aiserver.v1.DashboardService/GetCreditGrantsBalance:401:|api2.cursor.sh/auth/usage:404:
+07-01 14:33:06.703 D/AIQuotaBgRefreshService(20394): payload provider=cursor url= summary=root=provider|membershipType|billingCycleStart|billingCycleEnd|individualUsage|planUsage|requestUsage|collectorMode,provider=cursor,collectorMode=native-bridge,lineCount=0,hasUsage=false,hasData=false,hasError=false
+07-01 14:33:06.704 D/AIQuotaBgRefreshService(20394): outcome provider=cursor type=Payload
+07-01 14:33:06.705 D/AIQuotaBgRefreshService(20394): saveSnapshot provider=cursor source=webview lineCount=3 planPresent=true accountPresent=false
+07-01 14:33:08.734 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 22
+07-01 14:33:08.739 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 21
+07-01 14:33:08.739 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 20
+07-01 14:33:08.741 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 24
+07-01 14:33:08.771 D/AppWidgetServiceImpl(  692): Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-01 14:33:33.962 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0
+07-01 14:33:33.968 E/ClipboardService(  692): Denying clipboard access to com.aiquota.mobile, application is not in focus nor is it a system service for user 0

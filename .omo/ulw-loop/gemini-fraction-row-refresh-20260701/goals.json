@@ -1,0 +1,1836 @@
+{
+  "version": 1,
+  "createdAt": "2026-07-01T07:13:44.758Z",
+  "updatedAt": "2026-07-01T07:13:44.758Z",
+  "briefPath": ".omo/ulw-loop/gemini-fraction-row-refresh-20260701/brief.md",
+  "goalsPath": ".omo/ulw-loop/gemini-fraction-row-refresh-20260701/goals.json",
+  "ledgerPath": ".omo/ulw-loop/gemini-fraction-row-refresh-20260701/ledger.jsonl",
+  "codexGoalMode": "aggregate",
+  "goals": [
+    {
+      "id": "G001-fix-gemini-usage-page-native-rpc-dir",
+      "title": "Fix Gemini usage-page native RPC direct row parsing in `android/app/s...",
+      "objective": "Fix Gemini usage-page native RPC direct row parsing in `android/app/src/main/java/com/aiquota/mobile/providers/GeminiUsagePageNativeFetcher.kt`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Fix Gemini usage-page native RPC direct row parsing in `android/app/src/main/...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 1.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Fix Gemini usage-page native RPC direct row parsing in `android/app/src/main/....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Fix Gemini usage-page native RPC direct row parsing in `android/app/src/main/....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G002-for-jsf9qc-direct-quota-rows-shaped",
+      "title": "For `jSf9Qc` direct quota rows shaped like `[remaining, second, type,...",
+      "objective": "For `jSf9Qc` direct quota rows shaped like `[remaining, second, type, reset]`:",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: For `jSf9Qc` direct quota rows shaped like `[remaining, second, type, reset]`:",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 2.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: For `jSf9Qc` direct quota rows shaped like `[remaining, second, type, reset]`:.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: For `jSf9Qc` direct quota rows shaped like `[remaining, second, type, reset]`:.",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G003-second-0-0-emit-used-percent-0-0-rem",
+      "title": "`second == 0.0`: emit `used_percent=0.0`, `remaining_percent=100.0`,...",
+      "objective": "`second == 0.0`: emit `used_percent=0.0`, `remaining_percent=100.0`, preserve remaining amount.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: `second == 0.0`: emit `used_percent=0.0`, `remaining_percent=100.0`, preserve...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 3.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: `second == 0.0`: emit `used_percent=0.0`, `remaining_percent=100.0`, preserve....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: `second == 0.0`: emit `used_percent=0.0`, `remaining_percent=100.0`, preserve....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G004-0-0-second-1-0-treat-second-as-used",
+      "title": "`0.0 < second <= 1.0`: treat `second` as used fraction; for `0.02`, e...",
+      "objective": "`0.0 < second <= 1.0`: treat `second` as used fraction; for `0.02`, emit `used_percent=2.0`, `remaining_percent=98.0`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: `0.0 < second <= 1.0`: treat `second` as used fraction; for `0.02`, emit `use...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 4.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: `0.0 < second <= 1.0`: treat `second` as used fraction; for `0.02`, emit `use....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: `0.0 < second <= 1.0`: treat `second` as used fraction; for `0.02`, emit `use....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G005-second-1-0-preserve-existing-amount",
+      "title": "`second > 1.0`: preserve existing amount behavior; `[450,150,1]` rema...",
+      "objective": "`second > 1.0`: preserve existing amount behavior; `[450,150,1]` remains 75% remaining.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: `second > 1.0`: preserve existing amount behavior; `[450,150,1]` remains 75%...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 5.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: `second > 1.0`: preserve existing amount behavior; `[450,150,1]` remains 75%....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: `second > 1.0`: preserve existing amount behavior; `[450,150,1]` remains 75%....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G006-keep-collectormode-native-usage-page",
+      "title": "Keep `collectorMode=native-usage-page-rpc` for accepted direct rows.",
+      "objective": "Keep `collectorMode=native-usage-page-rpc` for accepted direct rows.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Keep `collectorMode=native-usage-page-rpc` for accepted direct rows.",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 6.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Keep `collectorMode=native-usage-page-rpc` for accepted direct rows..",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Keep `collectorMode=native-usage-page-rpc` for accepted direct rows..",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G007-keep-otaq7b-nested-deep-candidate-ro",
+      "title": "Keep `otAQ7b` nested/deep candidate rows metadata-only; they must not...",
+      "objective": "Keep `otAQ7b` nested/deep candidate rows metadata-only; they must not become payload.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Keep `otAQ7b` nested/deep candidate rows metadata-only; they must not become...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 7.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Keep `otAQ7b` nested/deep candidate rows metadata-only; they must not become....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Keep `otAQ7b` nested/deep candidate rows metadata-only; they must not become....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G008-add-focused-unit-coverage-proving-ra",
+      "title": "Add focused unit coverage proving raw payload and normalized snapshot...",
+      "objective": "Add focused unit coverage proving raw payload and normalized snapshot both reflect `2% used`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Add focused unit coverage proving raw payload and normalized snapshot both re...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 8.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Add focused unit coverage proving raw payload and normalized snapshot both re....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Add focused unit coverage proving raw payload and normalized snapshot both re....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G009-run-preserve-data-apk-qa-on-device-e",
+      "title": "Run preserve-data APK QA on device/emulator with Gemini-only refresh...",
+      "objective": "Run preserve-data APK QA on device/emulator with Gemini-only refresh and snapshot readback.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Run preserve-data APK QA on device/emulator with Gemini-only refresh and snap...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 9.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Run preserve-data APK QA on device/emulator with Gemini-only refresh and snap....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Run preserve-data APK QA on device/emulator with Gemini-only refresh and snap....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G010-no-dom-scan-no-visible-dom-parser-no",
+      "title": "No DOM scan, no visible-DOM parser, no `document.documentElement`, no...",
+      "objective": "No DOM scan, no visible-DOM parser, no `document.documentElement`, no `innerText`, no `querySelector`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: No DOM scan, no visible-DOM parser, no `document.documentElement`, no `innerT...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 10.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: No DOM scan, no visible-DOM parser, no `document.documentElement`, no `innerT....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: No DOM scan, no visible-DOM parser, no `document.documentElement`, no `innerT....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G011-no-collectormode-webview-js-no-fallb",
+      "title": "No `collectorMode=webview-js`, no fallback collector, no `native-usag...",
+      "objective": "No `collectorMode=webview-js`, no fallback collector, no `native-usage-page-rpc-deep` payload.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: No `collectorMode=webview-js`, no fallback collector, no `native-usage-page-r...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 11.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: No `collectorMode=webview-js`, no fallback collector, no `native-usage-page-r....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: No `collectorMode=webview-js`, no fallback collector, no `native-usage-page-r....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G012-no-gemini-cli-oauth-google-code-assi",
+      "title": "No Gemini CLI OAuth, Google Code Assist, saved-cookie restore, or sav...",
+      "objective": "No Gemini CLI OAuth, Google Code Assist, saved-cookie restore, or saved-cookie injection path.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: No Gemini CLI OAuth, Google Code Assist, saved-cookie restore, or saved-cooki...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 12.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: No Gemini CLI OAuth, Google Code Assist, saved-cookie restore, or saved-cooki....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: No Gemini CLI OAuth, Google Code Assist, saved-cookie restore, or saved-cooki....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G013-no-app-data-wipe-do-not-use-uninstal",
+      "title": "No app data wipe: do not use uninstall, `adb shell pm clear`, `RESET_...",
+      "objective": "No app data wipe: do not use uninstall, `adb shell pm clear`, `RESET_PROVIDER`, or any command that forces foreground service / battery optimization setup again.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: No app data wipe: do not use uninstall, `adb shell pm clear`, `RESET_PROVIDER...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 13.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: No app data wipe: do not use uninstall, `adb shell pm clear`, `RESET_PROVIDER....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: No app data wipe: do not use uninstall, `adb shell pm clear`, `RESET_PROVIDER....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G014-do-not-change-claude-codex-or-copilo",
+      "title": "Do not change Claude, Codex, or Copilot behavior unless a shared-file...",
+      "objective": "Do not change Claude, Codex, or Copilot behavior unless a shared-file edit unexpectedly requires regression verification.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Do not change Claude, Codex, or Copilot behavior unless a shared-file edit un...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 14.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Do not change Claude, Codex, or Copilot behavior unless a shared-file edit un....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Do not change Claude, Codex, or Copilot behavior unless a shared-file edit un....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G015-do-not-weaken-existing-tests-that-gu",
+      "title": "Do not weaken existing tests that guard `jSf9Qc` direct rows or `otAQ...",
+      "objective": "Do not weaken existing tests that guard `jSf9Qc` direct rows or `otAQ7b` deep rows.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Do not weaken existing tests that guard `jSf9Qc` direct rows or `otAQ7b` deep...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 15.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Do not weaken existing tests that guard `jSf9Qc` direct rows or `otAQ7b` deep....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Do not weaken existing tests that guard `jSf9Qc` direct rows or `otAQ7b` deep....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G016-test-decision-tdd-with-junit-gradle",
+      "title": "Test decision: TDD with JUnit/Gradle.",
+      "objective": "Test decision: TDD with JUnit/Gradle.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Test decision: TDD with JUnit/Gradle.",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 16.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Test decision: TDD with JUnit/Gradle..",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Test decision: TDD with JUnit/Gradle..",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G017-red-evidence-omo-evidence-task-1-gem",
+      "title": "RED evidence: `.omo/evidence/task-1-gemini-usage-fraction-row-refresh...",
+      "objective": "RED evidence: `.omo/evidence/task-1-gemini-usage-fraction-row-refresh-red.txt`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: RED evidence: `.omo/evidence/task-1-gemini-usage-fraction-row-refresh-red.txt`.",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 17.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: RED evidence: `.omo/evidence/task-1-gemini-usage-fraction-row-refresh-red.txt`..",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: RED evidence: `.omo/evidence/task-1-gemini-usage-fraction-row-refresh-red.txt`..",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G018-green-evidence-omo-evidence-task-1-g",
+      "title": "GREEN evidence: `.omo/evidence/task-1-gemini-usage-fraction-row-refre...",
+      "objective": "GREEN evidence: `.omo/evidence/task-1-gemini-usage-fraction-row-refresh-green.txt`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: GREEN evidence: `.omo/evidence/task-1-gemini-usage-fraction-row-refresh-green...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 18.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: GREEN evidence: `.omo/evidence/task-1-gemini-usage-fraction-row-refresh-green....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: GREEN evidence: `.omo/evidence/task-1-gemini-usage-fraction-row-refresh-green....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G019-device-qa-evidence-omo-evidence-task",
+      "title": "Device QA evidence: `.omo/evidence/task-4-gemini-usage-fraction-refre...",
+      "objective": "Device QA evidence: `.omo/evidence/task-4-gemini-usage-fraction-refresh.log` and `.omo/evidence/task-4-gemini-usage-fraction-snapshot.txt`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Device QA evidence: `.omo/evidence/task-4-gemini-usage-fraction-refresh.log`...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 19.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Device QA evidence: `.omo/evidence/task-4-gemini-usage-fraction-refresh.log`....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Device QA evidence: `.omo/evidence/task-4-gemini-usage-fraction-refresh.log`....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G020-commands-must-set-java-17-first-in-p",
+      "title": "Commands must set Java 17 first in PowerShell:",
+      "objective": "Commands must set Java 17 first in PowerShell:",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Commands must set Java 17 first in PowerShell:",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 20.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Commands must set Java 17 first in PowerShell:.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Commands must set Java 17 first in PowerShell:.",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G021-env-java-home-c-users-datell1357-too",
+      "title": "`$env:JAVA_HOME='C:\\Users\\datell1357\\Tools\\android-reversing\\jdk-17'`",
+      "objective": "`$env:JAVA_HOME='C:\\Users\\datell1357\\Tools\\android-reversing\\jdk-17'`",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: `$env:JAVA_HOME='C:\\Users\\datell1357\\Tools\\android-reversing\\jdk-17'`",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 21.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: `$env:JAVA_HOME='C:\\Users\\datell1357\\Tools\\android-reversing\\jdk-17'`.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: `$env:JAVA_HOME='C:\\Users\\datell1357\\Tools\\android-reversing\\jdk-17'`.",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G022-env-path-env-java-home-bin-env-path",
+      "title": "`$env:PATH=\"$env:JAVA_HOME\\bin;$env:PATH\"`",
+      "objective": "`$env:PATH=\"$env:JAVA_HOME\\bin;$env:PATH\"`",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: `$env:PATH=\"$env:JAVA_HOME\\bin;$env:PATH\"`",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 22.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: `$env:PATH=\"$env:JAVA_HOME\\bin;$env:PATH\"`.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: `$env:PATH=\"$env:JAVA_HOME\\bin;$env:PATH\"`.",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G023-wave-1-tdd-and-implementation-in-the",
+      "title": "Wave 1: TDD and implementation in the Gemini native fetcher.",
+      "objective": "Wave 1: TDD and implementation in the Gemini native fetcher.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Wave 1: TDD and implementation in the Gemini native fetcher.",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 23.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Wave 1: TDD and implementation in the Gemini native fetcher..",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Wave 1: TDD and implementation in the Gemini native fetcher..",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G024-wave-2-focused-regression-source-gua",
+      "title": "Wave 2: focused regression/source guard checks.",
+      "objective": "Wave 2: focused regression/source guard checks.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Wave 2: focused regression/source guard checks.",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 24.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Wave 2: focused regression/source guard checks..",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Wave 2: focused regression/source guard checks..",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G025-wave-3-preserve-data-device-qa",
+      "title": "Wave 3: preserve-data device QA.",
+      "objective": "Wave 3: preserve-data device QA.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Wave 3: preserve-data device QA.",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 25.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Wave 3: preserve-data device QA..",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Wave 3: preserve-data device QA..",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G026-wave-4-final-review-and-commit-push",
+      "title": "Wave 4: final review and commit/push.",
+      "objective": "Wave 4: final review and commit/push.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Wave 4: final review and commit/push.",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 26.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Wave 4: final review and commit/push..",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Wave 4: final review and commit/push..",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G027-1-geminiusagepagenativefetchertest-k",
+      "title": "[ ] 1. `GeminiUsagePageNativeFetcherTest.kt` + `GeminiUsagePageNative...",
+      "objective": "[ ] 1. `GeminiUsagePageNativeFetcherTest.kt` + `GeminiUsagePageNativeFetcher.kt`: TDD fraction-row semantics for `jSf9Qc`",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: [ ] 1. `GeminiUsagePageNativeFetcherTest.kt` + `GeminiUsagePageNativeFetcher....",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 27.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: [ ] 1. `GeminiUsagePageNativeFetcherTest.kt` + `GeminiUsagePageNativeFetcher.....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: [ ] 1. `GeminiUsagePageNativeFetcherTest.kt` + `GeminiUsagePageNativeFetcher.....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G028-2-providernativeusagepayloadfetchert",
+      "title": "[ ] 2. `ProviderNativeUsagePayloadFetcherTest.kt` or existing normali...",
+      "objective": "[ ] 2. `ProviderNativeUsagePayloadFetcherTest.kt` or existing normalizer test: prove normalized snapshot surfaces 2% used",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: [ ] 2. `ProviderNativeUsagePayloadFetcherTest.kt` or existing normalizer test...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 28.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: [ ] 2. `ProviderNativeUsagePayloadFetcherTest.kt` or existing normalizer test....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: [ ] 2. `ProviderNativeUsagePayloadFetcherTest.kt` or existing normalizer test....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G029-3-source-guard-and-focused-regressio",
+      "title": "[ ] 3. Source guard and focused regression: keep DOM/fallback/deep pa...",
+      "objective": "[ ] 3. Source guard and focused regression: keep DOM/fallback/deep payload prohibited",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: [ ] 3. Source guard and focused regression: keep DOM/fallback/deep payload pr...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 29.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: [ ] 3. Source guard and focused regression: keep DOM/fallback/deep payload pr....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: [ ] 3. Source guard and focused regression: keep DOM/fallback/deep payload pr....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G030-4-preserve-data-device-qa-prove-gemi",
+      "title": "[ ] 4. Preserve-data device QA: prove Gemini refresh updates the stor...",
+      "objective": "[ ] 4. Preserve-data device QA: prove Gemini refresh updates the stored usage percent",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: [ ] 4. Preserve-data device QA: prove Gemini refresh updates the stored usage...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 30.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: [ ] 4. Preserve-data device QA: prove Gemini refresh updates the stored usage....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: [ ] 4. Preserve-data device QA: prove Gemini refresh updates the stored usage....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G031-build-gradle-p-android-app-assembled",
+      "title": "Build: `gradle -p android :app:assembleDebug | Tee-Object -FilePath ....",
+      "objective": "Build: `gradle -p android :app:assembleDebug | Tee-Object -FilePath .omo/evidence/task-4-gemini-usage-fraction-assemble.txt`. PASS if `BUILD SUCCESSFUL`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Build: `gradle -p android :app:assembleDebug | Tee-Object -FilePath .omo/evid...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 31.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Build: `gradle -p android :app:assembleDebug | Tee-Object -FilePath .omo/evid....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Build: `gradle -p android :app:assembleDebug | Tee-Object -FilePath .omo/evid....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G032-install-adb-install-r-android-app-bu",
+      "title": "Install: `adb install -r android\\app\\build\\outputs\\apk\\debug\\app-debu...",
+      "objective": "Install: `adb install -r android\\app\\build\\outputs\\apk\\debug\\app-debug.apk | Tee-Object -FilePath .omo/evidence/task-4-gemini-usage-fraction-install.txt`. PASS if `Success`; this must be preserve-data.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Install: `adb install -r android\\app\\build\\outputs\\apk\\debug\\app-debug.apk |...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 32.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Install: `adb install -r android\\app\\build\\outputs\\apk\\debug\\app-debug.apk |....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Install: `adb install -r android\\app\\build\\outputs\\apk\\debug\\app-debug.apk |....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G033-refresh-logcat-adb-logcat-c-adb-shel",
+      "title": "Refresh/logcat: `adb logcat -c; adb shell am broadcast -p com.aiquota...",
+      "objective": "Refresh/logcat: `adb logcat -c; adb shell am broadcast -p com.aiquota.mobile -a com.aiquota.mobile.debug.REFRESH_PROVIDER --es provider_id gemini; Start-Sleep -Seconds 90; adb logcat -d -v time -s AIQuotaDebugRefresh AIQuotaGeminiUsageRpc AIQuotaNativeUsage AIQuotaBgRefreshService AIQuotaCollector AIQuotaLogin | Tee-Object -FilePath .omo/evidence/task-4-gemini-usage-fraction-refresh.log`. PASS if log strings match acceptance.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Refresh/logcat: `adb logcat -c; adb shell am broadcast -p com.aiquota.mobile...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 33.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Refresh/logcat: `adb logcat -c; adb shell am broadcast -p com.aiquota.mobile....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Refresh/logcat: `adb logcat -c; adb shell am broadcast -p com.aiquota.mobile....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G034-snapshot-adb-shell-run-as-com-aiquot",
+      "title": "Snapshot: `adb shell run-as com.aiquota.mobile cat shared_prefs/usage...",
+      "objective": "Snapshot: `adb shell run-as com.aiquota.mobile cat shared_prefs/usage_data_gemini.xml | Tee-Object -FilePath .omo/evidence/task-4-gemini-usage-fraction-snapshot.txt`. PASS if `updated_at` is after the refresh and current usage is not stuck at `usedPercent\":0` when the live page/log row shows fraction `0.02`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Snapshot: `adb shell run-as com.aiquota.mobile cat shared_prefs/usage_data_ge...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 34.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Snapshot: `adb shell run-as com.aiquota.mobile cat shared_prefs/usage_data_ge....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Snapshot: `adb shell run-as com.aiquota.mobile cat shared_prefs/usage_data_ge....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G035-5-final-cleanup-diff-review-commit-p",
+      "title": "[ ] 5. Final cleanup, diff review, commit, push",
+      "objective": "[ ] 5. Final cleanup, diff review, commit, push",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: [ ] 5. Final cleanup, diff review, commit, push",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 35.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: [ ] 5. Final cleanup, diff review, commit, push.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: [ ] 5. Final cleanup, diff review, commit, push.",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G036-f1-plan-compliance-audit-verify-ever",
+      "title": "[ ] F1. Plan compliance audit: verify every Must have / Must NOT have...",
+      "objective": "[ ] F1. Plan compliance audit: verify every Must have / Must NOT have item above has direct evidence in unit logs, logcat, snapshot, or diff. Evidence `.omo/evidence/f1-gemini-usage-fraction-plan-compliance.md`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: [ ] F1. Plan compliance audit: verify every Must have / Must NOT have item ab...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 36.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: [ ] F1. Plan compliance audit: verify every Must have / Must NOT have item ab....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: [ ] F1. Plan compliance audit: verify every Must have / Must NOT have item ab....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G037-f2-code-quality-review-review-final",
+      "title": "[ ] F2. Code quality review: review final diff for smallest root fix,...",
+      "objective": "[ ] F2. Code quality review: review final diff for smallest root fix, no unrelated refactor, no new fallback path, no broad normalizer damage. Evidence `.omo/evidence/f2-gemini-usage-fraction-code-review.md`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: [ ] F2. Code quality review: review final diff for smallest root fix, no unre...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 37.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: [ ] F2. Code quality review: review final diff for smallest root fix, no unre....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: [ ] F2. Code quality review: review final diff for smallest root fix, no unre....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G038-f3-real-manual-qa-rerun-the-gemini-o",
+      "title": "[ ] F3. Real manual QA: rerun the Gemini-only preserve-data refresh s...",
+      "objective": "[ ] F3. Real manual QA: rerun the Gemini-only preserve-data refresh scenario from Todo 4 after final build; attach logcat and snapshot paths. Evidence `.omo/evidence/f3-gemini-usage-fraction-real-qa.md`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: [ ] F3. Real manual QA: rerun the Gemini-only preserve-data refresh scenario...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 38.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: [ ] F3. Real manual QA: rerun the Gemini-only preserve-data refresh scenario....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: [ ] F3. Real manual QA: rerun the Gemini-only preserve-data refresh scenario....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G039-f4-scope-fidelity-confirm-claude-cod",
+      "title": "[ ] F4. Scope fidelity: confirm Claude/Codex/Copilot files were not m...",
+      "objective": "[ ] F4. Scope fidelity: confirm Claude/Codex/Copilot files were not modified and Gemini still uses about:blank native collection only. Evidence `.omo/evidence/f4-gemini-usage-fraction-scope.md`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: [ ] F4. Scope fidelity: confirm Claude/Codex/Copilot files were not modified...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 39.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: [ ] F4. Scope fidelity: confirm Claude/Codex/Copilot files were not modified....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: [ ] F4. Scope fidelity: confirm Claude/Codex/Copilot files were not modified....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G040-one-implementation-commit-after-todo",
+      "title": "One implementation commit after Todo 4 passes: `fix(provider): Gemini...",
+      "objective": "One implementation commit after Todo 4 passes: `fix(provider): Gemini 사용률 fraction row 반영`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: One implementation commit after Todo 4 passes: `fix(provider): Gemini 사용률 fra...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 40.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: One implementation commit after Todo 4 passes: `fix(provider): Gemini 사용률 fra....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: One implementation commit after Todo 4 passes: `fix(provider): Gemini 사용률 fra....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G041-include-only-changed-production-test",
+      "title": "Include only changed production/test files. Include this plan file on...",
+      "objective": "Include only changed production/test files. Include this plan file only if execution policy for the current branch requires plan artifacts in commits; otherwise leave `.omo/plans` as local evidence.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Include only changed production/test files. Include this plan file only if ex...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 41.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Include only changed production/test files. Include this plan file only if ex....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Include only changed production/test files. Include this plan file only if ex....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G042-push-to-origin-25version-code",
+      "title": "Push to `origin 25version-code`.",
+      "objective": "Push to `origin 25version-code`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Push to `origin 25version-code`.",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 42.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Push to `origin 25version-code`..",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Push to `origin 25version-code`..",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G043-never-amend-existing-commits-create",
+      "title": "Never amend existing commits; create a new commit.",
+      "objective": "Never amend existing commits; create a new commit.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Never amend existing commits; create a new commit.",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 43.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Never amend existing commits; create a new commit..",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Never amend existing commits; create a new commit..",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G044-current-gemini-visible-usage-2-is-re",
+      "title": "Current Gemini visible usage `2% 사용됨` is represented in app storage a...",
+      "objective": "Current Gemini visible usage `2% 사용됨` is represented in app storage as 5-hour `usedPercent=2` / `remainingPercent=0.98`, not `usedPercent=0` / `remainingPercent=1`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Current Gemini visible usage `2% 사용됨` is represented in app storage as 5-hour...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 44.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Current Gemini visible usage `2% 사용됨` is represented in app storage as 5-hour....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Current Gemini visible usage `2% 사용됨` is represented in app storage as 5-hour....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G045-weekly-0-remains-usedpercent-0-remai",
+      "title": "Weekly `0% 사용됨` remains `usedPercent=0` / `remainingPercent=1`.",
+      "objective": "Weekly `0% 사용됨` remains `usedPercent=0` / `remainingPercent=1`.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Weekly `0% 사용됨` remains `usedPercent=0` / `remainingPercent=1`.",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 45.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Weekly `0% 사용됨` remains `usedPercent=0` / `remainingPercent=1`..",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Weekly `0% 사용됨` remains `usedPercent=0` / `remainingPercent=1`..",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G046-native-collection-remains-about-blan",
+      "title": "Native collection remains about:blank/native HTTP/RPC only: no DOM sc...",
+      "objective": "Native collection remains about:blank/native HTTP/RPC only: no DOM scan, no fallback, no webview-js, no `otAQ7b` deep payload.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Native collection remains about:blank/native HTTP/RPC only: no DOM scan, no f...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 46.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Native collection remains about:blank/native HTTP/RPC only: no DOM scan, no f....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Native collection remains about:blank/native HTTP/RPC only: no DOM scan, no f....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G047-preserve-data-apk-qa-proves-timestam",
+      "title": "Preserve-data APK QA proves timestamp and values both update after Ge...",
+      "objective": "Preserve-data APK QA proves timestamp and values both update after Gemini-only refresh.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Preserve-data APK QA proves timestamp and values both update after Gemini-onl...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 47.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Preserve-data APK QA proves timestamp and values both update after Gemini-onl....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Preserve-data APK QA proves timestamp and values both update after Gemini-onl....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    },
+    {
+      "id": "G048-focused-tests-and-final-build-pass",
+      "title": "Focused tests and final build pass.",
+      "objective": "Focused tests and final build pass.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Focused tests and final build pass.",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 48.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Focused tests and final build pass..",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Focused tests and final build pass..",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-01T07:13:44.758Z",
+      "updatedAt": "2026-07-01T07:13:44.758Z"
+    }
+  ],
+  "codexObjective": "Complete the durable ulw-loop plan in .omo/ulw-loop/gemini-fraction-row-refresh-20260701/goals.json, including later accepted/appended stories, under the original brief constraints; use .omo/ulw-loop/gemini-fraction-row-refresh-20260701/ledger.jsonl as the audit trail."
+}

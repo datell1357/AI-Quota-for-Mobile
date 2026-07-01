@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 2,
+  "teamId": "0b7c68d5-4d3b-45bc-9233-3ff8e6a69ea1",
+  "teamName": "gemini-rpc-realignment",
+  "sessionName": "gemini-rpc-realignment",
+  "sessionId": "team-a489e035",
+  "threadTitleConvention": "[gemini-rpc-realignment] <member name>",
+  "status": "active",
+  "createdAt": "2026-07-01T02:28:15.824Z",
+  "updatedAt": "2026-07-01T02:32:33.487Z",
+  "archivedAt": null,
+  "leader": {
+    "kind": "main-session",
+    "sessionId": "team-a489e035"
+  },
+  "communication": {
+    "memberLanguage": "english",
+    "replyToUserInUserLanguage": true
+  },
+  "worktree": {
+    "enabled": false,
+    "baseBranch": "dev",
+    "root": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-a489e035\\worktrees"
+  },
+  "paths": {
+    "dir": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-a489e035",
+    "team": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-a489e035\\team.json",
+    "guide": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-a489e035\\guide.md",
+    "artifacts": "D:\\Vibe Project\\AI Usage for Mobile\\.omo\\teams\\team-a489e035\\artifacts"
+  },
+  "members": [
+    {
+      "id": "A",
+      "name": "gemini-test-lock",
+      "focus": "Todo 1: Gemini native-only and stale-value regression tests in ProviderNativeUsagePayloadFetcherTest and source-inspection tests only",
+      "lens": "area",
+      "deliverable": "Failing-first tests and GREEN verification for Todo 1 without editing GeminiUsagePageNativeFetcher.kt",
+      "threadId": "019f1b82-3f7a-7e50-9094-a554f6ec4ec0",
+      "threadTitle": "[gemini-rpc-realignment] gemini-test-lock",
+      "cwd": "D:/Vibe Project/AI Usage for Mobile",
+      "worktree": {
+        "path": null,
+        "branch": null
+      },
+      "status": "blocked"
+    },
+    {
+      "id": "B",
+      "name": "gemini-rpc-discovery",
+      "focus": "Todo 2: sanitized native RPC discovery in GeminiUsagePageNativeFetcher and GeminiUsagePageNativeFetcherTest",
+      "lens": "area",
+      "deliverable": "Metadata-only RPC discovery implementation, redaction tests, and focused verification for Todo 2",
+      "threadId": "019f1b82-6a91-7950-ab4b-491cdb31aaf7",
+      "threadTitle": "[gemini-rpc-realignment] gemini-rpc-discovery",
+      "cwd": "D:/Vibe Project/AI Usage for Mobile",
+      "worktree": {
+        "path": null,
+        "branch": null
+      },
+      "status": "active"
+    }
+  ],
+  "log": [
+    {
+      "ts": "2026-07-01T02:28:15.824Z",
+      "event": "created",
+      "detail": "team gemini-rpc-realignment"
+    },
+    {
+      "ts": "2026-07-01T02:28:35.208Z",
+      "event": "add-member",
+      "detail": "member A (area): Todo 1: Gemini native-only and stale-value regression tests in ProviderNativeUsagePayloadFetcherTest and source-inspection tests only"
+    },
+    {
+      "ts": "2026-07-01T02:28:36.091Z",
+      "event": "add-member",
+      "detail": "member B (area): Todo 2: sanitized native RPC discovery in GeminiUsagePageNativeFetcher and GeminiUsagePageNativeFetcherTest"
+    },
+    {
+      "ts": "2026-07-01T02:29:37.546Z",
+      "event": "bind-thread",
+      "detail": "member A -> thread 019f1b82-3f7a-7e50-9094-a554f6ec4ec0"
+    },
+    {
+      "ts": "2026-07-01T02:29:37.617Z",
+      "event": "set-status",
+      "detail": "member A -> active: Wave 1 Todo 1 dispatched"
+    },
+    {
+      "ts": "2026-07-01T02:29:38.469Z",
+      "event": "bind-thread",
+      "detail": "member B -> thread 019f1b82-6a91-7950-ab4b-491cdb31aaf7"
+    },
+    {
+      "ts": "2026-07-01T02:29:38.533Z",
+      "event": "set-status",
+      "detail": "member B -> active: Wave 1 Todo 2 dispatched"
+    },
+    {
+      "ts": "2026-07-01T02:31:25.101Z",
+      "event": "set-status",
+      "detail": "member A -> active: WORKING: Todo 1 RED guards in progress; reporting to real leader thread"
+    },
+    {
+      "ts": "2026-07-01T02:31:25.173Z",
+      "event": "set-status",
+      "detail": "member B -> active: WORKING: Todo 2 metadata-only discovery RED test in progress; reporting to real leader thread"
+    },
+    {
+      "ts": "2026-07-01T02:32:33.423Z",
+      "event": "set-status",
+      "detail": "member A -> blocked: Blocked on B helper discoveryMetadataFromBatchExecuteForTest; own scope file done pending rerun"
+    },
+    {
+      "ts": "2026-07-01T02:32:33.487Z",
+      "event": "set-status",
+      "detail": "member B -> active: Implementing metadata-only discovery helper after RED"
+    }
+  ]
+}
