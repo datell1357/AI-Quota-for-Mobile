@@ -132,9 +132,14 @@ class GlmWebSessionClearPolicyTest {
     @Test
     fun glmWebOAuthBackgroundRefreshUsesStoredSessionNativeFetch() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
+        val repository = File("src/main/java/com/aiquota/mobile/providers/GlmUsageRepository.kt").readText()
 
         assertTrue(service.contains("if (job.providerId == ProviderId.GLM)"))
         assertTrue(service.contains("GlmConnectionMode.WEB_OAUTH -> repository.fetchUsagePayloadFromWebSession()"))
+        assertTrue(repository.contains("class GlmWebSessionRequestHeaderStore"))
+        assertTrue(repository.contains("const val STORE_NAME = \"ai_quota_glm_web_session_headers\""))
+        assertTrue(repository.contains("fun saveWebSessionRequestHeaders(headers: Map<String, String>)"))
+        assertTrue(repository.contains("requestHeaders = webSessionRequestHeaderStore.headers()"))
         assertFalse(service.contains("GlmIsolatedWebSession.collectUsage("))
         assertFalse(service.contains("GlmWebSessionFallbackGate(applicationContext)"))
     }
@@ -157,8 +162,27 @@ class GlmWebSessionClearPolicyTest {
             .substringBefore("private fun recoverGlmAuthRequiredFromNativeCollection")
 
         assertTrue(nativeStart.contains("if (!isUsagePage && !isMyPlanPage) return false"))
+        assertTrue(nativeStart.contains("if (isUsagePage && !hasGlmNativeFetchHeaders()) return false"))
         assertFalse(nativeStart.contains("isChatUrl"))
         assertFalse(nativeStart.contains("WEB_LOGIN_URL"))
+    }
+
+    @Test
+    fun glmChatRedirectRequiresAuthenticatedCookieCapture() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val redirect = login
+            .substringAfter("private fun maybeRedirectGlmToUsage")
+            .substringBefore("private fun resetGeminiLoginRecoveryState")
+
+        assertTrue(redirect.contains("GlmUsagePageRoutes.isChatUrl(url) && hasRetainedGlmWebSessionCookies()"))
+        assertTrue(login.contains("glmAuthenticatedSessionSeen"))
+        assertTrue(login.contains("GLM_AUTHENTICATED_COOKIE_MIN_COUNT"))
+        assertTrue(login.contains("path == \"/api/auth/z/login\" || path == \"/api/auth/z/zaiAuthToken\""))
+        assertFalse(login.contains("path == \"/api/auth/me\""))
+        assertTrue(login.contains("captureGlmNativeFetchHeaders(request) && hasGlmNativeFetchHeaders()"))
+        assertTrue(login.contains("it.equals(\"Authorization\", ignoreCase = true)"))
+        assertTrue(login.contains("saveWebSessionRequestHeaders(headers)"))
+        assertTrue(login.contains("provider=glm capturedNativeHeaders"))
     }
 
     @Test

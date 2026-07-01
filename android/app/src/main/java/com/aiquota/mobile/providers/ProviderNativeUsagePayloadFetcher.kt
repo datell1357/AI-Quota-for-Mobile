@@ -51,7 +51,7 @@ object ProviderNativeUsagePayloadFetcher {
                     ?: GEMINI_USAGE_PAGE_URL
                 fetchGeminiPayload(userAgent, cookieHeaderForUrl(usagePageUrl), usagePageUrl, geminiRpcIds)
             }
-            ProviderId.GLM -> fetchGlmPayload(cookieHeaderForUrl)
+            ProviderId.GLM -> fetchGlmPayload(cookieHeaderForUrl, requestHeadersForUrl)
             ProviderId.COPILOT -> NativePayloadResult(
                 payload = CopilotNativeUsageFetcher.fetchUsagePayload(),
                 diagnostic = "copilot_usage_unavailable"
@@ -190,13 +190,19 @@ object ProviderNativeUsagePayloadFetcher {
         return verifiedPayload(ProviderId.GEMINI, json, "gemini_usage_unavailable", result.statuses)
     }
 
-    private fun fetchGlmPayload(cookieHeaderForUrl: (String) -> String?): NativePayloadResult {
+    private fun fetchGlmPayload(
+        cookieHeaderForUrl: (String) -> String?,
+        requestHeadersForUrl: (String) -> Map<String, String>
+    ): NativePayloadResult {
         val cookieHeader = GoogleWebSessionCodeAssistFetcher.mergeCookieHeaders(
             GlmProviderUrls.WEB_COOKIE_URLS.map { url ->
                 runCatching { cookieHeaderForUrl(url) }.getOrNull()
             }
         )
-        val result = GlmUsageFetcher.fetchUsagePayloadWithCookie(cookieHeader)
+        val result = GlmUsageFetcher.fetchUsagePayloadWithCookie(
+            cookieHeader,
+            requestHeaders = requestHeadersForUrl(GlmProviderUrls.API_QUOTA_URL)
+        )
         val payload = result.payload
             ?: return NativePayloadResult(null, result.diagnostic)
         val json = runCatching { JSONObject(payload) }

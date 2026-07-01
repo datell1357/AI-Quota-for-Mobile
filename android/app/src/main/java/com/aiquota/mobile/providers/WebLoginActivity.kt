@@ -58,6 +58,8 @@ open class WebLoginActivity : Activity() {
     private var glmAuthRecoveryAttempted = false
     private var glmCookieMismatchRecoveryAttempts = 0
     private var glmRetainedWebSessionCookieHeader = ""
+    private var glmAuthenticatedSessionSeen = false
+    private val glmNativeFetchHeaders = mutableMapOf<String, String>()
     private var lastGoogleOAuthUrl: String? = null
     private var openCodePostLoginRedirected = false
     private var codexPostLoginUsageRedirected = false
@@ -286,6 +288,16 @@ open class WebLoginActivity : Activity() {
             val url = request.url.toString()
             captureCodexAccountId(url)
             captureCodexNativeFetchHeaders(request)
+            if (captureGlmNativeFetchHeaders(request) && hasGlmNativeFetchHeaders()) {
+                view.post {
+                    maybeStartGlmNativeCollection(
+                        view,
+                        view.url ?: GlmProviderUrls.WEB_USAGE_URL,
+                        "",
+                        "resource"
+                    )
+                }
+            }
             if (captureGeminiUsageRpcId(url)) {
                 maybeScheduleGeminiNativeCollectionFromResource(view, url)
             }
@@ -579,7 +591,11 @@ open class WebLoginActivity : Activity() {
                 geminiRpcIds = geminiUsageRpcIds.toList(),
                 cookieHeaderForUrl = { url -> cookieHeaderForNativeUsage(url) }
             ) { url ->
-                if (providerId == ProviderId.CODEX) codexNativeFetchHeadersFor(url) else emptyMap()
+                when (providerId) {
+                    ProviderId.CODEX -> codexNativeFetchHeadersFor(url)
+                    ProviderId.GLM -> glmNativeFetchHeadersFor(url)
+                    else -> emptyMap()
+                }
             }
         }
 
@@ -605,7 +621,12 @@ open class WebLoginActivity : Activity() {
     private fun maybeRedirectGlmToUsage(view: WebView, url: String, pageText: String): Boolean {
         if (providerId != ProviderId.GLM || glmPostLoginRedirected) return false
         if (ProviderWebCollectorScripts.isRefreshLoginPage(providerId, url, pageText)) return false
-        val usageUrl = GlmLoginPostRedirects.usageRedirectUrl(providerId, url) ?: return false
+        val usageUrl = GlmLoginPostRedirects.usageRedirectUrl(providerId, url)
+            ?: if (GlmUsagePageRoutes.isChatUrl(url) && hasRetainedGlmWebSessionCookies()) {
+                GlmProviderUrls.WEB_USAGE_URL
+            } else {
+                return false
+            }
         glmPostLoginRedirected = true
         collectorInjectionKeys.clear()
         Log.i("AIQuotaLogin", "provider=glm postLoginRedirect=usage from=${hostOf(url)}${pathOf(url)}")
@@ -680,6 +701,7 @@ open class WebLoginActivity : Activity() {
         glmNativeCollectionStarted = false
         glmPostLoginRedirected = false
         glmRetainedWebSessionCookieHeader = ""
+        glmAuthenticatedSessionSeen = false
         collectorInjectionKeys.clear()
         clearGoogleAuthCookies(CookieManager.getInstance())
         val recoveryUrl = lastGoogleOAuthUrl ?: GlmProviderUrls.WEB_LOGIN_URL
@@ -846,6 +868,7 @@ open class WebLoginActivity : Activity() {
         val isUsagePage = GlmUsagePageRoutes.isUsageUrl(url)
         val isMyPlanPage = GlmLoginPostRedirects.usageRedirectUrl(providerId, url) != null
         if (!isUsagePage && !isMyPlanPage) return false
+        if (isUsagePage && !hasGlmNativeFetchHeaders()) return false
         if (ProviderWebCollectorScripts.isRefreshLoginPage(providerId, url, pageText)) return false
         glmNativeCollectionStarted = true
         CookieManager.getInstance().flush()
@@ -866,6 +889,7 @@ open class WebLoginActivity : Activity() {
         glmNativeCollectionStarted = false
         glmPostLoginRedirected = false
         glmRetainedWebSessionCookieHeader = ""
+        glmAuthenticatedSessionSeen = false
         collectorInjectionKeys.clear()
         clearProviderWebSession(CookieManager.getInstance(), providerId)
         Log.w("AIQuotaLogin", "provider=glm authRequiredRecovery=login")
@@ -878,13 +902,44 @@ open class WebLoginActivity : Activity() {
         if (providerId != ProviderId.GLM) return false
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
-        return host == "z.ai" && uri.path.orEmpty() == "/api/auth/me"
+        val path = uri.path.orEmpty()
+        return host == "api.z.ai" && (path == "/api/auth/z/login" || path == "/api/auth/z/zaiAuthToken")
     }
 
     private fun saveGlmWebSessionCookieHeader(reason: String) {
         val cookieHeader = captureGlmWebSessionCookieHeader() ?: return
         GlmUsageRepository(applicationContext).saveWebSessionCookieHeader(cookieHeader)
         Log.i("AIQuotaLogin", "provider=glm webSessionCookieSaved=true reason=$reason")
+    }
+
+    private fun captureGlmNativeFetchHeaders(request: WebResourceRequest): Boolean {
+        if (providerId != ProviderId.GLM) return false
+        val url = request.url.toString()
+        if (!isGlmApiResource(url)) return false
+        val headers = CodexNativeHeaderStore.forwardableHeaders(request.requestHeaders.orEmpty())
+        if (headers.isEmpty()) return false
+        val hasAuthorization = headers.keys.any { it.equals("Authorization", ignoreCase = true) }
+        if (hasAuthorization) {
+            glmNativeFetchHeaders.clear()
+            glmNativeFetchHeaders.putAll(headers)
+            GlmUsageRepository(applicationContext).saveWebSessionRequestHeaders(headers)
+        } else if (glmNativeFetchHeaders.isEmpty()) {
+            glmNativeFetchHeaders.putAll(headers)
+        }
+        Log.i(
+            "AIQuotaLogin",
+            "provider=glm capturedNativeHeaders path=${pathOf(url)} names=${headers.keys.sorted().joinToString("|")}"
+        )
+        return true
+    }
+
+    private fun isGlmApiResource(url: String): Boolean {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        return uri.host.orEmpty().lowercase(Locale.US) == "api.z.ai"
+    }
+
+    private fun hasGlmNativeFetchHeaders(): Boolean {
+        return glmNativeFetchHeaders.keys.any { it.equals("Authorization", ignoreCase = true) }
     }
 
     private fun maybeRedirectOpenCodeToGo(view: WebView, url: String): Boolean {
@@ -1327,9 +1382,16 @@ open class WebLoginActivity : Activity() {
         val retainedCookieCount = GoogleWebSessionCodeAssistFetcher.parseCookieHeader(glmRetainedWebSessionCookieHeader).size
         if (cookieCount > retainedCookieCount) {
             glmRetainedWebSessionCookieHeader = cookieHeader
+            glmAuthenticatedSessionSeen = cookieCount >= GLM_AUTHENTICATED_COOKIE_MIN_COUNT
         }
         Log.i("AIQuotaLogin", "provider=glm webSessionCookieCaptured=true cookieCount=$cookieCount")
         return glmRetainedWebSessionCookieHeader.ifBlank { cookieHeader }
+    }
+
+    private fun hasRetainedGlmWebSessionCookies(): Boolean {
+        return glmAuthenticatedSessionSeen &&
+            GoogleWebSessionCodeAssistFetcher.parseCookieHeader(glmRetainedWebSessionCookieHeader).size >=
+            GLM_AUTHENTICATED_COOKIE_MIN_COUNT
     }
 
     private fun cookieHeaderForNativeUsage(url: String): String? {
@@ -1337,6 +1399,11 @@ open class WebLoginActivity : Activity() {
             return glmRetainedWebSessionCookieHeader
         }
         return CookieManager.getInstance().getCookie(url)
+    }
+
+    private fun glmNativeFetchHeadersFor(url: String): Map<String, String> {
+        if (providerId != ProviderId.GLM || !isGlmApiResource(url)) return emptyMap()
+        return glmNativeFetchHeaders.toMap()
     }
 
     private fun shouldKeepGoogleLoginRetryPending(errorKind: String, message: String): Boolean {
@@ -1470,6 +1537,7 @@ open class WebLoginActivity : Activity() {
         private const val GEMINI_NATIVE_COLLECTION_RESOURCE_DELAY_MS = 8_000L
         private const val GEMINI_NETWORK_CHANGED_RETRY_DELAY_MS = 750L
         private const val GLM_COOKIE_MISMATCH_MAX_RECOVERIES = 2
+        private const val GLM_AUTHENTICATED_COOKIE_MIN_COUNT = 2
         private const val CODEX_NATIVE_HEADER_FALLBACK_KEY = "*"
         private const val PAGE_CAPTURE_SCRIPT =
             "(function(){return (document.documentElement.innerText||document.title||'').slice(0,12000);})()"

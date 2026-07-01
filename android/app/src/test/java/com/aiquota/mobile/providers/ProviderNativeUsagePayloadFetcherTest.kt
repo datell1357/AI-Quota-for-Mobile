@@ -30,7 +30,9 @@ class ProviderNativeUsagePayloadFetcherTest {
         assertTrue(policy.contains("ProviderId.GLM"))
         assertTrue(source.contains("ProviderId.GLM -> fetchGlmPayload"))
         assertTrue(source.contains("GlmUsageFetcher.fetchUsagePayloadWithCookie"))
+        assertTrue(source.contains("requestHeaders = requestHeadersForUrl(GlmProviderUrls.API_QUOTA_URL)"))
         assertTrue(login.contains("cookieHeaderForUrl = { url -> cookieHeaderForNativeUsage(url) }"))
+        assertTrue(login.contains("ProviderId.GLM -> glmNativeFetchHeadersFor(url)"))
         assertTrue(login.contains("glmRetainedWebSessionCookieHeader"))
     }
 

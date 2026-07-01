@@ -3,6 +3,7 @@ package com.aiquota.mobile.providers
 import com.aiquota.mobile.local.ProviderId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GlmUsagePageRoutesTest {
@@ -20,10 +21,6 @@ class GlmUsagePageRoutesTest {
             GlmProviderUrls.WEB_USAGE_URL,
             GlmUsagePageRoutes.usageUrlFrom("https://z.ai/manage-apikey/coding-plan/personal/my-plan/#usage")
         )
-        assertEquals(
-            GlmProviderUrls.WEB_USAGE_URL,
-            GlmUsagePageRoutes.usageUrlFrom("https://z.ai/chat")
-        )
     }
 
     @Test
@@ -32,6 +29,13 @@ class GlmUsagePageRoutesTest {
         assertNull(GlmUsagePageRoutes.usageUrlFrom("https://z.ai/manage-apikey/apikey-list"))
         assertNull(GlmUsagePageRoutes.usageUrlFrom("https://chat.z.ai/"))
         assertNull(GlmUsagePageRoutes.usageUrlFrom("https://example.com/manage-apikey/coding-plan/personal/my-plan"))
+    }
+
+    @Test
+    fun chatPageIsLoginCompletionSignalOnly() {
+        assertTrue(GlmUsagePageRoutes.isChatUrl("https://z.ai/chat"))
+        assertTrue(GlmUsagePageRoutes.isChatUrl("https://www.z.ai/chat?model=glm-4.5"))
+        assertNull(GlmUsagePageRoutes.usageUrlFrom("https://z.ai/chat"))
     }
 
     @Test

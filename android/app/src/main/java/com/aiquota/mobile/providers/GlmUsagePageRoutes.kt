@@ -28,8 +28,15 @@ object GlmUsagePageRoutes {
         val host = uri.host.orEmpty().lowercase(Locale.US)
         if (host != "z.ai" && host != "www.z.ai") return null
         val path = uri.path.orEmpty().lowercase(Locale.US).trimEnd('/')
-        if (path != "/manage-apikey/coding-plan/personal/my-plan" && path != "/chat") return null
+        if (path != "/manage-apikey/coding-plan/personal/my-plan") return null
         return GlmProviderUrls.WEB_USAGE_URL
+    }
+
+    fun isChatUrl(url: String): Boolean {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        if (host != "z.ai" && host != "www.z.ai") return false
+        return uri.path.orEmpty().lowercase(Locale.US).trimEnd('/') == "/chat"
     }
 
     fun isUsageUrl(url: String): Boolean {

@@ -118,9 +118,10 @@ class GlmUsageFetcherTest {
     }
 
     @Test
-    fun webSessionFetchSendsCookieWithoutAuthorizationHeader() {
+    fun webSessionFetchSendsCookieAndCapturedNativeHeaders() {
         var cookieHeader: String? = null
         var authorizationHeader: String? = null
+        var traceHeader: String? = null
         var refererHeader: String? = null
         var userAgentHeader: String? = null
         val server = ServerSocket().apply {
@@ -138,6 +139,9 @@ class GlmUsageFetcherTest {
                     }
                     if (line.startsWith("Authorization:", ignoreCase = true)) {
                         authorizationHeader = line.substringAfter(":").trim()
+                    }
+                    if (line.startsWith("X-Zai-Trace:", ignoreCase = true)) {
+                        traceHeader = line.substringAfter(":").trim()
                     }
                     if (line.startsWith("Referer:", ignoreCase = true)) {
                         refererHeader = line.substringAfter(":").trim()
@@ -157,14 +161,19 @@ class GlmUsageFetcherTest {
         try {
             val result = GlmUsageFetcher.fetchUsagePayloadWithCookie(
                 cookieHeader = "zai_session=session-value; other=value",
-                endpointUrl = "http://127.0.0.1:${server.localPort}/quota"
+                endpointUrl = "http://127.0.0.1:${server.localPort}/quota",
+                requestHeaders = mapOf(
+                    "Authorization" to "Bearer browser-token",
+                    "X-Zai-Trace" to "trace-id"
+                )
             )
 
             assertEquals("ok", result.diagnostic)
             assertFalse(result.requiresAuth)
             assertNotNull(result.payload)
             assertEquals("zai_session=session-value; other=value", cookieHeader)
-            assertNull(authorizationHeader)
+            assertEquals("Bearer browser-token", authorizationHeader)
+            assertEquals("trace-id", traceHeader)
             assertEquals(GlmProviderUrls.WEB_USAGE_URL, refererHeader)
             org.junit.Assert.assertTrue(userAgentHeader.orEmpty().contains("Mozilla/5.0"))
         } finally {

@@ -120,6 +120,46 @@ class GlmWebSessionCookieStore(context: Context) {
     }
 }
 
+class GlmWebSessionRequestHeaderStore(context: Context) {
+    private val secureStore = SecureStringStore(context.applicationContext, STORE_NAME)
+
+    fun headers(): Map<String, String> {
+        val raw = secureStore.getString(KEY_REQUEST_HEADERS)?.trim()?.takeIf { it.isNotBlank() }
+            ?: return emptyMap()
+        val json = runCatching { JSONObject(raw) }.getOrNull() ?: return emptyMap()
+        val restored = linkedMapOf<String, String>()
+        val keys = json.keys()
+        while (keys.hasNext()) {
+            val name = keys.next().trim()
+            val value = json.optString(name).trim()
+            if (name.isNotBlank() && value.isNotBlank()) restored[name] = value
+        }
+        return restored
+    }
+
+    fun save(headers: Map<String, String>) {
+        val filtered = headers
+            .filterKeys { it.isNotBlank() && !it.equals("Cookie", ignoreCase = true) }
+            .mapValues { it.value.trim() }
+            .filterValues { it.isNotBlank() }
+        if (!filtered.keys.any { it.equals("Authorization", ignoreCase = true) }) return
+        val json = JSONObject()
+        filtered.entries
+            .sortedBy { it.key.lowercase() }
+            .forEach { (name, value) -> json.put(name, value) }
+        secureStore.putString(KEY_REQUEST_HEADERS, json.toString())
+    }
+
+    fun clear() {
+        secureStore.remove(KEY_REQUEST_HEADERS)
+    }
+
+    private companion object {
+        const val STORE_NAME = "ai_quota_glm_web_session_headers"
+        const val KEY_REQUEST_HEADERS = "request_headers"
+    }
+}
+
 class GlmWebSessionFallbackGate(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -159,6 +199,7 @@ class GlmUsageRepository(context: Context) {
     private val store = GlmApiKeyStore(appContext)
     private val modeStore = GlmConnectionModeStore(appContext)
     private val webSessionCookieStore = GlmWebSessionCookieStore(appContext)
+    private val webSessionRequestHeaderStore = GlmWebSessionRequestHeaderStore(appContext)
     private val fallbackGate = GlmWebSessionFallbackGate(appContext)
 
     fun saveApiKey(apiKey: String) {
@@ -168,12 +209,19 @@ class GlmUsageRepository(context: Context) {
 
     fun useWebOAuth() {
         webSessionCookieStore.clear()
+        webSessionRequestHeaderStore.clear()
         modeStore.save(GlmConnectionMode.WEB_OAUTH)
     }
 
     fun saveWebSessionCookieHeader(cookieHeader: String?) {
         val trimmed = cookieHeader?.trim()?.takeIf { it.isNotBlank() } ?: return
         webSessionCookieStore.save(trimmed)
+        modeStore.save(GlmConnectionMode.WEB_OAUTH)
+    }
+
+    fun saveWebSessionRequestHeaders(headers: Map<String, String>) {
+        if (!headers.keys.any { it.equals("Authorization", ignoreCase = true) }) return
+        webSessionRequestHeaderStore.save(headers)
         modeStore.save(GlmConnectionMode.WEB_OAUTH)
     }
 
@@ -184,6 +232,7 @@ class GlmUsageRepository(context: Context) {
     fun clear() {
         store.clear()
         webSessionCookieStore.clear()
+        webSessionRequestHeaderStore.clear()
         modeStore.clear()
         fallbackGate.clear()
     }
@@ -197,7 +246,10 @@ class GlmUsageRepository(context: Context) {
     fun fetchUsagePayloadFromWebSession(): GlmUsageResult {
         val cookieHeader = webSessionCookieStore.cookieHeader()
             ?: return GlmUsageResult(null, requiresAuth = false, diagnostic = "glm_web_cookie_missing")
-        return GlmUsageFetcher.fetchUsagePayloadWithCookie(cookieHeader)
+        return GlmUsageFetcher.fetchUsagePayloadWithCookie(
+            cookieHeader = cookieHeader,
+            requestHeaders = webSessionRequestHeaderStore.headers()
+        )
     }
 }
 
@@ -221,16 +273,26 @@ object GlmUsageFetcher {
         }
     }
 
-    fun fetchUsagePayloadWithCookie(cookieHeader: String): GlmUsageResult {
-        return fetchUsagePayloadWithCookie(cookieHeader, GlmProviderUrls.API_QUOTA_URL)
+    fun fetchUsagePayloadWithCookie(
+        cookieHeader: String,
+        requestHeaders: Map<String, String> = emptyMap()
+    ): GlmUsageResult {
+        return fetchUsagePayloadWithCookie(cookieHeader, GlmProviderUrls.API_QUOTA_URL, requestHeaders)
     }
 
-    internal fun fetchUsagePayloadWithCookie(cookieHeader: String, endpointUrl: String): GlmUsageResult {
+    internal fun fetchUsagePayloadWithCookie(
+        cookieHeader: String,
+        endpointUrl: String,
+        requestHeaders: Map<String, String> = emptyMap()
+    ): GlmUsageResult {
         val trimmedCookieHeader = cookieHeader.trim()
         if (trimmedCookieHeader.isBlank()) {
             return GlmUsageResult(null, requiresAuth = false, diagnostic = "glm_web_cookie_missing")
         }
         return executeFetch(endpointUrl, accountLabel = "z.ai web session") {
+            requestHeaders.forEach { (name, value) ->
+                if (name.isNotBlank() && value.isNotBlank()) setRequestProperty(name, value)
+            }
             setRequestProperty("Cookie", trimmedCookieHeader)
             setRequestProperty("Origin", "https://z.ai")
             setRequestProperty("Referer", GlmProviderUrls.WEB_USAGE_URL)
