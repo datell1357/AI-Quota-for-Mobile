@@ -62,6 +62,7 @@ open class WebLoginActivity : Activity() {
     private val glmNativeFetchHeaders = mutableMapOf<String, String>()
     private var lastGoogleOAuthUrl: String? = null
     private var openCodePostLoginRedirected = false
+    private var openCodeNativeCollectionStarted = false
     private var codexPostLoginUsageRedirected = false
     private var codexNativeCollectionStarted = false
     private var claudeNativeCollectionStarted = false
@@ -385,6 +386,10 @@ open class WebLoginActivity : Activity() {
                 injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
                 return
             }
+            if (providerId == ProviderId.OPENCODE && effectiveUrl == "about:blank") {
+                injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
+                return
+            }
             if (providerId == ProviderId.COPILOT && effectiveUrl == "about:blank") {
                 injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
                 return
@@ -407,6 +412,9 @@ open class WebLoginActivity : Activity() {
                     return@evaluateJavascript
                 }
                 if (maybeRedirectOpenCodeToGo(view, url)) {
+                    return@evaluateJavascript
+                }
+                if (maybeStartOpenCodeNativeCollection(view, url, "page_finished")) {
                     return@evaluateJavascript
                 }
                 if (maybeRedirectCopilotToSettings(view, url, pageText)) {
@@ -953,6 +961,20 @@ open class WebLoginActivity : Activity() {
         return true
     }
 
+    private fun maybeStartOpenCodeNativeCollection(view: WebView, url: String, reason: String): Boolean {
+        if (providerId != ProviderId.OPENCODE || finished || openCodeNativeCollectionStarted || url == "about:blank") return false
+        val goUsageUrl = OpenCodeUsagePageRoutes.canonicalGoUsageUrlFrom(url) ?: return false
+        openCodeNativeCollectionStarted = true
+        CookieManager.getInstance().flush()
+        collectorInjectionKeys.clear()
+        saveOpenCodeUsageUrl(goUsageUrl)
+        noteBridgePageUrl("about:blank")
+        Log.i("AIQuotaLogin", "provider=opencode nativeCollectorStart=aboutblank reason=$reason from=${hostOf(url)}${pathOf(url)}")
+        view.stopLoading()
+        view.loadUrl("about:blank")
+        return true
+    }
+
     private fun maybeRedirectCopilotToSettings(view: WebView, url: String, pageText: String): Boolean {
         if (providerId != ProviderId.COPILOT || copilotPostLoginRedirected) return false
         if (!ProviderLoginStrategy.shouldRedirectCopilotToSettings(url, pageText)) return false
@@ -1130,7 +1152,10 @@ open class WebLoginActivity : Activity() {
             observedAccountId = observedCodexAccountId,
             pageText = pageText,
             pageUrl = url,
-            awaitInteractiveLoginUsage = providerId == ProviderId.CODEX || providerId == ProviderId.GEMINI || providerId == ProviderId.COPILOT
+            awaitInteractiveLoginUsage = providerId == ProviderId.CODEX ||
+                providerId == ProviderId.GEMINI ||
+                providerId == ProviderId.OPENCODE ||
+                providerId == ProviderId.COPILOT
         )
         if (script.isBlank()) return
         val injectionKey = "${providerId.storageId}:${hostOf(url)}:${routeKeyOf(url)}"
@@ -1153,6 +1178,8 @@ open class WebLoginActivity : Activity() {
             ProviderId.COPILOT ->
                 errorKind == "copilot_usage_unavailable" ||
                     errorKind == "copilot_native_usage_unavailable"
+            ProviderId.OPENCODE ->
+                errorKind == "opencode_usage_unavailable"
             ProviderId.GLM ->
                 errorKind == "glm_no_trusted_payload"
             else -> false
@@ -1347,6 +1374,10 @@ open class WebLoginActivity : Activity() {
             return geminiNativeUsagePageUrl.ifBlank {
                 ProviderScopedStateRepository(applicationContext).readGeminiUsageUrl().orEmpty()
             }.ifBlank { currentBridgePageUrl }
+        }
+        if (providerId == ProviderId.OPENCODE && currentBridgePageUrl == "about:blank") {
+            return ProviderScopedStateRepository(applicationContext).readOpenCodeUsageUrl()
+                ?: currentBridgePageUrl
         }
         return currentBridgePageUrl
     }

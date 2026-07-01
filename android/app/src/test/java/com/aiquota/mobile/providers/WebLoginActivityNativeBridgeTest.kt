@@ -95,7 +95,8 @@ class WebLoginActivityNativeBridgeTest {
         assertTrue(source.contains("maybeStartCopilotNativeCollection(view, effectiveUrl, \"page_finished\")"))
         assertTrue(source.contains("providerId == ProviderId.COPILOT && effectiveUrl == \"about:blank\""))
         assertTrue(source.contains("provider=copilot nativeCollectorStart=aboutblank"))
-        assertTrue(source.contains("awaitInteractiveLoginUsage = providerId == ProviderId.CODEX || providerId == ProviderId.GEMINI || providerId == ProviderId.COPILOT"))
+        assertTrue(source.contains("awaitInteractiveLoginUsage = providerId == ProviderId.CODEX ||"))
+        assertTrue(source.contains("providerId == ProviderId.COPILOT"))
         assertTrue(source.contains("ProviderId.COPILOT ->"))
         assertTrue(source.contains("copilot_usage_unavailable"))
         assertTrue(source.contains("copilot_native_usage_unavailable"))
@@ -116,6 +117,21 @@ class WebLoginActivityNativeBridgeTest {
         assertTrue(refresh.contains("saveGeminiUsageUrl(usageUrl)"))
         assertTrue(refresh.contains("bridgePageUrl = nativeUsageBridgePageUrl(ownerProviderId)"))
         assertTrue(refresh.contains("readGeminiUsageUrl()"))
+    }
+
+    @Test
+    fun opencodeLoginStartsAboutBlankNativeCollectionFromGoUsagePage() {
+        val source = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+
+        assertTrue(source.contains("private var openCodeNativeCollectionStarted = false"))
+        assertTrue(source.contains("maybeStartOpenCodeNativeCollection(view, url, \"page_finished\")"))
+        assertTrue(source.contains("providerId == ProviderId.OPENCODE && effectiveUrl == \"about:blank\""))
+        assertTrue(source.contains("OpenCodeUsagePageRoutes.canonicalGoUsageUrlFrom(url)"))
+        assertTrue(source.contains("provider=opencode nativeCollectorStart=aboutblank"))
+        assertTrue(source.contains("readOpenCodeUsageUrl()"))
+        assertTrue(source.contains("ProviderId.OPENCODE ->"))
+        assertTrue(source.contains("opencode_usage_unavailable"))
+        assertTrue(source.contains("providerId == ProviderId.OPENCODE ||"))
     }
 
     @Test
