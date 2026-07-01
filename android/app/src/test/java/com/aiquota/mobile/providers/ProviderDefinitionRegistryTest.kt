@@ -30,7 +30,7 @@ class ProviderDefinitionRegistryTest {
         assertEquals(ProviderAuthStoreKind.WEBVIEW_PROFILE, definitionsByProvider[ProviderId.OPENCODE]?.authStoreKind)
         assertEquals(ProviderCollectionKind.WEBVIEW_COLLECTOR, definitionsByProvider[ProviderId.OPENCODE]?.collectionKind)
         assertEquals(
-            "https://gemini.google.com/usage",
+            "https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fgemini.google.com%2Fusage",
             definitionsByProvider[ProviderId.GEMINI]?.loginStartUrl
         )
         assertEquals(

@@ -62,13 +62,13 @@ class ProviderLoginUrlRewriterTest {
     }
 
     @Test
-    fun geminiLoginStartsWithUsagePage() {
+    fun geminiLoginStartsWithGoogleAccountChooser() {
         val definitions = File("src/main/java/com/aiquota/mobile/providers/ProviderDefinitions.kt").readText()
         val geminiDefinition = definitions.substringAfter("providerId = ProviderId.GEMINI,")
             .substringBefore("ProviderDefinition(")
 
-        assertTrue(geminiDefinition.contains("loginStartUrl = \"https://gemini.google.com/usage\""))
-        assertFalse(geminiDefinition.contains("https://accounts.google.com/AccountChooser"))
+        assertTrue(geminiDefinition.contains("loginStartUrl = \"https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fgemini.google.com%2Fusage\""))
+        assertFalse(geminiDefinition.contains("https://accounts.google.com/ServiceLogin"))
         assertFalse(geminiDefinition.contains("authuser=-1"))
     }
 

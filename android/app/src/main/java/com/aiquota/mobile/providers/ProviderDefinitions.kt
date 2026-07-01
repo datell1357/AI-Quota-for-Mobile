@@ -117,7 +117,7 @@ object ProviderDefinitionRegistry {
         ),
         ProviderDefinition(
             providerId = ProviderId.GEMINI,
-            loginStartUrl = "https://gemini.google.com/usage",
+            loginStartUrl = "https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fgemini.google.com%2Fusage",
             allowedHosts = setOf(
                 "accounts.google.com",
                 "myaccount.google.com",
