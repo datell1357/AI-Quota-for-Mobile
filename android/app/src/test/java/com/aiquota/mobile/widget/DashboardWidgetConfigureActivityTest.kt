@@ -65,6 +65,21 @@ class DashboardWidgetConfigureActivityTest {
     }
 
     @Test
+    fun providerOrderConfigurationRequestsDashboardImmediateUpdateBeforeBroadFallback() {
+        val activitySource = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
+        val refreshWidgetsBody = activitySource.substringAfter("private fun refreshConfiguredWidgets").substringBefore("private fun finishConfigured")
+        val immediateIndex = refreshWidgetsBody.indexOf("DashboardWidgetImmediateUpdater.schedule(applicationContext, appWidgetId)")
+        val fallbackIndex = refreshWidgetsBody.indexOf("UsageSurfaceRefresher.refreshWidgetSurfaces(applicationContext)")
+
+        assertTrue(
+            "Dashboard widget configuration should redraw the configured appWidgetId immediately before keeping the broad circular-widget fallback.",
+            immediateIndex >= 0 && fallbackIndex > immediateIndex
+        )
+        assertTrue(!refreshWidgetsBody.contains("UsageSurfaceRefresher.refresh("))
+        assertTrue(!activitySource.contains("LocalUsageRepository"))
+    }
+
+    @Test
     fun providerOrderConfigurationCanExcludeAndRestoreWidgetProviders() {
         val activitySource = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
         val strings = File("src/main/res/values/strings.xml").readText()

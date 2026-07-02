@@ -1,0 +1,11 @@
+T04 dashboard widget immediate visual QA marker
+Device: emulator-5554
+Widget: existing launcher dashboard widget appWidgetId=17 (AIQuotaUnifiedGlanceWidgetReceiver)
+Install evidence: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/install.txt (BUILD SUCCESSFUL)
+Initial proof: Claude was present in launcher-before-text.txt and absent in launcher-after-2s-text.txt after hiding Claude.
+Fast timing proof: Copilot was present in launcher-after-gemini-1s-text.txt and absent in launcher-after-copilot-fast-text.txt after hiding Copilot.
+Fast XML capture end delta after Done returned: 4.701s
+PASS: Copilot removed from launcher XML with XML-only capture ending under 5s after Done returned.
+Preference marker: <?xmlversion='1.0'encoding='utf-8'standalone='yes'?><map><stringname="dashboard_widget_hidden_providers_17">claude,gemini,copilot</string><stringname="dashboard_widget_provider_order_17">claude,codex,glm,opencode,gemini,copilot,antigravity,cursor</string></map>
+Screenshots: launcher-before.png, config-activity.png, config-after-hide.png, launcher-after-2s.png, launcher-after-copilot-fast.png
+XML: dashboard-widget-before.xml, config-activity.xml, config-after-hide.xml, dashboard-widget-after-2s.xml, dashboard-widget-after-copilot-fast.xml

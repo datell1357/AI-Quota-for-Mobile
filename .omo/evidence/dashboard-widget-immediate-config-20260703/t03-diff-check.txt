@@ -1,0 +1,2 @@
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivityTest.kt', LF will be replaced by CRLF the next time Git touches it

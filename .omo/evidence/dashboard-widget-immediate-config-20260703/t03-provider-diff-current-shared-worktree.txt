@@ -1,0 +1,34 @@
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/GlmUsagePageRoutes.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/GlmUsageRepository.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderCollectorErrorPolicy.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderRefreshPlan.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderWebCollectorScripts.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/GlmApiKeyActivityTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/GlmUsagePageRoutesTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/GlmWebSessionClearPolicyTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshServicePolicyTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/ProviderCollectorErrorPolicyTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/ProviderRefreshPlanTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/ProviderWebCollectorScriptsTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/WebLoginActivityNativeBridgeTest.kt', LF will be replaced by CRLF the next time Git touches it
+android/app/src/main/java/com/aiquota/mobile/providers/GlmUsagePageRoutes.kt
+android/app/src/main/java/com/aiquota/mobile/providers/GlmUsageRepository.kt
+android/app/src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt
+android/app/src/main/java/com/aiquota/mobile/providers/ProviderCollectorErrorPolicy.kt
+android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt
+android/app/src/main/java/com/aiquota/mobile/providers/ProviderRefreshPlan.kt
+android/app/src/main/java/com/aiquota/mobile/providers/ProviderWebCollectorScripts.kt
+android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt
+android/app/src/test/java/com/aiquota/mobile/providers/GlmApiKeyActivityTest.kt
+android/app/src/test/java/com/aiquota/mobile/providers/GlmUsagePageRoutesTest.kt
+android/app/src/test/java/com/aiquota/mobile/providers/GlmWebSessionClearPolicyTest.kt
+android/app/src/test/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshServicePolicyTest.kt
+android/app/src/test/java/com/aiquota/mobile/providers/ProviderCollectorErrorPolicyTest.kt
+android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt
+android/app/src/test/java/com/aiquota/mobile/providers/ProviderRefreshPlanTest.kt
+android/app/src/test/java/com/aiquota/mobile/providers/ProviderWebCollectorScriptsTest.kt
+android/app/src/test/java/com/aiquota/mobile/providers/WebLoginActivityNativeBridgeTest.kt

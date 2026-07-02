@@ -1,0 +1,8 @@
+T05 scope guardrails
+Focused widget tests: .omo/evidence/dashboard-widget-immediate-config-20260703/t05-green-focused-widget-tests.txt -> BUILD SUCCESSFUL
+Widget diff check: .omo/evidence/dashboard-widget-immediate-config-20260703/t05-diff-check.txt -> EXIT_CODE:0 (CRLF warnings only)
+Provider diff normalized comparison: .omo/evidence/dashboard-widget-immediate-config-20260703/t05-provider-diff-vs-baseline-normalized.txt -> no new provider diff after QA
+Forbidden widget diff scan: .omo/evidence/dashboard-widget-immediate-config-20260703/t05-forbidden-widget-diff-scan.txt -> no forbidden widget diff additions
+Forbidden source scan: .omo/evidence/dashboard-widget-immediate-config-20260703/t05-forbidden-source-scan.txt -> no forbidden source references
+Scoped status: .omo/evidence/dashboard-widget-immediate-config-20260703/t05-scoped-status.txt
+T04 marker: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/widget-marker.txt

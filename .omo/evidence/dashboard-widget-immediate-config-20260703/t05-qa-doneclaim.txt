@@ -1,0 +1,21 @@
+DoneClaim: QA/home-widget-visual-qa T04-T05
+Date: 2026-07-03
+
+T04 emulator visual QA: PASS
+- Reinstalled debug APK on emulator-5554: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/install.txt (BUILD SUCCESSFUL).
+- Used existing launcher dashboard widget appWidgetId=17 (AIQuotaUnifiedGlanceWidgetReceiver).
+- Opened DashboardWidgetConfigureActivity directly for appWidgetId=17.
+- Hid Claude, then Gemini, then Copilot using UIAutomator-derived coordinates.
+- Fast timing proof: Copilot visible before in launcher-after-gemini-1s-text.txt and absent after in launcher-after-copilot-fast-text.txt.
+- XML-only capture ended 4.701s after Done returned: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/widget-marker.txt.
+- Screenshots/XML/action log captured under .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate.
+- Temporary /sdcard dumps cleanup: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/cleanup-sdcard-dumps.txt.
+
+T05 focused regression/scope guardrails: PASS
+- Focused widget tests: .omo/evidence/dashboard-widget-immediate-config-20260703/t05-green-focused-widget-tests.txt (BUILD SUCCESSFUL).
+- Widget diff check: .omo/evidence/dashboard-widget-immediate-config-20260703/t05-diff-check.txt (EXIT_CODE:0; CRLF warnings only).
+- Provider diff normalized comparison: .omo/evidence/dashboard-widget-immediate-config-20260703/t05-provider-diff-vs-baseline-normalized.txt (no new provider diff after QA).
+- Forbidden source/diff scans: no ProviderBackgroundRefreshService, LocalUsageRepository, WidgetSnapshotCache.write, requestBackgroundRefresh, or UsageSurfaceRefresher.refresh( additions/references in scoped widget files.
+
+QA edits: evidence files only under .omo/evidence/dashboard-widget-immediate-config-20260703; no product/test files edited by QA.
+No staging or commit performed by QA.

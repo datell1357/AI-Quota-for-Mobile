@@ -1,0 +1,1 @@
+No /sdcard/dashboard-widget-*.xml dumps remain.

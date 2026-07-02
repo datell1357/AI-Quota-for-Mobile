@@ -672,6 +672,7 @@ class DashboardWidgetConfigureActivity : ComponentActivity() {
     }
 
     private fun refreshConfiguredWidgets() {
+        DashboardWidgetImmediateUpdater.schedule(applicationContext, appWidgetId)
         UsageSurfaceRefresher.refreshWidgetSurfaces(applicationContext)
     }
 

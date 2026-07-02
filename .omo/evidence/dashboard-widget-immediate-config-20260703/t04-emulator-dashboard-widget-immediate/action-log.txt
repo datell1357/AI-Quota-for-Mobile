@@ -1,0 +1,37 @@
+T04 start
+Device: emulator-5554
+Install: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/install.txt
+Existing dashboard widget id expected from preflight: 17
+Before screenshot: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/launcher-before.png
+Before XML: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/dashboard-widget-before.xml
+Opened DashboardWidgetConfigureActivity for appWidgetId=17.
+Config screenshot: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/config-activity.png
+Config XML: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/config-activity.xml
+Hide coordinate from config-activity.xml: Claude exclude button center 859,596.
+Tapped hide Claude.
+Config after hide screenshot: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/config-after-hide.png
+Config after hide XML: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/config-after-hide.xml
+Done coordinate from config-after-hide.xml: 540,2222.
+Tapped Done at host UTC epoch 1783034073.718.
+Captured launcher after 2s at host UTC epoch 1783034080.268.
+After 2s screenshot/XML: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/launcher-after-2s.png / .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/dashboard-widget-after-2s.xml
+After 6s screenshot/XML: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/launcher-after-6s.png / .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/dashboard-widget-after-6s.xml
+Logcat: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/logcat-after-config.txt
+Second proof: hide Gemini after Claude was already hidden.
+Gemini hide coordinate from config-second-activity.xml: 859,1172.
+Done coordinate from config-second-after-hide.xml: 540,2204.
+Done tap command start UTC epoch: 1783034154.291
+Done tap command returned UTC epoch: 1783034154.428
+Launcher XML capture start UTC epoch: 1783034155.509
+Launcher XML+screenshot capture end UTC epoch: 1783034161.175
+Capture end delta after Done returned: 6.747s
+After Gemini hide XML/screenshot: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/dashboard-widget-after-gemini-1s.xml / .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/launcher-after-gemini-1s.png
+Third proof: hide Copilot after Claude/Gemini were already hidden.
+Copilot hide coordinate from config-third-activity.xml: 859,1191.
+Done coordinate from config-third-after-hide.xml: 540,2185.
+Done tap command start UTC epoch: 1783034214.831
+Done tap command returned UTC epoch: 1783034214.925
+Fast launcher XML capture start UTC epoch: 1783034215.788
+Fast launcher XML capture end UTC epoch: 1783034219.626
+Fast XML capture end delta after Done returned: 4.701s
+After Copilot hide fast XML/screenshot: .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/dashboard-widget-after-copilot-fast.xml / .omo/evidence/dashboard-widget-immediate-config-20260703/t04-emulator-dashboard-widget-immediate/launcher-after-copilot-fast.png

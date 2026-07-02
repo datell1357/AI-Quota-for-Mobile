@@ -1,0 +1,28 @@
+DoneClaim: IMPL/widget-immediate-impl T01-T03
+Date: 2026-07-03
+
+Changed scope:
+- android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt
+- android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdater.kt
+- android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivityTest.kt
+- android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdaterTest.kt
+- .omo/evidence/dashboard-widget-immediate-config-20260703/
+
+Implementation:
+- Added DashboardWidgetImmediateUpdater.schedule(context, appWidgetId).
+- The updater ignores INVALID_APPWIDGET_ID, uses applicationContext, retries at 0/250/750/1500 ms, resolves GlanceId with GlanceAppWidgetManager(appContext).getGlanceIdBy(appWidgetId), and calls AIQuotaUnifiedGlanceWidget().update(appContext, glanceId).
+- DashboardWidgetConfigureActivity.refreshConfiguredWidgets() now schedules the dashboard immediate update before the existing UsageSurfaceRefresher.refreshWidgetSurfaces(applicationContext) fallback.
+
+Evidence:
+- RED: t01-red-dashboard-widget-immediate.txt fails on intended assertions before production edits.
+- GREEN: t02-green-dashboard-widget-immediate.txt BUILD SUCCESSFUL.
+- GREEN: t03-green-dashboard-config-wire.txt BUILD SUCCESSFUL.
+- GREEN: t03-green-dashboard-widget-immediate-combined.txt BUILD SUCCESSFUL.
+- Guardrail: t02-forbidden-helper-scan.txt has no forbidden helper references.
+- Guardrail: t03-production-forbidden-scan.txt has no forbidden production references.
+- Guardrail: t03-diff-check.txt exits 0; only Git line-ending warnings are present.
+- Guardrail: t03-scoped-status.txt lists only scoped widget files plus the evidence directory for this slice.
+
+Notes:
+- No files were staged or committed.
+- Provider files were dirty in the shared worktree before this slice; current provider dirty-file list is recorded in t03-provider-diff-current-shared-worktree.txt and was not edited for T01-T03.

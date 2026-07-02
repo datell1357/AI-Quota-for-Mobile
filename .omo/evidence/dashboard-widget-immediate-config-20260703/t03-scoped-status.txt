@@ -1,0 +1,5 @@
+ M android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt
+ M android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivityTest.kt
+?? .omo/evidence/dashboard-widget-immediate-config-20260703/
+?? android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdater.kt
+?? android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdaterTest.kt

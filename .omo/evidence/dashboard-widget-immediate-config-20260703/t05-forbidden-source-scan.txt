@@ -1,0 +1,1 @@
+No forbidden source references found in dashboard widget config/helper.
