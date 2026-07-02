@@ -11,6 +11,7 @@ import android.webkit.WebStorage
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.aiquota.mobile.local.ProviderId
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -20,10 +21,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
 internal object ProviderWebSessionMaintenanceGate {
-    private val mutex = Mutex()
+    private val providerMutexes = ConcurrentHashMap<ProviderId, Mutex>()
 
-    suspend fun <T> withMaintenanceLock(block: suspend () -> T): T {
-        return mutex.withLock { block() }
+    suspend fun <T> withMaintenanceLock(providerId: ProviderId, block: suspend () -> T): T {
+        return providerMutexes.getOrPut(providerId) { Mutex() }.withLock { block() }
     }
 }
 
@@ -43,14 +44,14 @@ object ProviderWebSessionCleaner {
 
     suspend fun clearProviderWebSessionAndWait(providerId: ProviderId) {
         if (!ProviderWebSessionClearPolicy.shouldClearOnDisconnect(providerId)) return
-        ProviderWebSessionMaintenanceGate.withMaintenanceLock {
+        ProviderWebSessionMaintenanceGate.withMaintenanceLock(providerId) {
             clearProviderWebSessionAndWait(CookieManager.getInstance(), WebStorage.getInstance(), providerId)
         }
     }
 
     suspend fun clearProviderWebSessionAndWait(context: Context, providerId: ProviderId) {
         if (!ProviderWebSessionClearPolicy.shouldClearOnDisconnect(providerId)) return
-        ProviderWebSessionMaintenanceGate.withMaintenanceLock {
+        ProviderWebSessionMaintenanceGate.withMaintenanceLock(providerId) {
             withContext(Dispatchers.Main.immediate) {
                 if (providerId == ProviderId.GLM) {
                     GlmIsolatedWebSession.clearAndWait(context.applicationContext)

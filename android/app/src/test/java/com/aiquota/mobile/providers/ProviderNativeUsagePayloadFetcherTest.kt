@@ -37,6 +37,27 @@ class ProviderNativeUsagePayloadFetcherTest {
     }
 
     @Test
+    fun nativeUsageDiagnosticsExposeOnlySafeOptimizationMetrics() {
+        val source = File("src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt").readText()
+        val bridgePayload = source.substringAfter("private fun bridgeUsagePayload(")
+            .substringBefore("fun bridgeCodexFetchedPayload")
+        val bridgeResult = source.substringAfter("private fun bridgeResult(")
+            .substringBefore("private fun elapsedMillisSince")
+
+        assertTrue(bridgePayload.contains("val startedNanos = System.nanoTime()"))
+        assertTrue(bridgeResult.contains("elapsedMs="))
+        assertTrue(bridgeResult.contains("endpointCount="))
+        assertTrue(bridgeResult.contains("payloadBytes="))
+        assertTrue(bridgeResult.contains("statuses=\$statusSummary"))
+        assertFalse(bridgeResult.contains("Authorization"))
+        assertFalse(bridgeResult.contains("Cookie"))
+        assertFalse(bridgeResult.contains("Set-Cookie"))
+        assertFalse(bridgeResult.contains("accountId"))
+        assertFalse(bridgeResult.contains("account="))
+        assertFalse(bridgeResult.contains("payload=\$"))
+    }
+
+    @Test
     fun cursorIsCollectedThroughAboutBlankNativeWebSessionFetcher() {
         val policy = File("src/main/java/com/aiquota/mobile/providers/ProviderAboutBlankCollectorPolicy.kt").readText()
         val source = File("src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt").readText()

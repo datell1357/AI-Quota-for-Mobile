@@ -2,6 +2,12 @@ package com.aiquota.mobile.providers
 
 import android.content.Context
 import com.aiquota.mobile.local.ProviderId
+import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 
 class ProviderSessionResetter(context: Context) {
     private val appContext = context.applicationContext
@@ -9,6 +15,9 @@ class ProviderSessionResetter(context: Context) {
     fun disconnect(providerId: ProviderId) {
         clearStoredProviderCredentials(providerId)
         ProviderWebSessionCleaner.clearProviderWebSession(appContext, providerId)
+        ProviderWebSessionCleanupJobs.schedule(providerId) {
+            ProviderWebSessionCleaner.clearProviderWebSessionAndWait(appContext, providerId)
+        }
         notifyProviderSessionReset(providerId)
     }
 
@@ -16,6 +25,10 @@ class ProviderSessionResetter(context: Context) {
         clearStoredProviderCredentials(providerId)
         ProviderWebSessionCleaner.clearProviderWebSessionAndWait(appContext, providerId)
         notifyProviderSessionReset(providerId)
+    }
+
+    suspend fun awaitProviderWebSessionCleanup(providerId: ProviderId) {
+        ProviderWebSessionCleanupJobs.await(providerId)
     }
 
     suspend fun disconnectAllAndWait(providerIds: List<ProviderId>) {
@@ -54,5 +67,23 @@ class ProviderSessionResetter(context: Context) {
             ProviderId.COPILOT,
             ProviderId.CURSOR -> Unit
         }
+    }
+}
+
+internal object ProviderWebSessionCleanupJobs {
+    private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val cleanupJobs = ConcurrentHashMap<ProviderId, Deferred<Unit>>()
+
+    fun schedule(providerId: ProviderId, block: suspend () -> Unit) {
+        if (!ProviderWebSessionClearPolicy.shouldClearOnDisconnect(providerId)) return
+        val cleanupJob = cleanupScope.async { block() }
+        cleanupJobs[providerId] = cleanupJob
+        cleanupJob.invokeOnCompletion {
+            cleanupJobs.remove(providerId, cleanupJob)
+        }
+    }
+
+    suspend fun await(providerId: ProviderId) {
+        runCatching { cleanupJobs[providerId]?.await() }
     }
 }

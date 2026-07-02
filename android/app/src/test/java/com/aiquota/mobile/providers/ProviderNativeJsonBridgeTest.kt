@@ -32,10 +32,11 @@ class ProviderNativeJsonBridgeTest {
     }
 
     @Test
-    fun nativeJsonBridgeExcludesNonScopedProviders() {
+    fun nativeJsonBridgeExcludesNonScopedProvidersAndAllowsCursorNativeEndpoint() {
         assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.ANTIGRAVITY, "https://antigravity.google/usage"))
         assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.GLM, "https://api.z.ai/api/monitor/usage/quota/limit"))
-        assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CURSOR, "https://cursor.com/api/usage"))
+        assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CURSOR, "https://cursor.com/api/usage"))
+        assertFalse(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CURSOR, "https://cursor.com/settings"))
     }
 
     @Test

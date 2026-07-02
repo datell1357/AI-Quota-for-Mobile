@@ -266,93 +266,98 @@ fun AIQuotaAppShell(
         )
         scheduleTransientStateExpiryRefresh()
 
-        if (providerId == ProviderId.GLM) {
-            val launchResult = runCatching {
-                val intent = GlmApiKeyActivity.createIntent(launchContext)
-                if (launchContext !is Activity) {
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        coroutineScope.launch {
+            providerSessionResetter.awaitProviderWebSessionCleanup(providerId)
+
+            if (providerId == ProviderId.GLM) {
+                val launchResult = runCatching {
+                    val intent = GlmApiKeyActivity.createIntent(launchContext)
+                    if (launchContext !is Activity) {
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    launchContext.startActivity(intent)
                 }
-                launchContext.startActivity(intent)
-            }
 
-            val nextSnapshot = launchResult.fold(
-                onSuccess = {
-                    null
-                },
-                onFailure = {
-                    ProviderUsageSnapshot(
-                        providerId = providerId,
-                        connectionState = ProviderConnectionState.ERROR,
-                        refreshState = ProviderRefreshState.IDLE,
-                        updatedAt = now,
-                        message = launchContext.getString(R.string.provider_login_open_failed_message)
-                    )
-                }
-            )
-            nextSnapshot?.let(::saveProviderSnapshot)
-            return
-        }
-
-        if (providerId == ProviderId.ANTIGRAVITY) {
-            val launchResult = runCatching {
-                val intent = AntigravityLoopbackOAuthActivity.createIntent(launchContext)
-                if (launchContext !is Activity) {
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                launchContext.startActivity(intent)
-            }
-
-            val nextSnapshot = launchResult.fold(
-                onSuccess = {
-                    null
-                },
-                onFailure = {
-                    ProviderUsageSnapshot(
-                        providerId = providerId,
-                        connectionState = ProviderConnectionState.ERROR,
-                        refreshState = ProviderRefreshState.IDLE,
-                        updatedAt = now,
-                        message = launchContext.getString(R.string.provider_login_open_failed_message)
-                    )
-                }
-            )
-            nextSnapshot?.let(::saveProviderSnapshot)
-            return
-        }
-
-        val launchResult = runCatching {
-            val intent = WebLoginActivity.createIntent(launchContext, providerId, loginStartUrl)
-            if (launchContext !is Activity) {
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            launchContext.startActivity(intent)
-        }
-
-        val nextSnapshot = launchResult.fold(
-            onSuccess = {
-                null
-            },
-            onFailure = {
-                ProviderUsageSnapshot(
-                    providerId = providerId,
-                    connectionState = ProviderConnectionState.ERROR,
-                    refreshState = ProviderRefreshState.IDLE,
-                    updatedAt = now,
-                    message = launchContext.getString(R.string.provider_login_open_failed_message)
+                val nextSnapshot = launchResult.fold(
+                    onSuccess = {
+                        null
+                    },
+                    onFailure = {
+                        ProviderUsageSnapshot(
+                            providerId = providerId,
+                            connectionState = ProviderConnectionState.ERROR,
+                            refreshState = ProviderRefreshState.IDLE,
+                            updatedAt = now,
+                            message = launchContext.getString(R.string.provider_login_open_failed_message)
+                        )
+                    }
                 )
+                nextSnapshot?.let(::saveProviderSnapshot)
+                return@launch
             }
-        )
-        nextSnapshot?.let(::saveProviderSnapshot)
+
+            if (providerId == ProviderId.ANTIGRAVITY) {
+                val launchResult = runCatching {
+                    val intent = AntigravityLoopbackOAuthActivity.createIntent(launchContext)
+                    if (launchContext !is Activity) {
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    launchContext.startActivity(intent)
+                }
+
+                val nextSnapshot = launchResult.fold(
+                    onSuccess = {
+                        null
+                    },
+                    onFailure = {
+                        ProviderUsageSnapshot(
+                            providerId = providerId,
+                            connectionState = ProviderConnectionState.ERROR,
+                            refreshState = ProviderRefreshState.IDLE,
+                            updatedAt = now,
+                            message = launchContext.getString(R.string.provider_login_open_failed_message)
+                        )
+                    }
+                )
+                nextSnapshot?.let(::saveProviderSnapshot)
+                return@launch
+            }
+
+            val launchResult = runCatching {
+                val intent = WebLoginActivity.createIntent(launchContext, providerId, loginStartUrl)
+                if (launchContext !is Activity) {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                launchContext.startActivity(intent)
+            }
+
+            val nextSnapshot = launchResult.fold(
+                onSuccess = {
+                    null
+                },
+                onFailure = {
+                    ProviderUsageSnapshot(
+                        providerId = providerId,
+                        connectionState = ProviderConnectionState.ERROR,
+                        refreshState = ProviderRefreshState.IDLE,
+                        updatedAt = now,
+                        message = launchContext.getString(R.string.provider_login_open_failed_message)
+                    )
+                }
+            )
+            nextSnapshot?.let(::saveProviderSnapshot)
+        }
     }
 
     fun disconnectProvider(providerId: ProviderId) {
         busyProvider = providerId
         coroutineScope.launch {
             runCatching { connectorRegistry.connectorFor(providerId).disconnect() }
-            providerSessionResetter.disconnectAndWait(providerId)
+            providerSessionResetter.disconnect(providerId)
             localUsageRepository.removeProviderSnapshot(providerId)
             refreshSnapshots()
             busyProvider = null
+            providerSessionResetter.awaitProviderWebSessionCleanup(providerId)
         }
     }
 

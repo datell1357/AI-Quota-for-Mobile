@@ -1,5 +1,11 @@
 package com.aiquota.mobile.providers
 
+import com.aiquota.mobile.local.ProviderId
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.yield
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
 import org.junit.Test
@@ -17,18 +23,128 @@ class ProviderSessionResetterTest {
     }
 
     @Test
-    fun interactiveDisconnectWaitsForDestructiveWebSessionCleanup() {
+    fun disconnectAndWaitWaitsForDestructiveWebSessionCleanup() {
         val source = java.io.File("src/main/java/com/aiquota/mobile/providers/ProviderSessionResetter.kt").readText()
         val method = source.substringAfter("suspend fun disconnectAndWait(providerId: ProviderId)")
             .substringBefore("private fun clearStoredProviderCredentials")
-        val appShell = java.io.File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
-        val disconnectFlow = appShell.substringAfter("fun disconnectProvider(providerId: ProviderId)")
-            .substringBefore("fun refreshNotificationState")
 
         assertTrue(method.contains("clearStoredProviderCredentials(providerId)"))
         assertTrue(method.contains("ProviderWebSessionCleaner.clearProviderWebSessionAndWait(appContext, providerId)"))
         assertTrue(method.indexOf("clearStoredProviderCredentials(providerId)") < method.indexOf("ProviderWebSessionCleaner.clearProviderWebSessionAndWait(appContext, providerId)"))
-        assertTrue(disconnectFlow.contains("providerSessionResetter.disconnectAndWait(providerId)"))
+    }
+
+    @Test
+    fun interactiveDisconnectCompletesVisibleStateBeforeAwaitedWebSessionCleanup() {
+        val appShell = java.io.File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
+        val disconnectFlow = appShell.substringAfter("fun disconnectProvider(providerId: ProviderId)")
+            .substringBefore("fun disconnectAllProviders")
+
+        assertTrue(disconnectFlow.contains("providerSessionResetter.disconnect(providerId)"))
+        assertTrue(disconnectFlow.contains("localUsageRepository.removeProviderSnapshot(providerId)"))
+        assertTrue(disconnectFlow.contains("providerSessionResetter.awaitProviderWebSessionCleanup(providerId)"))
+        assertTrue(
+            disconnectFlow.indexOf("localUsageRepository.removeProviderSnapshot(providerId)") <
+                disconnectFlow.indexOf("providerSessionResetter.awaitProviderWebSessionCleanup(providerId)")
+        )
+        assertFalse(disconnectFlow.contains("providerSessionResetter.disconnectAndWait(providerId)"))
+    }
+
+    @Test
+    fun webSessionCleanupGateIsProviderScoped() {
+        val cleaner = java.io.File("src/main/java/com/aiquota/mobile/providers/ProviderWebSessionCleaner.kt").readText()
+        val service = java.io.File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
+
+        assertTrue(cleaner.contains("private val providerMutexes = ConcurrentHashMap<ProviderId, Mutex>()"))
+        assertTrue(cleaner.contains("withMaintenanceLock(providerId: ProviderId"))
+        assertTrue(cleaner.contains("providerMutexes.getOrPut(providerId)"))
+        assertFalse(cleaner.contains("private val mutex = Mutex()"))
+        assertTrue(service.contains("ProviderWebSessionMaintenanceGate.withMaintenanceLock(effectiveJob.providerId)"))
+    }
+
+    @Test
+    fun sameProviderReconnectWaitsForPendingCleanupBeforeLaunchingLogin() {
+        val appShell = java.io.File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
+        val resetter = java.io.File("src/main/java/com/aiquota/mobile/providers/ProviderSessionResetter.kt").readText()
+        val connectFlow = appShell.substringAfter("fun connectProvider(providerId: ProviderId)")
+            .substringBefore("fun disconnectProvider(providerId: ProviderId)")
+
+        assertTrue(resetter.contains("ProviderWebSessionCleanupJobs.await(providerId)"))
+        assertTrue(connectFlow.contains("providerSessionResetter.awaitProviderWebSessionCleanup(providerId)"))
+        assertTrue(connectFlow.indexOf("providerSessionResetter.awaitProviderWebSessionCleanup(providerId)") < connectFlow.indexOf("startActivity"))
+    }
+
+    @Test
+    fun pendingCleanupWaitIsSharedAcrossResetterInstances() = runBlocking {
+        val releaseCleanup = CompletableDeferred<Unit>()
+        var awaitCompleted = false
+
+        ProviderWebSessionCleanupJobs.schedule(ProviderId.GLM) {
+            releaseCleanup.await()
+        }
+        val waiter = launch {
+            ProviderWebSessionCleanupJobs.await(ProviderId.GLM)
+            awaitCompleted = true
+        }
+        yield()
+
+        assertFalse(awaitCompleted)
+        releaseCleanup.complete(Unit)
+        withTimeout(1_000L) {
+            waiter.join()
+        }
+        assertTrue(awaitCompleted)
+    }
+
+    @Test
+    fun pendingCleanupFailureDoesNotBlockReconnectWaiter() = runBlocking {
+        ProviderWebSessionCleanupJobs.schedule(ProviderId.GLM) {
+            error("cleanup failed")
+        }
+
+        withTimeout(1_000L) {
+            ProviderWebSessionCleanupJobs.await(ProviderId.GLM)
+        }
+    }
+
+    @Test
+    fun providerScopedMaintenanceGateSerializesOnlySameProvider() = runBlocking {
+        val sameProviderRelease = CompletableDeferred<Unit>()
+        val firstEntered = CompletableDeferred<Unit>()
+        var sameProviderSecondEntered = false
+        var otherProviderEntered = false
+
+        val first = launch {
+            ProviderWebSessionMaintenanceGate.withMaintenanceLock(ProviderId.GLM) {
+                firstEntered.complete(Unit)
+                sameProviderRelease.await()
+            }
+        }
+        firstEntered.await()
+
+        val sameProviderSecond = launch {
+            ProviderWebSessionMaintenanceGate.withMaintenanceLock(ProviderId.GLM) {
+                sameProviderSecondEntered = true
+            }
+        }
+        yield()
+        assertFalse(sameProviderSecondEntered)
+
+        val otherProvider = launch {
+            ProviderWebSessionMaintenanceGate.withMaintenanceLock(ProviderId.CODEX) {
+                otherProviderEntered = true
+            }
+        }
+        withTimeout(1_000L) {
+            otherProvider.join()
+        }
+        assertTrue(otherProviderEntered)
+
+        sameProviderRelease.complete(Unit)
+        withTimeout(1_000L) {
+            first.join()
+            sameProviderSecond.join()
+        }
+        assertTrue(sameProviderSecondEntered)
     }
 
     @Test

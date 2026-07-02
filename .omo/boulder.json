@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "active_work_id": "gemini-usage-fraction-row-refresh",
+  "active_work_id": "provider-native-bridge-optimization-20260702",
   "works": {
     "codex-login-usage-auth-recovery": {
       "work_id": "codex-login-usage-auth-recovery",
@@ -26,6 +26,16 @@
       "work_id": "gemini-usage-fraction-row-refresh",
       "active_plan": ".omo/plans/gemini-usage-fraction-row-refresh.md",
       "plan_name": "gemini-usage-fraction-row-refresh",
+      "session_ids": [
+        "codex:019f132b-48a7-7812-8c79-74541e487332"
+      ],
+      "status": "active",
+      "worktree_path": null
+    },
+    "provider-native-bridge-optimization-20260702": {
+      "work_id": "provider-native-bridge-optimization-20260702",
+      "active_plan": ".omo/plans/provider-native-bridge-optimization-20260702.md",
+      "plan_name": "provider-native-bridge-optimization-20260702",
       "session_ids": [
         "codex:019f132b-48a7-7812-8c79-74541e487332"
       ],

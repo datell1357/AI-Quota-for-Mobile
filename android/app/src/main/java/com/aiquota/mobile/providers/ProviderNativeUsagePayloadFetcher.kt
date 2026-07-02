@@ -44,6 +44,7 @@ object ProviderNativeUsagePayloadFetcher {
         if (!ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
             return bridgeError(providerId, "provider_not_allowlisted")
         }
+        val startedNanos = System.nanoTime()
         val result = when (providerId) {
             ProviderId.CLAUDE -> fetchClaudePayload(userAgent)
             ProviderId.CODEX -> fetchCodexPayload(userAgent, requestHeadersForUrl, fetchJson)
@@ -61,7 +62,7 @@ object ProviderNativeUsagePayloadFetcher {
             )
             else -> NativePayloadResult(payload = null, diagnostic = "provider_mismatch")
         }
-        return bridgeResult(providerId, result)
+        return bridgeResult(providerId, result, elapsedMillisSince(startedNanos))
     }
 
     fun bridgeCodexFetchedPayload(rawText: String, plan: String?, accountId: String?, account: String?): String {
@@ -819,7 +820,7 @@ object ProviderNativeUsagePayloadFetcher {
         return NativePayloadResult(payload.toString(), "ok", statuses)
     }
 
-    private fun bridgeResult(providerId: ProviderId, result: NativePayloadResult): String {
+    private fun bridgeResult(providerId: ProviderId, result: NativePayloadResult, elapsedMillis: Long? = null): String {
         val json = JSONObject()
             .put("ok", result.payload != null)
             .put("provider", providerId.storageId)
@@ -830,13 +831,20 @@ object ProviderNativeUsagePayloadFetcher {
         }
         runCatching {
             val statusSummary = result.statuses.joinToString("|").take(500)
+            val endpointCount = result.statuses.size
+            val payloadBytes = result.payload?.toByteArray(StandardCharsets.UTF_8)?.size ?: 0
             Log.d(
                 TAG,
                 "nativeUsage provider=${providerId.storageId} ok=${result.payload != null} " +
-                    "diagnostic=${result.diagnostic} statuses=$statusSummary"
+                    "diagnostic=${result.diagnostic} elapsedMs=${elapsedMillis ?: -1} " +
+                    "endpointCount=$endpointCount payloadBytes=$payloadBytes statuses=$statusSummary"
             )
         }
         return json.toString()
+    }
+
+    private fun elapsedMillisSince(startedNanos: Long): Long {
+        return ((System.nanoTime() - startedNanos) / 1_000_000L).coerceAtLeast(0L)
     }
 
     private fun bridgeError(providerId: ProviderId, diagnostic: String): String {

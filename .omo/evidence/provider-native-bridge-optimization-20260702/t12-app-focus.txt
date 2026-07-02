@@ -1,0 +1,2 @@
+  mCurrentFocus=Window{e24d116 u0 com.aiquota.mobile/com.aiquota.mobile.MainActivity}
+  mFocusedApp=ActivityRecord{190412493 u0 com.aiquota.mobile/.MainActivity t610}

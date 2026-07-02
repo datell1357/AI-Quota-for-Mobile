@@ -64,7 +64,9 @@ class GoogleProviderLoginRoutingTest {
         val collectorError = login.substringAfter("fun postCollectorError")
             .substringBefore("@JavascriptInterface\n        fun fetchCursorJson")
 
-        assertTrue(collectorInjection.contains("awaitInteractiveLoginUsage = providerId == ProviderId.CODEX || providerId == ProviderId.GEMINI"))
+        assertTrue(collectorInjection.contains("awaitInteractiveLoginUsage = providerId == ProviderId.CODEX"))
+        assertTrue(collectorInjection.contains("providerId == ProviderId.GEMINI"))
+        assertTrue(collectorInjection.indexOf("awaitInteractiveLoginUsage = providerId == ProviderId.CODEX") < collectorInjection.indexOf("if (script.isBlank()) return"))
         assertTrue(collectorError.contains("shouldKeepLoginOpenUntilUsagePayload(errorKind)"))
         assertTrue(collectorError.indexOf("shouldKeepLoginOpenUntilUsagePayload(errorKind)") < collectorError.indexOf("finishConnectedWithoutUsage"))
     }

@@ -185,13 +185,17 @@ class ProviderWebSessionClearPolicyTest {
     }
 
     @Test
-    fun disconnectFlowClearsProviderWebSessionCookiesBeforeRemovingSnapshot() {
+    fun disconnectFlowClearsVisibleStateBeforeAwaitedWebSessionCleanup() {
         val source = java.io.File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
         val method = source.substringAfter("fun disconnectProvider(providerId: ProviderId)")
             .substringBefore("fun refreshNotificationState")
 
         assertFalse(method.contains("queuedRefreshJobs"))
-        assertTrue(method.contains("providerSessionResetter.disconnectAndWait(providerId)"))
-        assertTrue(method.indexOf("providerSessionResetter.disconnectAndWait(providerId)") < method.indexOf("localUsageRepository.removeProviderSnapshot(providerId)"))
+        assertTrue(method.contains("providerSessionResetter.disconnect(providerId)"))
+        assertTrue(method.contains("localUsageRepository.removeProviderSnapshot(providerId)"))
+        assertTrue(method.contains("providerSessionResetter.awaitProviderWebSessionCleanup(providerId)"))
+        assertTrue(method.indexOf("providerSessionResetter.disconnect(providerId)") < method.indexOf("localUsageRepository.removeProviderSnapshot(providerId)"))
+        assertTrue(method.indexOf("localUsageRepository.removeProviderSnapshot(providerId)") < method.indexOf("providerSessionResetter.awaitProviderWebSessionCleanup(providerId)"))
+        assertFalse(method.contains("providerSessionResetter.disconnectAndWait(providerId)"))
     }
 }

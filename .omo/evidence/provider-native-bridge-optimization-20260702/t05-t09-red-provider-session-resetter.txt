@@ -1,0 +1,84 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.6.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build
+
+> Configure project :app
+w: file:///D:/Vibe%20Project/AI%20Usage%20for%20Mobile/android/app/build.gradle.kts:149:5: 'fun BaseAppModuleExtension.kotlinOptions(configure: Action<KotlinJvmOptions>): Unit' is deprecated. The kotlinOptions types are deprecated, please migrate to the compilerOptions types. More details are here: https://kotl.in/u1r8ln.
+
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:processDebugGoogleServices UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+
+> Task :app:compileDebugKotlin
+w: file:///D:/Vibe%20Project/AI%20Usage%20for%20Mobile/android/app/src/main/java/com/aiquota/mobile/providers/GlmIsolatedWebSessionService.kt:73:22 'var databaseEnabled: Boolean' is deprecated. Deprecated in Java.
+w: file:///D:/Vibe%20Project/AI%20Usage%20for%20Mobile/android/app/src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt:553:25 'var databaseEnabled: Boolean' is deprecated. Deprecated in Java.
+w: file:///D:/Vibe%20Project/AI%20Usage%20for%20Mobile/android/app/src/main/java/com/aiquota/mobile/providers/ProviderWebSessionCleaner.kt:160:33 'var databaseEnabled: Boolean' is deprecated. Deprecated in Java.
+w: file:///D:/Vibe%20Project/AI%20Usage%20for%20Mobile/android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt:164:21 'var databaseEnabled: Boolean' is deprecated. Deprecated in Java.
+w: file:///D:/Vibe%20Project/AI%20Usage%20for%20Mobile/android/app/src/main/java/com/aiquota/mobile/ui/BackgroundProviderWebCollector.kt:196:13 'var databaseEnabled: Boolean' is deprecated. Deprecated in Java.
+
+> Task :app:compileDebugJavaWithJavac UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleDebugClassesToCompileJar
+
+> Task :app:compileDebugUnitTestKotlin
+w: file:///D:/Vibe%20Project/AI%20Usage%20for%20Mobile/android/app/src/test/java/com/aiquota/mobile/architecture/StandaloneArchitectureTest.kt:10:24 Java type mismatch: inferred type is 'kotlin.String?', but 'kotlin.String' was expected.
+
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes UP-TO-DATE
+
+> Task :app:testDebugUnitTest
+
+ProviderSessionResetterTest > sameProviderReconnectWaitsForPendingCleanupBeforeLaunchingLogin FAILED
+    java.lang.AssertionError at ProviderSessionResetterTest.kt:68
+
+ProviderSessionResetterTest > webSessionCleanupGateIsProviderScoped FAILED
+    java.lang.AssertionError at ProviderSessionResetterTest.kt:55
+
+ProviderSessionResetterTest > interactiveDisconnectCompletesVisibleStateBeforeAwaitedWebSessionCleanup FAILED
+    java.lang.AssertionError at ProviderSessionResetterTest.kt:40
+
+8 tests completed, 3 failed
+
+> Task :app:testDebugUnitTest FAILED
+w: Detected multiple Kotlin daemon sessions at
+
+[Incubating] Problems report is available at: file:///D:/Vibe%20Project/AI%20Usage%20for%20Mobile/android/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:testDebugUnitTest' (registered by plugin 'com.android.internal.application').
+> java.io.EOFException
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.6.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 55s
+25 actionable tasks: 5 executed, 20 up-to-date

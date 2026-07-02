@@ -1,0 +1,521 @@
+{
+  "ok": true,
+  "plan": {
+    "version": 1,
+    "createdAt": "2026-07-02T01:33:04.117Z",
+    "updatedAt": "2026-07-02T02:39:24.568Z",
+    "briefPath": ".omo/ulw-loop/provider-native-bridge-optimization-20260702/brief.md",
+    "goalsPath": ".omo/ulw-loop/provider-native-bridge-optimization-20260702/goals.json",
+    "ledgerPath": ".omo/ulw-loop/provider-native-bridge-optimization-20260702/ledger.jsonl",
+    "codexGoalMode": "aggregate",
+    "codexObjectiveAliases": [
+      "Complete the durable ulw-loop plan in .omo/ulw-loop/provider-native-bridge-optimization-20260702/goals.json under the original brief constraints; use .omo/ulw-loop/provider-native-bridge-optimization-20260702/ledger.jsonl as the audit trail."
+    ],
+    "goals": [
+      {
+        "id": "G001-claude-glm-web-oauth-and-codex-norma",
+        "title": "Claude, GLM web OAuth, and Codex normal usage collection must use `ab...",
+        "objective": "Claude, GLM web OAuth, and Codex normal usage collection must use `about:blank` native JavaScript bridge collection.",
+        "status": "blocked",
+        "successCriteria": [
+          {
+            "id": "C001",
+            "scenario": "Manual provider login QA: installed debug app shows Claude, GLM web OAuth, and Codex normal usage collection through about:blank native bridge without white-screen stall, missing GLM usage, stale GLM session, or one-shot Codex refresh.",
+            "userModel": "happy",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/manual-provider-login-qa.md with user-observed Claude/GLM/Codex login and usage outcomes plus screenshot/log references",
+            "essential": true,
+            "capturedEvidence": "Installed debug app was built and launched; manual provider login QA still requires user account interaction for Claude, GLM web OAuth, and Codex. Expected artifact .omo/evidence/provider-native-bridge-optimization-20260702/manual-provider-login-qa.md is not present yet. cleanup: no new QA process, browser context, tmux session, container, temp dir, or worker spawned for this blocked record.",
+            "status": "blocked",
+            "capturedAt": "2026-07-02T02:17:37.547Z",
+            "notes": "User must perform provider logins and report QA outcome before this essential happy-path criterion can pass."
+          },
+          {
+            "id": "C002",
+            "scenario": "Automated boundary proof: target providers reject non-allowlisted routes and malformed/no-payload native bridge results without switching to DOM scan, storage/script scraping, retained network-row fallback, or visible-page fallback.",
+            "userModel": "edge",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/t02-t10-targeted-green.txt plus forbidden-pattern diff search showing no target fallback additions",
+            "essential": true,
+            "capturedEvidence": "Focused collection/boundary tests passed in .omo/evidence/provider-native-bridge-optimization-20260702/t02-t10-targeted-green.txt (BUILD SUCCESSFUL in 14s); current git diff forbidden-pattern search returned NO_FORBIDDEN_DIFF_MATCHES for document.body/querySelector/localStorage/sessionStorage/retained/fallback/__AIQuotaCodexNetworkRows/evaluateJavascript additions. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned for this CLI evidence check.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:17:03.491Z"
+          },
+          {
+            "id": "C003",
+            "scenario": "Regression proof: provider package tests, full debug unit tests, debug build, emulator install, and launch smoke remain green after the about:blank native bridge/session cleanup changes.",
+            "userModel": "regression",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/t11-provider-package-green.txt, full-debug-unit-tests.txt, t12-assemble-debug.txt, t12-adb-install.txt, t12-app-focus.txt, and t12-app-launch.png",
+            "essential": false,
+            "capturedEvidence": "Provider package tests passed in t11-provider-package-green.txt (BUILD SUCCESSFUL in 15s); full debug unit tests passed in full-debug-unit-tests.txt (BUILD SUCCESSFUL in 15s); debug APK build passed in t12-assemble-debug.txt (BUILD SUCCESSFUL in 14s); emulator install/focus/screenshot artifacts are non-empty at t12-adb-install.txt, t12-app-focus.txt, and t12-app-launch.png; git diff --check is clean. cleanup: no new QA process, browser context, tmux session, container, temp dir, or worker spawned for this ledger record.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:17:13.354Z"
+          }
+        ],
+        "attempt": 1,
+        "createdAt": "2026-07-02T01:33:04.117Z",
+        "updatedAt": "2026-07-02T02:22:09.288Z",
+        "startedAt": "2026-07-02T02:15:28.288Z",
+        "blockedReason": "C001 manual provider login QA remains blocked: expected manual-provider-login-qa.md is missing; C002/C003 automated evidence passed; user account interaction is required for Claude, GLM web OAuth, and Codex real-login verification. cleanup: no live QA resources spawned."
+      },
+      {
+        "id": "G002-do-not-add-dom-scan-visible-page-scr",
+        "title": "Do not add DOM scan, visible-page scraping, storage/script scraping,...",
+        "objective": "Do not add DOM scan, visible-page scraping, storage/script scraping, retained network-row fallback, or page-based fallback for those target providers.",
+        "status": "complete",
+        "successCriteria": [
+          {
+            "id": "C001",
+            "scenario": "Diff policy proof: current Android provider production/test diff contains no added DOM scan, visible-page scraping, storage/script scraping, retained network-row fallback, page fallback, or evaluateJavascript path for target providers.",
+            "userModel": "happy",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/g002-forbidden-diff-search.txt containing NO_FORBIDDEN_DIFF_MATCHES",
+            "essential": true,
+            "capturedEvidence": "g002-forbidden-diff-search.txt is non-empty and contains NO_FORBIDDEN_DIFF_MATCHES for added document.body/querySelector/localStorage/sessionStorage/retained/fallback/__AIQuotaCodexNetworkRows/evaluateJavascript patterns in Android provider production/test diff. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:23:41.251Z"
+          },
+          {
+            "id": "C002",
+            "scenario": "Malformed/boundary proof: target provider native bridge route tests reject non-allowlisted routes and malformed or no-payload results without falling back to DOM scan, storage/script scraping, retained rows, or visible-page scraping.",
+            "userModel": "edge",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/t02-t10-targeted-green.txt with ProviderWebCollectorScriptsTest, ProviderNativeUsagePayloadFetcherTest, GlmUsageFetcherTest, ProviderBackgroundRefreshServicePolicyTest, and ProviderCollectorErrorPolicyTest passing",
+            "essential": true,
+            "capturedEvidence": "t02-t10-targeted-green.txt is non-empty and contains BUILD SUCCESSFUL for ProviderWebCollectorScriptsTest, ProviderNativeUsagePayloadFetcherTest, GlmUsageFetcherTest, ProviderBackgroundRefreshServicePolicyTest, and ProviderCollectorErrorPolicyTest, covering malformed/no-payload/non-allowlisted native bridge boundaries without fallback. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:23:49.249Z"
+          },
+          {
+            "id": "C003",
+            "scenario": "Regression proof: provider package tests, full debug unit tests, debug build, emulator install, and launch smoke remain green while the no-DOM/no-fallback constraint is preserved.",
+            "userModel": "regression",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/t11-provider-package-green.txt, full-debug-unit-tests.txt, t12-assemble-debug.txt, t12-adb-install.txt, t12-app-focus.txt, and t12-app-launch.png",
+            "essential": false,
+            "capturedEvidence": "Regression artifacts are non-empty: t11-provider-package-green.txt, full-debug-unit-tests.txt, and t12-assemble-debug.txt contain BUILD SUCCESSFUL; t12-adb-install.txt, t12-app-focus.txt, and t12-app-launch.png are present/non-empty. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:23:59.677Z"
+          }
+        ],
+        "attempt": 1,
+        "createdAt": "2026-07-02T01:33:04.117Z",
+        "updatedAt": "2026-07-02T02:26:31.367Z",
+        "startedAt": "2026-07-02T02:22:18.492Z",
+        "completedAt": "2026-07-02T02:26:31.367Z",
+        "evidence": "G002 complete: C001 diff-policy proof shows NO_FORBIDDEN_DIFF_MATCHES for added DOM/storage/retained/fallback/evaluateJavascript patterns; C002 focused native bridge boundary tests passed in t02-t10-targeted-green.txt; C003 provider/full/build/install/launch regression artifacts are non-empty and green. cleanup: no live QA resources spawned."
+      },
+      {
+        "id": "G003-preserve-behavior-code-for-non-targe",
+        "title": "Preserve behavior code for non-target providers unless a focused regr...",
+        "objective": "Preserve behavior code for non-target providers unless a focused regression test proves a shared boundary must change.",
+        "status": "complete",
+        "successCriteria": [
+          {
+            "id": "C001",
+            "scenario": "Diff-scope proof: changed Android files stay within target/shared provider session cleanup, native diagnostics, UI login launch, and focused regression tests; no broad non-target provider refactor is introduced.",
+            "userModel": "happy",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/g003-non-target-preservation.txt listing changed files and source-review preservation notes",
+            "essential": true,
+            "capturedEvidence": "g003-non-target-preservation.txt lists changed Android files and source-review notes showing targeted/shared provider-session/native diagnostics scope, boundary preservation PASS, and avoidance of broad provider behavior refactors. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:27:56.958Z"
+          },
+          {
+            "id": "C002",
+            "scenario": "Shared-boundary proof: provider-scoped maintenance and visible-first disconnect tests pass, proving the shared boundary change serializes same-provider cleanup without keeping a global provider refresh blockage.",
+            "userModel": "edge",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/t05-t09-green-provider-session-resetter.txt with BUILD SUCCESSFUL and behavior-test coverage names in code-review-programming-slop.md",
+            "essential": true,
+            "capturedEvidence": "t05-t09-green-provider-session-resetter.txt contains BUILD SUCCESSFUL; code-review-programming-slop.md names behavior tests proving provider-scoped maintenance and same-provider cleanup behavior, so the shared boundary change is focused and covered. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:28:04.964Z"
+          },
+          {
+            "id": "C003",
+            "scenario": "Regression proof: provider package and full debug unit tests remain green after the targeted/shared provider-session changes.",
+            "userModel": "regression",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/t11-provider-package-green.txt and full-debug-unit-tests.txt containing BUILD SUCCESSFUL",
+            "essential": false,
+            "capturedEvidence": "t11-provider-package-green.txt and full-debug-unit-tests.txt are non-empty and contain BUILD SUCCESSFUL, covering provider package and full debug unit regression after targeted/shared changes. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:28:13.160Z"
+          }
+        ],
+        "attempt": 1,
+        "createdAt": "2026-07-02T01:33:04.117Z",
+        "updatedAt": "2026-07-02T02:28:26.406Z",
+        "startedAt": "2026-07-02T02:26:39.213Z",
+        "completedAt": "2026-07-02T02:28:26.406Z",
+        "evidence": "G003 complete: diff-scope preservation evidence is captured in g003-non-target-preservation.txt; shared boundary changes are covered by t05-t09-green-provider-session-resetter.txt; provider package and full debug unit regression artifacts are green. cleanup: no live QA resources spawned."
+      },
+      {
+        "id": "G004-primary-update-objective-reduce-batt",
+        "title": "Primary update objective: reduce battery and data use through fewer W...",
+        "objective": "Primary update objective: reduce battery and data use through fewer WebView loads, bounded endpoint calls, and no background page scanning.",
+        "status": "complete",
+        "successCriteria": [
+          {
+            "id": "C001",
+            "scenario": "Optimization route proof: Claude, GLM web OAuth, and Codex normal collection use about:blank native bridge/native endpoint routes, avoiding visible-page DOM/background page scanning for normal target collection.",
+            "userModel": "happy",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/g004-optimization-boundary.txt and member-a-no-change-finding.md showing target normal routes are about:blank native bridge/native endpoints with BUILD SUCCESSFUL",
+            "essential": true,
+            "capturedEvidence": "g004-optimization-boundary.txt and member-a-no-change-finding.md show Claude, GLM web OAuth, and Codex normal routes use about:blank native bridge/native endpoints and avoid normal visible-page DOM/background page scanning; member-a focused tests are BUILD SUCCESSFUL. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:30:04.895Z"
+          },
+          {
+            "id": "C002",
+            "scenario": "Bounded diagnostics proof: native bridge results expose elapsedMs, endpointCount, payloadBytes, and status summary without raw credentials, cookies, account identifiers, or payload dumps, so endpoint/data footprint can be audited safely.",
+            "userModel": "edge",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/g004-optimization-boundary.txt plus t02-t10-targeted-green.txt with ProviderNativeUsagePayloadFetcherTest passing",
+            "essential": true,
+            "capturedEvidence": "g004-optimization-boundary.txt includes safe optimization metric assertions for elapsedMs, endpointCount, payloadBytes, and statuses while excluding Authorization/Cookie/Set-Cookie/account/payload dumps; t02-t10-targeted-green.txt is BUILD SUCCESSFUL. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:30:04.963Z"
+          },
+          {
+            "id": "C003",
+            "scenario": "Regression proof: provider-scoped locks reduce unrelated-provider waiting while provider package and full debug unit tests remain green.",
+            "userModel": "regression",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/g004-optimization-boundary.txt, t05-t09-green-provider-session-resetter.txt, t11-provider-package-green.txt, and full-debug-unit-tests.txt",
+            "essential": false,
+            "capturedEvidence": "g004-optimization-boundary.txt records provider-scoped lock review evidence; t05-t09-green-provider-session-resetter.txt, t11-provider-package-green.txt, and full-debug-unit-tests.txt are green. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:30:05.033Z"
+          }
+        ],
+        "attempt": 1,
+        "createdAt": "2026-07-02T01:33:04.117Z",
+        "updatedAt": "2026-07-02T02:30:19.653Z",
+        "startedAt": "2026-07-02T02:29:18.028Z",
+        "completedAt": "2026-07-02T02:30:19.653Z",
+        "evidence": "G004 complete: route-level optimization proof uses about:blank native bridge/native endpoints without page scanning; safe diagnostics expose elapsedMs/endpointCount/payloadBytes/statuses without secrets; provider-scoped locks reduce unrelated-provider waiting and regression artifacts remain green. cleanup: no live QA resources spawned."
+      },
+      {
+        "id": "G005-do-not-show-fake-or-stale-usage-as-c",
+        "title": "Do not show fake or stale usage as current.",
+        "objective": "Do not show fake or stale usage as current.",
+        "status": "complete",
+        "successCriteria": [
+          {
+            "id": "C001",
+            "scenario": "Automatic refresh failure policy proof: automatic stale/auth-like refresh failures keep previous data marked through failKeepingPrevious or pending state instead of presenting fake new usage or expiring sessions as if current usage succeeded.",
+            "userModel": "happy",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/g005-stale-fake-policy.txt and t11-stale-policy-tests-green.txt with BUILD SUCCESSFUL",
+            "essential": true,
+            "capturedEvidence": "g005-stale-fake-policy.txt records automatic refresh failure assertions using failKeepingPrevious/pending and avoiding fake new success; t11-stale-policy-tests-green.txt is BUILD SUCCESSFUL. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:31:39.157Z"
+          },
+          {
+            "id": "C002",
+            "scenario": "Collector error boundary proof: Codex codex_usage_unavailable and Gemini login-required/no-payload states are classified as no-trusted-payload/recoverable retry, while explicit codex_auth_required remains interactive auth.",
+            "userModel": "edge",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/g005-stale-fake-policy.txt and t02-t10-targeted-green.txt with BUILD SUCCESSFUL",
+            "essential": true,
+            "capturedEvidence": "g005-stale-fake-policy.txt records codex_usage_unavailable as NO_TRUSTED_PAYLOAD, explicit codex_auth_required as INTERACTIVE_AUTH_REQUIRED, and Gemini login-required as recoverable/no-trusted-payload; t02-t10-targeted-green.txt is BUILD SUCCESSFUL. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:31:39.226Z"
+          },
+          {
+            "id": "C003",
+            "scenario": "Regression proof: stale policy, target collector boundary, and full debug unit tests remain green.",
+            "userModel": "regression",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/t11-stale-policy-tests-green.txt, t02-t10-targeted-green.txt, and full-debug-unit-tests.txt containing BUILD SUCCESSFUL",
+            "essential": false,
+            "capturedEvidence": "t11-stale-policy-tests-green.txt, t02-t10-targeted-green.txt, and full-debug-unit-tests.txt are non-empty and contain BUILD SUCCESSFUL. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:31:39.293Z"
+          }
+        ],
+        "attempt": 1,
+        "createdAt": "2026-07-02T01:33:04.117Z",
+        "updatedAt": "2026-07-02T02:31:53.460Z",
+        "startedAt": "2026-07-02T02:30:28.245Z",
+        "completedAt": "2026-07-02T02:31:53.460Z",
+        "evidence": "G005 complete: automatic refresh failure policy avoids fake current usage, collector error policy separates no-payload/recoverable/auth-required states, and stale/target/full regression artifacts are green. cleanup: no live QA resources spawned."
+      },
+      {
+        "id": "G006-commit-verified-work-atomically-if-r",
+        "title": "Commit verified work atomically. If real provider login is required f...",
+        "objective": "Commit verified work atomically. If real provider login is required for manual QA, ask the user to perform/login at that point.",
+        "status": "blocked",
+        "successCriteria": [
+          {
+            "id": "C001",
+            "scenario": "Commit gate: stage only verified provider/native-bridge/session-cleanup files and create one Conventional Commit after manual provider login QA artifact exists; if login QA is required, ask the user instead of committing.",
+            "userModel": "happy",
+            "expectedEvidence": "Commit hash plus git-stage/git-commit evidence after .omo/evidence/provider-native-bridge-optimization-20260702/manual-provider-login-qa.md exists, or blocked evidence naming the missing manual QA artifact",
+            "essential": true,
+            "capturedEvidence": "manual-provider-login-qa.md is missing; commit gate requires real Claude/GLM/Codex provider login QA before staging/committing verified work. cleanup: no git staging, commit, QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "blocked",
+            "capturedAt": "2026-07-02T02:32:35.707Z",
+            "notes": "No commit created because release completion still requires user-driven provider login QA."
+          },
+          {
+            "id": "C002",
+            "scenario": "edge case (boundary/empty/malformed)",
+            "userModel": "edge",
+            "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Commit verified work atomically. If real provider login is required for manua....",
+            "essential": true,
+            "capturedEvidence": null,
+            "status": "pending"
+          },
+          {
+            "id": "C003",
+            "scenario": "regression: adjacent surface still works",
+            "userModel": "regression",
+            "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Commit verified work atomically. If real provider login is required for manua....",
+            "essential": false,
+            "capturedEvidence": null,
+            "status": "pending"
+          }
+        ],
+        "attempt": 1,
+        "createdAt": "2026-07-02T01:33:04.117Z",
+        "updatedAt": "2026-07-02T02:32:51.223Z",
+        "startedAt": "2026-07-02T02:32:09.310Z",
+        "blockedReason": "G006 blocked: manual-provider-login-qa.md is missing, so verified atomic commit cannot be created yet; user account interaction is required for Claude, GLM web OAuth, and Codex manual QA before staging/commit. cleanup: no git staging or commit performed."
+      },
+      {
+        "id": "G007-target-provider-normal-collection-ro",
+        "title": "Target provider normal collection routes use about:blank native bridg...",
+        "objective": "Target provider normal collection routes use about:blank native bridge only.",
+        "status": "complete",
+        "successCriteria": [
+          {
+            "id": "C001",
+            "scenario": "Route proof: Claude, GLM web OAuth, and Codex normal collection routes use about:blank native bridge/native endpoints in the normal target path.",
+            "userModel": "happy",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/g007-target-normal-route.txt showing member-a route proof and BUILD SUCCESSFUL",
+            "essential": true,
+            "capturedEvidence": "g007-target-normal-route.txt records member-a proof that Claude, GLM web OAuth, and Codex normal collection route through about:blank native bridge/native endpoints, with focused BUILD SUCCESSFUL evidence. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:33:50.470Z"
+          },
+          {
+            "id": "C002",
+            "scenario": "Fallback boundary proof: scoped target providers reject non-about:blank collector pages and do not add DOM/storage/script/retained network-row fallback additions.",
+            "userModel": "edge",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/g007-target-normal-route.txt with NO_FORBIDDEN_DIFF_MATCHES and targeted tests",
+            "essential": true,
+            "capturedEvidence": "g007-target-normal-route.txt includes scoped provider non-about:blank/fallback tests and NO_FORBIDDEN_DIFF_MATCHES for DOM/storage/script/retained/evaluateJavascript additions. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:33:50.539Z"
+          },
+          {
+            "id": "C003",
+            "scenario": "Regression proof: focused collection/boundary tests and provider package tests remain green for target provider normal route constraints.",
+            "userModel": "regression",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/t02-t10-targeted-green.txt and t11-provider-package-green.txt containing BUILD SUCCESSFUL",
+            "essential": false,
+            "capturedEvidence": "t02-t10-targeted-green.txt and t11-provider-package-green.txt are non-empty and contain BUILD SUCCESSFUL for target collection/boundary and provider package regression. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:33:50.607Z"
+          }
+        ],
+        "attempt": 1,
+        "createdAt": "2026-07-02T01:33:04.117Z",
+        "updatedAt": "2026-07-02T02:34:03.783Z",
+        "startedAt": "2026-07-02T02:32:59.645Z",
+        "completedAt": "2026-07-02T02:34:03.783Z",
+        "evidence": "G007 complete: target provider normal collection routes are evidenced as about:blank native bridge/native endpoint only; fallback additions are absent; targeted/provider regression tests are green. cleanup: no live QA resources spawned."
+      },
+      {
+        "id": "G008-glm-web-oauth-can-disconnect-and-sta",
+        "title": "GLM web OAuth can disconnect and start a fresh login.",
+        "objective": "GLM web OAuth can disconnect and start a fresh login.",
+        "status": "blocked",
+        "successCriteria": [
+          {
+            "id": "C001",
+            "scenario": "Manual GLM relogin QA: installed debug app disconnects GLM, clears GLM web session, then starts a fresh GLM web OAuth login requiring user account interaction rather than reusing stale session.",
+            "userModel": "happy",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/manual-provider-login-qa.md with GLM disconnect and fresh login observations",
+            "essential": true,
+            "capturedEvidence": "manual-provider-login-qa.md is missing; installed-app GLM disconnect plus fresh GLM web OAuth login requires user account interaction. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "blocked",
+            "capturedAt": "2026-07-02T02:35:09.657Z",
+            "notes": "Cannot prove real GLM fresh login without user login."
+          },
+          {
+            "id": "C002",
+            "scenario": "GLM cleanup boundary proof: GLM explicit disconnect clears GLM cookie/storage/auth origins and same-provider reconnect waits for pending cleanup before launching login.",
+            "userModel": "edge",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/g008-glm-disconnect-relogin.txt and t05-t09-green-provider-session-resetter.txt",
+            "essential": true,
+            "capturedEvidence": "g008-glm-disconnect-relogin.txt contains GLM clear policy origins, isolated session cleanup, and same-provider reconnect waits before startActivity; t05-t09-green-provider-session-resetter.txt is BUILD SUCCESSFUL. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:35:09.725Z"
+          },
+          {
+            "id": "C003",
+            "scenario": "Regression proof: provider package, session resetter, and full debug unit tests remain green after GLM cleanup/reconnect changes.",
+            "userModel": "regression",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/t05-t09-green-provider-session-resetter.txt, t11-provider-package-green.txt, and full-debug-unit-tests.txt containing BUILD SUCCESSFUL",
+            "essential": false,
+            "capturedEvidence": "t05-t09-green-provider-session-resetter.txt, t11-provider-package-green.txt, and full-debug-unit-tests.txt are green for GLM/session/provider regression. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:35:09.801Z"
+          }
+        ],
+        "attempt": 1,
+        "createdAt": "2026-07-02T01:33:04.117Z",
+        "updatedAt": "2026-07-02T02:35:24.960Z",
+        "startedAt": "2026-07-02T02:34:14.248Z",
+        "blockedReason": "G008 blocked on manual GLM relogin QA: cleanup/reconnect code evidence passed, but manual-provider-login-qa.md is missing and user account interaction is required to prove GLM disconnect starts a fresh web OAuth login. cleanup: no live QA resources spawned."
+      },
+      {
+        "id": "G009-disconnect-cleanup-is-provider-scope",
+        "title": "Disconnect cleanup is provider-scoped and does not block unrelated re...",
+        "objective": "Disconnect cleanup is provider-scoped and does not block unrelated refresh.",
+        "status": "complete",
+        "successCriteria": [
+          {
+            "id": "C001",
+            "scenario": "Visible disconnect proof: disconnect removes provider visible snapshot/state before awaited destructive WebView cleanup so the UI does not stay working while cleanup runs.",
+            "userModel": "happy",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/g009-provider-scoped-disconnect.txt and t05-t09-green-provider-session-resetter.txt",
+            "essential": true,
+            "capturedEvidence": "g009-provider-scoped-disconnect.txt records visible-first disconnect assertions: disconnect call, snapshot removal, then awaited cleanup, with no disconnectAndWait in visible disconnect flow; t05-t09 is green. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:36:26.986Z"
+          },
+          {
+            "id": "C002",
+            "scenario": "Provider-scoped cleanup proof: maintenance locks serialize same provider cleanup while unrelated providers can enter refresh/maintenance without global blockage; reconnect waits only for same-provider cleanup.",
+            "userModel": "edge",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/g009-provider-scoped-disconnect.txt and t05-t09-green-provider-session-resetter.txt",
+            "essential": true,
+            "capturedEvidence": "g009-provider-scoped-disconnect.txt records same-provider reconnect wait and providerScopedMaintenanceGateSerializesOnlySameProvider; code review notes provider-scoped locks reduce unrelated-provider waiting. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:36:27.059Z"
+          },
+          {
+            "id": "C003",
+            "scenario": "Regression proof: targeted session cleanup, provider package, and full debug unit tests remain green.",
+            "userModel": "regression",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/t05-t09-green-provider-session-resetter.txt, t11-provider-package-green.txt, and full-debug-unit-tests.txt containing BUILD SUCCESSFUL",
+            "essential": false,
+            "capturedEvidence": "t05-t09-green-provider-session-resetter.txt, t11-provider-package-green.txt, and full-debug-unit-tests.txt are non-empty and contain BUILD SUCCESSFUL. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:36:27.131Z"
+          }
+        ],
+        "attempt": 1,
+        "createdAt": "2026-07-02T01:33:04.117Z",
+        "updatedAt": "2026-07-02T02:36:40.928Z",
+        "startedAt": "2026-07-02T02:35:33.179Z",
+        "completedAt": "2026-07-02T02:36:40.928Z",
+        "evidence": "G009 complete: visible disconnect clears UI state before awaited cleanup, reconnect waits for same-provider cleanup, provider-scoped locks avoid unrelated-provider refresh blockage, and targeted/provider/full regression artifacts are green. cleanup: no live QA resources spawned."
+      },
+      {
+        "id": "G010-codex-refresh-continues-through-fres",
+        "title": "Codex refresh continues through fresh native endpoint fetches without...",
+        "objective": "Codex refresh continues through fresh native endpoint fetches without retained page/network rows.",
+        "status": "blocked",
+        "successCriteria": [
+          {
+            "id": "C001",
+            "scenario": "Manual Codex repeated-session QA: installed debug app collects Codex usage from an existing logged-in session more than once, using fresh native endpoint fetches rather than a retained page/network row cache.",
+            "userModel": "happy",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/manual-provider-login-qa.md with Codex repeated collection observation",
+            "essential": true,
+            "capturedEvidence": "manual-provider-login-qa.md is missing; repeated Codex collection from an existing logged-in session requires user account interaction and live session state. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "blocked",
+            "capturedAt": "2026-07-02T02:37:47.449Z",
+            "notes": "Cannot prove live repeated Codex collection without user login QA."
+          },
+          {
+            "id": "C002",
+            "scenario": "Native endpoint boundary proof: Codex native collection uses forwarded authenticated headers, wham usage JSON/native resources, and avoids dashboard HTML/DOM/retained-row fallback.",
+            "userModel": "edge",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/g010-codex-fresh-native.txt and t02-t10-targeted-green.txt",
+            "essential": true,
+            "capturedEvidence": "g010-codex-fresh-native.txt lists Codex native endpoint tests for forwarded headers, wham usage, no dashboard HTML fallback, and no DOM fallback; t02-t10-targeted-green.txt is BUILD SUCCESSFUL. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:37:47.518Z"
+          },
+          {
+            "id": "C003",
+            "scenario": "Regression proof: Codex no-payload retry/auth classification and provider/full unit tests remain green.",
+            "userModel": "regression",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/g010-codex-fresh-native.txt, t02-t10-targeted-green.txt, t11-provider-package-green.txt, and full-debug-unit-tests.txt",
+            "essential": false,
+            "capturedEvidence": "g010-codex-fresh-native.txt includes Codex retry/auth classification snippets; t02-t10-targeted-green.txt, t11-provider-package-green.txt, and full-debug-unit-tests.txt are green. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:37:47.588Z"
+          }
+        ],
+        "attempt": 1,
+        "createdAt": "2026-07-02T01:33:04.117Z",
+        "updatedAt": "2026-07-02T02:38:01.605Z",
+        "startedAt": "2026-07-02T02:36:52.151Z",
+        "blockedReason": "G010 blocked on manual repeated Codex collection QA: native endpoint/no-fallback and retry/auth automated evidence passed, but manual-provider-login-qa.md is missing and user login state is required to prove repeated live collection. cleanup: no live QA resources spawned.",
+        "blockerSignature": "EXTERNAL_AUTHORIZATION_REQUIRED",
+        "blockerOccurrenceCount": 1,
+        "requiredExternalDecision": "Resolve external authorization: EXTERNAL_AUTHORIZATION_REQUIRED"
+      },
+      {
+        "id": "G011-automated-tests-debug-build-and-avai",
+        "title": "Automated tests, debug build, and available surface QA evidence are c...",
+        "objective": "Automated tests, debug build, and available surface QA evidence are captured.",
+        "status": "complete",
+        "successCriteria": [
+          {
+            "id": "C001",
+            "scenario": "Evidence inventory proof: targeted provider/native bridge/session tests, provider package tests, full debug unit tests, debug build, install, focus, screenshot, review summary, and verification summary artifacts are present and non-empty.",
+            "userModel": "happy",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/g011-evidence-inventory.txt",
+            "essential": true,
+            "capturedEvidence": "g011-evidence-inventory.txt is non-empty and lists core evidence artifacts with file sizes: targeted tests, provider package, full debug unit tests, debug build, install/focus/screenshot, review, and verification summary. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:39:10.457Z"
+          },
+          {
+            "id": "C002",
+            "scenario": "Available surface QA proof: emulator install, app focus, and app launch screenshot artifacts are non-empty; manual provider login QA remains separately blocked where credentials are required.",
+            "userModel": "edge",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/t12-adb-install.txt, t12-app-focus.txt, t12-app-launch.png, and code-review-programming-slop.md manual QA note",
+            "essential": true,
+            "capturedEvidence": "t12-adb-install.txt, t12-app-focus.txt, and t12-app-launch.png are non-empty; code-review summary explicitly keeps manual provider login QA as a separate credential-required blocker. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:39:10.526Z"
+          },
+          {
+            "id": "C003",
+            "scenario": "Regression proof: all core automated test/build artifacts contain BUILD SUCCESSFUL and source review is clean pending manual QA.",
+            "userModel": "regression",
+            "expectedEvidence": ".omo/evidence/provider-native-bridge-optimization-20260702/g011-evidence-inventory.txt and code-review-programming-slop.md",
+            "essential": false,
+            "capturedEvidence": "g011-evidence-inventory.txt records BUILD SUCCESSFUL markers for t02-t10, t05-t09, t11, full-debug, and assemble-debug; source review is clean pending manual QA. cleanup: no QA process, browser context, tmux session, container, temp dir, or worker spawned.",
+            "status": "pass",
+            "capturedAt": "2026-07-02T02:39:10.595Z"
+          }
+        ],
+        "attempt": 1,
+        "createdAt": "2026-07-02T01:33:04.117Z",
+        "updatedAt": "2026-07-02T02:39:24.568Z",
+        "startedAt": "2026-07-02T02:38:12.990Z",
+        "completedAt": "2026-07-02T02:39:24.568Z",
+        "evidence": "G011 complete: automated tests, debug build, install/focus/launch screenshot, source review, and verification summary artifacts are captured and non-empty; manual provider login QA remains separately blocked. cleanup: no live QA resources spawned."
+      }
+    ],
+    "codexObjective": "Complete the durable ulw-loop plan in .omo/ulw-loop/provider-native-bridge-optimization-20260702/goals.json, including later accepted/appended stories, under the original brief constraints; use .omo/ulw-loop/provider-native-bridge-optimization-20260702/ledger.jsonl as the audit trail."
+  },
+  "summary": {
+    "total": 11,
+    "pending": 0,
+    "in_progress": 0,
+    "complete": 7,
+    "failed": 0,
+    "blocked": 4,
+    "review_blocked": 0,
+    "needs_user_decision": 0,
+    "superseded": 0,
+    "criteria": {
+      "total": 33,
+      "pass": 27,
+      "pending": 2,
+      "fail": 0,
+      "blocked": 4
+    }
+  }
+}

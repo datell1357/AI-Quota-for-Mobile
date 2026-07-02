@@ -271,7 +271,7 @@ class ProviderBackgroundRefreshService : Service() {
         UsageSurfaceRefresher.refresh(applicationContext, repository)
         val outcome = when (effectiveJob.mode) {
             ProviderRefreshMode.NATIVE_API -> collectNativeProviderUsage(effectiveJob)
-            ProviderRefreshMode.HIDDEN_WEB_COLLECTOR -> ProviderWebSessionMaintenanceGate.withMaintenanceLock {
+            ProviderRefreshMode.HIDDEN_WEB_COLLECTOR -> ProviderWebSessionMaintenanceGate.withMaintenanceLock(effectiveJob.providerId) {
                 collectWebProviderUsage(effectiveJob, automaticRefresh)
             }
         }
