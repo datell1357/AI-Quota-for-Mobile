@@ -118,6 +118,7 @@ open class WebLoginActivity : Activity() {
         if (ProviderWebSessionClearPolicy.shouldClearBeforeLogin(providerId, previousConnectionState)) {
             clearProviderWebSession(cookieManager, providerId)
         }
+        restoreCodexNativeAuthContext()
         webView = createConfiguredWebView(cookieManager, capabilities)
         rootContainer = FrameLayout(this).apply {
             addView(webView, loginWebViewLayoutParams())
@@ -293,7 +294,9 @@ open class WebLoginActivity : Activity() {
                 view.post {
                     maybeStartGlmNativeCollection(
                         view,
-                        view.url ?: GlmProviderUrls.WEB_USAGE_URL,
+                        GlmUsagePageRoutes.nativeCollectionUrlAfterAuthenticatedResource(
+                            view.url ?: GlmProviderUrls.WEB_USAGE_URL
+                        ) ?: return@post,
                         "",
                         "resource"
                     )
@@ -331,7 +334,7 @@ open class WebLoginActivity : Activity() {
                 if (shouldRedirectCodexToUsageAfterLogin(pageUrl, url)) {
                     view.post { maybeRedirectCodexToUsageAfterLogin(view, pageUrl, url) }
                 }
-                if (shouldStartCodexNativeCollectionFromResource(url) && hasCodexNativeFetchAuthContext(url)) {
+                if (canStartCodexNativeCollectionFromResource(url)) {
                     view.post { maybeStartCodexNativeCollection(view, pageUrl, "resource") }
                 }
             }
@@ -348,7 +351,7 @@ open class WebLoginActivity : Activity() {
             if (providerId == ProviderId.CLAUDE && maybeStartClaudeNativeCollection(view, url, "resource")) return
             if (!ProviderWebCollectorScripts.shouldRunCollectorFromResource(providerId, pageUrl, url)) return
             if (providerId == ProviderId.CODEX) {
-                if (shouldStartCodexNativeCollectionFromResource(url) && hasCodexNativeFetchAuthContext(url)) {
+                if (canStartCodexNativeCollectionFromResource(url)) {
                     maybeStartCodexNativeCollection(view, pageUrl, "resource")
                 }
                 return
@@ -1040,6 +1043,15 @@ open class WebLoginActivity : Activity() {
         return CodexNativeCollectionRoutes.shouldStartFromResource(url)
     }
 
+    private fun canStartCodexNativeCollectionFromResource(url: String): Boolean {
+        if (providerId != ProviderId.CODEX) return false
+        return CodexNativeCollectionRoutes.canStartFromResource(
+            url = url,
+            hasNativeFetchAuthContext = hasCodexNativeFetchAuthContext(url),
+            hasSessionCookies = hasCodexSessionCookies(url)
+        )
+    }
+
     private fun hasCodexNativeFetchAuthContext(url: String): Boolean {
         return codexNativeFetchHeadersFor(url).any { (name, value) ->
             value.isNotBlank() && (
@@ -1048,6 +1060,13 @@ open class WebLoginActivity : Activity() {
                     name.equals("OAI-Session-Id", ignoreCase = true)
                 )
         }
+    }
+
+    private fun hasCodexSessionCookies(url: String): Boolean {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val origin = "${uri.scheme}://${uri.host}"
+        return !CookieManager.getInstance().getCookie(url).isNullOrBlank() ||
+            !CookieManager.getInstance().getCookie(origin).isNullOrBlank()
     }
 
     private fun isCodexAboutBlankNavigation(url: String): Boolean {
@@ -1222,10 +1241,24 @@ open class WebLoginActivity : Activity() {
             "AIQuotaLogin",
             "provider=codex capturedNativeHeaders path=${pathOf(url)} names=$headerNames"
         )
+        saveCodexNativeAuthContext()
     }
 
     private fun codexNativeFetchHeadersFor(url: String): Map<String, String> {
         return CodexNativeHeaderStore.headersFor(codexNativeFetchHeaders, url, CODEX_NATIVE_HEADER_FALLBACK_KEY)
+    }
+
+    private fun saveCodexNativeAuthContext() {
+        val authContext = CodexNativeHeaderStore.snapshotAuthContext(codexNativeFetchHeaders)
+        if (authContext.isEmpty()) return
+        CodexNativeAuthContextStore(applicationContext).save(authContext)
+    }
+
+    private fun restoreCodexNativeAuthContext() {
+        if (providerId != ProviderId.CODEX) return
+        val restoredHeaders = CodexNativeAuthContextStore(applicationContext).restore()
+        if (restoredHeaders.isEmpty()) return
+        codexNativeFetchHeaders.putAll(restoredHeaders)
     }
 
     private fun captureGeminiUsageRpcId(url: String): Boolean {
@@ -1579,7 +1612,11 @@ open class WebLoginActivity : Activity() {
         }
 
         fun createIntent(context: Context, providerId: ProviderId, startUrl: String): Intent {
-            return Intent(context, WebLoginActivity::class.java)
+            val loginActivityClass = when (providerId) {
+                ProviderId.GLM -> GlmWebLoginActivity::class.java
+                else -> WebLoginActivity::class.java
+            }
+            return Intent(context, loginActivityClass)
                 .putExtra(EXTRA_PROVIDER_ID, providerId.storageId)
                 .putExtra(EXTRA_START_URL, startUrl)
         }

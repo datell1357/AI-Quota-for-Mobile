@@ -23,6 +23,15 @@ object GlmRuntimeRefreshJobs {
 }
 
 object GlmUsagePageRoutes {
+    fun nativeCollectionUrlAfterAuthenticatedResource(currentUrl: String): String? {
+        if (isUsageUrl(currentUrl)) return currentUrl
+        return usageUrlFrom(currentUrl) ?: if (isChatUrl(currentUrl)) {
+            GlmProviderUrls.WEB_USAGE_URL
+        } else {
+            null
+        }
+    }
+
     fun usageUrlFrom(url: String): String? {
         val uri = runCatching { URI(url) }.getOrNull() ?: return null
         val host = uri.host.orEmpty().lowercase(Locale.US)

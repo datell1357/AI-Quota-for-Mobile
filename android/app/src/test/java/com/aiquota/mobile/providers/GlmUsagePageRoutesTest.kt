@@ -39,6 +39,27 @@ class GlmUsagePageRoutesTest {
     }
 
     @Test
+    fun authenticatedChatResourceCanStartNativeCollectionAgainstUsagePage() {
+        assertEquals(
+            GlmProviderUrls.WEB_USAGE_URL,
+            GlmUsagePageRoutes.nativeCollectionUrlAfterAuthenticatedResource("https://z.ai/chat")
+        )
+        assertEquals(
+            GlmProviderUrls.WEB_USAGE_URL,
+            GlmUsagePageRoutes.nativeCollectionUrlAfterAuthenticatedResource(
+                "https://z.ai/manage-apikey/coding-plan/personal/my-plan"
+            )
+        )
+        assertEquals(
+            GlmProviderUrls.WEB_USAGE_URL,
+            GlmUsagePageRoutes.nativeCollectionUrlAfterAuthenticatedResource(GlmProviderUrls.WEB_USAGE_URL)
+        )
+        assertNull(
+            GlmUsagePageRoutes.nativeCollectionUrlAfterAuthenticatedResource("https://z.ai/")
+        )
+    }
+
+    @Test
     fun webOAuthRefreshUsesStoredSessionNativeApiInsteadOfHiddenWebCollector() {
         val job = ProviderRefreshJob(
             providerId = ProviderId.GLM,

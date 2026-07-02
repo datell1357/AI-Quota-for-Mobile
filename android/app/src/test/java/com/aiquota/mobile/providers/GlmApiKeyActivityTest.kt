@@ -1,6 +1,8 @@
 package com.aiquota.mobile.providers
 
 import java.io.File
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -76,14 +78,22 @@ class GlmApiKeyActivityTest {
     }
 
     @Test
-    fun webOAuthStartClearsStaleGlmWebSessionBeforeOpeningLogin() {
-        val source = File("src/main/java/com/aiquota/mobile/providers/GlmApiKeyActivity.kt").readText()
-        val openWebOAuth = source.substringAfter("private fun openWebOAuth()")
-            .substringBefore("private fun showApiKeyEntry")
+    fun webOAuthStartUsesDirectGlmLoginPage() {
+        assertEquals("https://chat.z.ai/login", GlmProviderUrls.WEB_LOGIN_URL)
+        assertTrue(GlmProviderUrls.WEB_LOGIN_URL.endsWith("/login"))
+        assertFalse(GlmProviderUrls.WEB_LOGIN_URL.contains("z.ai/chat"))
+    }
 
-        assertTrue(openWebOAuth.contains("ProviderWebSessionCleaner.clearProviderWebSession(ProviderId.GLM)"))
-        assertTrue(openWebOAuth.contains("GlmProviderUrls.WEB_LOGIN_URL"))
-        assertTrue(openWebOAuth.indexOf("ProviderWebSessionCleaner.clearProviderWebSession(ProviderId.GLM)") <
-            openWebOAuth.indexOf("WebLoginActivity.createIntent("))
+    @Test
+    fun webOAuthStartClearsStaleGlmWebSessionBeforeOpeningLogin() = runBlocking {
+        val events = mutableListOf<String>()
+
+        runGlmWebOAuthStartSequence(
+            clearStaleSession = { events += "clear" },
+            selectWebOAuthMode = { events += "mode" },
+            openLogin = { events += "open" }
+        )
+
+        assertEquals(listOf("clear", "mode", "open"), events)
     }
 }

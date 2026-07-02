@@ -582,6 +582,7 @@ class ProviderBackgroundRefreshService : Service() {
         }
         restoreDebugProviderSessionCookies(providerId, cookieManager)
         restoreCodexDebugNativeAuthContext(providerId)
+        restoreCodexNativeAuthContext(providerId)
         CookieManager.getInstance().flush()
         webView.onResume()
         webView.resumeTimers()
@@ -595,6 +596,13 @@ class ProviderBackgroundRefreshService : Service() {
     private fun restoreCodexDebugNativeAuthContext(providerId: ProviderId) {
         if (providerId != ProviderId.CODEX) return
         val restoredHeaders = DebugProviderSessionCookieStore.restoreNativeAuthContext(applicationContext, providerId)
+        if (restoredHeaders.isEmpty()) return
+        codexNativeFetchHeaders.putAll(restoredHeaders)
+    }
+
+    private fun restoreCodexNativeAuthContext(providerId: ProviderId) {
+        if (providerId != ProviderId.CODEX) return
+        val restoredHeaders = CodexNativeAuthContextStore(applicationContext).restore()
         if (restoredHeaders.isEmpty()) return
         codexNativeFetchHeaders.putAll(restoredHeaders)
     }
@@ -1175,10 +1183,17 @@ class ProviderBackgroundRefreshService : Service() {
             .sorted()
             .joinToString("|")
         Log.d(TAG, "capturedNativeHeaders provider=codex path=${pathOf(url)} names=$headerNames")
+        saveCodexNativeAuthContext()
     }
 
     private fun codexNativeFetchHeadersFor(url: String): Map<String, String> {
         return CodexNativeHeaderStore.headersFor(codexNativeFetchHeaders, url, CODEX_NATIVE_HEADER_FALLBACK_KEY)
+    }
+
+    private fun saveCodexNativeAuthContext() {
+        val authContext = CodexNativeHeaderStore.snapshotAuthContext(codexNativeFetchHeaders)
+        if (authContext.isEmpty()) return
+        CodexNativeAuthContextStore(applicationContext).save(authContext)
     }
 
     private fun debugNativeAuthContextForSnapshot(providerId: ProviderId): Map<String, Map<String, String>> {

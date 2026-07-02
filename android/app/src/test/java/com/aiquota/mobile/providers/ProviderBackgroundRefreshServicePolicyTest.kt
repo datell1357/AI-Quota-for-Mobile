@@ -382,6 +382,23 @@ class ProviderBackgroundRefreshServicePolicyTest {
     }
 
     @Test
+    fun codexBackgroundRefreshRestoresPersistedNativeAuthContext() {
+        val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
+        val prepareBlock = service.substringAfter("private fun prepareSharedWebSessionForCollection")
+            .substringBefore("private fun restoreDebugProviderSessionCookies")
+        val restoreBlock = service.substringAfter("private fun restoreCodexNativeAuthContext")
+            .substringBefore("private fun destroyProviderWebView")
+        val captureBlock = service.substringAfter("private fun captureCodexNativeFetchHeaders")
+            .substringBefore("private fun codexNativeFetchHeadersFor")
+
+        assertTrue(prepareBlock.contains("restoreCodexNativeAuthContext(providerId)"))
+        assertTrue(restoreBlock.contains("CodexNativeAuthContextStore(applicationContext).restore()"))
+        assertTrue(restoreBlock.contains("codexNativeFetchHeaders.putAll(restoredHeaders)"))
+        assertTrue(captureBlock.contains("saveCodexNativeAuthContext()"))
+        assertTrue(service.contains("CodexNativeAuthContextStore(applicationContext).save(authContext)"))
+    }
+
+    @Test
     fun automaticForegroundRefreshDelaysFirstCycleAfterServiceStart() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val startRefreshLoop = service.substringAfter("private fun startRefreshLoop()")

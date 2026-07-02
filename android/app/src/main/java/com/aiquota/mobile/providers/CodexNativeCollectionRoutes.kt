@@ -12,6 +12,15 @@ internal object CodexNativeCollectionRoutes {
         return path == "/backend-api/wham/usage"
     }
 
+    fun canStartFromResource(
+        url: String,
+        hasNativeFetchAuthContext: Boolean,
+        hasSessionCookies: Boolean
+    ): Boolean {
+        return shouldStartFromResource(url) &&
+            (hasNativeFetchAuthContext || hasSessionCookies)
+    }
+
     fun isAboutBlankNavigation(collectionStarted: Boolean, url: String): Boolean {
         if (!collectionStarted) return false
         if (url == "about:blank") return true

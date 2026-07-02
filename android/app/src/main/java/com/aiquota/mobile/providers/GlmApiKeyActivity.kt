@@ -14,6 +14,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.lifecycleScope
 import com.aiquota.mobile.R
 import com.aiquota.mobile.local.ThemePreferencesRepository
 import com.aiquota.mobile.local.LocalUsageRepository
@@ -28,6 +29,17 @@ import com.aiquota.mobile.widget.widgetConfigureDp
 import com.aiquota.mobile.widget.widgetConfigureRoundedBackground
 import com.aiquota.mobile.widget.widgetConfigureStatusBarInsetPx
 import com.aiquota.mobile.widget.widgetConfigureStyle
+import kotlinx.coroutines.launch
+
+internal suspend fun runGlmWebOAuthStartSequence(
+    clearStaleSession: suspend () -> Unit,
+    selectWebOAuthMode: () -> Unit,
+    openLogin: () -> Unit
+) {
+    clearStaleSession()
+    selectWebOAuthMode()
+    openLogin()
+}
 
 class GlmApiKeyActivity : ComponentActivity() {
     private lateinit var apiKeyInput: EditText
@@ -209,27 +221,37 @@ class GlmApiKeyActivity : ComponentActivity() {
     private fun openWebOAuth() {
         setActionControlsEnabled(false)
         statusText.text = getString(R.string.glm_connection_status_opening)
-        ProviderWebSessionCleaner.clearProviderWebSession(ProviderId.GLM)
-        GlmUsageRepository(applicationContext).useWebOAuth()
-        val intent = WebLoginActivity.createIntent(
-            this,
-            ProviderId.GLM,
-            GlmProviderUrls.WEB_LOGIN_URL
-        )
-        val result = runCatching {
-            startActivity(intent)
-        }
-        result.onSuccess {
-            finish()
-        }.onFailure {
-            val repository = LocalUsageRepository(applicationContext)
-            repository.failKeepingPrevious(
-                ProviderId.GLM,
-                getString(R.string.glm_connection_status_open_failed)
-            )
-            UsageSurfaceRefresher.refresh(applicationContext, repository)
-            statusText.text = getString(R.string.glm_connection_status_open_failed)
-            setActionControlsEnabled(true)
+        lifecycleScope.launch {
+            val result = runCatching {
+                runGlmWebOAuthStartSequence(
+                    clearStaleSession = {
+                        ProviderWebSessionCleaner.clearProviderWebSessionAndWait(applicationContext, ProviderId.GLM)
+                    },
+                    selectWebOAuthMode = {
+                        GlmUsageRepository(applicationContext).useWebOAuth()
+                    },
+                    openLogin = {
+                        val intent = WebLoginActivity.createIntent(
+                            this@GlmApiKeyActivity,
+                            ProviderId.GLM,
+                            GlmProviderUrls.WEB_LOGIN_URL
+                        )
+                        startActivity(intent)
+                    }
+                )
+            }
+            result.onSuccess {
+                finish()
+            }.onFailure {
+                val repository = LocalUsageRepository(applicationContext)
+                repository.failKeepingPrevious(
+                    ProviderId.GLM,
+                    getString(R.string.glm_connection_status_open_failed)
+                )
+                UsageSurfaceRefresher.refresh(applicationContext, repository)
+                statusText.text = getString(R.string.glm_connection_status_open_failed)
+                setActionControlsEnabled(true)
+            }
         }
     }
 

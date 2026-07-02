@@ -15,7 +15,8 @@ data class GlmUsageResult(
 )
 
 object GlmProviderUrls {
-    const val WEB_LOGIN_URL = "https://z.ai/chat"
+    const val WEB_LOGIN_URL = "https://chat.z.ai/login"
+    const val WEB_CHAT_URL = "https://z.ai/chat"
     const val WEB_OAUTH_URL = "https://z.ai/manage-apikey/coding-plan/personal/my-plan"
     const val WEB_USAGE_URL = "https://z.ai/manage-apikey/coding-plan/personal/usage"
     const val API_QUOTA_URL = "https://api.z.ai/api/monitor/usage/quota/limit"
@@ -23,6 +24,7 @@ object GlmProviderUrls {
         "https://z.ai",
         "https://www.z.ai",
         "https://chat.z.ai",
+        WEB_CHAT_URL,
         WEB_LOGIN_URL,
         WEB_OAUTH_URL,
         WEB_USAGE_URL,
@@ -288,6 +290,12 @@ object GlmUsageFetcher {
         val trimmedCookieHeader = cookieHeader.trim()
         if (trimmedCookieHeader.isBlank()) {
             return GlmUsageResult(null, requiresAuth = false, diagnostic = "glm_web_cookie_missing")
+        }
+        if (requestHeaders.none { (name, value) ->
+                name.equals("Authorization", ignoreCase = true) && value.isNotBlank()
+            }
+        ) {
+            return GlmUsageResult(null, requiresAuth = true, diagnostic = "glm_web_authorization_missing")
         }
         return executeFetch(endpointUrl, accountLabel = "z.ai web session") {
             requestHeaders.forEach { (name, value) ->

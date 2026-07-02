@@ -200,7 +200,9 @@ class GlmIsolatedWebSessionService : Service() {
         destroyWebView()
         Log.d(TAG, "stopSelf provider=glm reason=$reason pid=${Process.myPid()}")
         stopSelf()
-        scheduleProcessExit(reason)
+        if (reason != "cleared") {
+            scheduleProcessExit(reason)
+        }
     }
 
     private fun scheduleProcessExit(reason: String) {

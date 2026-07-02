@@ -101,9 +101,17 @@ class ProviderWebSessionClearPolicyTest {
         assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.ANTIGRAVITY).contains("https://accounts.google.com"))
         assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.CURSOR).contains("https://accounts.google.com"))
         assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.CURSOR).contains("https://github.com"))
-        assertFalse(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.GLM).contains("https://accounts.google.com"))
+        assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.GLM).contains("https://accounts.google.com"))
         assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.OPENCODE).contains("https://accounts.google.com"))
         assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.OPENCODE).contains("https://github.com"))
+    }
+
+    @Test
+    fun glmDisconnectClearsGoogleSsoCookiesUsedByZaiLogin() {
+        val glmCookieUrls = ProviderWebSessionClearPolicy.cookieUrls(ProviderId.GLM)
+
+        assertTrue(glmCookieUrls.contains("https://accounts.google.com"))
+        assertTrue(glmCookieUrls.contains("https://myaccount.google.com"))
     }
 
     @Test
@@ -185,17 +193,18 @@ class ProviderWebSessionClearPolicyTest {
     }
 
     @Test
-    fun disconnectFlowClearsVisibleStateBeforeAwaitedWebSessionCleanup() {
+    fun disconnectFlowWaitsForWebSessionCleanupBeforeVisibleReconnect() {
         val source = java.io.File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
         val method = source.substringAfter("fun disconnectProvider(providerId: ProviderId)")
             .substringBefore("fun refreshNotificationState")
 
         assertFalse(method.contains("queuedRefreshJobs"))
-        assertTrue(method.contains("providerSessionResetter.disconnect(providerId)"))
+        assertTrue(method.contains("providerSessionResetter.disconnectAndWait(providerId)"))
         assertTrue(method.contains("localUsageRepository.removeProviderSnapshot(providerId)"))
-        assertTrue(method.contains("providerSessionResetter.awaitProviderWebSessionCleanup(providerId)"))
-        assertTrue(method.indexOf("providerSessionResetter.disconnect(providerId)") < method.indexOf("localUsageRepository.removeProviderSnapshot(providerId)"))
-        assertTrue(method.indexOf("localUsageRepository.removeProviderSnapshot(providerId)") < method.indexOf("providerSessionResetter.awaitProviderWebSessionCleanup(providerId)"))
-        assertFalse(method.contains("providerSessionResetter.disconnectAndWait(providerId)"))
+        assertTrue(method.contains("busyProvider = null"))
+        assertTrue(method.indexOf("providerSessionResetter.disconnectAndWait(providerId)") < method.indexOf("localUsageRepository.removeProviderSnapshot(providerId)"))
+        assertTrue(method.indexOf("providerSessionResetter.disconnectAndWait(providerId)") < method.indexOf("busyProvider = null"))
+        assertFalse(method.contains("providerSessionResetter.disconnect(providerId)"))
+        assertFalse(method.contains("providerSessionResetter.awaitProviderWebSessionCleanup(providerId)"))
     }
 }

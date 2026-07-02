@@ -55,7 +55,7 @@ object ProviderWebSessionClearPolicy {
                 "https://auth.workos.com",
                 "https://workos.com"
             ) + GOOGLE_AUTH_COOKIE_URLS + GITHUB_AUTH_COOKIE_URLS
-            ProviderId.GLM -> GLM_COOKIE_URLS
+            ProviderId.GLM -> GLM_COOKIE_URLS + GLM_GOOGLE_SSO_COOKIE_URLS
             ProviderId.OPENCODE -> listOf(
                 "https://opencode.ai",
                 "https://opencode.ai/auth",
@@ -185,6 +185,11 @@ object ProviderWebSessionClearPolicy {
         "https://login.z.ai",
         "https://accounts.z.ai",
         "https://account.z.ai"
+    )
+
+    private val GLM_GOOGLE_SSO_COOKIE_URLS = listOf(
+        "https://accounts.google.com",
+        "https://myaccount.google.com"
     )
 
     private val GLM_BROWSER_STORAGE_CLEANUP_URLS = listOf(

@@ -62,7 +62,9 @@ class ProviderSessionResetter(context: Context) {
             ProviderId.OPENCODE -> {
                 ProviderScopedStateRepository(appContext).clearOpenCodeUsageUrl()
             }
-            ProviderId.CODEX,
+            ProviderId.CODEX -> {
+                CodexNativeAuthContextStore(appContext).clear()
+            }
             ProviderId.CLAUDE,
             ProviderId.COPILOT,
             ProviderId.CURSOR -> Unit

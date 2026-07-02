@@ -352,12 +352,14 @@ fun AIQuotaAppShell(
     fun disconnectProvider(providerId: ProviderId) {
         busyProvider = providerId
         coroutineScope.launch {
-            runCatching { connectorRegistry.connectorFor(providerId).disconnect() }
-            providerSessionResetter.disconnect(providerId)
-            localUsageRepository.removeProviderSnapshot(providerId)
-            refreshSnapshots()
-            busyProvider = null
-            providerSessionResetter.awaitProviderWebSessionCleanup(providerId)
+            try {
+                runCatching { connectorRegistry.connectorFor(providerId).disconnect() }
+                providerSessionResetter.disconnectAndWait(providerId)
+                localUsageRepository.removeProviderSnapshot(providerId)
+                refreshSnapshots()
+            } finally {
+                busyProvider = null
+            }
         }
     }
 

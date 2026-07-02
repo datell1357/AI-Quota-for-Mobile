@@ -56,4 +56,33 @@ class CodexNativeHeaderStoreTest {
             CodexNativeHeaderStore.snapshotAuthContext(storedHeaders)
         )
     }
+
+    @Test
+    fun persistedCodexAuthContextKeepsOnlyNativeAuthHeaders() {
+        val payload = CodexNativeAuthContextStore.encodeForTest(
+            mapOf(
+                "chatgpt.com/backend-api/wham/usage" to mapOf(
+                    "Authorization" to "Bearer auth",
+                    "ChatGPT-Account-ID" to "account",
+                    "OAI-Session-Id" to "session",
+                    "Accept" to "application/json",
+                    "Cookie" to "secret=cookie"
+                ),
+                "chatgpt.com/api/auth/session" to mapOf("Accept" to "application/json")
+            )
+        )
+
+        assertEquals(
+            mapOf(
+                "chatgpt.com/backend-api/wham/usage" to mapOf(
+                    "Authorization" to "Bearer auth",
+                    "ChatGPT-Account-ID" to "account",
+                    "OAI-Session-Id" to "session"
+                )
+            ),
+            CodexNativeAuthContextStore.decodeForTest(payload)
+        )
+        assertTrue(!payload.contains("secret=cookie"))
+        assertTrue(!payload.contains("application/json"))
+    }
 }

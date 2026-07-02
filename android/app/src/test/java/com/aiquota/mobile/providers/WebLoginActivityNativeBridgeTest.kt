@@ -69,6 +69,40 @@ class WebLoginActivityNativeBridgeTest {
     }
 
     @Test
+    fun codexLoginNativeCollectionCanStartFromCookieBackedResourceWithoutFreshHeaders() {
+        val whamUsageUrl = "https://chatgpt.com/backend-api/wham/usage"
+
+        assertTrue(
+            CodexNativeCollectionRoutes.canStartFromResource(
+                url = whamUsageUrl,
+                hasNativeFetchAuthContext = false,
+                hasSessionCookies = true
+            )
+        )
+        assertTrue(
+            CodexNativeCollectionRoutes.canStartFromResource(
+                url = whamUsageUrl,
+                hasNativeFetchAuthContext = true,
+                hasSessionCookies = false
+            )
+        )
+        assertFalse(
+            CodexNativeCollectionRoutes.canStartFromResource(
+                url = whamUsageUrl,
+                hasNativeFetchAuthContext = false,
+                hasSessionCookies = false
+            )
+        )
+        assertFalse(
+            CodexNativeCollectionRoutes.canStartFromResource(
+                url = "https://chatgpt.com/backend-api/me",
+                hasNativeFetchAuthContext = true,
+                hasSessionCookies = true
+            )
+        )
+    }
+
+    @Test
     fun claudeSignedInChatRedirectsToAboutBlankNativeBridge() {
         val source = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
 

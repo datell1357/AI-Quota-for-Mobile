@@ -182,6 +182,19 @@ class GlmUsageFetcherTest {
         }
     }
 
+    @Test
+    fun webSessionFetchRejectsCookieOnlySessionBeforeNetwork() {
+        val result = GlmUsageFetcher.fetchUsagePayloadWithCookie(
+            cookieHeader = "zai_session=stale-cookie",
+            endpointUrl = "http://127.0.0.1:1/quota",
+            requestHeaders = emptyMap()
+        )
+
+        assertNull(result.payload)
+        org.junit.Assert.assertTrue(result.requiresAuth)
+        assertEquals("glm_web_authorization_missing", result.diagnostic)
+    }
+
     private fun java.io.OutputStream.writeHttpResponse(status: Int, reason: String, body: ByteArray) {
         val headers = buildString {
             append("HTTP/1.1 ")

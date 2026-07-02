@@ -34,19 +34,24 @@ class ProviderSessionResetterTest {
     }
 
     @Test
-    fun interactiveDisconnectCompletesVisibleStateBeforeAwaitedWebSessionCleanup() {
+    fun interactiveDisconnectKeepsReconnectBusyUntilWebSessionCleanupFinishes() {
         val appShell = java.io.File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
         val disconnectFlow = appShell.substringAfter("fun disconnectProvider(providerId: ProviderId)")
             .substringBefore("fun disconnectAllProviders")
 
-        assertTrue(disconnectFlow.contains("providerSessionResetter.disconnect(providerId)"))
+        assertTrue(disconnectFlow.contains("providerSessionResetter.disconnectAndWait(providerId)"))
         assertTrue(disconnectFlow.contains("localUsageRepository.removeProviderSnapshot(providerId)"))
-        assertTrue(disconnectFlow.contains("providerSessionResetter.awaitProviderWebSessionCleanup(providerId)"))
+        assertTrue(disconnectFlow.contains("busyProvider = null"))
         assertTrue(
-            disconnectFlow.indexOf("localUsageRepository.removeProviderSnapshot(providerId)") <
-                disconnectFlow.indexOf("providerSessionResetter.awaitProviderWebSessionCleanup(providerId)")
+            disconnectFlow.indexOf("providerSessionResetter.disconnectAndWait(providerId)") <
+                disconnectFlow.indexOf("localUsageRepository.removeProviderSnapshot(providerId)")
         )
-        assertFalse(disconnectFlow.contains("providerSessionResetter.disconnectAndWait(providerId)"))
+        assertTrue(
+            disconnectFlow.indexOf("providerSessionResetter.disconnectAndWait(providerId)") <
+                disconnectFlow.indexOf("busyProvider = null")
+        )
+        assertFalse(disconnectFlow.contains("providerSessionResetter.disconnect(providerId)"))
+        assertFalse(disconnectFlow.contains("providerSessionResetter.awaitProviderWebSessionCleanup(providerId)"))
     }
 
     @Test
@@ -193,5 +198,14 @@ class ProviderSessionResetterTest {
         assertTrue(resetter.contains("GeminiCliOAuthRepository(appContext).disconnect()"))
         assertTrue(resetter.contains("AntigravityOAuthRepository(appContext).disconnect()"))
         assertFalse(resetter.contains("CodexOAuthRepository"))
+    }
+
+    @Test
+    fun codexDisconnectClearsPersistedNativeAuthContext() {
+        val resetter = java.io.File("src/main/java/com/aiquota/mobile/providers/ProviderSessionResetter.kt").readText()
+        val codexBranch = resetter.substringAfter("ProviderId.CODEX ->")
+            .substringBefore("ProviderId.CLAUDE")
+
+        assertTrue(codexBranch.contains("CodexNativeAuthContextStore(appContext).clear()"))
     }
 }

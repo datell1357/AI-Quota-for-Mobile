@@ -42,13 +42,15 @@ class GlmWebSessionClearPolicyTest {
     }
 
     @Test
-    fun glmDisconnectDoesNotClearGoogleSsoUrls() {
+    fun glmDisconnectClearsGoogleSsoCookiesWithoutLoadingGoogleCleanupPages() {
         val cookieUrls = ProviderWebSessionClearPolicy.cookieUrls(ProviderId.GLM)
         val storageOrigins = ProviderWebSessionClearPolicy.storageOrigins(ProviderId.GLM)
         val browserStorageUrls = ProviderWebSessionClearPolicy.browserStorageCleanupUrls(ProviderId.GLM)
 
-        assertFalse(cookieUrls.any { it.contains("google.com") || it.contains("googleapis.com") })
-        assertFalse(storageOrigins.any { it.contains("google.com") || it.contains("googleapis.com") })
+        assertTrue(cookieUrls.contains("https://accounts.google.com"))
+        assertTrue(cookieUrls.contains("https://myaccount.google.com"))
+        assertTrue(storageOrigins.contains("https://accounts.google.com"))
+        assertTrue(storageOrigins.contains("https://myaccount.google.com"))
         assertFalse(browserStorageUrls.any { it.contains("google.com") || it.contains("googleapis.com") })
     }
 
@@ -102,17 +104,34 @@ class GlmWebSessionClearPolicyTest {
     }
 
     @Test
-    fun glmWebLoginUsesMainProcessAndKeepsOnlyCollectorServiceIsolated() {
+    fun glmWebLoginUsesIsolatedWebViewProfile() {
         val manifest = File("src/main/AndroidManifest.xml").readText()
         val loginActivity = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val glmLoginActivity = File("src/main/java/com/aiquota/mobile/providers/GlmWebLoginActivity.kt").readText()
         val application = File("src/main/java/com/aiquota/mobile/AIQuotaApplication.kt").readText()
 
-        assertFalse(manifest.contains("android:name=\".providers.GlmWebLoginActivity\""))
+        assertTrue(glmLoginActivity.contains("class GlmWebLoginActivity : WebLoginActivity()"))
+        assertTrue(manifest.contains("android:name=\".providers.GlmWebLoginActivity\""))
+        assertTrue(
+            manifest.substringAfter("android:name=\".providers.GlmWebLoginActivity\"")
+                .substringBefore("/>")
+                .contains("android:process=\":glm_webview\"")
+        )
         assertTrue(manifest.contains("android:name=\".providers.GlmIsolatedWebSessionService\""))
         assertTrue(manifest.contains("android:process=\":glm_webview\""))
-        assertTrue(loginActivity.contains("return Intent(context, WebLoginActivity::class.java)"))
-        assertFalse(loginActivity.contains("ProviderId.GLM -> GlmWebLoginActivity::class.java"))
+        assertTrue(loginActivity.contains("ProviderId.GLM -> GlmWebLoginActivity::class.java"))
+        assertTrue(loginActivity.contains("else -> WebLoginActivity::class.java"))
         assertTrue(application.contains("GlmIsolatedWebViewProfile.configureIfNeeded(this)"))
+    }
+
+    @Test
+    fun glmIsolatedClearDoesNotKillProcessBeforeForegroundLoginLaunch() {
+        val service = File("src/main/java/com/aiquota/mobile/providers/GlmIsolatedWebSessionService.kt").readText()
+        val finishMethod = service.substringAfter("private fun finish(reason: String)")
+            .substringBefore("private fun scheduleProcessExit")
+
+        assertTrue(finishMethod.contains("if (reason != \"cleared\")"))
+        assertTrue(finishMethod.contains("scheduleProcessExit(reason)"))
     }
 
     @Test
@@ -183,6 +202,19 @@ class GlmWebSessionClearPolicyTest {
         assertTrue(login.contains("it.equals(\"Authorization\", ignoreCase = true)"))
         assertTrue(login.contains("saveWebSessionRequestHeaders(headers)"))
         assertTrue(login.contains("provider=glm capturedNativeHeaders"))
+    }
+
+    @Test
+    fun glmAuthenticatedChatResourceStartsAboutBlankNativeCollection() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val intercept = login
+            .substringAfter("override fun shouldInterceptRequest")
+            .substringBefore("if (captureGeminiUsageRpcId(url))")
+
+        assertTrue(intercept.contains("captureGlmNativeFetchHeaders(request) && hasGlmNativeFetchHeaders()"))
+        assertTrue(intercept.contains("GlmUsagePageRoutes.nativeCollectionUrlAfterAuthenticatedResource"))
+        assertTrue(intercept.contains("maybeStartGlmNativeCollection"))
+        assertTrue(login.contains("provider=glm nativeCollectorStart=aboutblank"))
     }
 
     @Test
