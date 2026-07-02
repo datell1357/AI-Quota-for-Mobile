@@ -81,6 +81,21 @@ class WebLoginActivityNativeBridgeTest {
     }
 
     @Test
+    fun claudeAboutBlankBridgeRetriesButDoesNotHoldFinalErrorOpen() {
+        val source = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val collectorInjection = source.substringAfter("private fun injectCollectorIfReady")
+            .substringBefore("private fun shouldKeepLoginOpenUntilUsagePayload")
+        val keepOpen = source.substringAfter("private fun shouldKeepLoginOpenUntilUsagePayload")
+            .substringBefore("private fun captureCodexAccountId")
+
+        assertTrue(collectorInjection.contains("providerId == ProviderId.CLAUDE"))
+        assertFalse(keepOpen.contains("ProviderId.CLAUDE"))
+        assertFalse(keepOpen.contains("claude_organization_unavailable"))
+        assertFalse(keepOpen.contains("claude_usage_unavailable"))
+        assertFalse(keepOpen.contains("claude_native_usage_unavailable"))
+    }
+
+    @Test
     fun copilotSignedInSettingsRedirectsToAboutBlankNativeBridge() {
         val source = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
         val script = ProviderWebCollectorScripts.build(
@@ -104,6 +119,35 @@ class WebLoginActivityNativeBridgeTest {
         assertFalse(script.contains("fetchCopilotJson("))
         assertFalse(script.contains("document.documentElement"))
         assertFalse(script.contains("settings/copilot"))
+    }
+
+    @Test
+    fun cursorSignedInDashboardStartsAboutBlankNativeBridge() {
+        val source = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val script = ProviderWebCollectorScripts.build(
+            providerId = ProviderId.CURSOR,
+            cookies = emptyMap(),
+            geminiCollectorAsset = "",
+            pageUrl = "about:blank",
+            awaitInteractiveLoginUsage = true
+        )
+
+        assertTrue(ProviderLoginStrategy.shouldStartCursorNativeCollection("https://cursor.com/dashboard"))
+        assertTrue(ProviderLoginStrategy.shouldStartCursorNativeCollection("https://www.cursor.com/dashboard?tab=usage"))
+        assertFalse(ProviderLoginStrategy.shouldStartCursorNativeCollection("https://cursor.com/login"))
+        assertFalse(ProviderLoginStrategy.shouldStartCursorNativeCollection("https://cursor.com/api/usage"))
+        assertFalse(ProviderLoginStrategy.shouldStartCursorNativeCollection("https://api.workos.com/sso/authorize"))
+        assertFalse(ProviderLoginStrategy.shouldStartCursorNativeCollection("https://github.com/login"))
+
+        assertTrue(source.contains("private var cursorNativeCollectionStarted = false"))
+        assertTrue(source.contains("maybeStartCursorNativeCollection(view, effectiveUrl, \"page_finished\")"))
+        assertTrue(source.contains("providerId == ProviderId.CURSOR && effectiveUrl == \"about:blank\""))
+        assertTrue(source.contains("provider=cursor nativeCollectorStart=aboutblank"))
+        assertTrue(source.contains("providerId == ProviderId.CURSOR"))
+        assertTrue(script.contains("fetchNativeUsagePayload"))
+        assertFalse(script.contains("document.documentElement"))
+        assertFalse(script.contains("__AIQuotaCursorNetworkRows"))
+        assertFalse(script.contains("scanCursorPageState"))
     }
 
     @Test

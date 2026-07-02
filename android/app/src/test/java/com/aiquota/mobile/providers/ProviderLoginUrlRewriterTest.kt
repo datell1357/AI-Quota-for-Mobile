@@ -27,6 +27,51 @@ class ProviderLoginUrlRewriterTest {
     }
 
     @Test
+    fun addsSelectAccountPromptToGlmGoogleOAuthStart() {
+        val original = "https://accounts.google.com/o/oauth2/v2/auth" +
+            "?client_id=zai" +
+            "&redirect_uri=https%3A%2F%2Fz.ai%2Fapi%2Fauth%2Fcallback" +
+            "&scope=openid"
+
+        val rewritten = ProviderLoginUrlRewriter.rewriteMainFrameUrl(ProviderId.GLM, original)
+
+        assertNotNull(rewritten)
+        val uri = URI(rewritten!!)
+        assertTrue(uri.toString().startsWith("https://accounts.google.com/o/oauth2/v2/auth"))
+        assertTrue(uri.rawQuery.contains("prompt=select_account"))
+        assertTrue(uri.rawQuery.contains("authuser=-1"))
+        assertTrue(uri.rawQuery.contains("redirect_uri=https%3A%2F%2Fz.ai%2Fapi%2Fauth%2Fcallback"))
+    }
+
+    @Test
+    fun addsAccountChooserToGlmGoogleServiceLogin() {
+        val original = "https://accounts.google.com/ServiceLogin" +
+            "?passive=1209600" +
+            "&continue=https%3A%2F%2Fz.ai%2Fchat"
+
+        val rewritten = ProviderLoginUrlRewriter.rewriteMainFrameUrl(ProviderId.GLM, original)
+
+        assertNotNull(rewritten)
+        val uri = URI(rewritten!!)
+        assertTrue(uri.toString().startsWith("https://accounts.google.com/ServiceLogin"))
+        assertTrue(uri.rawQuery.contains("prompt=select_account"))
+        assertTrue(uri.rawQuery.contains("authuser=-1"))
+        assertTrue(uri.rawQuery.contains("continue=https%3A%2F%2Fz.ai%2Fchat"))
+    }
+
+    @Test
+    fun doesNotRewriteGlmGoogleConsentStepAfterAccountChoice() {
+        val original = "https://accounts.google.com/signin/oauth/consent" +
+            "?authuser=0" +
+            "&client_id=zai" +
+            "&requestPath=/o/oauth2/v2/auth"
+
+        val rewritten = ProviderLoginUrlRewriter.rewriteMainFrameUrl(ProviderId.GLM, original)
+
+        assertNull(rewritten)
+    }
+
+    @Test
     fun addsSelectAccountPromptToClaudeRegionalGoogleOAuthStart() {
         val original = "https://accounts.google.co.kr/o/oauth2/v2/auth" +
             "?client_id=anthropic" +

@@ -206,6 +206,22 @@ class ProviderWebCollectorScriptsTest {
     }
 
     @Test
+    fun claudeInteractiveNativeCollectorRetriesWhileWaitingForUsagePayload() {
+        val script = ProviderWebCollectorScripts.build(
+            providerId = ProviderId.CLAUDE,
+            cookies = emptyMap(),
+            geminiCollectorAsset = "",
+            pageUrl = "about:blank",
+            awaitInteractiveLoginUsage = true
+        )
+
+        assertTrue(script.contains("__AIQuotaStartProviderCollector(\"claude\", true)"))
+        assertTrue(script.contains("maxAttempts = true ? 72 : 1"))
+        assertTrue(script.contains("setTimeout(runProbe, retryDelayMs)"))
+        assertTrue(script.contains("claude_native_usage_unavailable"))
+    }
+
+    @Test
     fun serviceCollectorReinjectsOnlyProvidersThatNeedPageSettlePasses() {
         assertTrue(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.CLAUDE))
         assertFalse(ProviderWebCollectorScripts.shouldAllowCollectorReinjection(ProviderId.OPENCODE))

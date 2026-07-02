@@ -62,6 +62,31 @@ class ProviderWebSessionClearPolicyTest {
     }
 
     @Test
+    fun githubBackedWebLoginClearsSharedGithubSessionBeforeAccountChoice() {
+        listOf(ProviderId.OPENCODE, ProviderId.COPILOT).forEach { providerId ->
+            listOf(
+                null,
+                ProviderConnectionState.DISCONNECTED,
+                ProviderConnectionState.NOT_CONNECTED,
+                ProviderConnectionState.ERROR,
+                ProviderConnectionState.INTERACTIVE_AUTH_REQUIRED
+            ).forEach { state ->
+                assertTrue(
+                    "${providerId.storageId} should clear GitHub WebView cookies before a login attempt.",
+                    ProviderWebSessionClearPolicy.shouldClearBeforeLogin(providerId, state)
+                )
+            }
+            assertFalse(
+                "${providerId.storageId} should preserve a currently connected WebView session.",
+                ProviderWebSessionClearPolicy.shouldClearBeforeLogin(
+                    providerId,
+                    ProviderConnectionState.CONNECTED
+                )
+            )
+        }
+    }
+
+    @Test
     fun allProvidersClearWebSessionOnExplicitDisconnect() {
         ProviderId.entries.forEach { providerId ->
             assertTrue(

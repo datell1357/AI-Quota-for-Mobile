@@ -118,6 +118,20 @@ object ProviderLoginStrategy {
             path.startsWith("/github-copilot")
     }
 
+    fun shouldStartCursorNativeCollection(url: String): Boolean {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        if (host != "cursor.com" && host != "www.cursor.com") return false
+        val path = uri.path.orEmpty().lowercase(Locale.US)
+        if (path.startsWith("/login") ||
+            path.startsWith("/signin") ||
+            path.startsWith("/api/")
+        ) {
+            return false
+        }
+        return path == "/dashboard" || path.startsWith("/dashboard/")
+    }
+
     fun isTransientNavigationError(url: String, errorCode: Int): Boolean {
         val host = runCatching { URI(url).host.orEmpty().lowercase(Locale.US) }.getOrDefault("")
         if (errorCode == 0) return false

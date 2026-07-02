@@ -45,6 +45,7 @@ open class WebLoginActivity : Activity() {
     private var observedCodexAccountId: String? = null
     private var copilotPostLoginRedirected = false
     private var copilotNativeCollectionStarted = false
+    private var cursorNativeCollectionStarted = false
     private var lastGeminiUsageRedirectKey: String? = null
     private var lastGeminiUsageRedirectAtMs = 0L
     private var geminiUsageRedirectAttempts = 0
@@ -368,6 +369,7 @@ open class WebLoginActivity : Activity() {
             if (maybeRedirectOpenCodeToGo(view, effectiveUrl)) return
             if (maybeStartClaudeNativeCollection(view, effectiveUrl, "page_finished")) return
             if (maybeStartCopilotNativeCollection(view, effectiveUrl, "page_finished")) return
+            if (maybeStartCursorNativeCollection(view, effectiveUrl, "page_finished")) return
             if (providerId == ProviderId.CODEX && ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, effectiveUrl)) {
                 if (effectiveUrl == "about:blank") {
                     injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
@@ -391,6 +393,10 @@ open class WebLoginActivity : Activity() {
                 return
             }
             if (providerId == ProviderId.COPILOT && effectiveUrl == "about:blank") {
+                injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
+                return
+            }
+            if (providerId == ProviderId.CURSOR && effectiveUrl == "about:blank") {
                 injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
                 return
             }
@@ -712,7 +718,7 @@ open class WebLoginActivity : Activity() {
         glmAuthenticatedSessionSeen = false
         collectorInjectionKeys.clear()
         clearGoogleAuthCookies(CookieManager.getInstance())
-        val recoveryUrl = lastGoogleOAuthUrl ?: GlmProviderUrls.WEB_LOGIN_URL
+        val recoveryUrl = lastGoogleOAuthUrl ?: GlmProviderUrls.WEB_OAUTH_URL
         Log.w(
             "AIQuotaLogin",
             "provider=glm cookieMismatchRecovery=google_sso_retry attempt=$glmCookieMismatchRecoveryAttempts target=${hostOf(recoveryUrl)}${pathOf(recoveryUrl)}"
@@ -874,8 +880,7 @@ open class WebLoginActivity : Activity() {
     private fun maybeStartGlmNativeCollection(view: WebView, url: String, pageText: String, reason: String): Boolean {
         if (providerId != ProviderId.GLM || finished || glmNativeCollectionStarted || url == "about:blank") return false
         val isUsagePage = GlmUsagePageRoutes.isUsageUrl(url)
-        val isMyPlanPage = GlmLoginPostRedirects.usageRedirectUrl(providerId, url) != null
-        if (!isUsagePage && !isMyPlanPage) return false
+        if (!isUsagePage) return false
         if (isUsagePage && !hasGlmNativeFetchHeaders()) return false
         if (ProviderWebCollectorScripts.isRefreshLoginPage(providerId, url, pageText)) return false
         glmNativeCollectionStarted = true
@@ -902,7 +907,7 @@ open class WebLoginActivity : Activity() {
         clearProviderWebSession(CookieManager.getInstance(), providerId)
         Log.w("AIQuotaLogin", "provider=glm authRequiredRecovery=login")
         webView.stopLoading()
-        webView.loadUrl(GlmProviderUrls.WEB_LOGIN_URL)
+        webView.loadUrl(GlmProviderUrls.WEB_OAUTH_URL)
         return true
     }
 
@@ -992,6 +997,19 @@ open class WebLoginActivity : Activity() {
         collectorInjectionKeys.clear()
         noteBridgePageUrl("about:blank")
         Log.i("AIQuotaLogin", "provider=copilot nativeCollectorStart=aboutblank reason=$reason from=${hostOf(url)}${pathOf(url)}")
+        view.stopLoading()
+        view.loadUrl("about:blank")
+        return true
+    }
+
+    private fun maybeStartCursorNativeCollection(view: WebView, url: String, reason: String): Boolean {
+        if (providerId != ProviderId.CURSOR || finished || cursorNativeCollectionStarted || url == "about:blank") return false
+        if (!ProviderLoginStrategy.shouldStartCursorNativeCollection(url)) return false
+        cursorNativeCollectionStarted = true
+        CookieManager.getInstance().flush()
+        collectorInjectionKeys.clear()
+        noteBridgePageUrl("about:blank")
+        Log.i("AIQuotaLogin", "provider=cursor nativeCollectorStart=aboutblank reason=$reason from=${hostOf(url)}${pathOf(url)}")
         view.stopLoading()
         view.loadUrl("about:blank")
         return true
@@ -1154,8 +1172,10 @@ open class WebLoginActivity : Activity() {
             pageUrl = url,
             awaitInteractiveLoginUsage = providerId == ProviderId.CODEX ||
                 providerId == ProviderId.GEMINI ||
+                providerId == ProviderId.CLAUDE ||
                 providerId == ProviderId.OPENCODE ||
-                providerId == ProviderId.COPILOT
+                providerId == ProviderId.COPILOT ||
+                providerId == ProviderId.CURSOR
         )
         if (script.isBlank()) return
         val injectionKey = "${providerId.storageId}:${hostOf(url)}:${routeKeyOf(url)}"

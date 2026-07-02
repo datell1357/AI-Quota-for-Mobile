@@ -151,18 +151,19 @@ class GlmWebSessionClearPolicyTest {
         assertTrue(login.contains("errorKind == \"glm_auth_required\" && recoverGlmAuthRequiredFromNativeCollection()"))
         assertTrue(login.contains("glmAuthRecoveryAttempted"))
         assertTrue(login.contains("authRequiredRecovery=login"))
-        assertTrue(login.contains("webView.loadUrl(GlmProviderUrls.WEB_LOGIN_URL)"))
+        assertTrue(login.contains("webView.loadUrl(GlmProviderUrls.WEB_OAUTH_URL)"))
     }
 
     @Test
-    fun glmChatLoginUrlDoesNotStartNativeCollectionBeforeUsageRoute() {
+    fun glmNativeCollectionStartsOnlyFromUsageRouteWithCapturedHeaders() {
         val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
         val nativeStart = login
             .substringAfter("private fun maybeStartGlmNativeCollection")
             .substringBefore("private fun recoverGlmAuthRequiredFromNativeCollection")
 
-        assertTrue(nativeStart.contains("if (!isUsagePage && !isMyPlanPage) return false"))
+        assertTrue(nativeStart.contains("if (!isUsagePage) return false"))
         assertTrue(nativeStart.contains("if (isUsagePage && !hasGlmNativeFetchHeaders()) return false"))
+        assertFalse(nativeStart.contains("isMyPlanPage"))
         assertFalse(nativeStart.contains("isChatUrl"))
         assertFalse(nativeStart.contains("WEB_LOGIN_URL"))
     }

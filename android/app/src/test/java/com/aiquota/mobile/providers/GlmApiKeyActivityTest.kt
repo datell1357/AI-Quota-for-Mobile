@@ -82,7 +82,7 @@ class GlmApiKeyActivityTest {
             .substringBefore("private fun showApiKeyEntry")
 
         assertTrue(openWebOAuth.contains("ProviderWebSessionCleaner.clearProviderWebSession(ProviderId.GLM)"))
-        assertTrue(openWebOAuth.contains("GlmProviderUrls.WEB_LOGIN_URL"))
+        assertTrue(openWebOAuth.contains("GlmProviderUrls.WEB_OAUTH_URL"))
         assertTrue(openWebOAuth.indexOf("ProviderWebSessionCleaner.clearProviderWebSession(ProviderId.GLM)") <
             openWebOAuth.indexOf("WebLoginActivity.createIntent("))
     }

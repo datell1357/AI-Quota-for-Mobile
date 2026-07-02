@@ -456,7 +456,7 @@ object ProviderWebCollectorScripts {
             if (providerId == ProviderId.CODEX) {
                 codexAboutBlankJsonPayload(forceCollectorStart = awaitInteractiveLoginUsage)
             } else {
-                nativeProviderPayload(providerId)
+                nativeProviderPayload(providerId, forceCollectorStart = awaitInteractiveLoginUsage)
             }
         } else {
             ProviderScriptProviders.providerFor(providerId).collectorScript(
@@ -1125,17 +1125,31 @@ object ProviderWebCollectorScripts {
               if (!window.__AIQuotaStartProviderCollector || !window.__AIQuotaStartProviderCollector("$provider", $forceCollectorStartJson)) return;
               var c = window.__AIQuotaCollector;
               if (!c || !c.fetchNativeUsagePayload) return;
-              c.fetchNativeUsagePayload().then(function(result) {
-                if (result && result.ok && result.payload) {
-                  result.payload.collectorMode = result.payload.collectorMode || "native-bridge";
-                  c.post(result.payload);
+              var attempts = 0;
+              var retryDelayMs = 2500;
+              var maxAttempts = $forceCollectorStartJson ? 72 : 1;
+              function failOrRetry(kind, message) {
+                if (attempts < maxAttempts) {
+                  setTimeout(runProbe, retryDelayMs);
                   return;
                 }
-                var diagnostic = result && (result.diagnostic || result.error) || "${provider}_native_usage_unavailable";
-                c.fail(diagnostic, JSON.stringify(result || {}));
-              }).catch(function(error) {
-                c.fail("${provider}_native_usage_unavailable", String(error && error.message || error));
-              });
+                c.fail(kind, message);
+              }
+              function runProbe() {
+                attempts += 1;
+                c.fetchNativeUsagePayload().then(function(result) {
+                  if (result && result.ok && result.payload) {
+                    result.payload.collectorMode = result.payload.collectorMode || "native-bridge";
+                    c.post(result.payload);
+                    return;
+                  }
+                  var diagnostic = result && (result.diagnostic || result.error) || "${provider}_native_usage_unavailable";
+                  failOrRetry(diagnostic, JSON.stringify(result || {}));
+                }).catch(function(error) {
+                  failOrRetry("${provider}_native_usage_unavailable", String(error && error.message || error));
+                });
+              }
+              runProbe();
             })();
         """.trimIndent()
     }

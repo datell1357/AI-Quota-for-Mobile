@@ -182,6 +182,45 @@ class GlmUsageFetcherTest {
         }
     }
 
+    @Test
+    fun webSessionNoCodingPlanQuotaUsesNoSubscriptionDiagnostic() {
+        val server = ServerSocket().apply {
+            reuseAddress = true
+            bind(InetSocketAddress("127.0.0.1", 0))
+        }
+        val serverThread = thread(name = "glm-web-session-no-plan-test-server") {
+            server.accept().use { socket ->
+                val request = socket.getInputStream().bufferedReader(StandardCharsets.UTF_8)
+                while (true) {
+                    val line = request.readLine() ?: break
+                    if (line.isEmpty()) break
+                }
+                socket.getOutputStream().writeHttpResponse(
+                    status = HttpURLConnection.HTTP_OK,
+                    reason = "OK",
+                    body = """
+                        {"code":200,"msg":"You don't have any subscription","data":{}}
+                    """.trimIndent().toByteArray(StandardCharsets.UTF_8)
+                )
+            }
+        }
+
+        try {
+            val result = GlmUsageFetcher.fetchUsagePayloadWithCookie(
+                cookieHeader = "zai_session=session-value",
+                endpointUrl = "http://127.0.0.1:${server.localPort}/quota",
+                requestHeaders = mapOf("Authorization" to "Bearer browser-token")
+            )
+
+            assertEquals(GlmNoSubscriptionPolicy.ERROR_KIND, result.diagnostic)
+            assertFalse(result.requiresAuth)
+            assertNull(result.payload)
+        } finally {
+            server.close()
+            serverThread.join(1_000L)
+        }
+    }
+
     private fun java.io.OutputStream.writeHttpResponse(status: Int, reason: String, body: ByteArray) {
         val headers = buildString {
             append("HTTP/1.1 ")

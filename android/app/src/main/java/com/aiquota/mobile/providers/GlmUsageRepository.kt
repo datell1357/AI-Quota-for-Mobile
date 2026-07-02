@@ -390,7 +390,7 @@ object GlmUsageFetcher {
             code == "1310" || message.contains("limit exhausted") ->
                 "glm_quota_exhausted"
             message.contains("subscription") || message.contains("plan") ->
-                "glm_no_coding_plan_quota"
+                GlmNoSubscriptionPolicy.ERROR_KIND
             else -> "glm_missing_quota_limits"
         }
     }

@@ -64,7 +64,8 @@ class GoogleProviderLoginRoutingTest {
         val collectorError = login.substringAfter("fun postCollectorError")
             .substringBefore("@JavascriptInterface\n        fun fetchCursorJson")
 
-        assertTrue(collectorInjection.contains("awaitInteractiveLoginUsage = providerId == ProviderId.CODEX || providerId == ProviderId.GEMINI"))
+        assertTrue(collectorInjection.contains("providerId == ProviderId.CODEX"))
+        assertTrue(collectorInjection.contains("providerId == ProviderId.GEMINI"))
         assertTrue(collectorError.contains("shouldKeepLoginOpenUntilUsagePayload(errorKind)"))
         assertTrue(collectorError.indexOf("shouldKeepLoginOpenUntilUsagePayload(errorKind)") < collectorError.indexOf("finishConnectedWithoutUsage"))
     }
@@ -186,7 +187,7 @@ class GoogleProviderLoginRoutingTest {
         assertTrue(recover.contains("glmCookieMismatchRecoveryAttempts >= GLM_COOKIE_MISMATCH_MAX_RECOVERIES"))
         assertTrue(recover.contains("glmCookieMismatchRecoveryAttempts += 1"))
         assertTrue(recover.contains("clearGoogleAuthCookies(CookieManager.getInstance())"))
-        assertTrue(recover.contains("lastGoogleOAuthUrl ?: GlmProviderUrls.WEB_LOGIN_URL"))
+        assertTrue(recover.contains("lastGoogleOAuthUrl ?: GlmProviderUrls.WEB_OAUTH_URL"))
         assertTrue(recover.contains("cookieMismatchRecovery=google_sso_retry"))
         assertTrue(recover.contains("attempt=\$glmCookieMismatchRecoveryAttempts"))
         assertFalse(recover.contains("clearProviderWebSession"))

@@ -12,21 +12,34 @@ object ProviderLoginUrlRewriter {
         val uri = runCatching { URI(url.trim()) }.getOrNull() ?: return null
         if (!uri.scheme.equals("https", ignoreCase = true)) return null
         if (!uri.host.orEmpty().isAccountsGoogleHost()) return null
-        if (providerId != ProviderId.CLAUDE) return null
-        if (!uri.looksLikeGoogleOAuthStart()) return null
-        if (uri.promptTokens().any { it.equals("select_account", ignoreCase = true) }) return null
+        if (providerId != ProviderId.CLAUDE && providerId != ProviderId.GLM) return null
+        val forceAccountChooser = providerId == ProviderId.GLM
+        if (!uri.looksLikeGoogleOAuthStart() && !(forceAccountChooser && uri.looksLikeGoogleServiceLogin())) {
+            return null
+        }
+        if (
+            uri.promptTokens().any { it.equals("select_account", ignoreCase = true) } &&
+            (!forceAccountChooser || uri.queryValue("authuser") == "-1")
+        ) {
+            return null
+        }
 
-        return uri.withPromptSelectAccount()
+        return uri.withPromptSelectAccount(forceAccountChooser)
     }
 
     private fun URI.looksLikeGoogleOAuthStart(): Boolean {
         val path = rawPath.orEmpty().lowercase(Locale.US)
         val query = rawQuery.orEmpty().lowercase(Locale.US)
-        return "oauth" in path ||
+        return path.contains("/o/oauth2/") ||
             ("client_id=" in query && "redirect_uri=" in query)
     }
 
-    private fun URI.withPromptSelectAccount(): String {
+    private fun URI.looksLikeGoogleServiceLogin(): Boolean {
+        val path = rawPath.orEmpty().lowercase(Locale.US)
+        return path.endsWith("/servicelogin")
+    }
+
+    private fun URI.withPromptSelectAccount(forceAccountChooser: Boolean): String {
         val promptTokens = promptTokens()
             .filterNot { it.equals("none", ignoreCase = true) }
             .filterNot { it.equals("select_account", ignoreCase = true) }
@@ -36,7 +49,14 @@ object ProviderLoginUrlRewriter {
             .filter { it.isNotBlank() }
             .filterNot { part ->
                 part.substringBefore("=").equals("prompt", ignoreCase = true)
-            } + "prompt=${nextPrompt.joinToString(" ").urlEncode()}"
+            }
+            .filterNot { part ->
+                forceAccountChooser && part.substringBefore("=").equals("authuser", ignoreCase = true)
+            }
+            .let { parts ->
+                parts + "prompt=${nextPrompt.joinToString(" ").urlEncode()}" +
+                    if (forceAccountChooser) listOf("authuser=-1") else emptyList()
+            }
 
         return buildString {
             append(scheme)
@@ -69,6 +89,14 @@ object ProviderLoginUrlRewriter {
             .map { it.trim() }
             .filter { it.isNotBlank() }
             .toList()
+    }
+
+    private fun URI.queryValue(key: String): String? {
+        return rawQuery.orEmpty()
+            .split("&")
+            .firstOrNull { part -> part.substringBefore("=").equals(key, ignoreCase = true) }
+            ?.substringAfter("=", missingDelimiterValue = "")
+            ?.urlDecode()
     }
 
     private fun String.isAccountsGoogleHost(): Boolean {

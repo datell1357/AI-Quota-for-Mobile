@@ -214,7 +214,7 @@ class GlmApiKeyActivity : ComponentActivity() {
         val intent = WebLoginActivity.createIntent(
             this,
             ProviderId.GLM,
-            GlmProviderUrls.WEB_LOGIN_URL
+            GlmProviderUrls.WEB_OAUTH_URL
         )
         val result = runCatching {
             startActivity(intent)

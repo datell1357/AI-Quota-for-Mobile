@@ -6,6 +6,9 @@ import java.net.URI
 
 object ProviderWebSessionClearPolicy {
     fun shouldClearBeforeLogin(providerId: ProviderId, connectionState: ProviderConnectionState?): Boolean {
+        if (providerId == ProviderId.OPENCODE || providerId == ProviderId.COPILOT) {
+            return connectionState != ProviderConnectionState.CONNECTED
+        }
         if (connectionState != ProviderConnectionState.INTERACTIVE_AUTH_REQUIRED) return false
         return providerId == ProviderId.CURSOR || providerId == ProviderId.GEMINI
     }
