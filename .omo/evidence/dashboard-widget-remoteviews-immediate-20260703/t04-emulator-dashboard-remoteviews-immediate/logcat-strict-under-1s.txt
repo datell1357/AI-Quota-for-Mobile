@@ -1,0 +1,10 @@
+07-03 02:12:34.280   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 02:12:41.562   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 02:12:47.257   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 02:12:54.228   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 02:12:58.449 25281 25281 D DashboardWidgetImmediate: updateAppWidget appWidgetId=17
+07-03 02:12:58.453   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 02:12:58.793 25281 25281 D DashboardWidgetImmediate: updateAppWidget appWidgetId=17
+07-03 02:12:58.794   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 02:13:00.908   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 02:13:04.624   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17

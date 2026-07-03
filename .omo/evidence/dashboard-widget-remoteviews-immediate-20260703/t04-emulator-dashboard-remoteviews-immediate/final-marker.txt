@@ -1,8 +1,8 @@
-Dashboard widget RemoteViews immediate QA final marker
+Dashboard widget RemoteViews immediate QA initial marker
 appWidgetId=17
 Action: GLM hidden through DashboardWidgetConfigureActivity, then Done tapped.
 1s screenshot: home-final-after-1s.png
 1s screenshot visible providers: Codex, Antigravity, Cursor
 1s screenshot absent providers: GLM, OpenCode
 Timing: finalCheckpoint1sStartMs - finalDoneTapReturnedMs = 1054ms
-Logcat: DashboardWidgetImmediate updateAppWidget appWidgetId=17 at hide and Done; later Glance fallback occurs after the 1s checkpoint.
+Status: superseded by strict-under-1s-marker.txt because this checkpoint started 54ms over the requested 1s threshold.

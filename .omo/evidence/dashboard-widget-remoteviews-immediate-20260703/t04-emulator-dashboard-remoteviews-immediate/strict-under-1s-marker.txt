@@ -1,0 +1,8 @@
+Strict under-1s visual QA marker
+appWidgetId=17
+Action: Antigravity hidden through DashboardWidgetConfigureActivity, then Done tapped.
+1s screenshot: t04-emulator-dashboard-remoteviews-immediate/home-strict-under-1s.png
+Visible providers at strict screenshot: Codex, Cursor
+Absent providers at strict screenshot: Antigravity, GLM, OpenCode
+Timing: strictCheckpointStartMs - strictDoneTapReturnedMs = 801ms
+Interpretation: checkpoint capture started under the 1000ms contract; screenshot shows the launcher dashboard widget already reflected the provider hide change.

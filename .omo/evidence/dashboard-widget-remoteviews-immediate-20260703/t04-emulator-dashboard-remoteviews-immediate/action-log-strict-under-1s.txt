@@ -1,0 +1,5 @@
+strictActionStartMs=1783044800791
+antigravityHideTapReturnedMs=1783044800909
+strictDoneTapReturnedMs=1783044801257
+strictCheckpointStartMs=1783044802058
+strictScreenshotDoneMs=1783044803979

@@ -1,0 +1,15 @@
+Scope guardrails
+Committed code commit: 5b99e833c
+Post-commit strict QA evidence added after gate timing correction.
+
+Code/resource files in code commit:
+android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateRenderer.kt
+android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdater.kt
+android/app/src/main/res/layout/ai_quota_widget_dashboard_immediate.xml
+android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetImmediateRendererTest.kt
+android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdaterTest.kt
+
+Provider files in code commit:
+
+Forbidden renderer scan:
+NO_MATCH

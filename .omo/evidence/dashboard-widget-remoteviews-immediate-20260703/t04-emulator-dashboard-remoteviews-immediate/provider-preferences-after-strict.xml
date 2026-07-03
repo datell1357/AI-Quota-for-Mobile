@@ -1,0 +1,5 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="dashboard_widget_hidden_providers_17">claude,glm,opencode,gemini,copilot,antigravity</string>
+    <string name="dashboard_widget_provider_order_17">claude,codex,opencode,glm,gemini,copilot,antigravity,cursor</string>
+</map>
