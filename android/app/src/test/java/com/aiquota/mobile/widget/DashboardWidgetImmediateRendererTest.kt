@@ -101,4 +101,14 @@ class DashboardWidgetImmediateRendererTest {
             renderer.contains("setOnClickPendingIntent(R.id.dashboard_immediate_root")
         )
     }
+
+    @Test
+    fun firstDashboardGaugeUsesSameWidthAsOtherRows() {
+        val layout = File("src/main/res/layout/ai_quota_widget_dashboard_immediate.xml").readText()
+        val firstRow = layout.substringAfter("android:id=\"@+id/dashboard_immediate_row_0\"")
+            .substringBefore("android:id=\"@+id/dashboard_immediate_row_1\"")
+
+        assertTrue(firstRow.contains("android:layout_width=\"match_parent\""))
+        assertTrue(!firstRow.contains("android:paddingEnd"))
+    }
 }
