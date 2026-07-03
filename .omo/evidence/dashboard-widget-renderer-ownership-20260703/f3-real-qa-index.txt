@@ -1,0 +1,38 @@
+T06 real emulator QA index
+
+Verdict: PASS
+Device: emulator-5554
+APK installed: android/app/build/outputs/apk/debug/app-debug.apk
+Install evidence: .omo/evidence/dashboard-widget-renderer-ownership-20260703/t06-install-debug-apk.txt
+Baseline widgets:
+- Dashboard appWidgetId=17, provider=com.aiquota.mobile.widget.AIQuotaUnifiedGlanceWidgetReceiver
+- Battery appWidgetId=22, provider=com.aiquota.mobile.widget.AIQuotaCircularWidgetProvider
+- Baseline dump: .omo/evidence/dashboard-widget-renderer-ownership-20260703/t06-appwidget-baseline.txt
+- Baseline screenshot/XML: t06-home-baseline.png, t06-home-baseline.xml
+
+Scenario 1: battery no-dashboard-flash
+- Directory: .omo/evidence/dashboard-widget-renderer-ownership-20260703/t06-battery-no-dashboard-flash/
+- Action: opened DashboardWidgetConfigureActivity with appWidgetId=22, hid Gemini, pressed Done.
+- Under-1s capture started 410ms after Done.
+- Evidence: home-under-1s.png/xml, home-5s.png/xml, home-10s.png/xml, appwidget-after.txt, logcat-after.txt, action-log.txt.
+- Result: battery/circular widget area stayed as the simple login/battery surface; no dashboard provider-row layout appeared in that slot at 1s/5s/10s.
+
+Scenario 2: dashboard no-flicker
+- Directory: .omo/evidence/dashboard-widget-renderer-ownership-20260703/t06-dashboard-no-flicker/
+- Action: opened DashboardWidgetConfigureActivity with appWidgetId=17, hid OpenCode, pressed Done.
+- Under-1s capture started 411ms after Done.
+- Evidence: home-under-1s.png/xml, home-5s.png/xml, home-10s.png/xml, appwidget-after.txt, logcat-after.txt, action-log.txt.
+- Result: dashboard provider set changed to Claude, Codex, GLM, Gemini and stayed that way at 1s/5s/10s; OpenCode did not reappear.
+
+Scenario 3: dashboard global refresh no-overwrite
+- Directory: .omo/evidence/dashboard-widget-renderer-ownership-20260703/t06-dashboard-global-refresh/
+- Action: broadcast u.sage.widget.action.REFRESH to WidgetManualRefreshReceiver with appWidgetId=17.
+- Under-1s capture started 404ms after broadcast completion.
+- Evidence: home-under-1s.png/xml, home-5s.png/xml, home-10s.png/xml, appwidget-after.txt, logcat-after.txt, action-log.txt.
+- Result: dashboard stayed on the RemoteViews provider set Claude, Codex, GLM, Gemini at 1s/5s/10s; OpenCode did not reappear and no Glance-style overwrite was observed.
+
+Cleanup
+- Receipt: .omo/evidence/dashboard-widget-renderer-ownership-20260703/t06-cleanup-receipt.txt
+- Restored battery appWidgetId=22 Gemini to included.
+- Restored dashboard appWidgetId=17 OpenCode and Gemini to included.
+- Readbacks: t06-battery-no-dashboard-flash/config-cleanup-after-summary.txt and t06-dashboard-no-flicker/config-cleanup-corrected-summary.txt.

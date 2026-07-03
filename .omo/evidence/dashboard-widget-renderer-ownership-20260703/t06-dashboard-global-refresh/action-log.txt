@@ -1,0 +1,14 @@
+scenario=dashboard-global-refresh-no-overwrite
+appWidgetId=17
+expectedVisibleProviderSet=Claude,Codex,GLM,Gemini
+forbiddenReappearingProvider=OpenCode
+broadcastStartMs=1783058574858
+Broadcasting: Intent { act=u.sage.widget.action.REFRESH flg=0x400000 cmp=com.aiquota.mobile/.widget.WidgetManualRefreshReceiver (has extras) }
+Broadcast completed: result=0
+broadcastEndMs=1783058574939
+under1sCaptureStartMs=1783058575343
+under1sDeltaMs=404
+under1sScreenshotDoneMs=1783058575980
+under1sXmlDoneMs=1783058577542
+checkpoint5sStartMs=1783058581583
+checkpoint10sStartMs=1783058589393

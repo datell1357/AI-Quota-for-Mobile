@@ -1,0 +1,167 @@
+Short status:
+ M .idea/caches/deviceStreaming.xml
+ M .omo/boulder.json
+ M .omo/start-work/ledger.jsonl
+ M android/app/build.gradle.kts
+ M android/app/src/main/java/com/aiquota/mobile/providers/GlmUsagePageRoutes.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/GlmUsageRepository.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderCollectorErrorPolicy.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderRefreshPlan.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/ProviderWebCollectorScripts.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/UsageSurfaceRefresher.kt
+ M android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt
+ M android/app/src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt
+ M android/app/src/main/java/com/aiquota/mobile/widget/AIQuotaCircularWidgetProvider.kt
+ M android/app/src/main/java/com/aiquota/mobile/widget/AIQuotaGlanceWidget.kt
+ M android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt
+ M android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateRenderer.kt
+ M android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdater.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/GlmApiKeyActivityTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/GlmUsagePageRoutesTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/GlmWebSessionClearPolicyTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshServicePolicyTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderCollectorErrorPolicyTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderRefreshPlanTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/ProviderWebCollectorScriptsTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/UsageSurfaceRefresherTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/providers/WebLoginActivityNativeBridgeTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivityTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetImmediateRendererTest.kt
+ M android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdaterTest.kt
+?? .omo/drafts/claude-session-recovery-20260702.md
+?? .omo/drafts/cursor-session-recovery-20260703.md
+?? .omo/drafts/dashboard-widget-immediate-config-20260703.branch.txt
+?? .omo/drafts/dashboard-widget-immediate-config-20260703.md
+?? .omo/drafts/dashboard-widget-immediate-config-20260703.status.txt
+?? .omo/drafts/dashboard-widget-remoteviews-immediate-20260703.md
+?? .omo/drafts/dashboard-widget-renderer-ownership-20260703.md
+?? .omo/drafts/glm-session-persistence-20260703.md
+?? .omo/drafts/provider-auth-session-stability-20260702.md
+?? .omo/drafts/provider-qa-followup-20260702.md
+?? .omo/drafts/provider-qa-second-failure-replan-20260702.md
+?? .omo/drafts/provider-real-qa-session-recovery-20260702.md
+?? .omo/drafts/settings-topbar-back-navigation-20260703.md
+?? .omo/evidence/auth-session-bugs/
+?? .omo/evidence/claude-session-recovery-20260702/
+?? .omo/evidence/cursor-session-recovery-20260703-code-review.md
+?? .omo/evidence/cursor-session-recovery-20260703-create-goals.json
+?? .omo/evidence/cursor-session-recovery-20260703/
+?? .omo/evidence/dashboard-widget-remoteviews-immediate-20260703/t04-emulator-dashboard-remoteviews-immediate/home-after-delay-check.png
+?? .omo/evidence/dashboard-widget-remoteviews-immediate-20260703/t04-emulator-dashboard-remoteviews-immediate/home-after-delay-check.xml
+?? .omo/evidence/dashboard-widget-remoteviews-immediate-20260703/t04-emulator-dashboard-remoteviews-immediate/logcat-delay-check.txt
+?? .omo/evidence/dashboard-widget-remoteviews-immediate-20260703/t06-no-revert/
+?? .omo/evidence/dashboard-widget-renderer-ownership-20260703/
+?? .omo/evidence/glm-session-persistence-20260703/
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g002-checkpoint-complete.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g002-forbidden-diff-search.txt
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g002-objective-alias-annotation.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g002-record-c001.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g002-record-c002.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g002-record-c003.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g002-revise-c002.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g002-revise-c003.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g003-acquire.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g003-checkpoint-complete.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g003-non-target-preservation.txt
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g003-record-c001.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g003-record-c002.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g003-record-c003.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g003-revise-c001.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g003-revise-c002.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g003-revise-c003.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g004-acquire.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g004-checkpoint-complete.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g004-optimization-boundary.txt
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g004-record-all.jsonl
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g004-revise-all.jsonl
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g005-acquire.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g005-checkpoint-complete.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g005-record-all.jsonl
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g005-revise-record-checkpoint.sh.log
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g005-stale-fake-policy.txt
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g006-acquire.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g006-checkpoint-blocked.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g006-record-c001-blocked.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g006-revise-c001.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g007-acquire.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g007-checkpoint-complete.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g007-record-all.jsonl
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g007-revise-record.jsonl
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g007-target-normal-route.txt
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g008-acquire.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g008-checkpoint-blocked.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g008-glm-disconnect-relogin.txt
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g008-record-all.jsonl
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g008-revise-all.jsonl
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g009-acquire.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g009-checkpoint-complete.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g009-provider-scoped-disconnect.txt
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g009-record-all.jsonl
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g009-revise-record-checkpoint.log
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g010-acquire.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g010-checkpoint-blocked.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g010-codex-fresh-native.txt
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g010-record-all.jsonl
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g010-revise-record.jsonl
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g011-acquire.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g011-checkpoint-complete.json
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g011-evidence-inventory.txt
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g011-record-all.jsonl
+?? .omo/evidence/provider-native-bridge-optimization-20260702/g011-revise-record.jsonl
+?? .omo/evidence/provider-qa-followup-20260702-gate-review.md
+?? .omo/evidence/provider-qa-followup-20260702/
+?? .omo/evidence/provider-real-qa-session-recovery-20260702/
+?? .omo/evidence/release-1.1.1-v24/
+?? .omo/evidence/release-1.1.1-v25/
+?? .omo/evidence/settings-topbar-back-navigation-20260703/
+?? .omo/evidence/watch-cursor-refresh-20260702/
+?? .omo/plans/claude-session-recovery-20260702.md
+?? .omo/plans/cursor-session-recovery-20260703.md
+?? .omo/plans/dashboard-widget-renderer-ownership-20260703.md
+?? .omo/plans/glm-session-persistence-20260703.md
+?? .omo/plans/provider-qa-followup-20260702.md
+?? .omo/plans/provider-real-qa-session-recovery-20260702.md
+?? .omo/plans/settings-topbar-back-navigation-20260703.md
+?? .omo/teams/019f2056-2bc4-7c12-9e54-e897422667c2/
+?? .omo/teams/auth-session-bugs-20260701/
+?? .omo/teams/team-986447c4/
+?? .omo/teams/team-d6672fe5/
+?? .omo/teams/team-e80796b0/
+?? .omo/ulw-loop/auth-session-bugs-20260701/
+?? .omo/ulw-loop/cursor-session-recovery-20260703/
+?? .omo/ulw-loop/dashboard-widget-renderer-ownership-20260703-brief.md
+?? .omo/ulw-loop/dashboard-widget-renderer-ownership-20260703/
+?? .omo/ulw-loop/glm-session-persistence-20260703/
+?? .omo/ulw-loop/provider-native-bridge-optimization-20260702/
+?? .omo/ulw-loop/provider-qa-followup-20260702/
+?? .omo/ulw-loop/provider-real-qa-session-recovery-20260702/
+?? .omo/ulw-loop/watch-cursor-refresh-20260702/
+?? android/app/src/main/java/com/aiquota/mobile/providers/ClaudeNativeHeaderStore.kt
+?? android/app/src/main/res/drawable/ic_arrow_back.xml
+?? android/app/src/test/java/com/aiquota/mobile/providers/ClaudeNativeHeaderStoreTest.kt
+?? android/app/src/test/java/com/aiquota/mobile/ui/AIQuotaAppShellNavigationTest.kt
+
+Scoped T01-T05 diff files:
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/UsageSurfaceRefresher.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/widget/AIQuotaCircularWidgetProvider.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/widget/AIQuotaGlanceWidget.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateRenderer.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdater.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/UsageSurfaceRefresherTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivityTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetImmediateRendererTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdaterTest.kt', LF will be replaced by CRLF the next time Git touches it
+android/app/src/main/java/com/aiquota/mobile/providers/UsageSurfaceRefresher.kt
+android/app/src/main/java/com/aiquota/mobile/widget/AIQuotaCircularWidgetProvider.kt
+android/app/src/main/java/com/aiquota/mobile/widget/AIQuotaGlanceWidget.kt
+android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt
+android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateRenderer.kt
+android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdater.kt
+android/app/src/test/java/com/aiquota/mobile/providers/UsageSurfaceRefresherTest.kt
+android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivityTest.kt
+android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetImmediateRendererTest.kt
+android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdaterTest.kt

@@ -1,0 +1,2 @@
+-rw-r--r-- 1 datell1357 197121 20M  7월  3 14:55 android/app/build/outputs/apk/debug/app-debug.apk
+INSTALLABLE_APK=android/app/build/outputs/apk/debug/app-debug.apk

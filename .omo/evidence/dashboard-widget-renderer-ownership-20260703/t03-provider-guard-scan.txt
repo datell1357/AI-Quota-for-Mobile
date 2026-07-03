@@ -1,0 +1,8 @@
+android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdater.kt:11:            .getAppWidgetInfo(appWidgetId)
+android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdater.kt:14:        if (providerClassName != AIQuotaUnifiedGlanceWidgetReceiver::class.java.name) return
+android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdater.kt:15:        DashboardWidgetImmediateRenderer.render(appContext, appWidgetId)
+android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt:675:            .getAppWidgetInfo(appWidgetId)
+android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt:679:            AIQuotaUnifiedGlanceWidgetReceiver::class.java.name -> {
+android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt:682:            AIQuotaCircularWidgetProvider::class.java.name -> {
+android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt:683:                AIQuotaCircularWidgetProvider.update(applicationContext, appWidgetId)
+EXIT_CODE=0

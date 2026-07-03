@@ -1,0 +1,12 @@
+Forbidden implementation terms in added T01-T05 lines:
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/UsageSurfaceRefresher.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/widget/AIQuotaCircularWidgetProvider.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/widget/AIQuotaGlanceWidget.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateRenderer.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdater.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/UsageSurfaceRefresherTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivityTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetImmediateRendererTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdaterTest.kt', LF will be replaced by CRLF the next time Git touches it
+PASS: added scoped diff has no provider login/session/collector/native bridge/DOM/fallback additions

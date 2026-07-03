@@ -1,0 +1,6 @@
+Code quality review:
+- Dashboard receiver component name unchanged; class now extends AppWidgetProvider and delegates to DashboardWidgetImmediateRenderer.
+- Dashboard renderer owns updateAll by AIQuotaUnifiedGlanceWidgetReceiver component ids.
+- Configure refresh branches by actual provider class and no longer calls broad UsageSurfaceRefresher from configuration.
+- UsageSurfaceRefresher keeps circular and provider widget updates, replacing dashboard Glance update with receiver RemoteViews updateAll.
+- No new provider login/session/collector/native bridge/DOM/fallback additions in scoped diff.

@@ -1,0 +1,17 @@
+scenario=battery-no-dashboard-flash
+appWidgetId=22
+openConfigStartMs=1783058370071
+Starting: Intent { cmp=com.aiquota.mobile/.widget.DashboardWidgetConfigureActivity (has extras) }
+openConfigExitCode=0
+captureConfigMs=1783058371193
+toggleProvider=Gemini
+toggleTapStartMs=1783058411748
+toggleTapEndMs=1783058411830
+doneTapStartMs=1783058412085
+doneTapEndMs=1783058412162
+under1sCaptureStartMs=1783058412572
+under1sDeltaMs=410
+under1sScreenshotDoneMs=1783058413408
+under1sXmlDoneMs=1783058415214
+checkpoint5sStartMs=1783058419267
+checkpoint10sStartMs=1783058427084

@@ -1,0 +1,18 @@
+cleanupStartMs=1783058638506
+restore battery appWidgetId=22 provider=Gemini
+Starting: Intent { cmp=com.aiquota.mobile/.widget.DashboardWidgetConfigureActivity (has extras) }
+restore dashboard appWidgetId=17 provider=OpenCode
+Starting: Intent { cmp=com.aiquota.mobile/.widget.DashboardWidgetConfigureActivity (has extras) }
+cleanupEndMs=1783058649900
+cleanup=restored Gemini on battery widget and OpenCode on dashboard widget
+Starting: Intent { cmp=com.aiquota.mobile/.widget.DashboardWidgetConfigureActivity (has extras) }
+cleanupCorrectionStartMs=1783058718600
+restore dashboard excluded providers via readback bounds: OpenCode center=(975,1866), Gemini center=(975,2030)
+Starting: Intent { cmp=com.aiquota.mobile/.widget.DashboardWidgetConfigureActivity (has extras) }
+Warning: Activity not started, its current task has been brought to the front
+Starting: Intent { cmp=com.aiquota.mobile/.widget.DashboardWidgetConfigureActivity (has extras) }
+cleanupCorrectionEndMs=1783058727020
+batteryCleanupReadbackStartMs=1783058749231
+Starting: Intent { cmp=com.aiquota.mobile/.widget.DashboardWidgetConfigureActivity (has extras) }
+Warning: Activity not started, its current task has been brought to the front
+batteryCleanupReadbackEndMs=1783058752295

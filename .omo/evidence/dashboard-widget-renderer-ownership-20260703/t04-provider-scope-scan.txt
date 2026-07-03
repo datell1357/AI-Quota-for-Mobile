@@ -1,0 +1,24 @@
+Changed provider files:
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/GlmUsagePageRoutes.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/GlmUsageRepository.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderCollectorErrorPolicy.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderRefreshPlan.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/ProviderWebCollectorScripts.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/UsageSurfaceRefresher.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt', LF will be replaced by CRLF the next time Git touches it
+android/app/src/main/java/com/aiquota/mobile/providers/GlmUsagePageRoutes.kt
+android/app/src/main/java/com/aiquota/mobile/providers/GlmUsageRepository.kt
+android/app/src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt
+android/app/src/main/java/com/aiquota/mobile/providers/ProviderCollectorErrorPolicy.kt
+android/app/src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt
+android/app/src/main/java/com/aiquota/mobile/providers/ProviderRefreshPlan.kt
+android/app/src/main/java/com/aiquota/mobile/providers/ProviderWebCollectorScripts.kt
+android/app/src/main/java/com/aiquota/mobile/providers/UsageSurfaceRefresher.kt
+android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt
+
+UsageSurfaceRefresher forbidden-term diff scan:
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/UsageSurfaceRefresher.kt', LF will be replaced by CRLF the next time Git touches it
+PASS: UsageSurfaceRefresher diff has no unrelated provider terms
+Note: any other provider files listed were pre-existing dirty work and were not edited for T01-T05.
