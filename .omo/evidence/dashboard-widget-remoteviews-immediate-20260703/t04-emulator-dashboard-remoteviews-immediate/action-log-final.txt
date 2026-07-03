@@ -1,0 +1,7 @@
+finalActionStartMs=1783044023662
+glmHideTapReturnedMs=1783044023766
+finalDoneTapReturnedMs=1783044024103
+finalCheckpoint1sStartMs=1783044025157
+finalScreenshotDoneMs=1783044027027
+UI hierchary dumped to: /sdcard/dashboard-widget-final-after-1s.xml
+finalXmlPulledMs=1783044029486

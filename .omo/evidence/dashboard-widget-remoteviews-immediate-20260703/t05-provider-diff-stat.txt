@@ -1,0 +1,18 @@
+ .../aiquota/mobile/providers/GlmUsagePageRoutes.kt |  12 +
+ .../aiquota/mobile/providers/GlmUsageRepository.kt |   2 +-
+ .../providers/ProviderBackgroundRefreshService.kt  | 153 +++++++++++--
+ .../providers/ProviderCollectorErrorPolicy.kt      |  20 ++
+ .../providers/ProviderNativeUsagePayloadFetcher.kt |  61 +++--
+ .../mobile/providers/ProviderRefreshPlan.kt        |   3 +
+ .../providers/ProviderWebCollectorScripts.kt       | 247 ++++++++++++++++++++-
+ .../aiquota/mobile/providers/WebLoginActivity.kt   | 152 ++++++++++++-
+ .../mobile/providers/GlmApiKeyActivityTest.kt      |   5 +-
+ .../mobile/providers/GlmUsagePageRoutesTest.kt     |  21 ++
+ .../providers/GlmWebSessionClearPolicyTest.kt      |  47 +++-
+ .../ProviderBackgroundRefreshServicePolicyTest.kt  |  37 ++-
+ .../providers/ProviderCollectorErrorPolicyTest.kt  |  26 +++
+ .../ProviderNativeUsagePayloadFetcherTest.kt       |  79 +++++++
+ .../mobile/providers/ProviderRefreshPlanTest.kt    |   6 +-
+ .../providers/ProviderWebCollectorScriptsTest.kt   |  27 ++-
+ .../providers/WebLoginActivityNativeBridgeTest.kt  |  45 ++++
+ 17 files changed, 880 insertions(+), 63 deletions(-)

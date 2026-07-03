@@ -1,0 +1,5 @@
+07-03 02:00:01.326 25281 25281 D DashboardWidgetImmediate: updateAppWidget appWidgetId=17
+07-03 02:00:01.326   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 02:00:01.632 25281 25281 D DashboardWidgetImmediate: updateAppWidget appWidgetId=17
+07-03 02:00:01.634   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 02:00:03.987   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17

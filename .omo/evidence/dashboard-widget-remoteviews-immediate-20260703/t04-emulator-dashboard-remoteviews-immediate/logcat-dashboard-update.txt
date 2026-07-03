@@ -1,0 +1,76 @@
+07-03 01:53:00.159  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:00.159  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:00.159  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:00.159  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:03.881   539   539 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am start -n com.aiquota.mobile/.widget.DashboardWidgetConfigureActivity --ei appWidgetId 17'
+07-03 01:53:03.916   691   773 V ActivityTaskManager: TaskLaunchParamsModifier: phase=3 task=Task{b6e642e #645 type=standard A=10233:com.aiquota.mobile} activity=ActivityRecord{238642857 u0 com.aiquota.mobile/.widget.DashboardWidgetConfigureActivity t-1} display-from-task=0 display-id=0 task-display-area-windowing-mode=1 suggested-display-area=DefaultTaskDisplayArea@88926501 inherit-from-task=fullscreen non-freeform-task-display-area display-area=DefaultTaskDisplayArea@88926501 skip-bounds-fullscreen
+07-03 01:53:03.916   691   773 I ActivityTaskManager: START u0 {flg=0x10000000 xflg=0x4 cmp=com.aiquota.mobile/.widget.DashboardWidgetConfigureActivity (has extras)} with LAUNCH_MULTIPLE from uid 2000 (com.android.shell) (BAL_ALLOW_PERMISSION) result code=0
+07-03 01:53:03.916   973  1018 V WindowManagerShell: Transition requested (#168): android.os.BinderProxy@3a2c96d TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=645 effectiveUid=10233 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=com.aiquota.mobile/.widget.DashboardWidgetConfigureActivity } baseActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.widget.DashboardWidgetConfigureActivity} topActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.widget.DashboardWidgetConfigureActivity} origActivity=null realActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.widget.DashboardWidgetConfigureActivity} realActivityIsAppLockEnabled=false numActivities=1 lastActiveTime=67244119 supportsMultiWindow=true supportsMultiWindowWithoutConstraints=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.os.BinderProxy@cfd29a2} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 132 - 0, 0) topActivityInfo=ActivityInfo{fc64633 com.aiquota.mobile.widget.DashboardWidgetConfigureActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isInteractive=false isVisible=false isVisibleRequested=false isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false isActivityStackTransparent=false lastNonFullscreenBounds=null leafTaskBoundsFromOptions= false capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=503 topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false isLeafTask= true eligibleForLetterboxEducation= false isLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 1080, 2400) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null topNonResizableActivityAspectRatio=-1.0} topActivityMainWindowFrame=null isAppBubble=false}, pipChange = null, remoteTransitionInfo = null, displayChanges = null, requestedLocation = null, userChange = null, windowingLayerChange = null, fullscreenRequestChange = null, flags = 0, debugId = 168 }
+07-03 01:53:04.358 24406 24406 D VRI[DashboardWidgetConfigureActivity]: WindowInsets changed: 1080x2400 statusBars:[0,132,0,0] navigationBars:[0,0,0,63] mandatorySystemGestures:[0,164,0,84]
+07-03 01:53:04.374   691   713 V WindowManager: Sent Transition (#168) createdAt=07-03 01:53:03.908 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=645 effectiveUid=10233 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=com.aiquota.mobile/.widget.DashboardWidgetConfigureActivity } baseActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.widget.DashboardWidgetConfigureActivity} topActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.widget.DashboardWidgetConfigureActivity} origActivity=null realActivity=ComponentInfo{com.aiquota.mobile/com.aiquota.mobile.widget.DashboardWidgetConfigureActivity} realActivityIsAppLockEnabled=false numActivities=1 lastActiveTime=67244119 supportsMultiWindow=true supportsMultiWindowWithoutConstraints=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{d97058d Task{b6e642e #645 type=standard A=10233:com.aiquota.mobile}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 132 - 0, 0) topActivityInfo=ActivityInfo{50c8342 com.aiquota.mobile.widget.DashboardWidgetConfigureActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isInteractive=false isVisible=false isVisibleRequested=false isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false isActivityStackTransparent=false lastNonFullscreenBounds=null leafTaskBoundsFromOptions= false capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=503 topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false isLeafTask= true eligibleForLetterboxEducation= false isLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 1080, 2400) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null topNonResizableActivityAspectRatio=-1.0} topActivityMainWindowFrame=null isAppBubble=false}, pipChange = null, remoteTransitionInfo = null, displayChanges = null, requestedLocation = null, userChange = null, windowingLayerChange = null, fullscreenRequestChange = null, flags = 0, debugId = 168 }
+07-03 01:53:04.375   691  1047 D CoreBackPreview: Window{53fa78 u0 com.aiquota.mobile/com.aiquota.mobile.widget.DashboardWidgetConfigureActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@d5e2f53, mPriority=0, mIsAnimationCallback=false, mOverrideBehavior=0}
+07-03 01:53:04.379   691   773 D WindowManager: setClientSurface Surface(name=VRI-com.aiquota.mobile/com.aiquota.mobile.widget.DashboardWidgetConfigureActivity#1735)/@0xb7a090 for 53fa78 com.aiquota.mobile/com.aiquota.mobile.widget.DashboardWidgetConfigureActivity
+07-03 01:53:04.391 24406 24406 I Surface : Creating surface for consumer VRI[DashboardWidgetConfigureActivity]#0(BLAST Consumer)0 with slotExpansion=1 for 64 slots
+07-03 01:53:04.721   691   713 I ActivityTaskManager: Displayed com.aiquota.mobile/.widget.DashboardWidgetConfigureActivity for user 0: +812ms
+07-03 01:53:24.517 24406 24406 D DashboardWidgetImmediate: updateAppWidget appWidgetId=17
+07-03 01:53:24.521   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 01:53:24.635   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 01:53:24.813 24406 24406 D DashboardWidgetImmediate: updateAppWidget appWidgetId=17
+07-03 01:53:24.813   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 01:53:24.916   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 01:53:25.055  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:25.055  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:25.057  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:25.057  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:25.080  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:25.080  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:25.080  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:25.080  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:25.241   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 01:53:25.403  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:25.403  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:25.403  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:25.403  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:25.664   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 01:53:25.690  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:25.690  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:25.690  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:25.690  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:25.949   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 01:53:26.040  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:26.041  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:26.041  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:26.041  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:26.082 24406 24406 D VRI[DashboardWidgetConfigureActivity]: visibilityChanged oldVisibility=true newVisibility=false
+07-03 01:53:26.295   691   773 D CoreBackPreview: Window{53fa78 u0 com.aiquota.mobile/com.aiquota.mobile.widget.DashboardWidgetConfigureActivity}: Setting back callback null
+07-03 01:53:26.594   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 22
+07-03 01:53:26.605   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 21
+07-03 01:53:26.606   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 20
+07-03 01:53:26.608   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 24
+07-03 01:53:26.665   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 01:53:26.723  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:26.723  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:26.723  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:26.723  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:27.190   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 01:53:27.226  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:27.226  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:27.226  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:27.226  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:27.464   691   898 D AppWidgetServiceImpl: Trying to notify widget update for package com.aiquota.mobile with widget id: 17
+07-03 01:53:27.505  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:27.505  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:27.505  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:27.505  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:28.338  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:28.338  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:28.339  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:28.339  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:28.357  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:28.357  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:28.357  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:28.357  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:29.665  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:29.665  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:29.666  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]
+07-03 01:53:29.666  1125  1125 D NavigableAppWidgetHostView: updateScale - [fitScale,bounceScale]: [1.0,1.0]

@@ -1,0 +1,7 @@
+actionStartMs=1783043626835
+hideTapReturnedMs=1783043626945
+doneTapReturnedMs=1783043627281
+checkpoint1sStartMs=1783043628337
+screenshotDoneMs=1783043630295
+UI hierchary dumped to: /sdcard/dashboard-widget-after-1s.xml
+xmlPulledMs=1783043633060
