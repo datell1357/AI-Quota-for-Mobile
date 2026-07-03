@@ -59,6 +59,7 @@ open class WebLoginActivity : Activity() {
     private var glmCookieMismatchRecoveryAttempts = 0
     private var glmRetainedWebSessionCookieHeader = ""
     private var glmAuthenticatedSessionSeen = false
+    private var glmAuthenticatedChatResourceSeen = false
     private val glmNativeFetchHeaders = mutableMapOf<String, String>()
     private var lastGoogleOAuthUrl: String? = null
     private var openCodePostLoginRedirected = false
@@ -76,6 +77,7 @@ open class WebLoginActivity : Activity() {
     @Volatile
     private var currentBridgeUserAgent = ProviderWebViewUserAgent.loginUserAgent()
     private val codexNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
+    private val claudeNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
     private val geminiUsageRpcIds = linkedSetOf<String>()
     private val popupViews = mutableSetOf<WebView>()
     private val collectorInjectionKeys = mutableSetOf<String>()
@@ -119,6 +121,7 @@ open class WebLoginActivity : Activity() {
             clearProviderWebSession(cookieManager, providerId)
         }
         restoreCodexNativeAuthContext()
+        restoreClaudeNativeRequestContext()
         webView = createConfiguredWebView(cookieManager, capabilities)
         rootContainer = FrameLayout(this).apply {
             addView(webView, loginWebViewLayoutParams())
@@ -149,6 +152,7 @@ open class WebLoginActivity : Activity() {
         if (::webView.isInitialized) {
             webView.destroy()
         }
+        clearClaudeNativeFetchHeaders()
         super.onDestroy()
     }
 
@@ -247,6 +251,10 @@ open class WebLoginActivity : Activity() {
                 noteBridgePageUrl("about:blank")
                 return
             }
+            if (isClaudeAboutBlankBridgeNavigation(url)) {
+                noteBridgePageUrl("about:blank")
+                return
+            }
             noteBridgePageUrl(url)
             rememberGoogleOAuthStartUrl(url)
             if (maybeRecoverGoogleCookieMismatch(view, url)) return
@@ -260,6 +268,10 @@ open class WebLoginActivity : Activity() {
             val url = request.url.toString()
             Log.d("AIQuotaLogin", "provider=${providerId.storageId} navigate=${safeUrlForLog(url)}")
             if (isCodexAboutBlankNavigation(url)) {
+                noteBridgePageUrl("about:blank")
+                return false
+            }
+            if (isClaudeAboutBlankBridgeNavigation(url)) {
                 noteBridgePageUrl("about:blank")
                 return false
             }
@@ -290,12 +302,16 @@ open class WebLoginActivity : Activity() {
             val url = request.url.toString()
             captureCodexAccountId(url)
             captureCodexNativeFetchHeaders(request)
-            if (captureGlmNativeFetchHeaders(request) && hasGlmNativeFetchHeaders()) {
+            val capturedClaudeHeaders = captureClaudeNativeFetchHeaders(request)
+            if (captureGlmNativeFetchHeaders(request)) {
                 view.post {
+                    val pageUrl = view.url ?: GlmProviderUrls.WEB_USAGE_URL
+                    if (maybeRedirectGlmAuthenticatedResourceToUsage(view, pageUrl)) return@post
+                    if (!hasGlmNativeFetchHeaders()) return@post
                     maybeStartGlmNativeCollection(
                         view,
                         GlmUsagePageRoutes.nativeCollectionUrlAfterAuthenticatedResource(
-                            view.url ?: GlmProviderUrls.WEB_USAGE_URL
+                            pageUrl
                         ) ?: return@post,
                         "",
                         "resource"
@@ -324,9 +340,12 @@ open class WebLoginActivity : Activity() {
                 view.post { handleLoginCompleteNavigation(view, url) }
             }
             if (isGlmAuthenticatedSessionResource(url)) {
-                view.post { saveGlmWebSessionCookieHeader("auth_resource") }
+                view.post { saveGlmWebSessionCookieHeader("auth_resource", preferCurrent = true) }
             }
-            if (providerId == ProviderId.CLAUDE && ProviderLoginStrategy.shouldStartClaudeNativeCollectionFromResource(url)) {
+            if (providerId == ProviderId.CLAUDE &&
+                ProviderLoginStrategy.shouldStartClaudeNativeCollectionFromResource(url) &&
+                (capturedClaudeHeaders || hasClaudeNativeFetchHeaders(url))
+            ) {
                 view.post { maybeStartClaudeNativeCollection(view, url, "resource") }
             }
             if (providerId == ProviderId.CODEX) {
@@ -362,7 +381,11 @@ open class WebLoginActivity : Activity() {
         }
 
         override fun onPageFinished(view: WebView, url: String) {
-            val effectiveUrl = if (isCodexAboutBlankNavigation(url)) "about:blank" else url
+            val effectiveUrl = if (isCodexAboutBlankNavigation(url) || isClaudeAboutBlankBridgeNavigation(url)) {
+                "about:blank"
+            } else {
+                url
+            }
             noteBridgePageUrl(effectiveUrl)
             logFirstPageFinished(url)
             if (maybeRecoverGoogleCookieMismatch(view, effectiveUrl)) return
@@ -579,10 +602,10 @@ open class WebLoginActivity : Activity() {
             if (!isNativeFetchBridgePageAllowed(providerId)) {
                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
             }
-            val headers = if (providerId == ProviderId.CODEX) {
-                codexNativeFetchHeadersFor(url)
-            } else {
-                emptyMap()
+            val headers = when (providerId) {
+                ProviderId.CODEX -> codexNativeFetchHeadersFor(url)
+                ProviderId.CLAUDE -> claudeNativeFetchHeadersFor(url)
+                else -> emptyMap()
             }
             return ProviderNativeJsonBridge.fetchJson(providerId, url, currentBridgeUserAgent, headers)
         }
@@ -604,6 +627,7 @@ open class WebLoginActivity : Activity() {
             ) { url ->
                 when (providerId) {
                     ProviderId.CODEX -> codexNativeFetchHeadersFor(url)
+                    ProviderId.CLAUDE -> claudeNativeFetchHeadersFor(url)
                     ProviderId.GLM -> glmNativeFetchHeadersFor(url)
                     else -> emptyMap()
                 }
@@ -641,6 +665,18 @@ open class WebLoginActivity : Activity() {
         glmPostLoginRedirected = true
         collectorInjectionKeys.clear()
         Log.i("AIQuotaLogin", "provider=glm postLoginRedirect=usage from=${hostOf(url)}${pathOf(url)}")
+        view.loadUrl(usageUrl)
+        return true
+    }
+
+    private fun maybeRedirectGlmAuthenticatedResourceToUsage(view: WebView, url: String): Boolean {
+        if (providerId != ProviderId.GLM || glmPostLoginRedirected || finished || glmNativeCollectionStarted) return false
+        val usageUrl = GlmUsagePageRoutes.usageRedirectUrlAfterAuthenticatedResource(url) ?: return false
+        if (!glmAuthenticatedChatResourceSeen) return false
+        glmPostLoginRedirected = true
+        collectorInjectionKeys.clear()
+        Log.i("AIQuotaLogin", "provider=glm postLoginRedirect=usage from=${hostOf(url)}${pathOf(url)}")
+        view.stopLoading()
         view.loadUrl(usageUrl)
         return true
     }
@@ -835,6 +871,7 @@ open class WebLoginActivity : Activity() {
         ) {
             return false
         }
+        if (!hasClaudeNativeFetchHeaders(url)) return false
         claudeNativeCollectionStarted = true
         CookieManager.getInstance().flush()
         captureDebugProviderSessionCookies("claude_native_collection_start")
@@ -842,7 +879,7 @@ open class WebLoginActivity : Activity() {
         noteBridgePageUrl("about:blank")
         Log.i("AIQuotaLogin", "provider=claude nativeCollectorStart=aboutblank reason=$reason from=${hostOf(url)}${pathOf(url)}")
         view.stopLoading()
-        view.loadUrl("about:blank")
+        loadClaudeAboutBlankBridgeDocument(view)
         return true
     }
 
@@ -901,6 +938,8 @@ open class WebLoginActivity : Activity() {
         glmPostLoginRedirected = false
         glmRetainedWebSessionCookieHeader = ""
         glmAuthenticatedSessionSeen = false
+        glmAuthenticatedChatResourceSeen = false
+        glmNativeFetchHeaders.clear()
         collectorInjectionKeys.clear()
         clearProviderWebSession(CookieManager.getInstance(), providerId)
         Log.w("AIQuotaLogin", "provider=glm authRequiredRecovery=login")
@@ -914,11 +953,12 @@ open class WebLoginActivity : Activity() {
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
         val path = uri.path.orEmpty()
-        return host == "api.z.ai" && (path == "/api/auth/z/login" || path == "/api/auth/z/zaiAuthToken")
+        return (host == "api.z.ai" && (path == "/api/auth/z/login" || path == "/api/auth/z/zaiAuthToken")) ||
+            (host == "chat.z.ai" && (path == "/api/v1/auths" || path == "/api/v1/auths/"))
     }
 
-    private fun saveGlmWebSessionCookieHeader(reason: String) {
-        val cookieHeader = captureGlmWebSessionCookieHeader() ?: return
+    private fun saveGlmWebSessionCookieHeader(reason: String, preferCurrent: Boolean = false) {
+        val cookieHeader = captureGlmWebSessionCookieHeader(preferCurrent = preferCurrent) ?: return
         GlmUsageRepository(applicationContext).saveWebSessionCookieHeader(cookieHeader)
         Log.i("AIQuotaLogin", "provider=glm webSessionCookieSaved=true reason=$reason")
     }
@@ -927,14 +967,21 @@ open class WebLoginActivity : Activity() {
         if (providerId != ProviderId.GLM) return false
         val url = request.url.toString()
         if (!isGlmApiResource(url)) return false
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        val path = uri.path.orEmpty()
         val headers = CodexNativeHeaderStore.forwardableHeaders(request.requestHeaders.orEmpty())
         if (headers.isEmpty()) return false
         val hasAuthorization = headers.keys.any { it.equals("Authorization", ignoreCase = true) }
-        if (hasAuthorization) {
+        if (hasAuthorization && host == "chat.z.ai" && path.startsWith("/api/")) {
+            glmAuthenticatedChatResourceSeen = true
+        }
+        if (hasAuthorization && isGlmReplayableWebSessionResource(host)) {
             glmNativeFetchHeaders.clear()
             glmNativeFetchHeaders.putAll(headers)
             GlmUsageRepository(applicationContext).saveWebSessionRequestHeaders(headers)
-        } else if (glmNativeFetchHeaders.isEmpty()) {
+            saveGlmWebSessionCookieHeader("auth_header_resource", preferCurrent = true)
+        } else if (host == "api.z.ai" && glmNativeFetchHeaders.isEmpty()) {
             glmNativeFetchHeaders.putAll(headers)
         }
         Log.i(
@@ -944,9 +991,15 @@ open class WebLoginActivity : Activity() {
         return true
     }
 
+    private fun isGlmReplayableWebSessionResource(host: String): Boolean {
+        return host == "api.z.ai"
+    }
+
     private fun isGlmApiResource(url: String): Boolean {
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
-        return uri.host.orEmpty().lowercase(Locale.US) == "api.z.ai"
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        val path = uri.path.orEmpty()
+        return host == "api.z.ai" || host == "chat.z.ai" && path.startsWith("/api/")
     }
 
     private fun hasGlmNativeFetchHeaders(): Boolean {
@@ -1012,6 +1065,7 @@ open class WebLoginActivity : Activity() {
         return true
     }
 
+
     private fun maybeRedirectCodexToUsageAfterLogin(view: WebView, pageUrl: String, resourceUrl: String): Boolean {
         if (!shouldRedirectCodexToUsageAfterLogin(pageUrl, resourceUrl)) return false
         CookieManager.getInstance().flush()
@@ -1072,6 +1126,22 @@ open class WebLoginActivity : Activity() {
     private fun isCodexAboutBlankNavigation(url: String): Boolean {
         return providerId == ProviderId.CODEX &&
             CodexNativeCollectionRoutes.isAboutBlankNavigation(codexNativeCollectionStarted, url)
+    }
+
+    private fun isClaudeAboutBlankBridgeNavigation(url: String): Boolean {
+        return providerId == ProviderId.CLAUDE &&
+            claudeNativeCollectionStarted &&
+            (url == "about:blank" || url == CLAUDE_ABOUT_BLANK_BASE_URL)
+    }
+
+    private fun loadClaudeAboutBlankBridgeDocument(view: WebView) {
+        view.loadDataWithBaseURL(
+            CLAUDE_ABOUT_BLANK_BASE_URL,
+            CLAUDE_ABOUT_BLANK_HTML,
+            "text/html",
+            "UTF-8",
+            "about:blank"
+        )
     }
 
     private fun recoverCodexFromLocalAuthCallback(view: WebView, url: String) {
@@ -1246,6 +1316,56 @@ open class WebLoginActivity : Activity() {
 
     private fun codexNativeFetchHeadersFor(url: String): Map<String, String> {
         return CodexNativeHeaderStore.headersFor(codexNativeFetchHeaders, url, CODEX_NATIVE_HEADER_FALLBACK_KEY)
+    }
+
+    private fun captureClaudeNativeFetchHeaders(request: WebResourceRequest): Boolean {
+        if (providerId != ProviderId.CLAUDE) return false
+        val url = request.url.toString()
+        if (!ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CLAUDE, url)) return false
+        if (!ClaudeNativeHeaderStore.capture(
+                claudeNativeFetchHeaders,
+                url,
+                request.requestHeaders.orEmpty(),
+                CLAUDE_NATIVE_HEADER_WILDCARD_KEY
+            )
+        ) return false
+        val headerNames = CodexNativeHeaderStore.forwardableHeaders(request.requestHeaders.orEmpty())
+            .keys
+            .sorted()
+            .joinToString("|")
+        Log.d(
+            "AIQuotaLogin",
+            "provider=claude capturedNativeHeaders path=${pathOf(url)} names=$headerNames"
+        )
+        saveClaudeNativeRequestContext()
+        return true
+    }
+
+    private fun claudeNativeFetchHeadersFor(url: String): Map<String, String> {
+        return ClaudeNativeHeaderStore.headersFor(claudeNativeFetchHeaders, url, CLAUDE_NATIVE_HEADER_WILDCARD_KEY)
+    }
+
+    private fun hasClaudeNativeFetchHeaders(url: String): Boolean {
+        return claudeNativeFetchHeadersFor(url).any { (_, value) -> value.isNotBlank() }
+    }
+
+    private fun clearClaudeNativeFetchHeaders() {
+        if (::providerId.isInitialized && providerId == ProviderId.CLAUDE) {
+            claudeNativeFetchHeaders.clear()
+        }
+    }
+
+    private fun saveClaudeNativeRequestContext() {
+        val requestContext = ClaudeNativeHeaderStore.snapshotRequestContext(claudeNativeFetchHeaders)
+        if (requestContext.isEmpty()) return
+        ClaudeNativeRequestContextStore(applicationContext).save(requestContext)
+    }
+
+    private fun restoreClaudeNativeRequestContext() {
+        if (providerId != ProviderId.CLAUDE) return
+        val restoredHeaders = ClaudeNativeRequestContextStore(applicationContext).restore()
+        if (restoredHeaders.isEmpty()) return
+        claudeNativeFetchHeaders.putAll(restoredHeaders)
     }
 
     private fun saveCodexNativeAuthContext() {
@@ -1431,7 +1551,7 @@ open class WebLoginActivity : Activity() {
         )
     }
 
-    private fun captureGlmWebSessionCookieHeader(): String? {
+    private fun captureGlmWebSessionCookieHeader(preferCurrent: Boolean = false): String? {
         if (providerId != ProviderId.GLM) return null
         val cookieHeader = GoogleWebSessionCodeAssistFetcher.mergeCookieHeaders(
             GlmProviderUrls.WEB_COOKIE_URLS.map { url ->
@@ -1444,7 +1564,7 @@ open class WebLoginActivity : Activity() {
             return null
         }
         val retainedCookieCount = GoogleWebSessionCodeAssistFetcher.parseCookieHeader(glmRetainedWebSessionCookieHeader).size
-        if (cookieCount > retainedCookieCount) {
+        if (preferCurrent || cookieCount > retainedCookieCount) {
             glmRetainedWebSessionCookieHeader = cookieHeader
             glmAuthenticatedSessionSeen = cookieCount >= GLM_AUTHENTICATED_COOKIE_MIN_COUNT
         }
@@ -1603,6 +1723,9 @@ open class WebLoginActivity : Activity() {
         private const val GLM_COOKIE_MISMATCH_MAX_RECOVERIES = 2
         private const val GLM_AUTHENTICATED_COOKIE_MIN_COUNT = 2
         private const val CODEX_NATIVE_HEADER_FALLBACK_KEY = "*"
+        private const val CLAUDE_NATIVE_HEADER_WILDCARD_KEY = "claude:*"
+        private const val CLAUDE_ABOUT_BLANK_BASE_URL = "https://claude.ai/"
+        private const val CLAUDE_ABOUT_BLANK_HTML = "<!doctype html><html><head><meta charset=\"utf-8\"></head><body></body></html>"
         private const val PAGE_CAPTURE_SCRIPT =
             "(function(){return (document.documentElement.innerText||document.title||'').slice(0,12000);})()"
 

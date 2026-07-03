@@ -22,6 +22,12 @@ object ProviderCollectorErrorPolicy {
                     error.message ?: "Codex session reached, but trusted usage payload was not available."
                 )
             }
+            providerId == ProviderId.CLAUDE && error.errorKind in CLAUDE_NATIVE_UNAVAILABLE_ERRORS -> {
+                ProviderRefreshFailure(
+                    ProviderRefreshFailureKind.NO_TRUSTED_PAYLOAD,
+                    error.message ?: "Claude session reached, but trusted usage payload was not available."
+                )
+            }
             providerId == ProviderId.GLM && error.errorKind == GlmNoSubscriptionPolicy.ERROR_KIND -> {
                 ProviderRefreshFailure(
                     ProviderRefreshFailureKind.NO_TRUSTED_PAYLOAD,
@@ -68,6 +74,10 @@ object ProviderCollectorErrorPolicy {
 
     private const val CODEX_USAGE_UNAVAILABLE = "codex_usage_unavailable"
     private const val GEMINI_LOGIN_REQUIRED = "gemini_login_required"
+    private val CLAUDE_NATIVE_UNAVAILABLE_ERRORS = setOf(
+        "claude_organization_unavailable",
+        "claude_usage_unavailable"
+    )
 }
 
 object CodexCollectorRetryPolicy {

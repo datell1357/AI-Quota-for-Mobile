@@ -37,6 +37,27 @@ class ProviderNativeUsagePayloadFetcherTest {
     }
 
     @Test
+    fun claudeNativeUsagePayloadFetchUsesForwardedWebViewHeaders() {
+        val source = File("src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt").readText()
+        val dispatcherBlock = source.substringAfter("val result = when (providerId)")
+            .substringBefore("return bridgeResult")
+        val claudeBlock = source.substringAfter("private fun fetchClaudePayload")
+            .substringBefore("private fun fetchCodexPayload")
+
+        assertTrue(dispatcherBlock.contains("ProviderId.CLAUDE -> fetchClaudePayload(userAgent, requestHeadersForUrl, fetchJson)"))
+        listOf(
+            "requestHeadersForUrl(CLAUDE_ORGANIZATIONS_URL)",
+            "requestHeadersForUrl(CLAUDE_ACCOUNT_PROFILE_URL)",
+            "requestHeadersForUrl(CLAUDE_ORGANIZATIONS_ME_URL)",
+            "requestHeadersForUrl(subscriptionUrl)",
+            "requestHeadersForUrl(usageUrl)"
+        ).forEach { expected ->
+            assertTrue("Claude native fetch must forward headers for $expected", claudeBlock.contains(expected))
+        }
+        assertTrue(claudeBlock.contains("fetchJson"))
+    }
+
+    @Test
     fun nativeUsageDiagnosticsExposeOnlySafeOptimizationMetrics() {
         val source = File("src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt").readText()
         val bridgePayload = source.substringAfter("private fun bridgeUsagePayload(")
@@ -121,6 +142,8 @@ class ProviderNativeUsagePayloadFetcherTest {
         assertEquals(0.91f, snapshot.lines.single { it.label == "Auto usage" }.remainingPercent ?: 0f, 0.001f)
         assertEquals(0.98f, snapshot.lines.single { it.label == "API usage" }.remainingPercent ?: 0f, 0.001f)
     }
+
+
 
     @Test
     fun geminiNativeUsageSourceRejectsGenericOnlyCodeAssistAndDomFallbacks() {

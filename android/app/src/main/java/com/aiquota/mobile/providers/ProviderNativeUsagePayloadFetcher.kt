@@ -46,7 +46,7 @@ object ProviderNativeUsagePayloadFetcher {
         }
         val startedNanos = System.nanoTime()
         val result = when (providerId) {
-            ProviderId.CLAUDE -> fetchClaudePayload(userAgent)
+            ProviderId.CLAUDE -> fetchClaudePayload(userAgent, requestHeadersForUrl, fetchJson)
             ProviderId.CODEX -> fetchCodexPayload(userAgent, requestHeadersForUrl, fetchJson)
             ProviderId.GEMINI -> {
                 val usagePageUrl = GeminiUsagePageRoutes.canonicalUsageUrl(bridgePageUrl.orEmpty())
@@ -106,27 +106,58 @@ object ProviderNativeUsagePayloadFetcher {
         return payload
     }
 
-    private fun fetchClaudePayload(userAgent: String): NativePayloadResult {
+    private fun fetchClaudePayload(
+        userAgent: String,
+        requestHeadersForUrl: (String) -> Map<String, String>,
+        fetchJson: NativeJsonFetcher
+    ): NativePayloadResult {
         val statuses = mutableListOf<String>()
-        val organizations = fetchWrapped(ProviderId.CLAUDE, CLAUDE_ORGANIZATIONS_URL, statuses, userAgent)
-        val accountProfile = fetchWrapped(ProviderId.CLAUDE, CLAUDE_ACCOUNT_PROFILE_URL, statuses, userAgent)
+        val organizations = fetchWrapped(
+            ProviderId.CLAUDE,
+            CLAUDE_ORGANIZATIONS_URL,
+            statuses,
+            userAgent,
+            requestHeadersForUrl(CLAUDE_ORGANIZATIONS_URL),
+            fetchJson
+        )
+        val accountProfile = fetchWrapped(
+            ProviderId.CLAUDE,
+            CLAUDE_ACCOUNT_PROFILE_URL,
+            statuses,
+            userAgent,
+            requestHeadersForUrl(CLAUDE_ACCOUNT_PROFILE_URL),
+            fetchJson
+        )
         val orgId = claudeOrgId(organizations.jsonValue())
-            ?: fetchWrapped(ProviderId.CLAUDE, CLAUDE_ORGANIZATIONS_ME_URL, statuses, userAgent)
+            ?: fetchWrapped(
+                ProviderId.CLAUDE,
+                CLAUDE_ORGANIZATIONS_ME_URL,
+                statuses,
+                userAgent,
+                requestHeadersForUrl(CLAUDE_ORGANIZATIONS_ME_URL),
+                fetchJson
+            )
                 .let { claudeOrgId(it.jsonValue()) }
             ?: claudeOrgId(accountProfile.jsonValue())
             ?: return NativePayloadResult(null, "claude_organization_unavailable", statuses)
         val encodedOrgId = encodePath(orgId)
+        val subscriptionUrl = "https://claude.ai/api/organizations/$encodedOrgId/subscription_details"
         val subscription = fetchWrapped(
             ProviderId.CLAUDE,
-            "https://claude.ai/api/organizations/$encodedOrgId/subscription_details",
+            subscriptionUrl,
             statuses,
-            userAgent
+            userAgent,
+            requestHeadersForUrl(subscriptionUrl),
+            fetchJson
         )
+        val usageUrl = "https://claude.ai/api/organizations/$encodedOrgId/usage"
         val usage = fetchWrapped(
             ProviderId.CLAUDE,
-            "https://claude.ai/api/organizations/$encodedOrgId/usage",
+            usageUrl,
             statuses,
-            userAgent
+            userAgent,
+            requestHeadersForUrl(usageUrl),
+            fetchJson
         )
         val usageJson = usage.jsonObject() ?: return NativePayloadResult(null, "claude_usage_unavailable", statuses)
         val usagePayload = usageJson.optJSONObject("usage") ?: usageJson

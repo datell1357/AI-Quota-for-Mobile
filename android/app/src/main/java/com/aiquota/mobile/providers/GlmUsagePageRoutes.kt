@@ -32,6 +32,10 @@ object GlmUsagePageRoutes {
         }
     }
 
+    fun usageRedirectUrlAfterAuthenticatedResource(currentUrl: String): String? {
+        return if (isAuthenticatedChatAppUrl(currentUrl)) GlmProviderUrls.WEB_USAGE_URL else null
+    }
+
     fun usageUrlFrom(url: String): String? {
         val uri = runCatching { URI(url) }.getOrNull() ?: return null
         val host = uri.host.orEmpty().lowercase(Locale.US)
@@ -46,6 +50,14 @@ object GlmUsagePageRoutes {
         val host = uri.host.orEmpty().lowercase(Locale.US)
         if (host != "z.ai" && host != "www.z.ai") return false
         return uri.path.orEmpty().lowercase(Locale.US).trimEnd('/') == "/chat"
+    }
+
+    fun isAuthenticatedChatAppUrl(url: String): Boolean {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        if (host != "chat.z.ai") return false
+        val path = uri.path.orEmpty().lowercase(Locale.US).trimEnd('/')
+        return path in setOf("", "/auth")
     }
 
     fun isUsageUrl(url: String): Boolean {

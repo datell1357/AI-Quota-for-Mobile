@@ -79,8 +79,9 @@ class GlmApiKeyActivityTest {
 
     @Test
     fun webOAuthStartUsesDirectGlmLoginPage() {
-        assertEquals("https://chat.z.ai/login", GlmProviderUrls.WEB_LOGIN_URL)
-        assertTrue(GlmProviderUrls.WEB_LOGIN_URL.endsWith("/login"))
+        assertEquals("https://chat.z.ai/auth", GlmProviderUrls.WEB_LOGIN_URL)
+        assertTrue(GlmProviderUrls.WEB_LOGIN_URL.endsWith("/auth"))
+        assertFalse(GlmProviderUrls.WEB_LOGIN_URL.endsWith("/login"))
         assertFalse(GlmProviderUrls.WEB_LOGIN_URL.contains("z.ai/chat"))
     }
 

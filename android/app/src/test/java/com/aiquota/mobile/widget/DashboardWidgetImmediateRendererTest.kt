@@ -78,4 +78,27 @@ class DashboardWidgetImmediateRendererTest {
             assertTrue("Dashboard immediate renderer must not reference $forbidden.", !text.contains(forbidden))
         }
     }
+
+    @Test
+    fun dashboardImmediateWidgetDoesNotExposeManualRefreshAffordance() {
+        val layout = File("src/main/res/layout/ai_quota_widget_dashboard_immediate.xml").readText()
+        val renderer = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateRenderer.kt").readText()
+
+        assertTrue(
+            "Dashboard layout must not declare dashboard_immediate_refresh.",
+            !layout.contains("dashboard_immediate_refresh")
+        )
+        assertTrue(
+            "Dashboard renderer must not bind dashboard_immediate_refresh.",
+            !renderer.contains("dashboard_immediate_refresh")
+        )
+        assertTrue(
+            "Dashboard renderer must not call the widget refresh action.",
+            !renderer.contains("WidgetRefreshActions.widgetRefreshIntent(context, appWidgetId)")
+        )
+        assertTrue(
+            "Dashboard root click should still open home.",
+            renderer.contains("setOnClickPendingIntent(R.id.dashboard_immediate_root")
+        )
+    }
 }

@@ -36,6 +36,20 @@ class ProviderCollectorErrorPolicyTest {
     }
 
     @Test
+    fun claudeNativeUnavailableIsPayloadFailureNotInteractiveAuth() {
+        listOf("claude_organization_unavailable", "claude_usage_unavailable").forEach { errorKind ->
+            val failure = ProviderCollectorErrorPolicy.failureFor(
+                providerId = ProviderId.CLAUDE,
+                rawError = """{"provider":"claude","errorKind":"$errorKind"}"""
+            )
+
+            assertEquals(ProviderRefreshFailureKind.NO_TRUSTED_PAYLOAD, failure.kind)
+            assertFalse(ProviderRefreshFailureClassifier.requiresInteractiveAuth(ProviderId.CLAUDE, failure.kind))
+        }
+    }
+
+
+    @Test
     fun geminiLoginRequiredStaysRecoverableForWebSessionRetry() {
         val failure = ProviderCollectorErrorPolicy.failureFor(
             providerId = ProviderId.GEMINI,

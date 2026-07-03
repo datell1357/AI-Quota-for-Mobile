@@ -112,6 +112,31 @@ class WebLoginActivityNativeBridgeTest {
         assertTrue(source.contains("providerId == ProviderId.CLAUDE && effectiveUrl == \"about:blank\""))
         assertTrue(source.contains("captureDebugProviderSessionCookies(\"claude_native_collection_start\")"))
         assertTrue(source.contains("provider=claude nativeCollectorStart=aboutblank"))
+        assertTrue(source.contains("loadClaudeAboutBlankBridgeDocument(view)"))
+        assertTrue(source.contains("view.loadDataWithBaseURL("))
+        assertTrue(source.contains("isClaudeAboutBlankBridgeNavigation(url)"))
+    }
+
+    @Test
+    fun claudeLoginNativeBridgeRequiresCapturedNativeHeaders() {
+        val source = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val interceptBlock = source.substringAfter("override fun shouldInterceptRequest")
+            .substringBefore("override fun onLoadResource")
+        val captureBlock = source.substringAfter("private fun captureClaudeNativeFetchHeaders")
+            .substringBefore("private fun claudeNativeFetchHeadersFor")
+        val startBlock = source.substringAfter("private fun maybeStartClaudeNativeCollection")
+            .substringBefore("private fun maybeStartGeminiNativeCollection")
+        val bridgeBlock = source.substringAfter("fun fetchProviderUsagePayload()")
+            .substringBefore("fun parseCodexFetchedPayload")
+
+        assertTrue(interceptBlock.contains("captureClaudeNativeFetchHeaders(request)"))
+        assertTrue(interceptBlock.contains("hasClaudeNativeFetchHeaders(url)"))
+        assertTrue(startBlock.contains("hasClaudeNativeFetchHeaders(url)"))
+        assertTrue(source.contains("private fun claudeNativeFetchHeadersFor(url: String): Map<String, String>"))
+        assertTrue(bridgeBlock.contains("ProviderId.CLAUDE -> claudeNativeFetchHeadersFor(url)"))
+        assertTrue(source.contains("provider=claude capturedNativeHeaders"))
+        assertTrue(captureBlock.contains("saveClaudeNativeRequestContext()"))
+        assertTrue(source.contains("ClaudeNativeRequestContextStore(applicationContext).save(requestContext)"))
     }
 
     @Test
@@ -139,6 +164,7 @@ class WebLoginActivityNativeBridgeTest {
         assertFalse(script.contains("document.documentElement"))
         assertFalse(script.contains("settings/copilot"))
     }
+
 
     @Test
     fun geminiAboutBlankBridgeKeepsAccountScopedUsageUrl() {

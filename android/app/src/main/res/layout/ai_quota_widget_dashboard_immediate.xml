@@ -358,13 +358,4 @@
         android:progressDrawable="@drawable/widget_provider_progress" />
     </LinearLayout>
   </LinearLayout>
-
-  <ImageView
-    android:id="@+id/dashboard_immediate_refresh"
-    android:layout_width="32dp"
-    android:layout_height="32dp"
-    android:layout_gravity="top|end"
-    android:contentDescription="@string/widget_refresh"
-    android:padding="7dp"
-    android:scaleType="center" />
 </FrameLayout>

@@ -110,7 +110,6 @@ class ProviderWebCollectorScriptsTest {
     @Test
     fun scopedProvidersBuildOnlyNativeUsagePayloadCollector() {
         mapOf(
-            ProviderId.CLAUDE to "about:blank",
             ProviderId.CODEX to "about:blank",
             ProviderId.GEMINI to "about:blank",
             ProviderId.COPILOT to "about:blank",
@@ -141,6 +140,32 @@ class ProviderWebCollectorScriptsTest {
             assertFalse(script.contains("sessionStorage"))
             assertFalse(script.contains("rawText"))
         }
+    }
+
+    @Test
+    fun claudeAboutBlankCollectorUsesApiJsonFetchWithoutNativePayloadOrPageState() {
+        val script = ProviderWebCollectorScripts.build(ProviderId.CLAUDE, emptyMap(), "", pageUrl = "about:blank")
+
+        assertTrue(script.contains("https://claude.ai/api/organizations"))
+        assertTrue(script.contains("/subscription_details"))
+        assertTrue(script.contains("/usage"))
+        assertTrue(script.contains("credentials: \"include\""))
+        assertTrue(script.contains("aboutblank-js-fetch"))
+        assertTrue(script.contains("normalizeClaudeOrgId"))
+        assertFalse(script.contains("orgFromText(value) || value"))
+        assertFalse(script.contains("c.fetchNativeUsagePayload()"))
+        assertFalse(script.contains("__AIQuotaClaudeNetworkRows"))
+        assertFalse(script.contains("installClaudeNetworkHook"))
+        assertFalse(script.contains("scanClaudePageState"))
+        assertFalse(script.contains("scanClaudeUsageText"))
+        assertFalse(script.contains("document.documentElement"))
+        assertFalse(script.contains("document.scripts"))
+        assertFalse(script.contains("localStorage"))
+        assertFalse(script.contains("sessionStorage"))
+        assertFalse(script.contains("window.__NEXT_DATA__"))
+        assertFalse(script.contains("c.rows()"))
+        assertFalse(script.contains("c.text()"))
+        assertFalse(script.contains("visible-dom"))
     }
 
     @Test

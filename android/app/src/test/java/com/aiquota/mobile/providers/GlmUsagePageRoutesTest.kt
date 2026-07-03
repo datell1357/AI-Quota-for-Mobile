@@ -40,6 +40,12 @@ class GlmUsagePageRoutesTest {
 
     @Test
     fun authenticatedChatResourceCanStartNativeCollectionAgainstUsagePage() {
+        assertNull(
+            GlmUsagePageRoutes.nativeCollectionUrlAfterAuthenticatedResource("https://chat.z.ai/auth")
+        )
+        assertNull(
+            GlmUsagePageRoutes.nativeCollectionUrlAfterAuthenticatedResource("https://chat.z.ai/auth?provider=google")
+        )
         assertEquals(
             GlmProviderUrls.WEB_USAGE_URL,
             GlmUsagePageRoutes.nativeCollectionUrlAfterAuthenticatedResource("https://z.ai/chat")
@@ -56,6 +62,21 @@ class GlmUsagePageRoutesTest {
         )
         assertNull(
             GlmUsagePageRoutes.nativeCollectionUrlAfterAuthenticatedResource("https://z.ai/")
+        )
+    }
+
+    @Test
+    fun authenticatedChatAppResourceRedirectsToUsagePageBeforeNativeCollection() {
+        assertEquals(
+            GlmProviderUrls.WEB_USAGE_URL,
+            GlmUsagePageRoutes.usageRedirectUrlAfterAuthenticatedResource("https://chat.z.ai/auth")
+        )
+        assertEquals(
+            GlmProviderUrls.WEB_USAGE_URL,
+            GlmUsagePageRoutes.usageRedirectUrlAfterAuthenticatedResource("https://chat.z.ai/auth?provider=google")
+        )
+        assertNull(
+            GlmUsagePageRoutes.usageRedirectUrlAfterAuthenticatedResource(GlmProviderUrls.WEB_USAGE_URL)
         )
     }
 

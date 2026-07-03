@@ -65,7 +65,9 @@ class ProviderSessionResetter(context: Context) {
             ProviderId.CODEX -> {
                 CodexNativeAuthContextStore(appContext).clear()
             }
-            ProviderId.CLAUDE,
+            ProviderId.CLAUDE -> {
+                ClaudeNativeRequestContextStore(appContext).clear()
+            }
             ProviderId.COPILOT,
             ProviderId.CURSOR -> Unit
         }

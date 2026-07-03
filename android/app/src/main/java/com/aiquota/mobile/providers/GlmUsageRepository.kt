@@ -15,7 +15,7 @@ data class GlmUsageResult(
 )
 
 object GlmProviderUrls {
-    const val WEB_LOGIN_URL = "https://chat.z.ai/login"
+    const val WEB_LOGIN_URL = "https://chat.z.ai/auth"
     const val WEB_CHAT_URL = "https://z.ai/chat"
     const val WEB_OAUTH_URL = "https://z.ai/manage-apikey/coding-plan/personal/my-plan"
     const val WEB_USAGE_URL = "https://z.ai/manage-apikey/coding-plan/personal/usage"

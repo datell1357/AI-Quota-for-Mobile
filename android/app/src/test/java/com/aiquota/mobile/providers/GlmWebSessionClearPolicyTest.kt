@@ -192,16 +192,58 @@ class GlmWebSessionClearPolicyTest {
         val redirect = login
             .substringAfter("private fun maybeRedirectGlmToUsage")
             .substringBefore("private fun resetGeminiLoginRecoveryState")
+        val sessionResource = login
+            .substringAfter("private fun isGlmAuthenticatedSessionResource")
+            .substringBefore("private fun saveGlmWebSessionCookieHeader")
 
         assertTrue(redirect.contains("GlmUsagePageRoutes.isChatUrl(url) && hasRetainedGlmWebSessionCookies()"))
         assertTrue(login.contains("glmAuthenticatedSessionSeen"))
         assertTrue(login.contains("GLM_AUTHENTICATED_COOKIE_MIN_COUNT"))
-        assertTrue(login.contains("path == \"/api/auth/z/login\" || path == \"/api/auth/z/zaiAuthToken\""))
+        assertTrue(sessionResource.contains("path == \"/api/auth/z/login\" || path == \"/api/auth/z/zaiAuthToken\""))
+        assertTrue(sessionResource.contains("path == \"/api/v1/auths\" || path == \"/api/v1/auths/\""))
         assertFalse(login.contains("path == \"/api/auth/me\""))
-        assertTrue(login.contains("captureGlmNativeFetchHeaders(request) && hasGlmNativeFetchHeaders()"))
+        assertTrue(login.contains("if (captureGlmNativeFetchHeaders(request))"))
+        assertTrue(login.contains("if (!hasGlmNativeFetchHeaders()) return@post"))
         assertTrue(login.contains("it.equals(\"Authorization\", ignoreCase = true)"))
+        assertTrue(login.contains("glmAuthenticatedChatResourceSeen = true"))
         assertTrue(login.contains("saveWebSessionRequestHeaders(headers)"))
         assertTrue(login.contains("provider=glm capturedNativeHeaders"))
+    }
+
+    @Test
+    fun glmAuthorizationCaptureRefreshesPairedWebSessionCookies() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val capture = login
+            .substringAfter("private fun captureGlmNativeFetchHeaders")
+            .substringBefore("private fun isGlmReplayableWebSessionResource")
+        val cookieCapture = login
+            .substringAfter("private fun captureGlmWebSessionCookieHeader")
+            .substringBefore("private fun hasRetainedGlmWebSessionCookies")
+
+        assertTrue(capture.contains("saveGlmWebSessionCookieHeader(\"auth_header_resource\", preferCurrent = true)"))
+        assertTrue(login.contains("saveGlmWebSessionCookieHeader(\"auth_resource\", preferCurrent = true)"))
+        assertTrue(cookieCapture.contains("preferCurrent: Boolean = false"))
+        assertTrue(cookieCapture.contains("if (preferCurrent || cookieCount > retainedCookieCount)"))
+    }
+
+    @Test
+    fun glmQuotaApiAuthorizationHeadersPrimeDurableNativeFetchHeaders() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val capture = login
+            .substringAfter("private fun captureGlmNativeFetchHeaders")
+            .substringBefore("private fun isGlmApiResource")
+        val replayable = login
+            .substringAfter("private fun isGlmReplayableWebSessionResource")
+            .substringBefore("private fun isGlmApiResource")
+
+        assertTrue(capture.contains("if (hasAuthorization && isGlmReplayableWebSessionResource(host))"))
+        assertTrue(capture.contains("glmNativeFetchHeaders.clear()"))
+        assertTrue(capture.contains("glmNativeFetchHeaders.putAll(headers)"))
+        assertTrue(capture.contains("GlmUsageRepository(applicationContext).saveWebSessionRequestHeaders(headers)"))
+        assertTrue(capture.contains("host == \"chat.z.ai\" && path.startsWith(\"/api/\")"))
+        assertTrue(login.contains("private fun isGlmReplayableWebSessionResource(host: String): Boolean"))
+        assertTrue(replayable.contains("return host == \"api.z.ai\""))
+        assertFalse(replayable.contains("chat.z.ai"))
     }
 
     @Test
@@ -211,10 +253,37 @@ class GlmWebSessionClearPolicyTest {
             .substringAfter("override fun shouldInterceptRequest")
             .substringBefore("if (captureGeminiUsageRpcId(url))")
 
-        assertTrue(intercept.contains("captureGlmNativeFetchHeaders(request) && hasGlmNativeFetchHeaders()"))
+        assertTrue(intercept.contains("if (captureGlmNativeFetchHeaders(request))"))
+        assertTrue(intercept.contains("if (!hasGlmNativeFetchHeaders()) return@post"))
         assertTrue(intercept.contains("GlmUsagePageRoutes.nativeCollectionUrlAfterAuthenticatedResource"))
         assertTrue(intercept.contains("maybeStartGlmNativeCollection"))
         assertTrue(login.contains("provider=glm nativeCollectorStart=aboutblank"))
+    }
+
+    @Test
+    fun glmAuthRouteResourcesRedirectToUsageBeforeAboutBlankNativeCollection() {
+        val routes = File("src/main/java/com/aiquota/mobile/providers/GlmUsagePageRoutes.kt").readText()
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val intercept = login
+            .substringAfter("override fun shouldInterceptRequest")
+            .substringBefore("if (captureGeminiUsageRpcId(url))")
+        val redirect = login
+            .substringAfter("private fun maybeRedirectGlmAuthenticatedResourceToUsage")
+            .substringBefore("private fun maybeStartGlmNativeCollection")
+        val apiResource = login
+            .substringAfter("private fun isGlmApiResource")
+            .substringBefore("private fun hasGlmNativeFetchHeaders")
+
+        assertTrue(routes.contains("fun isAuthenticatedChatAppUrl(url: String): Boolean"))
+        assertTrue(routes.contains("fun usageRedirectUrlAfterAuthenticatedResource(currentUrl: String): String?"))
+        assertTrue(routes.contains("\"chat.z.ai\""))
+        assertTrue(routes.contains("path in setOf(\"\", \"/auth\")"))
+        assertTrue(intercept.contains("if (maybeRedirectGlmAuthenticatedResourceToUsage(view, pageUrl)) return@post"))
+        assertTrue(redirect.contains("GlmUsagePageRoutes.usageRedirectUrlAfterAuthenticatedResource(url) ?: return false"))
+        assertTrue(redirect.contains("if (!glmAuthenticatedChatResourceSeen) return false"))
+        assertTrue(redirect.contains("view.loadUrl(usageUrl)"))
+        assertTrue(apiResource.contains("host == \"chat.z.ai\" && path.startsWith(\"/api/\")"))
+        assertTrue(apiResource.contains("host == \"api.z.ai\""))
     }
 
     @Test

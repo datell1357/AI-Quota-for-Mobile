@@ -14,7 +14,7 @@ class ProviderRefreshPlanTest {
     @Test
     fun providerRefreshTimeoutsKeepFastDefaultAndGiveSlowCollectorsMoreTime() {
         assertEquals(60_000L, ProviderRefreshPlan.timeoutMillisFor(ProviderId.CODEX))
-        assertEquals(10_000L, ProviderRefreshPlan.timeoutMillisFor(ProviderId.CLAUDE))
+        assertEquals(30_000L, ProviderRefreshPlan.timeoutMillisFor(ProviderId.CLAUDE))
         assertEquals(20_000L, ProviderRefreshPlan.timeoutMillisFor(ProviderId.GLM))
         assertEquals(45_000L, ProviderRefreshPlan.timeoutMillisFor(ProviderId.GEMINI))
         assertEquals(10_000L, ProviderRefreshPlan.timeoutMillisFor(ProviderId.COPILOT))
@@ -47,7 +47,7 @@ class ProviderRefreshPlanTest {
         )
         assertEquals(ProviderRefreshMode.NATIVE_API, jobs.first { it.providerId == ProviderId.ANTIGRAVITY }.mode)
         assertFalse(jobs.any { it.startUrl.contains("/auth/login") || it.startUrl.contains("/login") })
-        assertEquals("about:blank", jobs.first { it.providerId == ProviderId.CLAUDE }.startUrl)
+        assertEquals("https://claude.ai/", jobs.first { it.providerId == ProviderId.CLAUDE }.startUrl)
         assertEquals("https://chatgpt.com/api/auth/session", jobs.first { it.providerId == ProviderId.CODEX }.startUrl)
         assertEquals("about:blank", jobs.first { it.providerId == ProviderId.OPENCODE }.startUrl)
         assertEquals("about:blank", jobs.first { it.providerId == ProviderId.GEMINI }.startUrl)
@@ -76,7 +76,7 @@ class ProviderRefreshPlanTest {
 
     @Test
     fun backgroundCollectorsUseAboutBlankOnlyForScopedNativeJsonProviders() {
-        assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.CLAUDE).startUrl)
+        assertEquals("https://claude.ai/", ProviderRefreshPlan.manualJobFor(ProviderId.CLAUDE).startUrl)
         assertEquals("https://chatgpt.com/api/auth/session", ProviderRefreshPlan.manualJobFor(ProviderId.CODEX).startUrl)
         assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.GEMINI).startUrl)
         assertEquals("about:blank", ProviderRefreshPlan.manualJobFor(ProviderId.COPILOT).startUrl)

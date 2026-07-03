@@ -208,4 +208,13 @@ class ProviderSessionResetterTest {
 
         assertTrue(codexBranch.contains("CodexNativeAuthContextStore(appContext).clear()"))
     }
+
+    @Test
+    fun claudeDisconnectClearsPersistedNativeRequestContext() {
+        val resetter = java.io.File("src/main/java/com/aiquota/mobile/providers/ProviderSessionResetter.kt").readText()
+        val claudeBranch = resetter.substringAfter("ProviderId.CLAUDE ->")
+            .substringBefore("ProviderId.COPILOT")
+
+        assertTrue(claudeBranch.contains("ClaudeNativeRequestContextStore(appContext).clear()"))
+    }
 }

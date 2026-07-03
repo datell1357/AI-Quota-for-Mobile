@@ -59,6 +59,7 @@ class ProviderBackgroundRefreshService : Service() {
     private var activeWebContinuation: CancellableContinuation<ServiceRefreshOutcome>? = null
     private val webJobLastUrls = mutableMapOf<Long, String>()
     private val codexNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
+    private val claudeNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
     private var observedCodexAccountId: String? = null
     private var pendingManualProviderId: ProviderId? = null
     private var pendingManualWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
@@ -429,9 +430,10 @@ class ProviderBackgroundRefreshService : Service() {
 
     private suspend fun collectNativeProviderUsage(job: ProviderRefreshJob): ServiceRefreshOutcome {
         if (job.providerId == ProviderId.GLM) {
+            val repository = GlmUsageRepository(applicationContext)
+            val connectionMode = repository.connectionMode()
             val result = withContext(Dispatchers.IO) {
-                val repository = GlmUsageRepository(applicationContext)
-                when (repository.connectionMode()) {
+                when (connectionMode) {
                     GlmConnectionMode.WEB_OAUTH -> repository.fetchUsagePayloadFromWebSession()
                     GlmConnectionMode.API_KEY -> repository.fetchUsagePayloadFromStoredCredential()
                 }
@@ -446,7 +448,9 @@ class ProviderBackgroundRefreshService : Service() {
             return when {
                 snapshot != null -> ServiceRefreshOutcome.Snapshot(snapshot)
                 result.requiresAuth -> ServiceRefreshOutcome.Failure(
-                    ProviderRefreshFailure.interactiveAuthRequired("GLM API key is invalid or expired.")
+                    ProviderRefreshFailure.interactiveAuthRequired(
+                        glmAuthFailureMessageFor(connectionMode)
+                    )
                 )
                 else -> ServiceRefreshOutcome.Failure(
                     ProviderRefreshFailure(
@@ -484,6 +488,13 @@ class ProviderBackgroundRefreshService : Service() {
                 "Native refresh is not available for ${job.providerId.displayName}."
             )
         )
+    }
+
+    private fun glmAuthFailureMessageFor(connectionMode: GlmConnectionMode): String {
+        return when (connectionMode) {
+            GlmConnectionMode.WEB_OAUTH -> "GLM web session expired. Please sign in again."
+            GlmConnectionMode.API_KEY -> "GLM API key is invalid or expired."
+        }
     }
 
     private fun fetchAntigravityNativeOrWebSessionPayload(): String? {
@@ -530,10 +541,21 @@ class ProviderBackgroundRefreshService : Service() {
         }
         val lastUrl = webJobLastUrls[requestId]
         clearActiveWebJob(requestId)
+        clearClaudeNativeFetchHeaders(job.providerId)
         webJobLastUrls.remove(requestId)
         if (result == null && job.providerId == ProviderId.GEMINI) {
             val safeLastUrl = lastUrl.orEmpty()
             Log.d(TAG, "timeout provider=gemini last=${hostOf(safeLastUrl)}${pathOf(safeLastUrl)}")
+        }
+        if (result == null && job.providerId == ProviderId.CLAUDE) {
+            val safeLastUrl = lastUrl.orEmpty()
+            Log.d(TAG, "timeout provider=claude last=${hostOf(safeLastUrl)}${pathOf(safeLastUrl)}")
+            return ServiceRefreshOutcome.Failure(
+                ProviderRefreshFailure(
+                    ProviderRefreshFailureKind.NO_TRUSTED_PAYLOAD,
+                    "Claude session reached, but trusted usage payload was not available."
+                )
+            )
         }
         return result ?: ServiceRefreshOutcome.Failure(ProviderRefreshTimeoutPolicy.failureFor(job.providerId, lastUrl))
     }
@@ -541,6 +563,7 @@ class ProviderBackgroundRefreshService : Service() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun startWebCollection(active: ServiceWebRefreshJob) {
         val job = active.job
+        clearClaudeNativeFetchHeaders(job.providerId)
         val webView = retainedWebViews.getOrPut(job.providerId) {
             WebView(this).apply {
                 val cookieManager = CookieManager.getInstance()
@@ -583,6 +606,7 @@ class ProviderBackgroundRefreshService : Service() {
         restoreDebugProviderSessionCookies(providerId, cookieManager)
         restoreCodexDebugNativeAuthContext(providerId)
         restoreCodexNativeAuthContext(providerId)
+        restoreClaudeNativeRequestContext(providerId)
         CookieManager.getInstance().flush()
         webView.onResume()
         webView.resumeTimers()
@@ -605,6 +629,13 @@ class ProviderBackgroundRefreshService : Service() {
         val restoredHeaders = CodexNativeAuthContextStore(applicationContext).restore()
         if (restoredHeaders.isEmpty()) return
         codexNativeFetchHeaders.putAll(restoredHeaders)
+    }
+
+    private fun restoreClaudeNativeRequestContext(providerId: ProviderId) {
+        if (providerId != ProviderId.CLAUDE) return
+        val restoredHeaders = ClaudeNativeRequestContextStore(applicationContext).restore()
+        if (restoredHeaders.isEmpty()) return
+        claudeNativeFetchHeaders.putAll(restoredHeaders)
     }
 
     private fun destroyProviderWebView(providerId: ProviderId) {
@@ -876,13 +907,15 @@ class ProviderBackgroundRefreshService : Service() {
             val url = request.url.toString()
             captureCodexAccountId(ownerProviderId, url)
             captureCodexNativeFetchHeaders(ownerProviderId, url, request.requestHeaders.orEmpty())
+            captureClaudeNativeFetchHeaders(ownerProviderId, url, request.requestHeaders.orEmpty())
             maybeStartCodexAboutBlankCollection(ownerProviderId, view, url)
+            maybeStartClaudeAboutBlankCollection(ownerProviderId, view, url)
             return null
         }
 
         override fun onLoadResource(view: WebView, url: String) {
             val active = currentWebJobFor(ownerProviderId) ?: return
-            val pageUrl = view.url ?: url
+            val pageUrl = effectiveCollectorPageUrl(ownerProviderId, active.requestId, view.url ?: url)
             recordWebJobUrl(active.requestId, pageUrl)
             if (isWebSessionWarmUpPage(active, pageUrl)) return
             if (!ProviderWebCollectorScripts.shouldRunCollectorFromResource(ownerProviderId, pageUrl, url)) return
@@ -901,6 +934,7 @@ class ProviderBackgroundRefreshService : Service() {
                     return@evaluateJavascript
                 }
                 if (ownerProviderId == ProviderId.CODEX && pageUrl != "about:blank") return@evaluateJavascript
+                if (ownerProviderId == ProviderId.CLAUDE && pageUrl != "about:blank") return@evaluateJavascript
                 injectCollectorIfReady(ownerProviderId, view, pageUrl, pageText)
             }
         }
@@ -908,36 +942,38 @@ class ProviderBackgroundRefreshService : Service() {
         override fun onPageFinished(view: WebView, url: String) {
             val active = currentWebJobFor(ownerProviderId) ?: return
             val requestId = active.requestId
-            recordWebJobUrl(requestId, url)
+            val effectiveUrl = effectiveCollectorPageUrl(ownerProviderId, requestId, url)
+            recordWebJobUrl(requestId, effectiveUrl)
             Log.d(TAG, "pageFinished provider=${ownerProviderId.storageId} url=${hostOf(url)}${pathOf(url)}")
-            if (maybeCompleteWebSessionWarmUp(active, view, url)) return
-            if (maybeRedirectGeminiRefreshToUsage(active, view, url)) return
-            if (isGeminiRefreshInteractiveSignInPage(active, url)) {
-                Log.d(TAG, "interactiveSignInRequired provider=gemini at=${hostOf(url)}${pathOf(url)}")
+            if (maybeCompleteWebSessionWarmUp(active, view, effectiveUrl)) return
+            if (maybeRedirectGeminiRefreshToUsage(active, view, effectiveUrl)) return
+            if (isGeminiRefreshInteractiveSignInPage(active, effectiveUrl)) {
+                Log.d(TAG, "interactiveSignInRequired provider=gemini at=${hostOf(effectiveUrl)}${pathOf(effectiveUrl)}")
                 completeWebJob(requestId, ServiceRefreshOutcome.Failure(ProviderRefreshFailure.interactiveAuthRequired(LOGIN_PAGE_REACHED_MESSAGE)))
                 return
             }
-            if (ProviderWebCollectorScripts.isRefreshLoginPage(ownerProviderId, url)) {
-                if (shouldWaitForGeminiRefreshSignInRedirect(active, url)) return
+            if (ProviderWebCollectorScripts.isRefreshLoginPage(ownerProviderId, effectiveUrl)) {
+                if (shouldWaitForGeminiRefreshSignInRedirect(active, effectiveUrl)) return
                 completeWebJob(requestId, ServiceRefreshOutcome.Failure(ProviderRefreshFailure.interactiveAuthRequired(LOGIN_PAGE_REACHED_MESSAGE)))
                 return
             }
             view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
                 if (currentWebJobFor(ownerProviderId)?.requestId != requestId) return@evaluateJavascript
                 val pageText = decodeJsString(encoded)
-                if (ProviderWebCollectorScripts.isRefreshLoginPage(ownerProviderId, url, pageText)) {
+                if (ProviderWebCollectorScripts.isRefreshLoginPage(ownerProviderId, effectiveUrl, pageText)) {
                     Log.d(
                         TAG,
-                        "loginPage provider=${ownerProviderId.storageId} phase=finished url=${hostOf(url)}${pathOf(url)} page=${pageSignal(pageText)}"
+                        "loginPage provider=${ownerProviderId.storageId} phase=finished url=${hostOf(effectiveUrl)}${pathOf(effectiveUrl)} page=${pageSignal(pageText)}"
                     )
-                    if (maybeClickGeminiRefreshSignIn(active, view, url, pageText)) return@evaluateJavascript
-                    if (shouldWaitForGeminiRefreshSignInRedirect(active, url)) return@evaluateJavascript
+                    if (maybeClickGeminiRefreshSignIn(active, view, effectiveUrl, pageText)) return@evaluateJavascript
+                    if (shouldWaitForGeminiRefreshSignInRedirect(active, effectiveUrl)) return@evaluateJavascript
                     completeWebJob(requestId, ServiceRefreshOutcome.Failure(ProviderRefreshFailure.interactiveAuthRequired(LOGIN_PAGE_REACHED_MESSAGE)))
                     return@evaluateJavascript
                 }
-                if (ownerProviderId == ProviderId.CODEX && url != "about:blank") return@evaluateJavascript
-                injectCollectorIfReady(ownerProviderId, view, url, pageText)
-                maybeScheduleGeminiTerminalCheck(active, view, url)
+                if (ownerProviderId == ProviderId.CODEX && effectiveUrl != "about:blank") return@evaluateJavascript
+                if (ownerProviderId == ProviderId.CLAUDE && effectiveUrl != "about:blank") return@evaluateJavascript
+                injectCollectorIfReady(ownerProviderId, view, effectiveUrl, pageText)
+                maybeScheduleGeminiTerminalCheck(active, view, effectiveUrl)
             }
         }
 
@@ -1090,10 +1126,10 @@ class ProviderBackgroundRefreshService : Service() {
             if (!isNativeFetchBridgePageAllowed(ownerProviderId)) {
                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
             }
-            val headers = if (ownerProviderId == ProviderId.CODEX) {
-                codexNativeFetchHeadersFor(url)
-            } else {
-                emptyMap()
+            val headers = when (ownerProviderId) {
+                ProviderId.CODEX -> codexNativeFetchHeadersFor(url)
+                ProviderId.CLAUDE -> claudeNativeFetchHeadersFor(url)
+                else -> emptyMap()
             }
             return ProviderNativeJsonBridge.fetchJson(ownerProviderId, url, collectorUserAgent, headers)
         }
@@ -1111,7 +1147,11 @@ class ProviderBackgroundRefreshService : Service() {
                 userAgent = collectorUserAgent,
                 bridgePageUrl = nativeUsageBridgePageUrl(ownerProviderId),
                 requestHeadersForUrl = { url ->
-                    if (ownerProviderId == ProviderId.CODEX) codexNativeFetchHeadersFor(url) else emptyMap()
+                    when (ownerProviderId) {
+                        ProviderId.CODEX -> codexNativeFetchHeadersFor(url)
+                        ProviderId.CLAUDE -> claudeNativeFetchHeadersFor(url)
+                        else -> emptyMap()
+                    }
                 }
             )
         }
@@ -1164,6 +1204,47 @@ class ProviderBackgroundRefreshService : Service() {
         }
     }
 
+    private fun maybeStartClaudeAboutBlankCollection(providerId: ProviderId, view: WebView, resourceUrl: String) {
+        if (providerId != ProviderId.CLAUDE) return
+        val active = currentWebJobFor(providerId) ?: return
+        if (webJobLastUrls[active.requestId] == "about:blank") return
+        if (!ProviderLoginStrategy.shouldStartClaudeNativeCollectionFromResource(resourceUrl)) return
+        if (!hasClaudeNativeFetchHeaders(resourceUrl)) return
+        mainHandler.post {
+            if (currentWebJobFor(providerId)?.requestId != active.requestId) return@post
+            if (webJobLastUrls[active.requestId] == "about:blank") return@post
+            collectorInjectionKeys.removeAll { it.startsWith("${active.requestId}:${providerId.storageId}:") }
+            recordWebJobUrl(active.requestId, "about:blank")
+            Log.d(TAG, "redirectUsage provider=claude to=about:blank from=${hostOf(resourceUrl)}${pathOf(resourceUrl)}")
+            view.stopLoading()
+            loadClaudeAboutBlankBridgeDocument(view)
+        }
+    }
+
+    private fun effectiveCollectorPageUrl(providerId: ProviderId, requestId: Long, url: String): String {
+        if (providerId == ProviderId.CLAUDE &&
+            webJobLastUrls[requestId] == "about:blank" &&
+            isClaudeAboutBlankBridgeDocument(url)
+        ) {
+            return "about:blank"
+        }
+        return url
+    }
+
+    private fun isClaudeAboutBlankBridgeDocument(url: String): Boolean {
+        return url == "about:blank" || url == CLAUDE_ABOUT_BLANK_BASE_URL
+    }
+
+    private fun loadClaudeAboutBlankBridgeDocument(view: WebView) {
+        view.loadDataWithBaseURL(
+            CLAUDE_ABOUT_BLANK_BASE_URL,
+            CLAUDE_ABOUT_BLANK_HTML,
+            "text/html",
+            "UTF-8",
+            "about:blank"
+        )
+    }
+
     private fun shouldStartCodexNativeCollectionFromResource(url: String): Boolean {
         return ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, url)
     }
@@ -1188,6 +1269,44 @@ class ProviderBackgroundRefreshService : Service() {
 
     private fun codexNativeFetchHeadersFor(url: String): Map<String, String> {
         return CodexNativeHeaderStore.headersFor(codexNativeFetchHeaders, url, CODEX_NATIVE_HEADER_FALLBACK_KEY)
+    }
+
+    private fun captureClaudeNativeFetchHeaders(providerId: ProviderId, url: String, requestHeaders: Map<String, String>) {
+        if (providerId != ProviderId.CLAUDE) return
+        if (!ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CLAUDE, url)) return
+        if (!ClaudeNativeHeaderStore.capture(
+                claudeNativeFetchHeaders,
+                url,
+                requestHeaders,
+                CLAUDE_NATIVE_HEADER_WILDCARD_KEY
+            )
+        ) return
+        val headerNames = CodexNativeHeaderStore.forwardableHeaders(requestHeaders)
+            .keys
+            .sorted()
+            .joinToString("|")
+        Log.d(TAG, "capturedNativeHeaders provider=claude path=${pathOf(url)} names=$headerNames")
+        saveClaudeNativeRequestContext()
+    }
+
+    private fun claudeNativeFetchHeadersFor(url: String): Map<String, String> {
+        return ClaudeNativeHeaderStore.headersFor(claudeNativeFetchHeaders, url, CLAUDE_NATIVE_HEADER_WILDCARD_KEY)
+    }
+
+    private fun hasClaudeNativeFetchHeaders(url: String): Boolean {
+        return claudeNativeFetchHeadersFor(url).any { (_, value) -> value.isNotBlank() }
+    }
+
+    private fun clearClaudeNativeFetchHeaders(providerId: ProviderId) {
+        if (providerId == ProviderId.CLAUDE) {
+            claudeNativeFetchHeaders.clear()
+        }
+    }
+
+    private fun saveClaudeNativeRequestContext() {
+        val requestContext = ClaudeNativeHeaderStore.snapshotRequestContext(claudeNativeFetchHeaders)
+        if (requestContext.isEmpty()) return
+        ClaudeNativeRequestContextStore(applicationContext).save(requestContext)
     }
 
     private fun saveCodexNativeAuthContext() {
@@ -1381,6 +1500,9 @@ class ProviderBackgroundRefreshService : Service() {
         private const val GEMINI_TERMINAL_CHECK_DELAY_MS = 4_000L
         private const val GEMINI_TERMINAL_CHECK_FALLBACK_DELAY_MS = 24_000L
         private const val CODEX_NATIVE_HEADER_FALLBACK_KEY = "*"
+        private const val CLAUDE_NATIVE_HEADER_WILDCARD_KEY = "claude:*"
+        private const val CLAUDE_ABOUT_BLANK_BASE_URL = "https://claude.ai/"
+        private const val CLAUDE_ABOUT_BLANK_HTML = "<!doctype html><html><head><meta charset=\"utf-8\"></head><body></body></html>"
         private const val LOGIN_PAGE_REACHED_MESSAGE = "Background refresh reached a provider login page."
         private const val TAG = "AIQuotaBgRefreshService"
         private const val PAGE_CAPTURE_SCRIPT =

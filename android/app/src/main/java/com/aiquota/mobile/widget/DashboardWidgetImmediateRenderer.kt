@@ -103,9 +103,6 @@ object DashboardWidgetImmediateRenderer {
         )
         val theme = ThemePreferencesRepository(context).currentTheme()
         val themeColors = widgetThemeColors(theme)
-        val isRefreshing = WidgetRefreshFeedback.isRefreshInProgress(
-            widgetRefreshActive = WidgetRefreshFeedback.isWidgetRefreshInProgress(context, appWidgetId)
-        )
         val views = RemoteViews(context.packageName, R.layout.ai_quota_widget_dashboard_immediate)
 
         views.setInt(
@@ -123,19 +120,6 @@ object DashboardWidgetImmediateRenderer {
         views.setTextColor(R.id.dashboard_immediate_empty, themeColors.caption.toArgb())
         views.setTextViewText(R.id.dashboard_immediate_empty, context.getString(R.string.widget_no_data))
         views.setOnClickPendingIntent(R.id.dashboard_immediate_root, homePendingIntent(context, appWidgetId))
-        views.setImageViewResource(
-            R.id.dashboard_immediate_refresh,
-            if (isRefreshing) R.drawable.widget_refresh_spinner_dots else R.drawable.ic_refresh
-        )
-        views.setOnClickPendingIntent(
-            R.id.dashboard_immediate_refresh,
-            PendingIntent.getBroadcast(
-                context,
-                60_000 + appWidgetId,
-                WidgetRefreshActions.widgetRefreshIntent(context, appWidgetId),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-        )
 
         applyRows(views, providers, spec, themeColors)
         return views

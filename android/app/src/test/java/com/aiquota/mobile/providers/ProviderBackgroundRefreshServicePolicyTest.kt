@@ -185,6 +185,22 @@ class ProviderBackgroundRefreshServicePolicyTest {
     }
 
     @Test
+    fun glmWebOAuthAuthFailureUsesWebSessionMessageNotApiKeyMessage() {
+        val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
+        val nativeCollector = service.substringAfter("private suspend fun collectNativeProviderUsage")
+            .substringBefore("private fun fetchAntigravityNativeOrWebSessionPayload")
+        val messageHelper = service.substringAfter("private fun glmAuthFailureMessageFor")
+            .substringBefore("private suspend fun fetchAntigravityNativeOrWebSessionPayload")
+
+        assertTrue(nativeCollector.contains("val connectionMode = repository.connectionMode()"))
+        assertTrue(nativeCollector.contains("glmAuthFailureMessageFor(connectionMode)"))
+        assertTrue(messageHelper.contains("GlmConnectionMode.WEB_OAUTH"))
+        assertTrue(messageHelper.contains("GLM web session expired. Please sign in again."))
+        assertTrue(messageHelper.contains("GlmConnectionMode.API_KEY"))
+        assertTrue(messageHelper.contains("GLM API key is invalid or expired."))
+    }
+
+    @Test
     fun opencodeBackgroundRefreshDoesNotRedirectVisiblePagesOrRestoreSavedCookies() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val restoreDebugCookies = service.substringAfter("private fun restoreDebugProviderSessionCookies")
@@ -364,6 +380,25 @@ class ProviderBackgroundRefreshServicePolicyTest {
     }
 
     @Test
+    fun claudeBackgroundRefreshCapturesHeadersBeforeAboutBlankNativeBridge() {
+        val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
+        val plan = File("src/main/java/com/aiquota/mobile/providers/ProviderRefreshPlan.kt").readText()
+        val bridgeBlock = service.substringAfter("fun fetchProviderUsagePayload()")
+            .substringBefore("fun parseCodexFetchedPayload")
+
+        assertTrue(plan.contains("if (providerId == ProviderId.CLAUDE) return \"https://claude.ai/\""))
+        assertTrue(service.contains("captureClaudeNativeFetchHeaders(ownerProviderId, url, request.requestHeaders.orEmpty())"))
+        assertTrue(service.contains("maybeStartClaudeAboutBlankCollection(ownerProviderId, view, url)"))
+        assertTrue(service.contains("ProviderLoginStrategy.shouldStartClaudeNativeCollectionFromResource(resourceUrl)"))
+        assertTrue(service.contains("private fun claudeNativeFetchHeadersFor(url: String): Map<String, String>"))
+        assertTrue(bridgeBlock.contains("ProviderId.CLAUDE -> claudeNativeFetchHeadersFor(url)"))
+        assertTrue(service.contains("loadClaudeAboutBlankBridgeDocument(view)"))
+        assertTrue(service.contains("view.loadDataWithBaseURL("))
+        assertTrue(service.contains("webJobLastUrls[requestId] == \"about:blank\""))
+        assertTrue(service.contains("capturedNativeHeaders provider=claude"))
+    }
+
+    @Test
     fun codexBackgroundRefreshUsesAuthenticatedNativeResourceForAboutBlankNativeCollection() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val startBlock = service.substringAfter("private fun maybeStartCodexAboutBlankCollection")
@@ -378,7 +413,7 @@ class ProviderBackgroundRefreshServicePolicyTest {
         assertTrue(startBlock.contains("hasCodexNativeFetchAuthContext(resourceUrl) && !hasCodexSessionCookies(resourceUrl)"))
         assertTrue(routeBlock.contains("ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, url)"))
         assertTrue(loadResourceBlock.contains("if (ownerProviderId == ProviderId.CODEX && pageUrl != \"about:blank\")"))
-        assertTrue(pageFinishedBlock.contains("if (ownerProviderId == ProviderId.CODEX && url != \"about:blank\")"))
+        assertTrue(pageFinishedBlock.contains("if (ownerProviderId == ProviderId.CODEX && effectiveUrl != \"about:blank\")"))
     }
 
     @Test
@@ -396,6 +431,23 @@ class ProviderBackgroundRefreshServicePolicyTest {
         assertTrue(restoreBlock.contains("codexNativeFetchHeaders.putAll(restoredHeaders)"))
         assertTrue(captureBlock.contains("saveCodexNativeAuthContext()"))
         assertTrue(service.contains("CodexNativeAuthContextStore(applicationContext).save(authContext)"))
+    }
+
+    @Test
+    fun claudeBackgroundRefreshRestoresPersistedNativeRequestContext() {
+        val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
+        val prepareBlock = service.substringAfter("private fun prepareSharedWebSessionForCollection")
+            .substringBefore("private fun restoreDebugProviderSessionCookies")
+        val restoreBlock = service.substringAfter("private fun restoreClaudeNativeRequestContext")
+            .substringBefore("private fun destroyProviderWebView")
+        val captureBlock = service.substringAfter("private fun captureClaudeNativeFetchHeaders")
+            .substringBefore("private fun claudeNativeFetchHeadersFor")
+
+        assertTrue(prepareBlock.contains("restoreClaudeNativeRequestContext(providerId)"))
+        assertTrue(restoreBlock.contains("ClaudeNativeRequestContextStore(applicationContext).restore()"))
+        assertTrue(restoreBlock.contains("claudeNativeFetchHeaders.putAll(restoredHeaders)"))
+        assertTrue(captureBlock.contains("saveClaudeNativeRequestContext()"))
+        assertTrue(service.contains("ClaudeNativeRequestContextStore(applicationContext).save(requestContext)"))
     }
 
     @Test

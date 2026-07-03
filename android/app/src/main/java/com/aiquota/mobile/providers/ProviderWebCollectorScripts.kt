@@ -453,10 +453,10 @@ object ProviderWebCollectorScripts {
             return ""
         }
         val collectorScript = if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
-            if (providerId == ProviderId.CODEX) {
-                codexAboutBlankJsonPayload(forceCollectorStart = awaitInteractiveLoginUsage)
-            } else {
-                nativeProviderPayload(providerId)
+            when (providerId) {
+                ProviderId.CLAUDE -> claudeAboutBlankApiPayload()
+                ProviderId.CODEX -> codexAboutBlankJsonPayload(forceCollectorStart = awaitInteractiveLoginUsage)
+                else -> nativeProviderPayload(providerId)
             }
         } else {
             ProviderScriptProviders.providerFor(providerId).collectorScript(
@@ -1136,6 +1136,245 @@ object ProviderWebCollectorScripts {
               }).catch(function(error) {
                 c.fail("${provider}_native_usage_unavailable", String(error && error.message || error));
               });
+            })();
+        """.trimIndent()
+    }
+
+    internal fun claudeAboutBlankApiPayload(): String {
+        return """
+            (function(){
+              if (!window.__AIQuotaStartProviderCollector || !window.__AIQuotaStartProviderCollector("claude")) return;
+              var c = window.__AIQuotaCollector;
+              if (!c) return;
+              var maxAttempts = 4;
+              var retryDelayMs = 2500;
+              function first(object, keys) {
+                if (!object || typeof object !== "object") return null;
+                for (var index = 0; index < keys.length; index += 1) {
+                  var key = keys[index];
+                  if (Object.prototype.hasOwnProperty.call(object, key) && object[key] !== null && object[key] !== undefined && object[key] !== "") {
+                    return object[key];
+                  }
+                }
+                return null;
+              }
+              function orgFromText(text) {
+                var apiMatch = /\/api\/organizations\/([^\/?#]+)/.exec(text || "");
+                if (apiMatch && apiMatch[1]) return normalizeClaudeOrgId(apiMatch[1]);
+                var orgMatch = /org[_-][A-Za-z0-9_-]+/.exec(text || "");
+                return orgMatch ? orgMatch[0] : null;
+              }
+              function normalizeClaudeOrgId(value) {
+                var text = String(value || "").trim();
+                if (!text || text === "discoverable") return null;
+                if (/^org[_-][A-Za-z0-9_-]+$/.test(text)) return text;
+                if (/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(text)) return text;
+                if (/^[0-9]+$/.test(text)) return text;
+                if (/^[A-Za-z0-9_-]{8,}$/.test(text) && text.indexOf(" ") < 0 && text.indexOf("'") < 0) return text;
+                return null;
+              }
+              function isNumericClaudeOrgId(value) {
+                return /^[0-9]+$/.test(String(value || ""));
+              }
+              function preferClaudeOrg(current, candidate) {
+                var normalized = normalizeClaudeOrgId(candidate);
+                if (!normalized) return current || null;
+                if (!current || (isNumericClaudeOrgId(current) && !isNumericClaudeOrgId(normalized))) return normalized;
+                return current;
+              }
+              function pickOrg(value, depth) {
+                if (!value || depth > 7) return null;
+                if (typeof value === "string") return orgFromText(value);
+                if (Array.isArray(value)) {
+                  var arrayPicked = null;
+                  for (var i = 0; i < value.length; i += 1) {
+                    arrayPicked = preferClaudeOrg(arrayPicked, pickOrg(value[i], depth + 1));
+                  }
+                  return arrayPicked;
+                }
+                if (typeof value === "object") {
+                  var direct = first(value, [
+                    "uuid",
+                    "organization_uuid",
+                    "organizationUuid",
+                    "organization_id",
+                    "organizationId",
+                    "org_uuid",
+                    "orgUuid",
+                    "account_uuid",
+                    "accountUuid",
+                    "workspace_id",
+                    "workspaceId",
+                    "id"
+                  ]);
+                  var picked = normalizeClaudeOrgId(direct);
+                  var keys = Object.keys(value);
+                  for (var keyIndex = 0; keyIndex < keys.length; keyIndex += 1) {
+                    picked = preferClaudeOrg(picked, pickOrg(value[keys[keyIndex]], depth + 1));
+                  }
+                  return picked || orgFromText(JSON.stringify(value));
+                }
+                return null;
+              }
+              function firstString(value, keys, depth) {
+                if (!value || depth > 7) return null;
+                if (typeof value === "string") return value.length > 0 && value.length < 160 ? value : null;
+                if (Array.isArray(value)) {
+                  for (var index = 0; index < value.length; index += 1) {
+                    var arrayResult = firstString(value[index], keys, depth + 1);
+                    if (arrayResult) return arrayResult;
+                  }
+                  return null;
+                }
+                if (typeof value === "object") {
+                  var direct = first(value, keys);
+                  if (typeof direct === "string" && direct.length > 0 && direct.length < 160) return direct;
+                  var objectKeys = Object.keys(value);
+                  for (var keyIndex = 0; keyIndex < objectKeys.length; keyIndex += 1) {
+                    var childResult = firstString(value[objectKeys[keyIndex]], keys, depth + 1);
+                    if (childResult) return childResult;
+                  }
+                }
+                return null;
+              }
+              function usageObject(value, depth) {
+                if (!value || typeof value !== "object" || depth > 7) return null;
+                if (hasClaudeUsagePayload(value)) return value.usage || value;
+                if (Array.isArray(value)) {
+                  for (var index = 0; index < value.length; index += 1) {
+                    var arrayUsage = usageObject(value[index], depth + 1);
+                    if (arrayUsage) return arrayUsage;
+                  }
+                  return null;
+                }
+                var keys = Object.keys(value);
+                for (var keyIndex = 0; keyIndex < keys.length; keyIndex += 1) {
+                  var childUsage = usageObject(value[keys[keyIndex]], depth + 1);
+                  if (childUsage) return childUsage;
+                }
+                return null;
+              }
+              function hasClaudeUsagePayload(value) {
+                if (!value || typeof value !== "object") return false;
+                if (value.usage ||
+                  value.five_hour || value.fiveHour ||
+                  value.seven_day || value.sevenDay ||
+                  value.seven_day_omelette || value.sevenDayOmelette ||
+                  value.session || value.weekly ||
+                  value.weekly_opus || value.weeklyOpus || value.opus_weekly || value.opusWeekly || value.opus ||
+                  value.weekly_sonnet || value.weeklySonnet || value.sonnet_weekly || value.sonnetWeekly || value.sonnet ||
+                  value.weekly_cowork || value.weeklyCowork || value.cowork_weekly || value.coworkWeekly || value.cowork ||
+                  value.weekly_design || value.weeklyDesign || value.design_weekly || value.designWeekly || value.design ||
+                  value.models || value.model_usage || value.modelUsage || value.model_limits || value.modelLimits ||
+                  value.limits || value.quotas || value.quotaBuckets || value.quota_buckets || value.buckets || value.windows) {
+                  return true;
+                }
+                return false;
+              }
+              function fetchClaudeJson(url) {
+                if (typeof fetch !== "function") {
+                  return Promise.resolve({ ok: false, status: 0, url: url, error: "fetch_missing" });
+                }
+                var controller = null;
+                var timer = null;
+                try {
+                  if (typeof AbortController !== "undefined") {
+                    controller = new AbortController();
+                    timer = setTimeout(function(){ controller.abort(); }, 8000);
+                  }
+                } catch (error) {}
+                return fetch(url, {
+                  credentials: "include",
+                  headers: { "accept": "application/json" },
+                  signal: controller ? controller.signal : undefined
+                }).then(function(response) {
+                  return response.text().then(function(text) {
+                    var json = null;
+                    try { json = text ? JSON.parse(text) : {}; } catch (error) {}
+                    return { ok: response.ok, status: response.status, url: url, json: json, bodyPresent: !!(text && text.length) };
+                  });
+                }).catch(function(error) {
+                  return { ok: false, status: 0, url: url, error: String(error && (error.name || error.message) || error) };
+                }).then(function(result) {
+                  if (timer) clearTimeout(timer);
+                  return result;
+                });
+              }
+              function statusSummary(results) {
+                var summary = {};
+                Object.keys(results).forEach(function(key) {
+                  var value = results[key] || {};
+                  summary[key] = {
+                    ok: !!value.ok,
+                    status: value.status || 0,
+                    bodyPresent: !!value.bodyPresent,
+                    error: value.error || null
+                  };
+                });
+                return summary;
+              }
+              function probeClaudeSession() {
+                var results = {};
+                return fetchClaudeJson("https://claude.ai/api/organizations").then(function(organizations) {
+                  results.organizations = organizations;
+                  return fetchClaudeJson("https://claude.ai/api/account_profile");
+                }).then(function(accountProfile) {
+                  results.accountProfile = accountProfile;
+                  return fetchClaudeJson("https://claude.ai/api/organizations/me");
+                }).then(function(organizationsMe) {
+                  results.organizationsMe = organizationsMe;
+                  var orgId = preferClaudeOrg(
+                    preferClaudeOrg(pickOrg(results.organizations && results.organizations.json, 0), pickOrg(results.organizationsMe && results.organizationsMe.json, 0)),
+                    pickOrg(results.accountProfile && results.accountProfile.json, 0)
+                  );
+                  orgId = preferClaudeOrg(orgId, c.cookies && c.cookies.lastActiveOrg);
+                  if (!orgId) {
+                    return { ok: false, diagnostic: "claude_organization_unavailable", statuses: statusSummary(results) };
+                  }
+                  var encodedOrgId = encodeURIComponent(orgId);
+                  return fetchClaudeJson("https://claude.ai/api/organizations/" + encodedOrgId + "/subscription_details").then(function(subscription) {
+                    results.subscription = subscription;
+                    return fetchClaudeJson("https://claude.ai/api/organizations/" + encodedOrgId + "/usage");
+                  }).then(function(usage) {
+                    results.usage = usage;
+                    var usagePayload = usageObject(usage && usage.json, 0);
+                    if (!usage.ok || !usagePayload) {
+                      return { ok: false, diagnostic: "claude_usage_unavailable", statuses: statusSummary(results) };
+                    }
+                    return {
+                      ok: true,
+                      payload: {
+                        provider: "claude",
+                        collectorMode: "aboutblank-js-fetch",
+                        account: firstString(results.accountProfile && results.accountProfile.json, ["email", "account_email", "accountEmail", "user_email", "userEmail"], 0),
+                        plan: firstString(results.subscription && results.subscription.json, ["plan", "plan_type", "planType", "plan_name", "planName", "subscription_plan", "subscriptionPlan", "subscription_type", "subscriptionType", "tier", "sku", "name", "display_name", "displayName", "title"], 0),
+                        organizationId: orgId,
+                        usage: usagePayload
+                      }
+                    };
+                  });
+                });
+              }
+              function runProbe(attempt) {
+                probeClaudeSession().then(function(result) {
+                  if (result && result.ok && result.payload && hasClaudeUsagePayload(result.payload.usage)) {
+                    c.post(result.payload);
+                    return;
+                  }
+                  if (attempt < maxAttempts) {
+                    setTimeout(function(){ runProbe(attempt + 1); }, retryDelayMs);
+                    return;
+                  }
+                  c.fail(result && result.diagnostic || "claude_usage_unavailable", JSON.stringify({ statuses: result && result.statuses || {} }));
+                }).catch(function(error) {
+                  if (attempt < maxAttempts) {
+                    setTimeout(function(){ runProbe(attempt + 1); }, retryDelayMs);
+                    return;
+                  }
+                  c.fail("claude_usage_unavailable", String(error && error.message || error));
+                });
+              }
+              setTimeout(function(){ runProbe(1); }, 300);
             })();
         """.trimIndent()
     }

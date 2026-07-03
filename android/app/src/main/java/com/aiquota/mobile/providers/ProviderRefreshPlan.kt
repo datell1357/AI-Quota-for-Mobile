@@ -23,6 +23,7 @@ object ProviderRefreshPlan {
     const val AUTO_REFRESH_INTERVAL_MILLIS = 60_000L
     const val MIN_AUTO_REFRESH_DELAY_MILLIS = 5_000L
     const val PROVIDER_REFRESH_TIMEOUT_MILLIS = 10_000L
+    const val CLAUDE_WEB_REFRESH_TIMEOUT_MILLIS = 30_000L
     const val CODEX_REFRESH_TIMEOUT_MILLIS = 60_000L
     const val GLM_WEB_REFRESH_TIMEOUT_MILLIS = 20_000L
     const val OPENCODE_REFRESH_TIMEOUT_MILLIS = 20_000L
@@ -33,6 +34,7 @@ object ProviderRefreshPlan {
 
     fun timeoutMillisFor(providerId: ProviderId): Long {
         return when (providerId) {
+            ProviderId.CLAUDE -> CLAUDE_WEB_REFRESH_TIMEOUT_MILLIS
             ProviderId.CODEX -> CODEX_REFRESH_TIMEOUT_MILLIS
             ProviderId.OPENCODE -> OPENCODE_REFRESH_TIMEOUT_MILLIS
             ProviderId.GLM -> GLM_WEB_REFRESH_TIMEOUT_MILLIS
@@ -98,6 +100,7 @@ object ProviderRefreshPlan {
 
     private fun hiddenCollectorUrl(providerId: ProviderId): String {
         if (providerId == ProviderId.CODEX) return "https://chatgpt.com/api/auth/session"
+        if (providerId == ProviderId.CLAUDE) return "https://claude.ai/"
         if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) return "about:blank"
         return when (providerId) {
             ProviderId.CLAUDE -> "https://claude.ai/"
