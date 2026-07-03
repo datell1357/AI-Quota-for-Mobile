@@ -82,7 +82,7 @@ class ProviderNativeUsagePayloadFetcherTest {
     fun cursorIsCollectedThroughAboutBlankNativeWebSessionFetcher() {
         val policy = File("src/main/java/com/aiquota/mobile/providers/ProviderAboutBlankCollectorPolicy.kt").readText()
         val source = File("src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt").readText()
-        val cursorScript = ProviderWebCollectorScripts.cursor()
+        val cursorScript = ProviderWebCollectorScripts.build(ProviderId.CURSOR, emptyMap(), "", pageUrl = "about:blank")
 
         assertTrue(policy.contains("ProviderId.CURSOR"))
         assertTrue(source.contains("ProviderId.CURSOR -> fetchCursorPayload"))
@@ -143,7 +143,63 @@ class ProviderNativeUsagePayloadFetcherTest {
         assertEquals(0.98f, snapshot.lines.single { it.label == "API usage" }.remainingPercent ?: 0f, 0.001f)
     }
 
+    @Test
+    fun cursorNativeUsagePayloadStopsAfterTrustedCurrentPeriodUsage() {
+        val requested = mutableListOf<Pair<String, String?>>()
+        val payload = ProviderNativeUsagePayloadFetcher.cursorUsagePayloadForTest { url, body ->
+            requested += url to body
+            ProviderNativeJsonBridge.wrappedResponse(
+                url,
+                200,
+                """
+                {
+                  "membershipType": "Pro",
+                  "planUsage": {
+                    "totalPercentUsed": 25,
+                    "autoPercentUsed": 5,
+                    "apiPercentUsed": 2
+                  }
+                }
+                """.trimIndent()
+            ).toString()
+        }
 
+        assertNotNull(payload)
+        assertEquals(
+            listOf("https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage" to "{}"),
+            requested
+        )
+    }
+
+    @Test
+    fun cursorNativeUsagePayloadContinuesAfterUntrustedCurrentPeriodUsage() {
+        val requested = mutableListOf<Pair<String, String?>>()
+        val payload = ProviderNativeUsagePayloadFetcher.cursorUsagePayloadForTest { url, body ->
+            requested += url to body
+            val response = when (url) {
+                "https://cursor.com/api/usage" -> """
+                    {
+                      "membershipType": "Pro",
+                      "planUsage": {
+                        "totalPercentUsed": 25,
+                        "autoPercentUsed": 5,
+                        "apiPercentUsed": 2
+                      }
+                    }
+                """.trimIndent()
+                else -> "{}"
+            }
+            ProviderNativeJsonBridge.wrappedResponse(url, 200, response).toString()
+        }
+
+        assertNotNull(payload)
+        assertEquals(
+            "https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage" to "{}",
+            requested.first()
+        )
+        assertTrue(requested.contains("https://api2.cursor.sh/aiserver.v1.DashboardService/GetPlanInfo" to "{}"))
+        assertTrue(requested.contains("https://cursor.com/api/usage" to null))
+    }
 
     @Test
     fun geminiNativeUsageSourceRejectsGenericOnlyCodeAssistAndDomFallbacks() {
