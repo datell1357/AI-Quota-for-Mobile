@@ -65,15 +65,18 @@ class DashboardWidgetConfigureActivityTest {
     }
 
     @Test
-    fun providerOrderConfigurationRequestsDashboardImmediateUpdateBeforeBroadFallback() {
+    fun providerOrderConfigurationKeepsBroadFallbackBehindCircularWidgetGuard() {
         val activitySource = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
-        val refreshWidgetsBody = activitySource.substringAfter("private fun refreshConfiguredWidgets").substringBefore("private fun finishConfigured")
-        val immediateIndex = refreshWidgetsBody.indexOf("DashboardWidgetImmediateUpdater.schedule(applicationContext, appWidgetId)")
-        val fallbackIndex = refreshWidgetsBody.indexOf("UsageSurfaceRefresher.refreshWidgetSurfaces(applicationContext)")
+        val refreshWidgetsBody = activitySource.substringAfter("private fun refreshConfiguredWidgets").substringBefore("private fun refreshBroadWidgetSurfacesOnlyForCircularWidget")
+        val circularFallbackBody = activitySource.substringAfter("private fun refreshBroadWidgetSurfacesOnlyForCircularWidget").substringBefore("private fun finishConfigured")
 
         assertTrue(
-            "Dashboard widget configuration should redraw the configured appWidgetId immediately before keeping the broad circular-widget fallback.",
-            immediateIndex >= 0 && fallbackIndex > immediateIndex
+            "Dashboard widget configuration should not schedule the broad delayed fallback that can overwrite the immediate dashboard render.",
+            refreshWidgetsBody.contains("DashboardWidgetImmediateUpdater.schedule(applicationContext, appWidgetId)") &&
+                refreshWidgetsBody.contains("refreshBroadWidgetSurfacesOnlyForCircularWidget()") &&
+                !refreshWidgetsBody.contains("UsageSurfaceRefresher.refreshWidgetSurfaces(applicationContext)") &&
+                circularFallbackBody.contains("AIQuotaCircularWidgetProvider::class.java.name") &&
+                circularFallbackBody.contains("UsageSurfaceRefresher.refreshWidgetSurfaces(applicationContext)")
         )
         assertTrue(!refreshWidgetsBody.contains("UsageSurfaceRefresher.refresh("))
         assertTrue(!activitySource.contains("LocalUsageRepository"))

@@ -673,7 +673,17 @@ class DashboardWidgetConfigureActivity : ComponentActivity() {
 
     private fun refreshConfiguredWidgets() {
         DashboardWidgetImmediateUpdater.schedule(applicationContext, appWidgetId)
-        UsageSurfaceRefresher.refreshWidgetSurfaces(applicationContext)
+        refreshBroadWidgetSurfacesOnlyForCircularWidget()
+    }
+
+    private fun refreshBroadWidgetSurfacesOnlyForCircularWidget() {
+        val providerClassName = AppWidgetManager.getInstance(applicationContext)
+            .getAppWidgetInfo(appWidgetId)
+            ?.provider
+            ?.className
+        if (providerClassName == AIQuotaCircularWidgetProvider::class.java.name) {
+            UsageSurfaceRefresher.refreshWidgetSurfaces(applicationContext)
+        }
     }
 
     private fun finishConfigured() {
