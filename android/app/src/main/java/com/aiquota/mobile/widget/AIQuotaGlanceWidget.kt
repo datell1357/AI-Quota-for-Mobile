@@ -441,8 +441,6 @@ private const val WIDGET_CELL_DP = 80f
 
 private val RouteActionKey = ActionParameters.Key<String>(AppRoute.EXTRA_ROUTE)
 
-class AIQuotaUnifiedGlanceWidget : AIQuotaGlanceWidget()
-
 class AIQuotaUnifiedGlanceWidgetReceiver : AppWidgetProvider() {
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         WidgetAutoRefreshStarter.requestBackgroundRefresh(context)
