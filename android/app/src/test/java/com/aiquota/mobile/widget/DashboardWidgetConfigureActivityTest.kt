@@ -42,7 +42,8 @@ class DashboardWidgetConfigureActivityTest {
         assertTrue(text.contains("dashboardWidgetProviderOrder(appWidgetId)"))
         assertTrue(text.contains("dashboardWidgetHiddenProviders(appWidgetId)"))
         assertTrue(text.contains("saveDashboardWidgetProviderOrder(appWidgetId, providerOrder)"))
-        assertTrue(text.contains("UsageSurfaceRefresher.refreshWidgetSurfaces"))
+        assertTrue(text.contains("DashboardWidgetImmediateUpdater.schedule(applicationContext, appWidgetId)"))
+        assertTrue(text.contains("AIQuotaCircularWidgetProvider.update(applicationContext, appWidgetId)"))
         assertTrue(!text.contains("UsageSurfaceRefresher.refresh("))
         assertTrue(!text.contains("LocalUsageRepository"))
         assertTrue(text.contains("ProviderCardOrder.normalizedOrder"))
@@ -59,24 +60,26 @@ class DashboardWidgetConfigureActivityTest {
             "Widget order persistence should not block UI; reconfiguration should redraw widgets without rewriting the shared snapshot cache.",
             saveProviderOrderBody.contains(".apply()") &&
                 !saveProviderOrderBody.contains(".commit()") &&
-                refreshWidgetsBody.contains("refreshWidgetSurfaces") &&
-                !refreshWidgetsBody.contains("UsageSurfaceRefresher.refresh(")
+                refreshWidgetsBody.contains("DashboardWidgetImmediateUpdater.schedule(applicationContext, appWidgetId)") &&
+                refreshWidgetsBody.contains("AIQuotaCircularWidgetProvider.update(applicationContext, appWidgetId)") &&
+                !refreshWidgetsBody.contains("UsageSurfaceRefresher.refresh")
         )
     }
 
     @Test
-    fun providerOrderConfigurationKeepsBroadFallbackBehindCircularWidgetGuard() {
+    fun providerOrderConfigurationRoutesRefreshByActualWidgetProvider() {
         val activitySource = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
-        val refreshWidgetsBody = activitySource.substringAfter("private fun refreshConfiguredWidgets").substringBefore("private fun refreshBroadWidgetSurfacesOnlyForCircularWidget")
-        val circularFallbackBody = activitySource.substringAfter("private fun refreshBroadWidgetSurfacesOnlyForCircularWidget").substringBefore("private fun finishConfigured")
+        val refreshWidgetsBody = activitySource.substringAfter("private fun refreshConfiguredWidgets").substringBefore("private fun finishConfigured")
 
         assertTrue(
-            "Dashboard widget configuration should not schedule the broad delayed fallback that can overwrite the immediate dashboard render.",
-            refreshWidgetsBody.contains("DashboardWidgetImmediateUpdater.schedule(applicationContext, appWidgetId)") &&
-                refreshWidgetsBody.contains("refreshBroadWidgetSurfacesOnlyForCircularWidget()") &&
-                !refreshWidgetsBody.contains("UsageSurfaceRefresher.refreshWidgetSurfaces(applicationContext)") &&
-                circularFallbackBody.contains("AIQuotaCircularWidgetProvider::class.java.name") &&
-                circularFallbackBody.contains("UsageSurfaceRefresher.refreshWidgetSurfaces(applicationContext)")
+            "Widget configuration should route refreshes by actual provider so battery ids never receive dashboard RemoteViews.",
+            refreshWidgetsBody.contains("getAppWidgetInfo(appWidgetId)") &&
+                refreshWidgetsBody.contains("AIQuotaUnifiedGlanceWidgetReceiver::class.java.name") &&
+                refreshWidgetsBody.contains("AIQuotaCircularWidgetProvider::class.java.name") &&
+                refreshWidgetsBody.contains("DashboardWidgetImmediateUpdater.schedule(applicationContext, appWidgetId)") &&
+                refreshWidgetsBody.contains("AIQuotaCircularWidgetProvider.update(applicationContext, appWidgetId)") &&
+                !refreshWidgetsBody.contains("UsageSurfaceRefresher.refreshWidgetSurfaces") &&
+                !activitySource.contains("import com.aiquota.mobile.providers.UsageSurfaceRefresher")
         )
         assertTrue(!refreshWidgetsBody.contains("UsageSurfaceRefresher.refresh("))
         assertTrue(!activitySource.contains("LocalUsageRepository"))
@@ -170,7 +173,8 @@ class DashboardWidgetConfigureActivityTest {
             finishBody.contains("saveDashboardWidgetProviderOrder(appWidgetId, providerOrder)") &&
                 finishBody.contains("saveDashboardWidgetHiddenProviders(appWidgetId, hiddenProviders)") &&
                 finishBody.contains("refreshConfiguredWidgets()") &&
-                refreshBody.contains("refreshWidgetSurfaces")
+                refreshBody.contains("DashboardWidgetImmediateUpdater.schedule(applicationContext, appWidgetId)") &&
+                refreshBody.contains("AIQuotaCircularWidgetProvider.update(applicationContext, appWidgetId)")
         )
     }
 

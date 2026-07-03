@@ -26,7 +26,6 @@ import com.aiquota.mobile.local.ProviderPreferencesCodec
 import com.aiquota.mobile.local.ProviderPreferencesRepository
 import com.aiquota.mobile.local.ThemePreferencesRepository
 import com.aiquota.mobile.localization.withAppLanguageForDeviceLanguage
-import com.aiquota.mobile.providers.UsageSurfaceRefresher
 import com.aiquota.mobile.ui.appLayoutMetrics
 import com.aiquota.mobile.ui.dashboard.ProviderCardOrder
 import com.aiquota.mobile.ui.provider.providerIconRes
@@ -672,17 +671,17 @@ class DashboardWidgetConfigureActivity : ComponentActivity() {
     }
 
     private fun refreshConfiguredWidgets() {
-        DashboardWidgetImmediateUpdater.schedule(applicationContext, appWidgetId)
-        refreshBroadWidgetSurfacesOnlyForCircularWidget()
-    }
-
-    private fun refreshBroadWidgetSurfacesOnlyForCircularWidget() {
         val providerClassName = AppWidgetManager.getInstance(applicationContext)
             .getAppWidgetInfo(appWidgetId)
             ?.provider
             ?.className
-        if (providerClassName == AIQuotaCircularWidgetProvider::class.java.name) {
-            UsageSurfaceRefresher.refreshWidgetSurfaces(applicationContext)
+        when (providerClassName) {
+            AIQuotaUnifiedGlanceWidgetReceiver::class.java.name -> {
+                DashboardWidgetImmediateUpdater.schedule(applicationContext, appWidgetId)
+            }
+            AIQuotaCircularWidgetProvider::class.java.name -> {
+                AIQuotaCircularWidgetProvider.update(applicationContext, appWidgetId)
+            }
         }
     }
 

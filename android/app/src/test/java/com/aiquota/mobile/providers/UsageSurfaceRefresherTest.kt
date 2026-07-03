@@ -57,6 +57,15 @@ class UsageSurfaceRefresherTest {
     }
 
     @Test
+    fun surfaceRefreshUpdatesDashboardThroughRemoteViewsReceiver() {
+        val source = sourceFile("src/main/java/com/aiquota/mobile/providers/UsageSurfaceRefresher.kt")
+
+        assertTrue(source.contains("AIQuotaUnifiedGlanceWidgetReceiver.updateAll(appContext)"))
+        assertFalse(source.contains("AIQuotaUnifiedGlanceWidget().updateAll(appContext)"))
+        assertFalse(source.contains("import androidx.glance.appwidget.updateAll"))
+    }
+
+    @Test
     fun surfaceRefreshKeepsWidgetCacheIndependentFromGlobalHiddenProviders() {
         val source = sourceFile("src/main/java/com/aiquota/mobile/providers/UsageSurfaceRefresher.kt")
         val refreshBody = source.substringAfter("fun refresh(").substringBefore("fun refreshWidgetSurfaces")

@@ -1,7 +1,9 @@
 ﻿package com.aiquota.mobile.widget
 
 import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProvider
 import android.content.Context
+import android.os.Bundle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -441,12 +443,27 @@ private val RouteActionKey = ActionParameters.Key<String>(AppRoute.EXTRA_ROUTE)
 
 class AIQuotaUnifiedGlanceWidget : AIQuotaGlanceWidget()
 
-class AIQuotaUnifiedGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
-    override val glanceAppWidget: GlanceAppWidget = AIQuotaUnifiedGlanceWidget()
-
+class AIQuotaUnifiedGlanceWidgetReceiver : AppWidgetProvider() {
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         WidgetAutoRefreshStarter.requestBackgroundRefresh(context)
-        super.onUpdate(context, appWidgetManager, appWidgetIds)
+        appWidgetIds.forEach { appWidgetId ->
+            DashboardWidgetImmediateRenderer.render(context, appWidgetId)
+        }
+    }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: Bundle
+    ) {
+        DashboardWidgetImmediateRenderer.render(context, appWidgetId)
+    }
+
+    companion object {
+        fun updateAll(context: Context) {
+            DashboardWidgetImmediateRenderer.updateAll(context)
+        }
     }
 }
 

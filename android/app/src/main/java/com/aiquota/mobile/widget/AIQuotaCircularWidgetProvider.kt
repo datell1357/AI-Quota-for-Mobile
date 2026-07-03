@@ -72,6 +72,13 @@ class AIQuotaCircularWidgetProvider : AppWidgetProvider() {
             updateWidgets(context, appWidgetManager, appWidgetManager.getAppWidgetIds(component))
         }
 
+        fun update(context: Context, appWidgetId: Int) {
+            if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return
+            val appContext = context.applicationContext
+            val appWidgetManager = AppWidgetManager.getInstance(appContext)
+            updateWidgets(appContext, appWidgetManager, intArrayOf(appWidgetId))
+        }
+
         private fun updateWidgets(
             context: Context,
             appWidgetManager: AppWidgetManager,

@@ -6,6 +6,27 @@ import org.junit.Test
 
 class DashboardWidgetImmediateRendererTest {
     @Test
+    fun dashboardReceiverKeepsManifestComponentButUsesRemoteViewsProviderOwnership() {
+        val manifest = File("src/main/AndroidManifest.xml").readText()
+        val source = File("src/main/java/com/aiquota/mobile/widget/AIQuotaGlanceWidget.kt").readText()
+        val receiverBody = source.substringAfter("class AIQuotaUnifiedGlanceWidgetReceiver")
+            .substringBefore("class AIQuotaLargeGlanceWidget")
+
+        assertTrue(manifest.contains("android:name=\".widget.AIQuotaUnifiedGlanceWidgetReceiver\""))
+        assertTrue(
+            "Dashboard receiver should keep the component name while becoming a RemoteViews AppWidgetProvider.",
+            source.contains("class AIQuotaUnifiedGlanceWidgetReceiver : AppWidgetProvider()") &&
+                !receiverBody.contains("GlanceAppWidgetReceiver") &&
+                !receiverBody.contains("GlanceAppWidget")
+        )
+        assertTrue(
+            "Dashboard receiver should render dashboard RemoteViews on widget update and resize.",
+            receiverBody.contains("DashboardWidgetImmediateRenderer.render(context, appWidgetId)") &&
+                receiverBody.contains("DashboardWidgetImmediateRenderer.updateAll(context)")
+        )
+    }
+
+    @Test
     fun dashboardImmediateRendererPushesAppWidgetIdScopedRemoteViews() {
         val source = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateRenderer.kt")
         val text = if (source.exists()) source.readText() else ""
@@ -20,6 +41,20 @@ class DashboardWidgetImmediateRendererTest {
                 text.contains("unifiedWidgetLayoutSpec(") &&
                 text.contains("dashboardWidgetProviderOrder(appWidgetId)") &&
                 text.contains("dashboardWidgetHiddenProviders(appWidgetId)")
+        )
+    }
+
+    @Test
+    fun dashboardImmediateRendererCanUpdateAllDashboardComponentIds() {
+        val source = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateRenderer.kt")
+        val text = if (source.exists()) source.readText() else ""
+        val updateAllBody = text.substringAfter("fun updateAll").substringBefore("private fun responsiveViews")
+
+        assertTrue(
+            "Dashboard RemoteViews renderer should own global dashboard updates by component.",
+            updateAllBody.contains("ComponentName(appContext, AIQuotaUnifiedGlanceWidgetReceiver::class.java)") &&
+                updateAllBody.contains("getAppWidgetIds(component)") &&
+                updateAllBody.contains("render(appContext, appWidgetId)")
         )
     }
 

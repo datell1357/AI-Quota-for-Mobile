@@ -24,6 +24,29 @@ class DashboardWidgetImmediateUpdaterTest {
     }
 
     @Test
+    fun dashboardImmediateUpdaterIgnoresAppWidgetIdsOwnedByOtherProviders() {
+        val source = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdater.kt")
+        val text = if (source.exists()) source.readText() else ""
+        val scheduleBody = text.substringAfter("fun schedule").substringBefore("\n    }")
+        val guardIndex = scheduleBody.indexOf("AIQuotaUnifiedGlanceWidgetReceiver::class.java.name")
+        val renderIndex = scheduleBody.indexOf("DashboardWidgetImmediateRenderer.render(appContext, appWidgetId)")
+
+        assertTrue(
+            "Dashboard immediate updater should inspect the actual provider for the configured appWidgetId.",
+            scheduleBody.contains("getAppWidgetInfo(appWidgetId)") &&
+                scheduleBody.contains("?.provider") &&
+                scheduleBody.contains("?.className")
+        )
+        assertTrue(
+            "Dashboard immediate updater must render only ids owned by AIQuotaUnifiedGlanceWidgetReceiver.",
+            guardIndex >= 0 &&
+                renderIndex >= 0 &&
+                guardIndex < renderIndex &&
+                !scheduleBody.contains("AIQuotaCircularWidgetProvider::class.java.name")
+        )
+    }
+
+    @Test
     fun dashboardImmediateUpdaterDoesNotStartProviderRefreshOrRewriteSnapshots() {
         val source = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateUpdater.kt")
         val text = if (source.exists()) source.readText() else ""

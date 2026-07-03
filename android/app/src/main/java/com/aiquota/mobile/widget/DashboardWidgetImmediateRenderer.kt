@@ -2,6 +2,7 @@ package com.aiquota.mobile.widget
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.res.ColorStateList
 import android.os.Build
@@ -31,6 +32,15 @@ object DashboardWidgetImmediateRenderer {
         val views = responsiveViews(appContext, appWidgetId, appWidgetManager)
         Log.d(TAG, "updateAppWidget appWidgetId=$appWidgetId")
         appWidgetManager.updateAppWidget(appWidgetId, views)
+    }
+
+    fun updateAll(context: Context) {
+        val appContext = context.applicationContext
+        val appWidgetManager = AppWidgetManager.getInstance(appContext)
+        val component = ComponentName(appContext, AIQuotaUnifiedGlanceWidgetReceiver::class.java)
+        appWidgetManager.getAppWidgetIds(component).forEach { appWidgetId ->
+            render(appContext, appWidgetId)
+        }
     }
 
     private fun responsiveViews(

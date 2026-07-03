@@ -2,14 +2,13 @@
 
 import android.content.Context
 import android.util.Log
-import androidx.glance.appwidget.updateAll
 import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderPreferencesRepository
 import com.aiquota.mobile.notification.UsageLimitNotificationController
 import com.aiquota.mobile.sync.ForegroundRefreshController
 import com.aiquota.mobile.widget.AIQuotaCircularWidgetProvider
-import com.aiquota.mobile.widget.AIQuotaUnifiedGlanceWidget
+import com.aiquota.mobile.widget.AIQuotaUnifiedGlanceWidgetReceiver
 import com.aiquota.mobile.widget.ProviderUsageWidgetProvider
 import com.aiquota.mobile.widget.WidgetSnapshotCache
 import java.time.Instant
@@ -130,7 +129,7 @@ object UsageSurfaceRefresher {
             .onFailure { error ->
                 Log.w(TAG, "Circular widget update failed.", error)
             }
-        runCatching { AIQuotaUnifiedGlanceWidget().updateAll(appContext) }
+        runCatching { AIQuotaUnifiedGlanceWidgetReceiver.updateAll(appContext) }
         runCatching { ProviderUsageWidgetProvider.updateAll(appContext) }
     }
 
