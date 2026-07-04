@@ -672,7 +672,8 @@ fun AIQuotaAppShell(
                     AppTopBar(
                         route = route,
                         layoutMetrics = layoutMetrics,
-                        onSettingsClick = { route = AppRoute.Settings }
+                        onSettingsClick = { route = AppRoute.Settings },
+                        onHomeClick = { route = AppRoute.Home }
                     )
                 },
                 bottomBar = {
@@ -1001,9 +1002,14 @@ private fun LiveRefreshPermissionDialog(
 private fun AppTopBar(
     route: AppRoute,
     layoutMetrics: AppLayoutMetrics,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onHomeClick: () -> Unit
 ) {
     val colors = AIQuotaTheme.colors
+    val isSettingsRoute = route is AppRoute.Settings
+    val actionIcon = if (isSettingsRoute) R.drawable.ic_arrow_back else R.drawable.ic_settings
+    val actionContentDescription = if (isSettingsRoute) R.string.nav_home else R.string.nav_settings
+    val actionClick = if (isSettingsRoute) onHomeClick else onSettingsClick
 
     Surface(
         color = colors.appBackground,
@@ -1023,11 +1029,11 @@ private fun AppTopBar(
         ) {
             IconButton(
                 modifier = Modifier.offset(y = layoutMetrics.topBarSettingsYOffsetDp.dp),
-                onClick = onSettingsClick
+                onClick = actionClick
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_settings),
-                    contentDescription = stringResource(R.string.nav_settings),
+                    painter = painterResource(actionIcon),
+                    contentDescription = stringResource(actionContentDescription),
                     tint = colors.textSecondary
                 )
             }
