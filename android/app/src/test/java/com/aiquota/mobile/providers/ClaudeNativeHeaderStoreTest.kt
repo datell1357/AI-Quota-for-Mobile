@@ -80,4 +80,42 @@ class ClaudeNativeHeaderStoreTest {
         assertFalse(payload.contains("secret=cookie"))
         assertFalse(payload.contains("application/json"))
     }
+
+    @Test
+    fun replaySafeHeadersKeepClaudeFetchContextOnly() {
+        val headers = ClaudeNativeHeaderStore.replaySafeHeaders(
+            mapOf(
+                "Authorization" to "Bearer auth",
+                "x-activity-session-id" to "activity",
+                "anthropic-client-platform" to "web",
+                "Cookie" to "session=secret",
+                "Accept" to "application/json",
+                "User-Agent" to "agent"
+            )
+        )
+
+        assertEquals(
+            mapOf(
+                "Authorization" to "Bearer auth",
+                "x-activity-session-id" to "activity",
+                "anthropic-client-platform" to "web"
+            ),
+            headers
+        )
+    }
+
+    @Test
+    fun aboutBlankHeaderLookupFallsBackToPersistedEndpointContext() {
+        val stored = mapOf(
+            "claude.ai/api/organizations" to mapOf(
+                "Authorization" to "Bearer auth",
+                "x-activity-session-id" to "activity"
+            )
+        )
+
+        val headers = ClaudeNativeHeaderStore.headersFor(stored, "about:blank", "claude:*")
+
+        assertEquals("Bearer auth", headers["Authorization"])
+        assertEquals("activity", headers["x-activity-session-id"])
+    }
 }

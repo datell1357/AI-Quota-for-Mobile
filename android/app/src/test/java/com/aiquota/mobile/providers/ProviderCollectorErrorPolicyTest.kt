@@ -48,6 +48,18 @@ class ProviderCollectorErrorPolicyTest {
         }
     }
 
+    @Test
+    fun cursorNoPayloadErrorsArePayloadFailuresNotInteractiveAuth() {
+        listOf("cursor_usage_unavailable", "cursor_usage_unavailable_normalizer_rejected").forEach { errorKind ->
+            val failure = ProviderCollectorErrorPolicy.failureFor(
+                providerId = ProviderId.CURSOR,
+                rawError = """{"provider":"cursor","errorKind":"$errorKind"}"""
+            )
+
+            assertEquals(ProviderRefreshFailureKind.NO_TRUSTED_PAYLOAD, failure.kind)
+            assertFalse(ProviderRefreshFailureClassifier.requiresInteractiveAuth(ProviderId.CURSOR, failure.kind))
+        }
+    }
 
     @Test
     fun geminiLoginRequiredStaysRecoverableForWebSessionRetry() {

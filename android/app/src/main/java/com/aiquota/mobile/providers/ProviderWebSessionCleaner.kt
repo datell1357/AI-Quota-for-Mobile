@@ -59,6 +59,9 @@ object ProviderWebSessionCleaner {
                 clearProviderWebSessionCookiesAndWait(CookieManager.getInstance(), providerId)
                 clearProviderWebStorageOrigins(WebStorage.getInstance(), providerId)
                 clearProviderBrowserStorageWithWebView(context.applicationContext, providerId)
+                if (providerId == ProviderId.GLM) {
+                    GlmIsolatedWebViewProfile.killIsolatedProcessIfRunning(context.applicationContext, "web_session_clear")
+                }
             }
         }
     }

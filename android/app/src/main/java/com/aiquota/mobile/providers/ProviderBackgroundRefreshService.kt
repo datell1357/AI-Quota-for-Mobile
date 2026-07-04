@@ -271,7 +271,7 @@ class ProviderBackgroundRefreshService : Service() {
         repository.markCollecting(effectiveJob.providerId)
         UsageSurfaceRefresher.refresh(applicationContext, repository)
         val outcome = when (effectiveJob.mode) {
-            ProviderRefreshMode.NATIVE_API -> collectNativeProviderUsage(effectiveJob)
+            ProviderRefreshMode.NATIVE_API -> collectNativeProviderUsage(effectiveJob, automaticRefresh)
             ProviderRefreshMode.HIDDEN_WEB_COLLECTOR -> ProviderWebSessionMaintenanceGate.withMaintenanceLock(effectiveJob.providerId) {
                 collectWebProviderUsage(effectiveJob, automaticRefresh)
             }
@@ -428,15 +428,18 @@ class ProviderBackgroundRefreshService : Service() {
         }
     }
 
-    private suspend fun collectNativeProviderUsage(job: ProviderRefreshJob): ServiceRefreshOutcome {
+    private suspend fun collectNativeProviderUsage(
+        job: ProviderRefreshJob,
+        automaticRefresh: Boolean
+    ): ServiceRefreshOutcome {
         if (job.providerId == ProviderId.GLM) {
             val repository = GlmUsageRepository(applicationContext)
             val connectionMode = repository.connectionMode()
+            if (connectionMode == GlmConnectionMode.WEB_OAUTH) {
+                return collectGlmWebOAuthUsage(job, repository, automaticRefresh)
+            }
             val result = withContext(Dispatchers.IO) {
-                when (connectionMode) {
-                    GlmConnectionMode.WEB_OAUTH -> repository.fetchUsagePayloadFromWebSession()
-                    GlmConnectionMode.API_KEY -> repository.fetchUsagePayloadFromStoredCredential()
-                }
+                repository.fetchUsagePayloadFromStoredCredential()
             }
             val snapshot = result.payload?.let {
                 ProviderUsageNormalizer.normalize(
@@ -488,6 +491,73 @@ class ProviderBackgroundRefreshService : Service() {
                 "Native refresh is not available for ${job.providerId.displayName}."
             )
         )
+    }
+
+    private suspend fun collectGlmWebOAuthUsage(
+        job: ProviderRefreshJob,
+        repository: GlmUsageRepository,
+        automaticRefresh: Boolean
+    ): ServiceRefreshOutcome {
+        val result = withContext(Dispatchers.IO) {
+            repository.fetchUsagePayloadFromWebSession()
+        }
+        val snapshot = result.payload?.let {
+            ProviderUsageNormalizer.normalize(
+                job.providerId,
+                it,
+                ProviderPayloadSource.PROVIDER_API
+            )
+        }
+        if (snapshot != null) return ServiceRefreshOutcome.Snapshot(snapshot)
+        if (!result.requiresAuth) {
+            return ServiceRefreshOutcome.Failure(
+                ProviderRefreshFailure(
+                    ProviderRefreshFailureKind.NO_TRUSTED_PAYLOAD,
+                    "GLM usage payload was not available: ${result.diagnostic}"
+                )
+            )
+        }
+
+        val fallbackGate = GlmWebSessionFallbackGate(applicationContext)
+        if (!fallbackGate.canRunFallback(automaticRefresh)) {
+            val remainingSeconds = fallbackGate.remainingDelayMillis() / 1_000L
+            Log.i(TAG, "glmRenewalSkipped reason=cooldown remainingSeconds=$remainingSeconds")
+            return ServiceRefreshOutcome.Failure(
+                ProviderRefreshFailure(
+                    ProviderRefreshFailureKind.NO_TRUSTED_PAYLOAD,
+                    "GLM web session renewal is cooling down."
+                )
+            )
+        }
+        fallbackGate.recordFallbackAttempt()
+        Log.i(TAG, "glmRenewalStart mode=isolated_webview reason=${result.diagnostic}")
+        return when (
+            val renewal = GlmIsolatedWebSession.collectUsage(
+                applicationContext,
+                GlmProviderUrls.WEB_USAGE_URL,
+                ProviderRefreshPlan.GLM_WEB_REFRESH_TIMEOUT_MILLIS
+            )
+        ) {
+            is GlmIsolatedUsageResult.Payload -> {
+                repository.saveWebSessionCookieHeader(renewal.cookieHeader)
+                val renewedSnapshot = ProviderUsageNormalizer.normalize(
+                    job.providerId,
+                    renewal.rawPayload,
+                    ProviderPayloadSource.PROVIDER_API
+                )
+                if (renewedSnapshot != null) {
+                    ServiceRefreshOutcome.Snapshot(renewedSnapshot)
+                } else {
+                    ServiceRefreshOutcome.Failure(
+                        ProviderRefreshFailure(
+                            ProviderRefreshFailureKind.NO_TRUSTED_PAYLOAD,
+                            "GLM isolated renewal returned no trusted usage payload."
+                        )
+                    )
+                }
+            }
+            is GlmIsolatedUsageResult.Failure -> ServiceRefreshOutcome.Failure(renewal.failure)
+        }
     }
 
     private fun glmAuthFailureMessageFor(connectionMode: GlmConnectionMode): String {
@@ -586,15 +656,27 @@ class ProviderBackgroundRefreshService : Service() {
                 webViewClient = ServiceCollectorWebViewClient(job.providerId)
             }
         }
-        val initialUrl = active.warmUpUrl ?: job.startUrl
-        webJobLastUrls[active.requestId] = initialUrl
         prepareSharedWebSessionForCollection(webView, job.providerId)
+        val initialUrl = initialUrlForWebCollection(active)
+        webJobLastUrls[active.requestId] = initialUrl
         Log.d(
             TAG,
             "load provider=${job.providerId.storageId} start=${hostOf(initialUrl)}${pathOf(initialUrl)} " +
                 "warmUp=${active.warmUpPending} request=${active.requestId}"
         )
-        webView.loadUrl(initialUrl)
+        if (job.providerId == ProviderId.CLAUDE && initialUrl == "about:blank") {
+            loadClaudeAboutBlankBridgeDocument(webView)
+        } else {
+            webView.loadUrl(initialUrl)
+        }
+    }
+
+    private fun initialUrlForWebCollection(active: ServiceWebRefreshJob): String {
+        val job = active.job
+        if (job.providerId == ProviderId.CLAUDE && active.warmUpUrl == null && hasAnyClaudeNativeFetchHeaders()) {
+            return "about:blank"
+        }
+        return active.warmUpUrl ?: job.startUrl
     }
 
     private fun prepareSharedWebSessionForCollection(webView: WebView, providerId: ProviderId) {
@@ -687,7 +769,7 @@ class ProviderBackgroundRefreshService : Service() {
     private fun injectCollectorIfReady(providerId: ProviderId, view: WebView, url: String, pageText: String) {
         val active = currentWebJobFor(providerId) ?: return
         if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && url != "about:blank") return
-        val cookies = cookiesFor(url)
+        val cookies = collectorCookiesFor(providerId, url)
         if (!ProviderWebCollectorScripts.shouldRunCollector(providerId, url, cookies, pageText)) {
             Log.d(
                 TAG,
@@ -708,7 +790,8 @@ class ProviderBackgroundRefreshService : Service() {
             observedAccountId = observedCodexAccountId,
             pageText = pageText,
             pageUrl = url,
-            awaitInteractiveLoginUsage = providerId == ProviderId.CODEX || providerId == ProviderId.GEMINI
+            awaitInteractiveLoginUsage = providerId == ProviderId.CODEX || providerId == ProviderId.GEMINI,
+            providerRequestHeaders = replaySafeProviderRequestHeadersFor(providerId, url)
         )
         if (script.isBlank()) return
         Log.d(
@@ -877,20 +960,21 @@ class ProviderBackgroundRefreshService : Service() {
     ) : WebViewClient() {
         override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
             val active = currentWebJobFor(ownerProviderId) ?: return
-            recordWebJobUrl(active.requestId, url)
-            if (isWebSessionWarmUpPage(active, url)) return
-            if (maybeRedirectGeminiRefreshToUsage(active, view, url)) return
-            if (isGeminiRefreshInteractiveSignInPage(active, url)) {
-                Log.d(TAG, "interactiveSignInRequired provider=gemini at=${hostOf(url)}${pathOf(url)}")
+            val effectiveUrl = effectiveCollectorPageUrl(ownerProviderId, active.requestId, url)
+            recordWebJobUrl(active.requestId, effectiveUrl)
+            if (isWebSessionWarmUpPage(active, effectiveUrl)) return
+            if (maybeRedirectGeminiRefreshToUsage(active, view, effectiveUrl)) return
+            if (isGeminiRefreshInteractiveSignInPage(active, effectiveUrl)) {
+                Log.d(TAG, "interactiveSignInRequired provider=gemini at=${hostOf(effectiveUrl)}${pathOf(effectiveUrl)}")
                 completeWebJob(active.requestId, ServiceRefreshOutcome.Failure(ProviderRefreshFailure.interactiveAuthRequired(LOGIN_PAGE_REACHED_MESSAGE)))
                 return
             }
-            if (ProviderWebCollectorScripts.isRefreshLoginPage(ownerProviderId, url)) {
-                if (shouldWaitForGeminiRefreshSignInRedirect(active, url)) return
+            if (ProviderWebCollectorScripts.isRefreshLoginPage(ownerProviderId, effectiveUrl)) {
+                if (shouldWaitForGeminiRefreshSignInRedirect(active, effectiveUrl)) return
                 completeWebJob(active.requestId, ServiceRefreshOutcome.Failure(ProviderRefreshFailure.interactiveAuthRequired(LOGIN_PAGE_REACHED_MESSAGE)))
                 return
             }
-            injectCollectorIfReady(ownerProviderId, view, url, "")
+            injectCollectorIfReady(ownerProviderId, view, effectiveUrl, "")
         }
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -955,6 +1039,10 @@ class ProviderBackgroundRefreshService : Service() {
             if (ProviderWebCollectorScripts.isRefreshLoginPage(ownerProviderId, effectiveUrl)) {
                 if (shouldWaitForGeminiRefreshSignInRedirect(active, effectiveUrl)) return
                 completeWebJob(requestId, ServiceRefreshOutcome.Failure(ProviderRefreshFailure.interactiveAuthRequired(LOGIN_PAGE_REACHED_MESSAGE)))
+                return
+            }
+            if (ownerProviderId == ProviderId.CLAUDE && effectiveUrl == "about:blank") {
+                injectCollectorIfReady(ownerProviderId, view, effectiveUrl, "")
                 return
             }
             view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
@@ -1293,8 +1381,21 @@ class ProviderBackgroundRefreshService : Service() {
         return ClaudeNativeHeaderStore.headersFor(claudeNativeFetchHeaders, url, CLAUDE_NATIVE_HEADER_WILDCARD_KEY)
     }
 
+    private fun replaySafeProviderRequestHeadersFor(providerId: ProviderId, url: String): Map<String, String> {
+        return when (providerId) {
+            ProviderId.CLAUDE -> ClaudeNativeHeaderStore.replaySafeHeaders(claudeNativeFetchHeadersFor(url))
+            else -> emptyMap()
+        }
+    }
+
     private fun hasClaudeNativeFetchHeaders(url: String): Boolean {
         return claudeNativeFetchHeadersFor(url).any { (_, value) -> value.isNotBlank() }
+    }
+
+    private fun hasAnyClaudeNativeFetchHeaders(): Boolean {
+        return claudeNativeFetchHeaders.values.any { headers ->
+            headers.values.any { it.isNotBlank() }
+        }
     }
 
     private fun clearClaudeNativeFetchHeaders(providerId: ProviderId) {
@@ -1364,6 +1465,15 @@ class ProviderBackgroundRefreshService : Service() {
             }
             ?.toMap()
             .orEmpty()
+    }
+
+    private fun collectorCookiesFor(providerId: ProviderId, url: String): Map<String, String> {
+        val cookieUrl = if (providerId == ProviderId.CLAUDE && url == "about:blank") {
+            CLAUDE_ABOUT_BLANK_BASE_URL
+        } else {
+            url
+        }
+        return cookiesFor(cookieUrl)
     }
 
     private fun hostOf(url: String): String {

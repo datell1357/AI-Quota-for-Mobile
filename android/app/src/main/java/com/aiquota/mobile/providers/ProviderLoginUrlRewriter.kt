@@ -12,7 +12,7 @@ object ProviderLoginUrlRewriter {
         val uri = runCatching { URI(url.trim()) }.getOrNull() ?: return null
         if (!uri.scheme.equals("https", ignoreCase = true)) return null
         if (!uri.host.orEmpty().isAccountsGoogleHost()) return null
-        if (providerId != ProviderId.CLAUDE) return null
+        if (providerId != ProviderId.CLAUDE && providerId != ProviderId.GLM) return null
         if (!uri.looksLikeGoogleOAuthStart()) return null
         if (uri.promptTokens().any { it.equals("select_account", ignoreCase = true) }) return null
 

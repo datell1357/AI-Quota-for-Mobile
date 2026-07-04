@@ -288,6 +288,8 @@ object ProviderNativeUsagePayloadFetcher {
             val response = fetchCursorWrapped(probe.url, probe.body, statuses, fetchJson)
             if (response.optBoolean("ok", false)) {
                 gatherCursorUsageData(response.jsonValue(), payload, 0)
+                val verified = verifiedPayload(ProviderId.CURSOR, payload, "cursor_usage_unavailable", statuses)
+                if (verified.payload != null) return verified
             }
         }
         return verifiedPayload(ProviderId.CURSOR, payload, "cursor_usage_unavailable", statuses)
@@ -1076,15 +1078,15 @@ object ProviderNativeUsagePayloadFetcher {
     private data class CursorProbe(val url: String, val body: String? = null)
 
     private val CURSOR_NATIVE_PROBES = listOf(
+        CursorProbe(CURSOR_CURRENT_PERIOD_USAGE_URL, "{}"),
+        CursorProbe(CURSOR_PLAN_INFO_URL, "{}"),
+        CursorProbe(CURSOR_CREDIT_GRANTS_API_URL, "{}"),
+        CursorProbe(CURSOR_API_AUTH_USAGE_URL, "{}"),
         CursorProbe(CURSOR_STRIPE_URL),
         CursorProbe(CURSOR_USAGE_URL),
         CursorProbe(CURSOR_AUTH_USAGE_URL),
         CursorProbe(CURSOR_USAGE_SUMMARY_URL),
-        CursorProbe(CURSOR_CREDIT_GRANTS_URL),
-        CursorProbe(CURSOR_CURRENT_PERIOD_USAGE_URL, "{}"),
-        CursorProbe(CURSOR_PLAN_INFO_URL, "{}"),
-        CursorProbe(CURSOR_CREDIT_GRANTS_API_URL, "{}"),
-        CursorProbe(CURSOR_API_AUTH_USAGE_URL, "{}")
+        CursorProbe(CURSOR_CREDIT_GRANTS_URL)
     )
     private val CURSOR_PLAN_KEYS = listOf(
         "membershipType",

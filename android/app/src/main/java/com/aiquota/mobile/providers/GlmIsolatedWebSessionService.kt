@@ -18,10 +18,12 @@ import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebStorage
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.aiquota.mobile.local.ProviderId
+import java.net.URI
 
 class GlmIsolatedWebSessionService : Service() {
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -33,6 +35,9 @@ class GlmIsolatedWebSessionService : Service() {
     private var resultReceiver: ResultReceiver? = null
     private var collectionStartedAtMillis = 0L
     private var completed = false
+    private var nativeCollectionStarted = false
+    private var collectorUserAgent = ""
+    private val glmNativeFetchHeaders = linkedMapOf<String, String>()
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -58,6 +63,8 @@ class GlmIsolatedWebSessionService : Service() {
         completed = false
         resultReceiver = resultReceiverFrom(intent)
         collectionStartedAtMillis = SystemClock.elapsedRealtime()
+        nativeCollectionStarted = false
+        glmNativeFetchHeaders.clear()
         val startUrl = intent.getStringExtra(EXTRA_START_URL).orEmpty()
         val timeoutMillis = intent.getLongExtra(EXTRA_TIMEOUT_MILLIS, ProviderRefreshPlan.PROVIDER_REFRESH_TIMEOUT_MILLIS)
         Log.d(TAG, "start provider=glm pid=${Process.myPid()} startUrl=${safeLogValue(startUrl)} timeoutMs=$timeoutMillis")
@@ -68,11 +75,16 @@ class GlmIsolatedWebSessionService : Service() {
         CookieManager.getInstance().setAcceptCookie(true)
         webView = WebView(this).apply {
             visibility = View.GONE
+            collectorUserAgent = ProviderWebViewUserAgent.hiddenCollectorUserAgent(
+                this@GlmIsolatedWebSessionService,
+                ProviderId.GLM
+            )
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             settings.databaseEnabled = true
             settings.allowFileAccess = false
             settings.javaScriptCanOpenWindowsAutomatically = true
+            settings.userAgentString = collectorUserAgent
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
             }
@@ -100,41 +112,83 @@ class GlmIsolatedWebSessionService : Service() {
         }
     }
 
-    private fun injectCollectorIfReady(view: WebView, url: String, pageText: String) {
+    private fun maybeStartNativeCollection(view: WebView, url: String, reason: String): Boolean {
+        if (completed || nativeCollectionStarted || url == "about:blank") return false
+        if (!GlmUsagePageRoutes.isUsageUrl(url) && GlmLoginPostRedirects.usageRedirectUrl(ProviderId.GLM, url) == null) {
+            return false
+        }
+        if (!hasGlmNativeFetchHeaders()) return false
+        nativeCollectionStarted = true
+        CookieManager.getInstance().flush()
+        saveWebSessionCookieHeader("native_$reason")
+        Log.i(TAG, "nativeCollectorStart=aboutblank provider=glm reason=$reason from=${safeRouteForLog(url)}")
+        view.stopLoading()
+        view.loadUrl("about:blank")
+        return true
+    }
+
+    private fun injectAboutBlankNativeBridge(view: WebView) {
         if (completed) return
-        val cookies = CookieManager.getInstance().getCookie(url)
-            ?.split(";")
-            ?.mapNotNull { cookie ->
-                val parts = cookie.trim().split("=", limit = 2)
-                if (parts.size == 2) parts[0] to parts[1] else null
-            }
-            ?.toMap()
-            .orEmpty()
-        if (!ProviderWebCollectorScripts.shouldRunCollector(ProviderId.GLM, url, cookies, pageText)) return
         view.evaluateJavascript(
             ProviderWebCollectorScripts.build(
                 providerId = ProviderId.GLM,
-                cookies = cookies,
+                cookies = emptyMap(),
                 geminiCollectorAsset = "",
                 antigravityCollectorAsset = "",
                 observedAccountId = null,
-                pageText = pageText,
-                pageUrl = url,
+                pageText = "",
+                pageUrl = "about:blank",
                 awaitInteractiveLoginUsage = false
             ),
             null
         )
     }
 
-    private fun pageText(view: WebView, url: String, block: (String) -> Unit) {
-        view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
-            if (completed) return@evaluateJavascript
-            val text = decodeJsString(encoded)
-            block(text)
-            if (ProviderWebCollectorScripts.isRefreshLoginPage(ProviderId.GLM, url, text)) {
-                completeFailure(ProviderRefreshFailure.interactiveAuthRequired(LOGIN_PAGE_REACHED_MESSAGE))
-            }
+    private fun captureGlmNativeFetchHeaders(request: WebResourceRequest): Boolean {
+        val url = request.url.toString()
+        if (!isGlmApiResource(url)) return false
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val host = uri.host.orEmpty().lowercase()
+        val path = uri.path.orEmpty()
+        val headers = CodexNativeHeaderStore.forwardableHeaders(request.requestHeaders.orEmpty())
+        if (headers.isEmpty()) return false
+        val hasAuthorization = headers.keys.any { it.equals("Authorization", ignoreCase = true) }
+        if (hasAuthorization && isGlmReplayableWebSessionResource(host)) {
+            glmNativeFetchHeaders.clear()
+            glmNativeFetchHeaders.putAll(headers)
+            GlmUsageRepository(applicationContext).saveWebSessionRequestHeaders(headers)
+            saveWebSessionCookieHeader("auth_header_resource")
+        } else if (host == "api.z.ai" && glmNativeFetchHeaders.isEmpty()) {
+            glmNativeFetchHeaders.putAll(headers)
         }
+        Log.i(TAG, "capturedNativeHeaders provider=glm path=${safeRouteForLog(url)} names=${headers.keys.sorted().joinToString("|")}")
+        return true
+    }
+
+    private fun saveWebSessionCookieHeader(reason: String) {
+        val cookieHeader = glmWebSessionCookieHeader() ?: return
+        GlmUsageRepository(applicationContext).saveWebSessionCookieHeader(cookieHeader)
+        Log.i(TAG, "webSessionCookieSaved provider=glm reason=$reason")
+    }
+
+    private fun hasGlmNativeFetchHeaders(): Boolean {
+        return glmNativeFetchHeaders.keys.any { it.equals("Authorization", ignoreCase = true) }
+    }
+
+    private fun glmNativeFetchHeadersFor(url: String): Map<String, String> {
+        if (!isGlmApiResource(url)) return emptyMap()
+        return glmNativeFetchHeaders.toMap()
+    }
+
+    private fun isGlmApiResource(url: String): Boolean {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val host = uri.host.orEmpty().lowercase()
+        val path = uri.path.orEmpty()
+        return host == "api.z.ai" || host == "chat.z.ai" && path.startsWith("/api/")
+    }
+
+    private fun isGlmReplayableWebSessionResource(host: String): Boolean {
+        return host == "api.z.ai" || host == "chat.z.ai"
     }
 
     private fun completePayload(rawPayload: String) {
@@ -239,11 +293,6 @@ class GlmIsolatedWebSessionService : Service() {
         }
     }
 
-    private fun decodeJsString(value: String?): String {
-        if (value.isNullOrBlank() || value == "null") return ""
-        return runCatching { org.json.JSONObject("""{"value":$value}""").optString("value") }.getOrDefault("")
-    }
-
     private fun safeLogValue(value: String?): String {
         return value.orEmpty()
             .replace(Regex("code=[^\\s&]+"), "code=redacted")
@@ -254,30 +303,78 @@ class GlmIsolatedWebSessionService : Service() {
             .take(MAX_LOG_VALUE_LENGTH)
     }
 
+    private fun safeRouteForLog(url: String): String {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return safeLogValue(url)
+        val host = uri.host.orEmpty()
+        val path = uri.path.orEmpty()
+        return "$host$path".take(MAX_LOG_VALUE_LENGTH)
+    }
+
+    private fun cookieHeaderForNativeUsage(url: String): String? {
+        return runCatching { CookieManager.getInstance().getCookie(url) }.getOrNull()
+            ?: glmWebSessionCookieHeader()
+    }
+
     private inner class GlmWebClient : WebViewClient() {
         override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
             Log.d(TAG, "pageStarted provider=glm url=${safeLogValue(url)}")
+            if (url == "about:blank") {
+                injectAboutBlankNativeBridge(view)
+                return
+            }
             GlmLoginPostRedirects.usageRedirectUrl(ProviderId.GLM, url)?.let { usageUrl ->
                 view.stopLoading()
                 view.loadUrl(usageUrl)
                 return
             }
-            injectCollectorIfReady(view, url, "")
+            if (ProviderWebCollectorScripts.isRefreshLoginPage(ProviderId.GLM, url)) {
+                completeFailure(ProviderRefreshFailure.interactiveAuthRequired(LOGIN_PAGE_REACHED_MESSAGE))
+                return
+            }
+            maybeStartNativeCollection(view, url, "page_started")
+        }
+
+        override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+            if (captureGlmNativeFetchHeaders(request)) {
+                view.post {
+                    if (completed) return@post
+                    val pageUrl = view.url ?: GlmProviderUrls.WEB_USAGE_URL
+                    GlmUsagePageRoutes.usageRedirectUrlAfterAuthenticatedResource(pageUrl)?.let { usageUrl ->
+                        view.loadUrl(usageUrl)
+                        return@post
+                    }
+                    maybeStartNativeCollection(
+                        view,
+                        GlmUsagePageRoutes.nativeCollectionUrlAfterAuthenticatedResource(pageUrl) ?: pageUrl,
+                        "resource"
+                    )
+                }
+            }
+            return null
         }
 
         override fun onLoadResource(view: WebView, url: String) {
             val pageUrl = view.url ?: url
-            if (!ProviderWebCollectorScripts.shouldRunCollectorFromResource(ProviderId.GLM, pageUrl, url)) return
-            pageText(view, pageUrl) { text -> injectCollectorIfReady(view, pageUrl, text) }
+            if (pageUrl == "about:blank") return
+            if (!ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.GLM, url)) return
+            maybeStartNativeCollection(view, pageUrl, "load_resource")
         }
 
         override fun onPageFinished(view: WebView, url: String) {
             Log.d(TAG, "pageFinished provider=glm url=${safeLogValue(url)}")
+            if (url == "about:blank") {
+                injectAboutBlankNativeBridge(view)
+                return
+            }
             GlmLoginPostRedirects.usageRedirectUrl(ProviderId.GLM, url)?.let { usageUrl ->
                 view.loadUrl(usageUrl)
                 return
             }
-            pageText(view, url) { text -> injectCollectorIfReady(view, url, text) }
+            if (ProviderWebCollectorScripts.isRefreshLoginPage(ProviderId.GLM, url)) {
+                completeFailure(ProviderRefreshFailure.interactiveAuthRequired(LOGIN_PAGE_REACHED_MESSAGE))
+                return
+            }
+            maybeStartNativeCollection(view, url, "page_finished")
         }
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
@@ -310,6 +407,23 @@ class GlmIsolatedWebSessionService : Service() {
                 completeFailure(ProviderCollectorErrorPolicy.failureFor(ProviderId.GLM, rawError))
             }
         }
+
+        @JavascriptInterface
+        fun fetchProviderUsagePayload(): String {
+            if (webView?.url != "about:blank") {
+                return org.json.JSONObject()
+                    .put("ok", false)
+                    .put("error", "blocked_bridge_page")
+                    .toString()
+            }
+            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(
+                providerId = ProviderId.GLM,
+                userAgent = collectorUserAgent,
+                bridgePageUrl = GlmProviderUrls.WEB_USAGE_URL,
+                cookieHeaderForUrl = { url -> cookieHeaderForNativeUsage(url) },
+                requestHeadersForUrl = { url -> glmNativeFetchHeadersFor(url) }
+            )
+        }
     }
 
     companion object {
@@ -326,8 +440,6 @@ class GlmIsolatedWebSessionService : Service() {
         private const val BRIDGE_NAME = "AIQuotaCollectorBridge"
         private const val TAG = "GlmIsolatedWebSession"
         private const val LOGIN_PAGE_REACHED_MESSAGE = "Background refresh reached a provider login page."
-        private const val PAGE_CAPTURE_SCRIPT =
-            "(function(){return (document.documentElement.innerText||document.title||'').slice(0,12000);})()"
         private const val CLEAR_CALLBACK_FALLBACK_MS = 2_000L
         private const val MAX_LOG_VALUE_LENGTH = 200
         private const val PROCESS_EXIT_DELAY_MS = 300L

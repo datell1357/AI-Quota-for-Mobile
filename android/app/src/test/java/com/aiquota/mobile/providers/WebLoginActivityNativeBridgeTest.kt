@@ -137,6 +137,9 @@ class WebLoginActivityNativeBridgeTest {
         assertTrue(source.contains("provider=claude capturedNativeHeaders"))
         assertTrue(captureBlock.contains("saveClaudeNativeRequestContext()"))
         assertTrue(source.contains("ClaudeNativeRequestContextStore(applicationContext).save(requestContext)"))
+        assertTrue(source.contains("collectorCookiesFor(providerId, url)"))
+        assertTrue(source.contains("providerId == ProviderId.CLAUDE && url == \"about:blank\""))
+        assertTrue(source.contains("CLAUDE_ABOUT_BLANK_BASE_URL"))
     }
 
     @Test
@@ -165,6 +168,29 @@ class WebLoginActivityNativeBridgeTest {
         assertFalse(script.contains("settings/copilot"))
     }
 
+    @Test
+    fun cursorForegroundUsageResourceStartsAboutBlankNativeBridge() {
+        val source = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val script = ProviderWebCollectorScripts.build(
+            providerId = ProviderId.CURSOR,
+            cookies = emptyMap(),
+            geminiCollectorAsset = "",
+            pageUrl = "about:blank",
+            awaitInteractiveLoginUsage = true
+        )
+
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CURSOR, "https://cursor.com/api/usage?user=user_123"))
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CURSOR, "https://cursor.com/api/auth/usage"))
+        assertFalse(ProviderLoginStrategy.isLoginComplete(ProviderId.CURSOR, "https://cursor.com/dashboard", emptyMap(), "__NEXT_DATA__"))
+        assertTrue("Cursor foreground usage resource should start about:blank native collection", source.contains("private var cursorNativeCollectionStarted = false"))
+        assertTrue(source.contains("ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CURSOR, url)"))
+        assertTrue(source.contains("maybeStartCursorNativeCollection(view, url, \"resource\")"))
+        assertTrue(source.contains("providerId == ProviderId.CURSOR && effectiveUrl == \"about:blank\""))
+        assertTrue(source.contains("provider=cursor nativeCollectorStart=aboutblank"))
+        assertTrue(script.contains("fetchNativeUsagePayload"))
+        assertFalse(script.contains("fetchCursorJson("))
+        assertFalse(script.contains("document.documentElement"))
+    }
 
     @Test
     fun geminiAboutBlankBridgeKeepsAccountScopedUsageUrl() {

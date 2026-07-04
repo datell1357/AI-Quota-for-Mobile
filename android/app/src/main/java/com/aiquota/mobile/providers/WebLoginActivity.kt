@@ -32,6 +32,9 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 open class WebLoginActivity : Activity() {
@@ -66,6 +69,7 @@ open class WebLoginActivity : Activity() {
     private var openCodeNativeCollectionStarted = false
     private var codexPostLoginUsageRedirected = false
     private var codexNativeCollectionStarted = false
+    private var cursorNativeCollectionStarted = false
     private var claudeNativeCollectionStarted = false
     private var geminiNativeCollectionStarted = false
     private var geminiNativeUsagePageUrl = ""
@@ -81,6 +85,7 @@ open class WebLoginActivity : Activity() {
     private val geminiUsageRpcIds = linkedSetOf<String>()
     private val popupViews = mutableSetOf<WebView>()
     private val collectorInjectionKeys = mutableSetOf<String>()
+    private val loginScope = MainScope()
     private val startedAtMs = SystemClock.elapsedRealtime()
     private val geminiCollectorAsset = ""
     private val antigravityCollectorAsset by lazy {
@@ -152,6 +157,7 @@ open class WebLoginActivity : Activity() {
         if (::webView.isInitialized) {
             webView.destroy()
         }
+        loginScope.cancel()
         clearClaudeNativeFetchHeaders()
         super.onDestroy()
     }
@@ -357,6 +363,11 @@ open class WebLoginActivity : Activity() {
                     view.post { maybeStartCodexNativeCollection(view, pageUrl, "resource") }
                 }
             }
+            if (providerId == ProviderId.CURSOR &&
+                ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CURSOR, url)
+            ) {
+                view.post { maybeStartCursorNativeCollection(view, url, "resource") }
+            }
             return if (ProviderLoginWebViewPolicy.shouldInterceptRequest(providerId, url)) {
                 super.shouldInterceptRequest(view, request)
             } else {
@@ -417,6 +428,10 @@ open class WebLoginActivity : Activity() {
                 return
             }
             if (providerId == ProviderId.COPILOT && effectiveUrl == "about:blank") {
+                injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
+                return
+            }
+            if (providerId == ProviderId.CURSOR && effectiveUrl == "about:blank") {
                 injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
                 return
             }
@@ -941,10 +956,15 @@ open class WebLoginActivity : Activity() {
         glmAuthenticatedChatResourceSeen = false
         glmNativeFetchHeaders.clear()
         collectorInjectionKeys.clear()
-        clearProviderWebSession(CookieManager.getInstance(), providerId)
         Log.w("AIQuotaLogin", "provider=glm authRequiredRecovery=login")
         webView.stopLoading()
-        webView.loadUrl(GlmProviderUrls.WEB_LOGIN_URL)
+        loginScope.launch {
+            ProviderWebSessionCleaner.clearProviderWebSessionAndWait(applicationContext, ProviderId.GLM)
+            if (!finished && ::webView.isInitialized) {
+                Log.i("AIQuotaLogin", "provider=glm reauthWebSessionCleared=true")
+                webView.loadUrl(GlmProviderUrls.WEB_LOGIN_URL)
+            }
+        }
         return true
     }
 
@@ -973,10 +993,10 @@ open class WebLoginActivity : Activity() {
         val headers = CodexNativeHeaderStore.forwardableHeaders(request.requestHeaders.orEmpty())
         if (headers.isEmpty()) return false
         val hasAuthorization = headers.keys.any { it.equals("Authorization", ignoreCase = true) }
-        if (hasAuthorization && host == "chat.z.ai" && path.startsWith("/api/")) {
+        if (hasAuthorization && isGlmTrustedAuthenticatedResource(host, path)) {
             glmAuthenticatedChatResourceSeen = true
         }
-        if (hasAuthorization && isGlmReplayableWebSessionResource(host)) {
+        if (hasAuthorization && isGlmReplayableWebSessionResource(host, path)) {
             glmNativeFetchHeaders.clear()
             glmNativeFetchHeaders.putAll(headers)
             GlmUsageRepository(applicationContext).saveWebSessionRequestHeaders(headers)
@@ -991,8 +1011,16 @@ open class WebLoginActivity : Activity() {
         return true
     }
 
-    private fun isGlmReplayableWebSessionResource(host: String): Boolean {
+    private fun isGlmReplayableWebSessionResource(host: String, path: String): Boolean {
         return host == "api.z.ai"
+    }
+
+    private fun isGlmTrustedAuthenticatedResource(host: String, path: String): Boolean {
+        return host == "api.z.ai" || (host == "chat.z.ai" && isGlmChatAuthValidationResource(path))
+    }
+
+    private fun isGlmChatAuthValidationResource(path: String): Boolean {
+        return path.trimEnd('/') == "/api/v1/auths"
     }
 
     private fun isGlmApiResource(url: String): Boolean {
@@ -1065,6 +1093,18 @@ open class WebLoginActivity : Activity() {
         return true
     }
 
+    private fun maybeStartCursorNativeCollection(view: WebView, url: String, reason: String): Boolean {
+        if (providerId != ProviderId.CURSOR || finished || cursorNativeCollectionStarted || url == "about:blank") return false
+        if (!ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CURSOR, url)) return false
+        cursorNativeCollectionStarted = true
+        CookieManager.getInstance().flush()
+        collectorInjectionKeys.clear()
+        noteBridgePageUrl("about:blank")
+        Log.i("AIQuotaLogin", "provider=cursor nativeCollectorStart=aboutblank reason=$reason from=${hostOf(url)}${pathOf(url)}")
+        view.stopLoading()
+        view.loadUrl("about:blank")
+        return true
+    }
 
     private fun maybeRedirectCodexToUsageAfterLogin(view: WebView, pageUrl: String, resourceUrl: String): Boolean {
         if (!shouldRedirectCodexToUsageAfterLogin(pageUrl, resourceUrl)) return false
@@ -1231,7 +1271,7 @@ open class WebLoginActivity : Activity() {
         if (finished) return
         if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && url != "about:blank") return
         noteBridgePageUrl(url)
-        val cookies = cookiesFor(url)
+        val cookies = collectorCookiesFor(providerId, url)
         if (!resourceTriggered && !ProviderWebCollectorScripts.shouldRunCollector(providerId, url, cookies, pageText)) return
         val script = ProviderWebCollectorScripts.build(
             providerId = providerId,
@@ -1244,7 +1284,8 @@ open class WebLoginActivity : Activity() {
             awaitInteractiveLoginUsage = providerId == ProviderId.CODEX ||
                 providerId == ProviderId.GEMINI ||
                 providerId == ProviderId.OPENCODE ||
-                providerId == ProviderId.COPILOT
+                providerId == ProviderId.COPILOT,
+            providerRequestHeaders = replaySafeProviderRequestHeadersFor(providerId, url)
         )
         if (script.isBlank()) return
         val injectionKey = "${providerId.storageId}:${hostOf(url)}:${routeKeyOf(url)}"
@@ -1343,6 +1384,13 @@ open class WebLoginActivity : Activity() {
 
     private fun claudeNativeFetchHeadersFor(url: String): Map<String, String> {
         return ClaudeNativeHeaderStore.headersFor(claudeNativeFetchHeaders, url, CLAUDE_NATIVE_HEADER_WILDCARD_KEY)
+    }
+
+    private fun replaySafeProviderRequestHeadersFor(providerId: ProviderId, url: String): Map<String, String> {
+        return when (providerId) {
+            ProviderId.CLAUDE -> ClaudeNativeHeaderStore.replaySafeHeaders(claudeNativeFetchHeadersFor(url))
+            else -> emptyMap()
+        }
     }
 
     private fun hasClaudeNativeFetchHeaders(url: String): Boolean {
@@ -1634,6 +1682,15 @@ open class WebLoginActivity : Activity() {
             }
             ?.toMap()
             .orEmpty()
+    }
+
+    private fun collectorCookiesFor(providerId: ProviderId, url: String): Map<String, String> {
+        val cookieUrl = if (providerId == ProviderId.CLAUDE && url == "about:blank") {
+            CLAUDE_ABOUT_BLANK_BASE_URL
+        } else {
+            url
+        }
+        return cookiesFor(cookieUrl)
     }
 
     private fun hostOf(url: String): String {

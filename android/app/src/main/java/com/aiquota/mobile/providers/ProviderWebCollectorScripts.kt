@@ -447,14 +447,15 @@ object ProviderWebCollectorScripts {
         observedAccountId: String? = null,
         pageText: String = "",
         pageUrl: String = "",
-        awaitInteractiveLoginUsage: Boolean = false
+        awaitInteractiveLoginUsage: Boolean = false,
+        providerRequestHeaders: Map<String, String> = emptyMap()
     ): String {
         if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && pageUrl != "about:blank") {
             return ""
         }
         val collectorScript = if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
             when (providerId) {
-                ProviderId.CLAUDE -> claudeAboutBlankApiPayload()
+                ProviderId.CLAUDE -> claudeAboutBlankApiPayload(providerRequestHeaders)
                 ProviderId.CODEX -> codexAboutBlankJsonPayload(forceCollectorStart = awaitInteractiveLoginUsage)
                 else -> nativeProviderPayload(providerId)
             }
@@ -669,12 +670,18 @@ object ProviderWebCollectorScripts {
         """.trimIndent()
     }
 
-    internal fun claudeAboutBlankApiPayload(): String {
+    internal fun claudeAboutBlankApiPayload(requestHeaders: Map<String, String> = emptyMap()): String {
+        val requestHeadersJson = JSONObject().also { json ->
+            requestHeaders.forEach { (name, value) ->
+                if (name.isNotBlank() && value.isNotBlank()) json.put(name, value)
+            }
+        }.toString()
         return """
             (function(){
               if (!window.__AIQuotaStartProviderCollector || !window.__AIQuotaStartProviderCollector("claude")) return;
               var c = window.__AIQuotaCollector;
               if (!c) return;
+              var replayHeaders = $requestHeadersJson;
               var maxAttempts = 4;
               var retryDelayMs = 2500;
               function first(object, keys) {
@@ -804,6 +811,14 @@ object ProviderWebCollectorScripts {
                 if (typeof fetch !== "function") {
                   return Promise.resolve({ ok: false, status: 0, url: url, error: "fetch_missing" });
                 }
+                function claudeRequestHeaders() {
+                  var headers = { "accept": "application/json" };
+                  Object.keys(replayHeaders || {}).forEach(function(name) {
+                    var value = replayHeaders[name];
+                    if (value) headers[name] = value;
+                  });
+                  return headers;
+                }
                 var controller = null;
                 var timer = null;
                 try {
@@ -814,7 +829,7 @@ object ProviderWebCollectorScripts {
                 } catch (error) {}
                 return fetch(url, {
                   credentials: "include",
-                  headers: { "accept": "application/json" },
+                  headers: claudeRequestHeaders(),
                   signal: controller ? controller.signal : undefined
                 }).then(function(response) {
                   return response.text().then(function(text) {

@@ -172,7 +172,7 @@ class ProviderBackgroundRefreshServicePolicyTest {
     }
 
     @Test
-    fun glmWebOAuthBackgroundRefreshUsesStoredWebSessionNativeFetch() {
+    fun glmWebOAuthBackgroundRefreshUsesStoredWebSessionNativeFetchThenIsolatedRenewal() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val nativeCollector = service.substringAfter("private suspend fun collectNativeProviderUsage")
             .substringBefore("private fun fetchAntigravityNativeOrWebSessionPayload")
@@ -181,6 +181,9 @@ class ProviderBackgroundRefreshServicePolicyTest {
 
         assertTrue(nativeCollector.contains("connectionMode()"))
         assertTrue(nativeCollector.contains("fetchUsagePayloadFromWebSession()"))
+        assertTrue(nativeCollector.contains("collectGlmWebOAuthUsage("))
+        assertTrue(nativeCollector.contains("GlmIsolatedWebSession.collectUsage("))
+        assertTrue(nativeCollector.contains("fallbackGate.canRunFallback(automaticRefresh)"))
         assertFalse(webCollector.contains("GlmIsolatedWebSession.collectUsage("))
     }
 
@@ -448,6 +451,41 @@ class ProviderBackgroundRefreshServicePolicyTest {
         assertTrue(restoreBlock.contains("claudeNativeFetchHeaders.putAll(restoredHeaders)"))
         assertTrue(captureBlock.contains("saveClaudeNativeRequestContext()"))
         assertTrue(service.contains("ClaudeNativeRequestContextStore(applicationContext).save(requestContext)"))
+    }
+
+    @Test
+    fun claudeBackgroundRefreshStartsAtAboutBlankWhenNativeRequestContextExists() {
+        val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
+        val startBlock = service.substringAfter("private fun startWebCollection")
+            .substringBefore("private fun prepareSharedWebSessionForCollection")
+        val initialUrlBlock = service.substringAfter("private fun initialUrlForWebCollection")
+            .substringBefore("private fun prepareSharedWebSessionForCollection")
+
+        assertTrue(startBlock.contains("prepareSharedWebSessionForCollection(webView, job.providerId)"))
+        assertTrue(startBlock.indexOf("prepareSharedWebSessionForCollection") < startBlock.indexOf("initialUrlForWebCollection(active)"))
+        assertTrue(startBlock.contains("loadClaudeAboutBlankBridgeDocument(webView)"))
+        assertTrue(initialUrlBlock.contains("ProviderId.CLAUDE"))
+        assertTrue(initialUrlBlock.contains("hasAnyClaudeNativeFetchHeaders()"))
+        assertTrue(initialUrlBlock.contains("\"about:blank\""))
+    }
+
+    @Test
+    fun claudeAboutBlankBackgroundRefreshInjectsWithoutPageCaptureCallback() {
+        val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
+        val pageStartedBlock = service.substringAfter("override fun onPageStarted")
+            .substringBefore("override fun shouldOverrideUrlLoading")
+        val pageFinishedBlock = service.substringAfter("override fun onPageFinished")
+            .substringBefore("override fun onReceivedError")
+        val directClaudeInjection = pageFinishedBlock.substringAfter("ownerProviderId == ProviderId.CLAUDE")
+            .substringBefore("view.evaluateJavascript(PAGE_CAPTURE_SCRIPT)")
+
+        assertTrue(pageStartedBlock.contains("effectiveCollectorPageUrl(ownerProviderId, active.requestId, url)"))
+        assertTrue(pageStartedBlock.contains("recordWebJobUrl(active.requestId, effectiveUrl)"))
+        assertTrue(directClaudeInjection.contains("effectiveUrl == \"about:blank\""))
+        assertTrue(directClaudeInjection.contains("injectCollectorIfReady(ownerProviderId, view, effectiveUrl, \"\")"))
+        assertTrue(service.contains("collectorCookiesFor(providerId, url)"))
+        assertTrue(service.contains("providerId == ProviderId.CLAUDE && url == \"about:blank\""))
+        assertTrue(service.contains("CLAUDE_ABOUT_BLANK_BASE_URL"))
     }
 
     @Test

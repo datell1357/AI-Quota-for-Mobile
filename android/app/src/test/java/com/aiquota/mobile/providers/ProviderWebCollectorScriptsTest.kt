@@ -169,6 +169,27 @@ class ProviderWebCollectorScriptsTest {
     }
 
     @Test
+    fun claudeAboutBlankCollectorReplaysCapturedFetchHeaders() {
+        val script = ProviderWebCollectorScripts.build(
+            ProviderId.CLAUDE,
+            emptyMap(),
+            "",
+            pageUrl = "about:blank",
+            providerRequestHeaders = mapOf(
+                "Authorization" to "Bearer test",
+                "x-activity-session-id" to "activity",
+                "anthropic-client-platform" to "web"
+            )
+        )
+
+        assertTrue(script.contains("var replayHeaders = {"))
+        assertTrue(script.contains("\"Authorization\":\"Bearer test\""))
+        assertTrue(script.contains("\"x-activity-session-id\":\"activity\""))
+        assertTrue(script.contains("\"anthropic-client-platform\":\"web\""))
+        assertTrue(script.contains("headers: claudeRequestHeaders()"))
+    }
+
+    @Test
     fun scopedProvidersRejectNonAboutBlankCollectorPages() {
         mapOf(
             ProviderId.CLAUDE to "https://claude.ai/new",

@@ -25,6 +25,7 @@ internal object ClaudeNativeHeaderStore {
     ): Map<String, String> {
         val endpointHeaders = keyFor(url)?.let { storedHeaders[it] }.orEmpty()
         val wildcardHeaders = storedHeaders[wildcardKey].orEmpty()
+            .ifEmpty { storedHeaders.values.firstOrNull { it.isNotEmpty() }.orEmpty() }
         return CodexNativeHeaderSelector.selectForFetch(endpointHeaders, wildcardHeaders)
     }
 
@@ -33,8 +34,14 @@ internal object ClaudeNativeHeaderStore {
     ): Map<String, Map<String, String>> {
         return storedHeaders
             .filterKeys(String::isNotBlank)
-            .mapValues { (_, headers) -> headers.filterKeys(::isReplaySafeRequestHeader).filterValues(String::isNotBlank) }
+            .mapValues { (_, headers) -> replaySafeHeaders(headers) }
             .filterValues(Map<String, String>::isNotEmpty)
+    }
+
+    fun replaySafeHeaders(headers: Map<String, String>): Map<String, String> {
+        return headers
+            .filterKeys(::isReplaySafeRequestHeader)
+            .filterValues(String::isNotBlank)
     }
 
     private fun keyFor(url: String): String? {

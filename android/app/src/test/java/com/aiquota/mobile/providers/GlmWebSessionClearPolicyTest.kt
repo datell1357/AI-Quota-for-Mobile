@@ -125,13 +125,15 @@ class GlmWebSessionClearPolicyTest {
     }
 
     @Test
-    fun glmIsolatedClearDoesNotKillProcessBeforeForegroundLoginLaunch() {
-        val service = File("src/main/java/com/aiquota/mobile/providers/GlmIsolatedWebSessionService.kt").readText()
-        val finishMethod = service.substringAfter("private fun finish(reason: String)")
-            .substringBefore("private fun scheduleProcessExit")
+    fun glmAwaitedWebSessionClearKillsOldIsolatedWebViewProcessBeforeNextLogin() {
+        val cleaner = File("src/main/java/com/aiquota/mobile/providers/ProviderWebSessionCleaner.kt").readText()
+        val contextClear = cleaner
+            .substringAfter("suspend fun clearProviderWebSessionAndWait(context: Context, providerId: ProviderId)")
+            .substringBefore("fun clearProviderWebSession(")
 
-        assertTrue(finishMethod.contains("if (reason != \"cleared\")"))
-        assertTrue(finishMethod.contains("scheduleProcessExit(reason)"))
+        assertTrue(contextClear.contains("GlmIsolatedWebSession.clearAndWait(context.applicationContext)"))
+        assertTrue(contextClear.contains("GlmIsolatedWebViewProfile.killIsolatedProcessIfRunning(context.applicationContext"))
+        assertTrue(contextClear.indexOf("GlmIsolatedWebSession.clearAndWait") < contextClear.indexOf("killIsolatedProcessIfRunning"))
     }
 
     @Test
@@ -149,18 +151,20 @@ class GlmWebSessionClearPolicyTest {
     }
 
     @Test
-    fun glmWebOAuthBackgroundRefreshUsesStoredSessionNativeFetch() {
+    fun glmWebOAuthBackgroundRefreshUsesStoredSessionNativeFetchBeforeIsolatedRenewal() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val repository = File("src/main/java/com/aiquota/mobile/providers/GlmUsageRepository.kt").readText()
 
         assertTrue(service.contains("if (job.providerId == ProviderId.GLM)"))
-        assertTrue(service.contains("GlmConnectionMode.WEB_OAUTH -> repository.fetchUsagePayloadFromWebSession()"))
+        assertTrue(service.contains("if (connectionMode == GlmConnectionMode.WEB_OAUTH)"))
+        assertTrue(service.contains("repository.fetchUsagePayloadFromWebSession()"))
         assertTrue(repository.contains("class GlmWebSessionRequestHeaderStore"))
         assertTrue(repository.contains("const val STORE_NAME = \"ai_quota_glm_web_session_headers\""))
         assertTrue(repository.contains("fun saveWebSessionRequestHeaders(headers: Map<String, String>)"))
         assertTrue(repository.contains("requestHeaders = webSessionRequestHeaderStore.headers()"))
-        assertFalse(service.contains("GlmIsolatedWebSession.collectUsage("))
-        assertFalse(service.contains("GlmWebSessionFallbackGate(applicationContext)"))
+        assertTrue(service.contains("GlmIsolatedWebSession.collectUsage("))
+        assertTrue(service.contains("fallbackGate.canRunFallback(automaticRefresh)"))
+        assertTrue(service.contains("fallbackGate.recordFallbackAttempt()"))
     }
 
     @Test
@@ -171,6 +175,18 @@ class GlmWebSessionClearPolicyTest {
         assertTrue(login.contains("glmAuthRecoveryAttempted"))
         assertTrue(login.contains("authRequiredRecovery=login"))
         assertTrue(login.contains("webView.loadUrl(GlmProviderUrls.WEB_LOGIN_URL)"))
+    }
+
+    @Test
+    fun glmNativeAuthRequiredRecoveryWaitsForFullWebSessionCleanup() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val recovery = login
+            .substringAfter("private fun recoverGlmAuthRequiredFromNativeCollection")
+            .substringBefore("private fun isGlmAuthenticatedSessionResource")
+
+        assertTrue(recovery.contains("ProviderWebSessionCleaner.clearProviderWebSessionAndWait(applicationContext, ProviderId.GLM)"))
+        assertTrue(recovery.indexOf("clearProviderWebSessionAndWait") < recovery.indexOf("webView.loadUrl(GlmProviderUrls.WEB_LOGIN_URL)"))
+        assertFalse(recovery.contains("clearProviderWebSession(CookieManager.getInstance(), providerId)"))
     }
 
     @Test
@@ -205,6 +221,7 @@ class GlmWebSessionClearPolicyTest {
         assertTrue(login.contains("if (captureGlmNativeFetchHeaders(request))"))
         assertTrue(login.contains("if (!hasGlmNativeFetchHeaders()) return@post"))
         assertTrue(login.contains("it.equals(\"Authorization\", ignoreCase = true)"))
+        assertTrue(login.contains("if (hasAuthorization && isGlmTrustedAuthenticatedResource(host, path))"))
         assertTrue(login.contains("glmAuthenticatedChatResourceSeen = true"))
         assertTrue(login.contains("saveWebSessionRequestHeaders(headers)"))
         assertTrue(login.contains("provider=glm capturedNativeHeaders"))
@@ -234,16 +251,67 @@ class GlmWebSessionClearPolicyTest {
             .substringBefore("private fun isGlmApiResource")
         val replayable = login
             .substringAfter("private fun isGlmReplayableWebSessionResource")
-            .substringBefore("private fun isGlmApiResource")
+            .substringBefore("private fun isGlmTrustedAuthenticatedResource")
 
-        assertTrue(capture.contains("if (hasAuthorization && isGlmReplayableWebSessionResource(host))"))
+        assertTrue(capture.contains("if (hasAuthorization && isGlmReplayableWebSessionResource(host, path))"))
         assertTrue(capture.contains("glmNativeFetchHeaders.clear()"))
         assertTrue(capture.contains("glmNativeFetchHeaders.putAll(headers)"))
         assertTrue(capture.contains("GlmUsageRepository(applicationContext).saveWebSessionRequestHeaders(headers)"))
-        assertTrue(capture.contains("host == \"chat.z.ai\" && path.startsWith(\"/api/\")"))
-        assertTrue(login.contains("private fun isGlmReplayableWebSessionResource(host: String): Boolean"))
-        assertTrue(replayable.contains("return host == \"api.z.ai\""))
+        assertTrue(capture.contains("isGlmTrustedAuthenticatedResource(host, path)"))
+        assertTrue(login.contains("private fun isGlmReplayableWebSessionResource(host: String, path: String): Boolean"))
+        assertTrue(replayable.contains("host == \"api.z.ai\""))
         assertFalse(replayable.contains("chat.z.ai"))
+    }
+
+    @Test
+    fun glmChatBootstrapAuthorizationDoesNotCountAsLoginSuccess() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val capture = login
+            .substringAfter("private fun captureGlmNativeFetchHeaders")
+            .substringBefore("private fun isGlmReplayableWebSessionResource")
+        val trusted = login
+            .substringAfter("private fun isGlmTrustedAuthenticatedResource")
+            .substringBefore("private fun isGlmChatAuthValidationResource")
+        val chatValidation = login
+            .substringAfter("private fun isGlmChatAuthValidationResource")
+            .substringBefore("private fun isGlmApiResource")
+
+        assertFalse(capture.contains("path.startsWith(\"/api/\")"))
+        assertTrue(capture.contains("isGlmTrustedAuthenticatedResource(host, path)"))
+        assertTrue(trusted.contains("host == \"api.z.ai\""))
+        assertTrue(trusted.contains("host == \"chat.z.ai\" && isGlmChatAuthValidationResource(path)"))
+        assertTrue(chatValidation.contains("path.trimEnd('/') == \"/api/v1/auths\""))
+        assertFalse(chatValidation.contains("settings/update"))
+    }
+
+    @Test
+    fun glmChatAuthorizationDoesNotPrimeQuotaReplayHeaders() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val replayable = login
+            .substringAfter("private fun isGlmReplayableWebSessionResource")
+            .substringBefore("private fun isGlmTrustedAuthenticatedResource")
+        val trusted = login
+            .substringAfter("private fun isGlmTrustedAuthenticatedResource")
+            .substringBefore("private fun isGlmChatAuthValidationResource")
+
+        assertTrue(replayable.contains("host == \"api.z.ai\""))
+        assertFalse(replayable.contains("chat.z.ai"))
+        assertFalse(replayable.contains("isGlmTrustedAuthenticatedResource(host, path)"))
+        assertTrue(trusted.contains("host == \"chat.z.ai\" && isGlmChatAuthValidationResource(path)"))
+    }
+
+    @Test
+    fun glmIsolatedWebSessionCollectsThroughAboutBlankNativeBridgeOnly() {
+        val service = File("src/main/java/com/aiquota/mobile/providers/GlmIsolatedWebSessionService.kt").readText()
+
+        assertTrue(service.contains("fun fetchProviderUsagePayload(): String"))
+        assertTrue(service.contains("ProviderNativeUsagePayloadFetcher.bridgeUsagePayload("))
+        assertTrue(service.contains("ProviderWebCollectorScripts.build("))
+        assertTrue(service.contains("pageUrl = \"about:blank\""))
+        assertTrue(service.contains("view.loadUrl(\"about:blank\")"))
+        assertFalse(service.contains("PAGE_CAPTURE_SCRIPT"))
+        assertFalse(service.contains("document.documentElement.innerText"))
+        assertFalse(service.contains("pageText(view"))
     }
 
     @Test
@@ -283,6 +351,8 @@ class GlmWebSessionClearPolicyTest {
         assertTrue(redirect.contains("if (!glmAuthenticatedChatResourceSeen) return false"))
         assertTrue(redirect.contains("view.loadUrl(usageUrl)"))
         assertTrue(apiResource.contains("host == \"chat.z.ai\" && path.startsWith(\"/api/\")"))
+        assertTrue(login.contains("private fun isGlmTrustedAuthenticatedResource(host: String, path: String): Boolean"))
+        assertTrue(login.contains("private fun isGlmChatAuthValidationResource(path: String): Boolean"))
         assertTrue(apiResource.contains("host == \"api.z.ai\""))
     }
 

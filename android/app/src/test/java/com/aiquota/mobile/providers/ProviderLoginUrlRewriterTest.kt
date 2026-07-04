@@ -27,6 +27,22 @@ class ProviderLoginUrlRewriterTest {
     }
 
     @Test
+    fun addsSelectAccountPromptToGlmGoogleOAuthStart() {
+        val original = "https://accounts.google.com/o/oauth2/v2/auth" +
+            "?client_id=zai" +
+            "&redirect_uri=https%3A%2F%2Fchat.z.ai%2Fauth%2Fgoogle%2Fcallback" +
+            "&scope=openid"
+
+        val rewritten = ProviderLoginUrlRewriter.rewriteMainFrameUrl(ProviderId.GLM, original)
+
+        assertNotNull(rewritten)
+        val uri = URI(rewritten!!)
+        assertTrue(uri.toString().startsWith("https://accounts.google.com/o/oauth2/v2/auth"))
+        assertTrue(uri.rawQuery.contains("prompt=select_account"))
+        assertTrue(uri.rawQuery.contains("redirect_uri=https%3A%2F%2Fchat.z.ai%2Fauth%2Fgoogle%2Fcallback"))
+    }
+
+    @Test
     fun addsSelectAccountPromptToClaudeRegionalGoogleOAuthStart() {
         val original = "https://accounts.google.co.kr/o/oauth2/v2/auth" +
             "?client_id=anthropic" +
