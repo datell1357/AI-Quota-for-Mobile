@@ -173,7 +173,9 @@ class GlmWebSessionClearPolicyTest {
 
         assertTrue(login.contains("errorKind == \"glm_auth_required\" && recoverGlmAuthRequiredFromNativeCollection()"))
         assertTrue(login.contains("glmAuthRecoveryAttempted"))
+        assertTrue(login.contains("authRequiredRecovery=usage"))
         assertTrue(login.contains("authRequiredRecovery=login"))
+        assertTrue(login.contains("webView.loadUrl(GlmProviderUrls.WEB_USAGE_URL)"))
         assertTrue(login.contains("webView.loadUrl(GlmProviderUrls.WEB_LOGIN_URL)"))
     }
 
@@ -197,9 +199,21 @@ class GlmWebSessionClearPolicyTest {
             .substringBefore("private fun recoverGlmAuthRequiredFromNativeCollection")
 
         assertTrue(nativeStart.contains("if (!isUsagePage && !isMyPlanPage) return false"))
-        assertTrue(nativeStart.contains("if (isUsagePage && !hasGlmNativeFetchHeaders()) return false"))
+        assertTrue(nativeStart.contains("if (isUsagePage && !hasGlmNativeFetchHeaders() && !glmAuthenticatedChatResourceSeen) return false"))
         assertFalse(nativeStart.contains("isChatUrl"))
         assertFalse(nativeStart.contains("WEB_LOGIN_URL"))
+    }
+
+    @Test
+    fun glmMissingQuotaAuthorizationKeepsLoginOpenAfterAuthenticatedProgress() {
+        val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val keepOpen = login
+            .substringAfter("private fun shouldKeepLoginOpenUntilUsagePayload")
+            .substringBefore("private fun captureCodexAccountId")
+
+        assertTrue(keepOpen.contains("ProviderId.GLM"))
+        assertTrue(keepOpen.contains("errorKind == \"glm_no_trusted_payload\""))
+        assertTrue(keepOpen.contains("errorKind == \"glm_web_authorization_missing\""))
     }
 
     @Test
@@ -211,6 +225,9 @@ class GlmWebSessionClearPolicyTest {
         val sessionResource = login
             .substringAfter("private fun isGlmAuthenticatedSessionResource")
             .substringBefore("private fun saveGlmWebSessionCookieHeader")
+        val intercept = login
+            .substringAfter("override fun shouldInterceptRequest")
+            .substringBefore("if (captureGeminiUsageRpcId(url))")
 
         assertTrue(redirect.contains("GlmUsagePageRoutes.isChatUrl(url) && hasRetainedGlmWebSessionCookies()"))
         assertTrue(login.contains("glmAuthenticatedSessionSeen"))
@@ -219,7 +236,7 @@ class GlmWebSessionClearPolicyTest {
         assertTrue(sessionResource.contains("path == \"/api/v1/auths\" || path == \"/api/v1/auths/\""))
         assertFalse(login.contains("path == \"/api/auth/me\""))
         assertTrue(login.contains("if (captureGlmNativeFetchHeaders(request))"))
-        assertTrue(login.contains("if (!hasGlmNativeFetchHeaders()) return@post"))
+        assertFalse(intercept.contains("if (!hasGlmNativeFetchHeaders()) return@post"))
         assertTrue(login.contains("it.equals(\"Authorization\", ignoreCase = true)"))
         assertTrue(login.contains("if (hasAuthorization && isGlmTrustedAuthenticatedResource(host, path))"))
         assertTrue(login.contains("glmAuthenticatedChatResourceSeen = true"))
@@ -315,16 +332,16 @@ class GlmWebSessionClearPolicyTest {
     }
 
     @Test
-    fun glmAuthenticatedChatResourceStartsAboutBlankNativeCollection() {
+    fun glmAuthenticatedChatResourceContinuesToUsageBridgeWithoutQuotaReplayHeaders() {
         val login = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
         val intercept = login
             .substringAfter("override fun shouldInterceptRequest")
             .substringBefore("if (captureGeminiUsageRpcId(url))")
 
         assertTrue(intercept.contains("if (captureGlmNativeFetchHeaders(request))"))
-        assertTrue(intercept.contains("if (!hasGlmNativeFetchHeaders()) return@post"))
         assertTrue(intercept.contains("GlmUsagePageRoutes.nativeCollectionUrlAfterAuthenticatedResource"))
         assertTrue(intercept.contains("maybeStartGlmNativeCollection"))
+        assertFalse(intercept.contains("if (!hasGlmNativeFetchHeaders()) return@post"))
         assertTrue(login.contains("provider=glm nativeCollectorStart=aboutblank"))
     }
 

@@ -1,0 +1,8 @@
+# T05 emulator GLM refresh summary
+- Install: success, see t05-install-debug.txt.
+- Trigger: run-as app UID broadcast completed, see trigger-run-as-user0.txt.
+- Observed: ProviderBackgroundRefreshService cycleStart providers=glm.
+- Observed: glmRenewalStart mode=isolated_webview reason=glm_web_authorization_missing.
+- Observed: isolated WebView loaded z.ai usage page, then provider redirected to chat.z.ai auth and returned INTERACTIVE_AUTH_REQUIRED.
+- Verdict: real surface confirms the new renewal path is reachable; this emulator cannot prove successful collection without fresh GLM credentials.
+- Cleanup: no long-running QA process started; logcat captured with adb logcat -d; isolated service self-stopped and killSelf logged.

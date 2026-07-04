@@ -313,7 +313,6 @@ open class WebLoginActivity : Activity() {
                 view.post {
                     val pageUrl = view.url ?: GlmProviderUrls.WEB_USAGE_URL
                     if (maybeRedirectGlmAuthenticatedResourceToUsage(view, pageUrl)) return@post
-                    if (!hasGlmNativeFetchHeaders()) return@post
                     maybeStartGlmNativeCollection(
                         view,
                         GlmUsagePageRoutes.nativeCollectionUrlAfterAuthenticatedResource(
@@ -931,7 +930,7 @@ open class WebLoginActivity : Activity() {
         val isUsagePage = GlmUsagePageRoutes.isUsageUrl(url)
         val isMyPlanPage = GlmLoginPostRedirects.usageRedirectUrl(providerId, url) != null
         if (!isUsagePage && !isMyPlanPage) return false
-        if (isUsagePage && !hasGlmNativeFetchHeaders()) return false
+        if (isUsagePage && !hasGlmNativeFetchHeaders() && !glmAuthenticatedChatResourceSeen) return false
         if (ProviderWebCollectorScripts.isRefreshLoginPage(providerId, url, pageText)) return false
         glmNativeCollectionStarted = true
         CookieManager.getInstance().flush()
@@ -951,6 +950,13 @@ open class WebLoginActivity : Activity() {
         glmAuthRecoveryAttempted = true
         glmNativeCollectionStarted = false
         glmPostLoginRedirected = false
+        if (glmAuthenticatedChatResourceSeen || hasRetainedGlmWebSessionCookies()) {
+            collectorInjectionKeys.clear()
+            Log.w("AIQuotaLogin", "provider=glm authRequiredRecovery=usage")
+            webView.stopLoading()
+            webView.loadUrl(GlmProviderUrls.WEB_USAGE_URL)
+            return true
+        }
         glmRetainedWebSessionCookieHeader = ""
         glmAuthenticatedSessionSeen = false
         glmAuthenticatedChatResourceSeen = false
@@ -1311,7 +1317,8 @@ open class WebLoginActivity : Activity() {
             ProviderId.OPENCODE ->
                 errorKind == "opencode_usage_unavailable"
             ProviderId.GLM ->
-                errorKind == "glm_no_trusted_payload"
+                errorKind == "glm_no_trusted_payload" ||
+                    errorKind == "glm_web_authorization_missing"
             else -> false
         }
     }

@@ -1,0 +1,4 @@
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/GlmUsageRepository.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/GlmWebSessionClearPolicyTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'android/app/src/test/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshServicePolicyTest.kt', LF will be replaced by CRLF the next time Git touches it

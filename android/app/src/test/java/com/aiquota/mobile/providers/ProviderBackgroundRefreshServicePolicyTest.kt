@@ -188,6 +188,21 @@ class ProviderBackgroundRefreshServicePolicyTest {
     }
 
     @Test
+    fun glmWebOAuthMissingStoredSessionCanRenewWithoutRecordingStoredFetchAsFallback() {
+        val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
+        val repository = File("src/main/java/com/aiquota/mobile/providers/GlmUsageRepository.kt").readText()
+        val renewal = service.substringAfter("private suspend fun collectGlmWebOAuthUsage")
+            .substringBefore("private fun glmAuthFailureMessageFor")
+        val storedFetch = repository.substringAfter("fun fetchUsagePayloadFromWebSession")
+            .substringBefore("object GlmUsageFetcher")
+
+        assertTrue(storedFetch.contains("requiresAuth = true, diagnostic = \"glm_web_cookie_missing\""))
+        assertTrue(renewal.indexOf("repository.fetchUsagePayloadFromWebSession()") < renewal.indexOf("fallbackGate.canRunFallback(automaticRefresh)"))
+        assertTrue(renewal.indexOf("fallbackGate.recordFallbackAttempt()") < renewal.indexOf("GlmIsolatedWebSession.collectUsage("))
+        assertFalse(renewal.substringBefore("GlmIsolatedWebSession.collectUsage(").contains("repository.failKeepingPrevious"))
+    }
+
+    @Test
     fun glmWebOAuthAuthFailureUsesWebSessionMessageNotApiKeyMessage() {
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
         val nativeCollector = service.substringAfter("private suspend fun collectNativeProviderUsage")

@@ -1,0 +1,9 @@
+## changed product files
+android/app/src/main/java/com/aiquota/mobile/providers/GlmUsageRepository.kt
+android/app/src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt
+android/app/src/test/java/com/aiquota/mobile/providers/GlmWebSessionClearPolicyTest.kt
+android/app/src/test/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshServicePolicyTest.kt
+## forbidden added product lines
+NO_MATCH
+## non-glm product diff names
+NO_MATCH

@@ -247,7 +247,7 @@ class GlmUsageRepository(context: Context) {
 
     fun fetchUsagePayloadFromWebSession(): GlmUsageResult {
         val cookieHeader = webSessionCookieStore.cookieHeader()
-            ?: return GlmUsageResult(null, requiresAuth = false, diagnostic = "glm_web_cookie_missing")
+            ?: return GlmUsageResult(null, requiresAuth = true, diagnostic = "glm_web_cookie_missing")
         return GlmUsageFetcher.fetchUsagePayloadWithCookie(
             cookieHeader = cookieHeader,
             requestHeaders = webSessionRequestHeaderStore.headers()
