@@ -15,8 +15,7 @@ class LiveRefreshPromptPolicyTest {
             LiveRefreshPromptPolicy.shouldShowOnAppEntry(
                 snapshots = listOf(snapshot(ProviderId.CLAUDE, ProviderConnectionState.CONNECTED)),
                 liveMonitoringEnabled = false,
-                canPostNotifications = true,
-                batteryOptimizationExempt = true
+                canPostNotifications = true
             )
         )
     }
@@ -27,20 +26,18 @@ class LiveRefreshPromptPolicyTest {
             LiveRefreshPromptPolicy.shouldShowOnAppEntry(
                 snapshots = listOf(snapshot(ProviderId.CODEX, ProviderConnectionState.CONNECTED)),
                 liveMonitoringEnabled = true,
-                canPostNotifications = false,
-                batteryOptimizationExempt = true
+                canPostNotifications = false
             )
         )
     }
 
     @Test
-    fun appEntryPromptShowsWhenBatteryOptimizationIsStillEnabled() {
-        assertTrue(
+    fun appEntryPromptIgnoresBatteryOptimizationState() {
+        assertFalse(
             LiveRefreshPromptPolicy.shouldShowOnAppEntry(
                 snapshots = listOf(snapshot(ProviderId.GEMINI, ProviderConnectionState.CONNECTED)),
                 liveMonitoringEnabled = true,
-                canPostNotifications = true,
-                batteryOptimizationExempt = false
+                canPostNotifications = true
             )
         )
     }
@@ -51,20 +48,18 @@ class LiveRefreshPromptPolicyTest {
             LiveRefreshPromptPolicy.shouldShowOnAppEntry(
                 snapshots = listOf(snapshot(ProviderId.CURSOR, ProviderConnectionState.DISCONNECTED)),
                 liveMonitoringEnabled = false,
-                canPostNotifications = false,
-                batteryOptimizationExempt = false
+                canPostNotifications = false
             )
         )
     }
 
     @Test
-    fun appEntryPromptIsSkippedWhenLiveRefreshCanRunAndBatteryOptimizationIsExempt() {
+    fun appEntryPromptIsSkippedWhenLiveRefreshCanRun() {
         assertFalse(
             LiveRefreshPromptPolicy.shouldShowOnAppEntry(
                 snapshots = listOf(snapshot(ProviderId.COPILOT, ProviderConnectionState.STALE)),
                 liveMonitoringEnabled = true,
-                canPostNotifications = true,
-                batteryOptimizationExempt = true
+                canPostNotifications = true
             )
         )
     }

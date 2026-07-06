@@ -21,6 +21,7 @@ class LocalUsageRepository(context: Context) {
             .map(::recoverSessionExpiredInteractiveAuthRequired)
             .map(::normalizeGeminiLegacyUsageLabels)
             .map(::normalizeGeminiLegacyPlanLabel)
+            .map(::normalizeClaudePersistedPlanLabel)
             .map(::recoverStoppedBackgroundRefreshWithPreviousUsage)
             .map(::recoverGoogleCollectingWithoutTrustedUsage)
             .map(::recoverGoogleRecoverableUsageFailure)
@@ -78,8 +79,9 @@ class LocalUsageRepository(context: Context) {
     }
 
     fun saveSnapshots(snapshots: List<ProviderUsageSnapshot>) {
+        val sanitized = snapshots.map(::normalizeClaudePersistedPlanLabel)
         val ordered = ProviderId.defaultOrder().mapNotNull { provider ->
-            snapshots.lastOrNull { it.providerId == provider }
+            sanitized.lastOrNull { it.providerId == provider }
         }
         scopedStateRepository.saveSnapshots(ordered)
         val encoded = ProviderSnapshotCodec.encode(ordered)
@@ -456,6 +458,35 @@ internal fun normalizeGeminiLegacyPlanLabel(snapshot: ProviderUsageSnapshot): Pr
     }
     return snapshot.copy(planLabel = plan)
 }
+
+internal fun normalizeClaudePersistedPlanLabel(snapshot: ProviderUsageSnapshot): ProviderUsageSnapshot {
+    if (snapshot.providerId != ProviderId.CLAUDE) return snapshot
+    val trimmed = snapshot.planLabel?.trim()?.takeIf { it.isNotBlank() && it != "null" } ?: return snapshot
+    if (trimmed.matches(CLAUDE_NUMERIC_DATE_PLAN_PATTERN)) return snapshot.copy(planLabel = null)
+    if (CLAUDE_NATURAL_DATE_PLAN_PATTERN.containsMatchIn(trimmed)) return snapshot.copy(planLabel = null)
+    if (CLAUDE_PLAN_WINDOW_LABEL_PATTERN.containsMatchIn(trimmed)) return snapshot.copy(planLabel = null)
+    val compact = trimmed.lowercase().replace(Regex("[^a-z0-9]+"), "")
+    val plan = when (compact) {
+        "claudefree", "free" -> "Free"
+        "claudepro", "pro" -> "Pro"
+        "claudemax", "max" -> "Max"
+        "claudeteam", "team" -> "Team"
+        "claudeenterprise", "enterprise" -> "Enterprise"
+        "claudeunknown", "unknown" -> null
+        else -> trimmed.replace(Regex("^Claude\\s+", RegexOption.IGNORE_CASE), "").trim()
+    }
+    return snapshot.copy(planLabel = plan)
+}
+
+private val CLAUDE_NUMERIC_DATE_PLAN_PATTERN = Regex("""\d{4}[-/]\d{1,2}[-/]\d{1,2}([T\s].*)?""")
+private val CLAUDE_NATURAL_DATE_PLAN_PATTERN = Regex(
+    """\b(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t|tember)?|oct(ober)?|nov(ember)?|dec(ember)?)\.?\s+\d{1,2},?\s+\d{4}\b""",
+    RegexOption.IGNORE_CASE
+)
+private val CLAUDE_PLAN_WINDOW_LABEL_PATTERN = Regex(
+    """\b(reset|resets|renew|renews|renewal|billing\s*(window|period|cycle))\b""",
+    RegexOption.IGNORE_CASE
+)
 
 private fun normalizeGoogleUsagePendingMessage(snapshot: ProviderUsageSnapshot): ProviderUsageSnapshot {
     if (!snapshot.providerId.isGoogleProvider()) return snapshot

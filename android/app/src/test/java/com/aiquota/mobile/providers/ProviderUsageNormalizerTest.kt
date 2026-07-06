@@ -223,6 +223,92 @@ class ProviderUsageNormalizerTest {
     }
 
     @Test
+    fun claudePlanIgnoresDateLikeTopLevelLabelAndFallsBackToValidMetadata() {
+        val snapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.CLAUDE,
+            """
+            {
+              "plan": "2026-07-05",
+              "subscription_details": {"plan": "Claude Pro"},
+              "usage": {
+                "weekly": {"used_percent": 30}
+              }
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.PROVIDER_API
+        )!!
+
+        assertEquals("Pro", snapshot.plan)
+    }
+
+    @Test
+    fun claudePlanIgnoresTimestampLikeSubscriptionMetadata() {
+        val snapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.CLAUDE,
+            """
+            {
+              "subscription_details": {"plan": "2026-07-05T09:30:00Z"},
+              "usage": {
+                "weekly": {"used_percent": 30}
+              }
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.PROVIDER_API
+        )!!
+
+        assertNull(snapshot.plan)
+    }
+
+    @Test
+    fun claudePlanIgnoresNaturalLanguageDateLikeLabel() {
+        val snapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.CLAUDE,
+            """
+            {
+              "plan": "Jul 5, 2026",
+              "usage": {
+                "weekly": {"used_percent": 30}
+              }
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.PROVIDER_API
+        )!!
+
+        assertNull(snapshot.plan)
+    }
+
+    @Test
+    fun claudePlanIgnoresResetAndBillingWindowLabel() {
+        val resetSnapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.CLAUDE,
+            """
+            {
+              "subscription_details": {"plan": "Resets Jul 12, 2026"},
+              "usage": {
+                "weekly": {"used_percent": 30}
+              }
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.PROVIDER_API
+        )!!
+        val billingSnapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.CLAUDE,
+            """
+            {
+              "subscription_details": {"plan": "Billing period Jul 12, 2026"},
+              "usage": {
+                "weekly": {"used_percent": 30}
+              }
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.PROVIDER_API
+        )!!
+
+        assertNull(resetSnapshot.plan)
+        assertNull(billingSnapshot.plan)
+    }
+
+    @Test
     fun claudeRawRemainingAmountWithoutLimitIsRejected() {
         val snapshot = ProviderUsageNormalizer.normalize(
             ProviderId.CLAUDE,

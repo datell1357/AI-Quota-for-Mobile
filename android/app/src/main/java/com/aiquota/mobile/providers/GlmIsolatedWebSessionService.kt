@@ -37,6 +37,7 @@ class GlmIsolatedWebSessionService : Service() {
     private var completed = false
     private var nativeCollectionStarted = false
     private var collectorUserAgent = ""
+    @Volatile private var currentPageUrl = ""
     private val glmNativeFetchHeaders = linkedMapOf<String, String>()
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -66,6 +67,7 @@ class GlmIsolatedWebSessionService : Service() {
         nativeCollectionStarted = false
         glmNativeFetchHeaders.clear()
         val startUrl = intent.getStringExtra(EXTRA_START_URL).orEmpty()
+        currentPageUrl = startUrl
         val timeoutMillis = intent.getLongExtra(EXTRA_TIMEOUT_MILLIS, ProviderRefreshPlan.PROVIDER_REFRESH_TIMEOUT_MILLIS)
         Log.d(TAG, "start provider=glm pid=${Process.myPid()} startUrl=${safeLogValue(startUrl)} timeoutMs=$timeoutMillis")
         mainHandler.postDelayed({
@@ -147,19 +149,14 @@ class GlmIsolatedWebSessionService : Service() {
     private fun captureGlmNativeFetchHeaders(request: WebResourceRequest): Boolean {
         val url = request.url.toString()
         if (!isGlmApiResource(url)) return false
-        val uri = runCatching { URI(url) }.getOrNull() ?: return false
-        val host = uri.host.orEmpty().lowercase()
-        val path = uri.path.orEmpty()
         val headers = CodexNativeHeaderStore.forwardableHeaders(request.requestHeaders.orEmpty())
         if (headers.isEmpty()) return false
         val hasAuthorization = headers.keys.any { it.equals("Authorization", ignoreCase = true) }
-        if (hasAuthorization && isGlmReplayableWebSessionResource(host)) {
+        if (hasAuthorization && GlmUsagePageRoutes.isAuthorizedQuotaResource(url)) {
             glmNativeFetchHeaders.clear()
             glmNativeFetchHeaders.putAll(headers)
             GlmUsageRepository(applicationContext).saveWebSessionRequestHeaders(headers)
             saveWebSessionCookieHeader("auth_header_resource")
-        } else if (host == "api.z.ai" && glmNativeFetchHeaders.isEmpty()) {
-            glmNativeFetchHeaders.putAll(headers)
         }
         Log.i(TAG, "capturedNativeHeaders provider=glm path=${safeRouteForLog(url)} names=${headers.keys.sorted().joinToString("|")}")
         return true
@@ -185,10 +182,6 @@ class GlmIsolatedWebSessionService : Service() {
         val host = uri.host.orEmpty().lowercase()
         val path = uri.path.orEmpty()
         return host == "api.z.ai" || host == "chat.z.ai" && path.startsWith("/api/")
-    }
-
-    private fun isGlmReplayableWebSessionResource(host: String): Boolean {
-        return host == "api.z.ai" || host == "chat.z.ai"
     }
 
     private fun completePayload(rawPayload: String) {
@@ -317,6 +310,7 @@ class GlmIsolatedWebSessionService : Service() {
 
     private inner class GlmWebClient : WebViewClient() {
         override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
+            currentPageUrl = url
             Log.d(TAG, "pageStarted provider=glm url=${safeLogValue(url)}")
             if (url == "about:blank") {
                 injectAboutBlankNativeBridge(view)
@@ -355,12 +349,14 @@ class GlmIsolatedWebSessionService : Service() {
 
         override fun onLoadResource(view: WebView, url: String) {
             val pageUrl = view.url ?: url
+            currentPageUrl = pageUrl
             if (pageUrl == "about:blank") return
             if (!ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.GLM, url)) return
             maybeStartNativeCollection(view, pageUrl, "load_resource")
         }
 
         override fun onPageFinished(view: WebView, url: String) {
+            currentPageUrl = url
             Log.d(TAG, "pageFinished provider=glm url=${safeLogValue(url)}")
             if (url == "about:blank") {
                 injectAboutBlankNativeBridge(view)
@@ -410,7 +406,7 @@ class GlmIsolatedWebSessionService : Service() {
 
         @JavascriptInterface
         fun fetchProviderUsagePayload(): String {
-            if (webView?.url != "about:blank") {
+            if (currentPageUrl != "about:blank") {
                 return org.json.JSONObject()
                     .put("ok", false)
                     .put("error", "blocked_bridge_page")

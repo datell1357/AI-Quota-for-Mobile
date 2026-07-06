@@ -62,10 +62,8 @@ fun SettingsPanel(
     notificationEnabled: Boolean,
     canPostNotifications: Boolean,
     liveRefreshState: SettingsLiveRefreshState = SettingsLiveRefreshState.STOPPED,
-    batteryOptimizationExempt: Boolean = true,
     onNotificationEnabledChanged: (Boolean) -> Unit,
     onOpenNotificationSettings: () -> Unit,
-    onOpenBatteryOptimizationSettings: () -> Unit = {},
     providerOrder: List<ProviderId> = ProviderId.defaultOrder(),
     snapshots: List<ProviderUsageSnapshot> = emptyList(),
     onConnectProvider: (ProviderId) -> Unit = {},
@@ -92,10 +90,8 @@ fun SettingsPanel(
             notificationEnabled = notificationEnabled,
             canPostNotifications = canPostNotifications,
             liveRefreshState = liveRefreshState,
-            batteryOptimizationExempt = batteryOptimizationExempt,
             onNotificationEnabledChanged = onNotificationEnabledChanged,
-            onOpenNotificationSettings = onOpenNotificationSettings,
-            onOpenBatteryOptimizationSettings = onOpenBatteryOptimizationSettings
+            onOpenNotificationSettings = onOpenNotificationSettings
         )
         ThemeSettingsSection(
             currentTheme = currentTheme,
@@ -119,10 +115,8 @@ private fun NotificationSettingsSection(
     notificationEnabled: Boolean,
     canPostNotifications: Boolean,
     liveRefreshState: SettingsLiveRefreshState,
-    batteryOptimizationExempt: Boolean,
     onNotificationEnabledChanged: (Boolean) -> Unit,
-    onOpenNotificationSettings: () -> Unit,
-    onOpenBatteryOptimizationSettings: () -> Unit
+    onOpenNotificationSettings: () -> Unit
 ) {
     val layoutMetrics = rememberAppLayoutMetrics()
     val colors = AIQuotaTheme.colors
@@ -190,34 +184,6 @@ private fun NotificationSettingsSection(
                     Text(stringResource(R.string.settings_open_notification_settings))
                 }
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.settings_battery_optimization_title),
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.textMuted,
-                    fontWeight = FontWeight.SemiBold
-                )
-                if (!batteryOptimizationExempt) {
-                    OutlinedButton(onClick = onOpenBatteryOptimizationSettings) {
-                        Text(stringResource(R.string.settings_open_battery_optimization_settings))
-                    }
-                }
-            }
-            Text(
-                text = stringResource(
-                    if (batteryOptimizationExempt) {
-                        R.string.settings_battery_optimization_exempt
-                    } else {
-                        R.string.settings_battery_optimization_recommended
-                    }
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = if (batteryOptimizationExempt) colors.textMuted else MaterialTheme.colorScheme.error
-            )
         }
     }
 }

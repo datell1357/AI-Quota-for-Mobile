@@ -11,38 +11,45 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 class SecureStringStore(context: Context, name: String) {
-    private val preferences = context.applicationContext.getSharedPreferences(name, Context.MODE_PRIVATE)
+    private val appContext = context.applicationContext
+    private val storeName = name
     private val alias = "ai_quota_$name"
 
     fun getString(key: String): String? {
-        val stored = preferences.getString(key, null) ?: return null
+        val stored = preferences().getString(key, null) ?: return null
         if (!stored.startsWith(PREFIX)) return stored
         return runCatching { decrypt(stored) }.getOrNull()
     }
 
     fun putString(key: String, value: String?) {
-        val editor = preferences.edit()
+        val editor = preferences().edit()
         if (value == null) {
             editor.remove(key)
         } else {
             editor.putString(key, encrypt(value))
         }
-        editor.apply()
+        editor.commit()
     }
 
     fun remove(vararg keys: String) {
-        val editor = preferences.edit()
+        val editor = preferences().edit()
         keys.forEach(editor::remove)
-        editor.apply()
+        editor.commit()
     }
 
     fun getLong(key: String, defaultValue: Long): Long {
-        return preferences.getLong(key, defaultValue)
+        return preferences().getLong(key, defaultValue)
     }
 
     fun putLong(key: String, value: Long) {
-        preferences.edit().putLong(key, value).apply()
+        preferences().edit().putLong(key, value).commit()
     }
+
+    @Suppress("DEPRECATION")
+    private fun preferences() = appContext.getSharedPreferences(
+        storeName,
+        Context.MODE_PRIVATE or Context.MODE_MULTI_PROCESS
+    )
 
     private fun encrypt(value: String): String {
         val cipher = Cipher.getInstance(TRANSFORMATION)

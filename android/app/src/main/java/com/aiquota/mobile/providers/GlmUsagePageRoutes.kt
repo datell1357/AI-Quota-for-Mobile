@@ -68,4 +68,9 @@ object GlmUsagePageRoutes {
             "/manage-apikey/coding-plan/personal/usage"
     }
 
+    fun isAuthorizedQuotaResource(url: String): Boolean {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        return host == "api.z.ai" && uri.path.orEmpty() == "/api/monitor/usage/quota/limit"
+    }
 }

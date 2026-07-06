@@ -6,10 +6,13 @@ import com.aiquota.mobile.local.ProviderRefreshState
 import com.aiquota.mobile.local.ProviderUsageSnapshot
 import androidx.compose.ui.graphics.Color
 import java.io.File
+import javax.xml.parsers.DocumentBuilderFactory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.w3c.dom.Document
+import org.w3c.dom.Element
 
 class SettingsConnectionManagementTest {
     @Test
@@ -140,31 +143,20 @@ class SettingsConnectionManagementTest {
     }
 
     @Test
-    fun settingsShowsBatteryOptimizationRecommendationForLiveRefresh() {
-        val source = File("src/main/java/com/aiquota/mobile/ui/settings/SettingsPanel.kt").readText()
-        val appShell = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
-        val settingsCall = appShell.substringAfter("AppRoute.Settings -> SettingsPanel(")
-            .substringBefore("modifier = Modifier.fillMaxSize()")
-        val notificationSection = source.substringAfter("private fun NotificationSettingsSection")
-            .substringBefore("@Composable\nprivate fun ConnectionManagementSection")
-        val english = File("src/main/res/values/strings.xml").readText()
-        val korean = File("src/main/res/values-ko/strings.xml").readText()
+    fun settingsDoesNotShowBatteryOptimizationRecommendationForLiveRefresh() {
+        val englishStrings = stringResources("src/main/res/values/strings.xml")
+        val koreanStrings = stringResources("src/main/res/values-ko/strings.xml")
 
-        assertTrue(source.contains("batteryOptimizationExempt: Boolean"))
-        assertTrue(source.contains("onOpenBatteryOptimizationSettings: () -> Unit"))
-        assertTrue(settingsCall.contains("batteryOptimizationExempt = batteryOptimizationExempt"))
-        assertTrue(settingsCall.contains("onOpenBatteryOptimizationSettings = ::openBatteryOptimizationSettings"))
-        assertTrue(notificationSection.contains("settings_battery_optimization_title"))
-        assertTrue(notificationSection.contains("settings_open_battery_optimization_settings"))
-        assertTrue(notificationSection.contains("if (!batteryOptimizationExempt)"))
-        assertTrue(
-            notificationSection.indexOf("settings_open_battery_optimization_settings") <
-                notificationSection.indexOf("settings_battery_optimization_recommended")
+        assertFalse(englishStrings.containsSettingsBatteryOptimizationCopy())
+        assertFalse(koreanStrings.containsSettingsBatteryOptimizationCopy())
+        assertEquals(
+            SettingsLiveRefreshState.RUNNING,
+            settingsLiveRefreshState(
+                notificationEnabled = true,
+                canPostNotifications = true,
+                heartbeatStale = false
+            )
         )
-        assertTrue(english.contains("Battery optimization"))
-        assertTrue(korean.contains("배터리 최적화"))
-        assertTrue(korean.contains("라이브 갱신 안정성을 위해 배터리 최적화 옵션을 제외로 설정해주세요."))
-        assertFalse(korean.contains("Android가 백그라운드 라이브 모니터링을 중단할 가능성을 줄이려면"))
     }
 
     @Test
@@ -266,5 +258,24 @@ class SettingsConnectionManagementTest {
         assertFalse(english.contains("No connected providers."))
         assertFalse(korean.contains("연결된 provider가 없습니다."))
         assertFalse(korean.contains("숨긴 provider"))
+    }
+
+    private fun stringResources(path: String): Map<String, String> {
+        return elementsNamed(xmlDocument(path), "string")
+            .associate { it.getAttribute("name") to it.textContent }
+    }
+
+    private fun xmlDocument(path: String): Document {
+        return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(File(path))
+    }
+
+    private fun elementsNamed(document: Document, tagName: String): List<Element> {
+        val nodes = document.getElementsByTagName(tagName)
+        return (0 until nodes.length).mapNotNull { nodes.item(it) as? Element }
+    }
+
+    private fun Map<String, String>.containsSettingsBatteryOptimizationCopy(): Boolean {
+        return keys.any { it.startsWith("settings_") && it.contains("battery") && it.contains("optimization") } ||
+            values.any { it.contains("battery optimization", ignoreCase = true) || it.contains("배터리 최적화") }
     }
 }
