@@ -317,8 +317,9 @@ internal fun mergeFreshSnapshotWithPreviousLines(
     if (previous.providerId != snapshot.providerId) return snapshot
     if (snapshot.connectionState != ProviderConnectionState.CONNECTED) return snapshot
     if (snapshot.lines.isEmpty() || previous.lines.isEmpty()) return snapshot
+    val planLabel = snapshot.planLabel ?: previousPlanLabelForFreshSnapshot(snapshot, previous)
     if (snapshot.providerId == ProviderId.GEMINI && snapshot.lines.hasTrustedGeminiUsagePageQuotaLine()) {
-        return snapshot
+        return if (planLabel == snapshot.planLabel) snapshot else snapshot.copy(planLabel = planLabel)
     }
 
     val incomingByKey = snapshot.lines.associateBy { it.mergeKey() }
@@ -332,12 +333,33 @@ internal fun mergeFreshSnapshotWithPreviousLines(
         } + snapshot.lines.filter { it.mergeKey() !in previousKeys }
     }
 
-    if (mergedLines == snapshot.lines) return snapshot
-    return snapshot.copy(lines = mergedLines)
+    if (mergedLines == snapshot.lines && planLabel == snapshot.planLabel) return snapshot
+    return snapshot.copy(lines = mergedLines, planLabel = planLabel)
 }
 
 private fun ProviderUsageLine.mergeKey(): String {
     return key.ifBlank { label }
+}
+
+private fun previousPlanLabelForFreshSnapshot(
+    snapshot: ProviderUsageSnapshot,
+    previous: ProviderUsageSnapshot
+): String? {
+    if (!sameOrUnknownAccount(snapshot.account, previous.account)) return null
+    val plan = previous.planLabel?.trim()?.takeIf { it.isNotBlank() && it != "null" } ?: return null
+    if (snapshot.providerId == ProviderId.GLM && plan == GlmNoSubscriptionPolicy.PLAN_LABEL) return null
+    if (plan.equals("unknown", ignoreCase = true)) return null
+    return if (snapshot.providerId == ProviderId.CLAUDE) {
+        normalizeClaudePersistedPlanLabel(previous).planLabel
+    } else {
+        plan
+    }
+}
+
+private fun sameOrUnknownAccount(incoming: String?, previous: String?): Boolean {
+    val incomingAccount = incoming?.trim().orEmpty()
+    val previousAccount = previous?.trim().orEmpty()
+    return incomingAccount.isBlank() || previousAccount.isBlank() || incomingAccount == previousAccount
 }
 
 internal fun recoverGoogleCollectingWithoutTrustedUsage(snapshot: ProviderUsageSnapshot): ProviderUsageSnapshot {

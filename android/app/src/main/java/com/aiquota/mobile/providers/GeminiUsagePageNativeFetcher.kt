@@ -304,7 +304,9 @@ internal object GeminiUsagePageNativeFetcher {
 
     private fun usagePayloadFromHtmlBootstrap(rawText: String): JSONObject? {
         val rowsByType = linkedMapOf<Int, JSONArray>()
+        var account: JSONObject? = null
         afDataArraysFromHtml(rawText).forEach { data ->
+            if (account == null) account = geminiAccountDeep(data)
             collectQuotaRowsDeep(data, rowsByType)
         }
         QUOTA_BOOTSTRAP_ROW_PATTERN.findAll(rawText).forEach { match ->
@@ -318,6 +320,9 @@ internal object GeminiUsagePageNativeFetcher {
         }
         if (rowsByType.isEmpty()) return null
         return usagePayloadFromRows(JSONArray(rowsByType.values.toList()), "native-usage-page-bootstrap")
+            ?.apply {
+                account?.let { put("account", it) }
+            }
     }
 
     private fun afDataArraysFromHtml(rawText: String): List<JSONArray> {
@@ -350,6 +355,28 @@ internal object GeminiUsagePageNativeFetcher {
                 for (index in 0 until value.length()) collectQuotaRowsDeep(value.opt(index), rowsByType)
             }
             is JSONObject -> value.keys().forEach { key -> collectQuotaRowsDeep(value.opt(key), rowsByType) }
+        }
+    }
+
+    private fun geminiAccountDeep(value: Any?): JSONObject? {
+        return when (value) {
+            is JSONObject -> {
+                if (value.optString("p").isNotBlank() || value.optString("e").isNotBlank()) {
+                    JSONObject().apply {
+                        value.optString("p").takeIf { it.isNotBlank() }?.let { put("p", it) }
+                        value.optString("e").takeIf { it.isNotBlank() }?.let { put("e", it) }
+                    }
+                } else {
+                    value.keys().asSequence().firstNotNullOfOrNull { key -> geminiAccountDeep(value.opt(key)) }
+                }
+            }
+            is JSONArray -> {
+                for (index in 0 until value.length()) {
+                    geminiAccountDeep(value.opt(index))?.let { return it }
+                }
+                null
+            }
+            else -> null
         }
     }
 

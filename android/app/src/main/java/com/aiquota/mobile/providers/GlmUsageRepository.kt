@@ -357,21 +357,81 @@ object GlmUsageFetcher {
         ) {
             return GlmUsageResult(null, requiresAuth = true, diagnostic = "glm_web_authorization_missing")
         }
-        return executeFetch(endpointUrl, accountLabel = "z.ai web session") {
-            requestHeaders.forEach { (name, value) ->
-                if (name.isNotBlank() && value.isNotBlank()) setRequestProperty(name, value)
-            }
-            setRequestProperty("Cookie", trimmedCookieHeader)
-            if (requestHeaders.none { (name, _) -> name.equals("Origin", ignoreCase = true) }) {
-                setRequestProperty("Origin", "https://z.ai")
-            }
-            if (requestHeaders.none { (name, _) -> name.equals("Referer", ignoreCase = true) }) {
-                setRequestProperty("Referer", GlmProviderUrls.WEB_USAGE_URL)
-            }
-            if (requestHeaders.none { (name, _) -> name.equals("User-Agent", ignoreCase = true) }) {
-                setRequestProperty("User-Agent", WEB_SESSION_USER_AGENT)
-            }
+        val usageResult = executeFetch(endpointUrl, accountLabel = "z.ai web session") {
+            applyWebSessionHeaders(trimmedCookieHeader, requestHeaders)
         }
+        if (usageResult.payload == null || usageResult.diagnostic != "ok") return usageResult
+        val plan = fetchWebSessionPlan(trimmedCookieHeader, endpointUrl, requestHeaders)
+        return usageResult.withOptionalPlan(plan)
+    }
+
+    private fun HttpURLConnection.applyWebSessionHeaders(
+        cookieHeader: String,
+        requestHeaders: Map<String, String>
+    ) {
+        requestHeaders.forEach { (name, value) ->
+            if (name.isNotBlank() && value.isNotBlank()) setRequestProperty(name, value)
+        }
+        setRequestProperty("Cookie", cookieHeader)
+        if (requestHeaders.none { (name, _) -> name.equals("Origin", ignoreCase = true) }) {
+            setRequestProperty("Origin", "https://z.ai")
+        }
+        if (requestHeaders.none { (name, _) -> name.equals("Referer", ignoreCase = true) }) {
+            setRequestProperty("Referer", GlmProviderUrls.WEB_USAGE_URL)
+        }
+        if (requestHeaders.none { (name, _) -> name.equals("User-Agent", ignoreCase = true) }) {
+            setRequestProperty("User-Agent", WEB_SESSION_USER_AGENT)
+        }
+    }
+
+    private fun fetchWebSessionPlan(
+        cookieHeader: String,
+        quotaEndpointUrl: String,
+        requestHeaders: Map<String, String>
+    ): String? {
+        return runCatching {
+            val connection = (URL(glmPlanUrlFor(quotaEndpointUrl)).openConnection() as HttpURLConnection).apply {
+                connectTimeout = NETWORK_TIMEOUT_MS
+                readTimeout = NETWORK_TIMEOUT_MS
+                requestMethod = "GET"
+                setRequestProperty("Accept", "application/json")
+                setRequestProperty("Content-Type", "application/json")
+                applyWebSessionHeaders(cookieHeader, requestHeaders)
+            }
+            val status = connection.responseCode
+            val stream = if (status in 200..299) connection.inputStream else connection.errorStream
+            val text = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
+            connection.disconnect()
+            if (status !in 200..299) return null
+            val json = runCatching { JSONObject(text) }.getOrNull() ?: return null
+            glmPlanFromJson(json)
+        }.getOrNull()
+    }
+
+    private fun glmPlanUrlFor(quotaEndpointUrl: String): String {
+        val url = runCatching { URL(quotaEndpointUrl) }.getOrNull() ?: return GlmProviderUrls.WEB_OAUTH_URL
+        if (url.host == "127.0.0.1" || url.host == "localhost") {
+            return URL(url.protocol, url.host, url.port, "/manage-apikey/coding-plan/personal/my-plan").toString()
+        }
+        return GlmProviderUrls.WEB_OAUTH_URL
+    }
+
+    private fun glmPlanFromJson(json: JSONObject): String? {
+        return listOf(
+            json.optString("plan"),
+            json.optString("productName"),
+            json.optJSONObject("data")?.optString("plan"),
+            json.optJSONObject("data")?.optString("productName"),
+            json.optJSONObject("data")?.optJSONObject("plan")?.optString("name"),
+            json.optJSONObject("data")?.optJSONObject("subscription")?.optString("name")
+        ).firstOrNull { !it.isNullOrBlank() && it != "null" }
+    }
+
+    private fun GlmUsageResult.withOptionalPlan(plan: String?): GlmUsageResult {
+        val payloadText = payload ?: return this
+        val planLabel = plan?.trim()?.takeIf { it.isNotBlank() } ?: return this
+        val json = runCatching { JSONObject(payloadText) }.getOrNull() ?: return this
+        return copy(payload = json.put("plan", planLabel).toString())
     }
 
     private fun executeFetch(

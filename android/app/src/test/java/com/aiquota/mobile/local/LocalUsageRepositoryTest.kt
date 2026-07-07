@@ -197,6 +197,8 @@ class LocalUsageRepositoryTest {
         val previous = ProviderUsageSnapshot(
             providerId = ProviderId.CODEX,
             connectionState = ProviderConnectionState.CONNECTED,
+            planLabel = "Pro 5x",
+            account = "user@example.com",
             lines = listOf(
                 ProviderUsageLine(
                     key = "codex:primary_window",
@@ -211,6 +213,7 @@ class LocalUsageRepositoryTest {
             )
         )
         val partialRefresh = previous.copy(
+            planLabel = null,
             lines = listOf(
                 ProviderUsageLine(
                     key = "codex:secondary_window",
@@ -225,6 +228,53 @@ class LocalUsageRepositoryTest {
         assertEquals(listOf("Codex Session", "Codex Weekly"), merged.lines.map { it.label })
         assertEquals(0.79f, merged.lines[0].remainingPercent ?: 0f, 0.001f)
         assertEquals(0.40f, merged.lines[1].remainingPercent ?: 0f, 0.001f)
+        assertEquals("Pro 5x", merged.planLabel)
+    }
+
+    @Test
+    fun freshConnectedUsageCarriesPreviousValidPlanOnlyForSameAccount() {
+        val previous = ProviderUsageSnapshot(
+            providerId = ProviderId.CLAUDE,
+            connectionState = ProviderConnectionState.CONNECTED,
+            planLabel = "Pro",
+            account = "user@example.com",
+            lines = listOf(ProviderUsageLine(key = "claude:weekly", label = "Claude Weekly", remainingPercent = 0.8f))
+        )
+        val fresh = previous.copy(
+            planLabel = null,
+            lines = listOf(ProviderUsageLine(key = "claude:weekly", label = "Claude Weekly", remainingPercent = 0.7f))
+        )
+
+        val carried = mergeFreshSnapshotWithPreviousLines(fresh, previous)
+        val differentAccount = mergeFreshSnapshotWithPreviousLines(fresh.copy(account = "other@example.com"), previous)
+        val disconnected = mergeFreshSnapshotWithPreviousLines(fresh.copy(connectionState = ProviderConnectionState.DISCONNECTED), previous)
+        val sessionExpired = mergeFreshSnapshotWithPreviousLines(fresh.copy(connectionState = ProviderConnectionState.INTERACTIVE_AUTH_REQUIRED), previous)
+        val error = mergeFreshSnapshotWithPreviousLines(fresh.copy(connectionState = ProviderConnectionState.ERROR), previous)
+
+        assertEquals("Pro", carried.planLabel)
+        assertNull(differentAccount.planLabel)
+        assertNull(disconnected.planLabel)
+        assertNull(sessionExpired.planLabel)
+        assertNull(error.planLabel)
+    }
+
+    @Test
+    fun freshConnectedUsageDoesNotCarryInvalidPreviousPlanLabels() {
+        val fresh = ProviderUsageSnapshot(
+            providerId = ProviderId.CLAUDE,
+            connectionState = ProviderConnectionState.CONNECTED,
+            account = "user@example.com",
+            lines = listOf(ProviderUsageLine(key = "claude:weekly", label = "Claude Weekly", remainingPercent = 0.7f))
+        )
+        val datePlan = fresh.copy(planLabel = "2026-07-28", lines = listOf(ProviderUsageLine(label = "old")))
+        val glmFresh = fresh.copy(
+            providerId = ProviderId.GLM,
+            lines = listOf(ProviderUsageLine(key = "glm:tokens", label = "5시간 한도", remainingPercent = 0.7f))
+        )
+        val glmNoSubscription = glmFresh.copy(planLabel = "Plan 없음", lines = listOf(ProviderUsageLine(label = "old")))
+
+        assertNull(mergeFreshSnapshotWithPreviousLines(fresh, datePlan).planLabel)
+        assertNull(mergeFreshSnapshotWithPreviousLines(glmFresh, glmNoSubscription).planLabel)
     }
 
     @Test

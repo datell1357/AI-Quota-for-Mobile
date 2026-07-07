@@ -4,6 +4,7 @@ import java.net.HttpURLConnection
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.nio.charset.StandardCharsets
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -301,6 +302,98 @@ class GlmUsageFetcherTest {
         assertEquals("glm_web_authorization_missing", result.diagnostic)
     }
 
+    @Test
+    fun webSessionFetchAddsPlanFromSubscriptionResponseWithoutBreakingUsage() {
+        val paths = mutableListOf<String>()
+        val server = ServerSocket().apply {
+            reuseAddress = true
+            bind(InetSocketAddress("127.0.0.1", 0))
+        }
+        val serverThread = thread(name = "glm-web-session-plan-test-server") {
+            repeat(2) {
+                server.accept().use { socket ->
+                    val request = socket.getInputStream().bufferedReader(StandardCharsets.UTF_8)
+                    val requestLine = request.readLine().orEmpty()
+                    paths += requestLine.split(" ").getOrNull(1).orEmpty()
+                    while (true) {
+                        val line = request.readLine() ?: break
+                        if (line.isEmpty()) break
+                    }
+                    socket.getOutputStream().writeHttpResponse(
+                        status = HttpURLConnection.HTTP_OK,
+                        reason = "OK",
+                        body = if (requestLine.contains("/quota")) quotaBody() else subscriptionBody("Coding Plan Pro")
+                    )
+                }
+            }
+        }
+
+        try {
+            val result = GlmUsageFetcher.fetchUsagePayloadWithCookie(
+                cookieHeader = "zai_session=session-value",
+                endpointUrl = "http://127.0.0.1:${server.localPort}/api/monitor/usage/quota/limit",
+                requestHeaders = mapOf("Authorization" to "Bearer [REDACTED:Bearer token]")
+            )
+            val payload = JSONObject(result.payload!!)
+
+            assertEquals("ok", result.diagnostic)
+            assertFalse(result.requiresAuth)
+            assertEquals("Coding Plan Pro", payload.getString("plan"))
+            assertEquals(
+                listOf(
+                    "/api/monitor/usage/quota/limit",
+                    "/manage-apikey/coding-plan/personal/my-plan"
+                ),
+                paths
+            )
+        } finally {
+            server.close()
+            serverThread.join(1_000L)
+        }
+    }
+
+    @Test
+    fun webSessionPlanFailureKeepsSuccessfulUsageUnauthenticated() {
+        val server = ServerSocket().apply {
+            reuseAddress = true
+            bind(InetSocketAddress("127.0.0.1", 0))
+        }
+        val serverThread = thread(name = "glm-web-session-plan-failure-test-server") {
+            repeat(2) {
+                server.accept().use { socket ->
+                    val request = socket.getInputStream().bufferedReader(StandardCharsets.UTF_8)
+                    val requestLine = request.readLine().orEmpty()
+                    while (true) {
+                        val line = request.readLine() ?: break
+                        if (line.isEmpty()) break
+                    }
+                    socket.getOutputStream().writeHttpResponse(
+                        status = if (requestLine.contains("/quota")) HttpURLConnection.HTTP_OK else HttpURLConnection.HTTP_FORBIDDEN,
+                        reason = if (requestLine.contains("/quota")) "OK" else "Forbidden",
+                        body = if (requestLine.contains("/quota")) quotaBody() else """{"message":"forbidden"}""".toByteArray(StandardCharsets.UTF_8)
+                    )
+                }
+            }
+        }
+
+        try {
+            val result = GlmUsageFetcher.fetchUsagePayloadWithCookie(
+                cookieHeader = "zai_session=session-value",
+                endpointUrl = "http://127.0.0.1:${server.localPort}/api/monitor/usage/quota/limit",
+                requestHeaders = mapOf("Authorization" to "Bearer [REDACTED:Bearer token]")
+            )
+            val payload = JSONObject(result.payload!!)
+
+            assertEquals("ok", result.diagnostic)
+            assertFalse(result.requiresAuth)
+            assertFalse(payload.has("plan"))
+            assertTrue(payload.getJSONObject("data").getJSONArray("limits").length() > 0)
+        } finally {
+            server.close()
+            serverThread.join(1_000L)
+        }
+    }
+
     private fun java.io.OutputStream.writeHttpResponse(status: Int, reason: String, body: ByteArray) {
         val headers = buildString {
             append("HTTP/1.1 ")
@@ -349,6 +442,17 @@ class GlmUsageFetcherTest {
                     "percentage": 25
                   }
                 ]
+              }
+            }
+        """.trimIndent().toByteArray(StandardCharsets.UTF_8)
+    }
+
+    private fun subscriptionBody(plan: String): ByteArray {
+        return """
+            {
+              "code": 200,
+              "data": {
+                "plan": "$plan"
               }
             }
         """.trimIndent().toByteArray(StandardCharsets.UTF_8)

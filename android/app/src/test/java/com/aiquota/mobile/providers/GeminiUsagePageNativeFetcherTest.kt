@@ -230,6 +230,24 @@ class GeminiUsagePageNativeFetcherTest {
     }
 
     @Test
+    fun usagePageBootstrapPayloadCarriesAccountPlanMetadata() {
+        val html = """
+            <script>
+              AF_initDataCallback({data:[null,[[450,150,1,[[1782793673,919528000]]],[300,300,2,[[1783337273,919653000]]]],{"p":"GEMINI_ULTRA","e":"user@example.com"}]});
+            </script>
+        """.trimIndent()
+
+        val payload = GeminiUsagePageNativeFetcher.usagePayloadFromHtmlBootstrapForTest(html)
+        val account = payload?.getJSONObject("account")
+
+        assertNotNull(payload)
+        assertNotNull(account)
+        assertEquals("GEMINI_ULTRA", account?.getString("p"))
+        assertEquals("user@example.com", account?.getString("e"))
+        assertEquals(2, payload?.getJSONObject("usage")?.getJSONArray("x")?.length())
+    }
+
+    @Test
     fun geminiNativeCollectionDoesNotDependOnUsagePageDomSessionCapture() {
         val loginSource = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
         val refreshSource = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
