@@ -166,7 +166,7 @@ object ProviderNativeUsagePayloadFetcher {
             .put("organizationId", orgId)
             .put("usage", usagePayload)
         findFirstString(accountProfile.jsonValue(), EMAIL_KEYS)?.let { payload.put("account", it) }
-        claudePlan(subscription.jsonValue())
+        findFirstString(subscription.jsonValue(), PLAN_KEYS)
             ?.let { payload.put("plan", it) }
         return verifiedPayload(ProviderId.CLAUDE, payload, "claude_usage_unavailable", statuses)
     }
@@ -948,15 +948,6 @@ object ProviderNativeUsagePayloadFetcher {
         return values.firstOrNull { it.isNotBlank() && it != "null" }
     }
 
-    private fun claudePlan(value: Any?): String? {
-        return findFirstString(value, CLAUDE_SAFE_PLAN_KEYS)
-            ?: findFirstString(value, CLAUDE_GENERIC_PLAN_KEYS)?.takeUnless(::isClaudeDateLikeGenericPlan)
-    }
-
-    private fun isClaudeDateLikeGenericPlan(value: String): Boolean {
-        return CLAUDE_DATE_LIKE_GENERIC_PLAN_PATTERN.matches(value.trim())
-    }
-
     private fun collectStrings(value: Any?, keyNames: Set<String>, output: MutableList<String>, depth: Int) {
         if (depth > MAX_JSON_DEPTH || value == null || value == JSONObject.NULL || output.size >= MAX_STRING_MATCHES) return
         when (value) {
@@ -1051,22 +1042,6 @@ object ProviderNativeUsagePayloadFetcher {
         "id"
     )
     private val EMAIL_KEYS = setOf("email", "account_email", "accountemail", "user_email", "useremail", "e")
-    private val CLAUDE_SAFE_PLAN_KEYS = setOf(
-        "plan",
-        "plan_type",
-        "plantype",
-        "plan_name",
-        "planname",
-        "subscription_plan",
-        "subscriptionplan",
-        "subscription_type",
-        "subscriptiontype",
-        "tier",
-        "sku"
-    )
-    private val CLAUDE_GENERIC_PLAN_KEYS = setOf("name", "display_name", "displayname", "title", "label")
-    private val CLAUDE_DATE_LIKE_GENERIC_PLAN_PATTERN =
-        Regex("""(?i)\s*(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}(?:[t\s].*)?|[a-z]{3,9}\s+\d{1,2},\s*\d{4})\s*""")
     private val PLAN_KEYS = setOf(
         "plan",
         "plan_type",

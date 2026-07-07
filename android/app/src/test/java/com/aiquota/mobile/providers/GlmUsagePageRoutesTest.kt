@@ -2,7 +2,6 @@ package com.aiquota.mobile.providers
 
 import com.aiquota.mobile.local.ProviderId
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -82,41 +81,6 @@ class GlmUsagePageRoutesTest {
     }
 
     @Test
-    fun authenticatedChatAuthShellIsNotRefreshLoginPageAfterSessionEvidence() {
-        val authShellUrl = GlmProviderUrls.WEB_LOGIN_URL
-
-        assertTrue(GlmUsagePageRoutes.isAuthenticatedChatAppUrl(authShellUrl))
-        assertEquals(
-            GlmProviderUrls.WEB_USAGE_URL,
-            GlmUsagePageRoutes.usageRedirectUrlAfterAuthenticatedResource(authShellUrl)
-        )
-        assertFalse(
-            "GLM authenticated chat auth shell must not be swallowed by refresh-login classification",
-            ProviderWebCollectorScripts.isRefreshLoginPage(ProviderId.GLM, authShellUrl)
-        )
-    }
-
-    @Test
-    fun chatRootDoesNotBecomeCollectorSuccessWithoutSessionEvidence() {
-        val chatRootUrl = "https://chat.z.ai/"
-
-        assertEquals(
-            GlmProviderUrls.WEB_USAGE_URL,
-            GlmUsagePageRoutes.usageRedirectUrlAfterAuthenticatedResource(chatRootUrl)
-        )
-        assertNull(GlmLoginPostRedirects.usageRedirectUrl(ProviderId.GLM, chatRootUrl))
-        assertFalse(
-            "GLM chat root needs authenticated/session evidence before collector success",
-            ProviderWebCollectorScripts.shouldRunCollector(
-                ProviderId.GLM,
-                chatRootUrl,
-                emptyMap(),
-                ""
-            )
-        )
-    }
-
-    @Test
     fun webOAuthRefreshUsesStoredSessionNativeApiInsteadOfHiddenWebCollector() {
         val job = ProviderRefreshJob(
             providerId = ProviderId.GLM,
@@ -128,29 +92,5 @@ class GlmUsagePageRoutesTest {
 
         assertEquals(ProviderRefreshMode.NATIVE_API, resolved.mode)
         assertEquals("", resolved.startUrl)
-    }
-
-    @Test
-    fun authorizedQuotaResourceMatchesOnlyObservedQuotaLimitApi() {
-        assertTrue(
-            GlmUsagePageRoutes.isAuthorizedQuotaResource(
-                "https://api.z.ai/api/monitor/usage/quota/limit"
-            )
-        )
-        assertFalse(
-            GlmUsagePageRoutes.isAuthorizedQuotaResource(
-                "https://api.z.ai/api/monitor/usage/model-usage"
-            )
-        )
-        assertFalse(
-            GlmUsagePageRoutes.isAuthorizedQuotaResource(
-                "https://api.z.ai/api/monitor/usage/tool-usage"
-            )
-        )
-        assertFalse(
-            GlmUsagePageRoutes.isAuthorizedQuotaResource(
-                "https://chat.z.ai/api/v1/users/user/settings/update"
-            )
-        )
     }
 }

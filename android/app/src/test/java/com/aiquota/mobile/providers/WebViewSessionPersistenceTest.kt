@@ -19,6 +19,7 @@ class WebViewSessionPersistenceTest {
             "removeSessionCookies",
             "WebStorage.getInstance().deleteAllData",
             "webStorage.deleteAllData",
+            "clearCache(true)",
             "clearHistory()",
             "clearFormData()"
         )

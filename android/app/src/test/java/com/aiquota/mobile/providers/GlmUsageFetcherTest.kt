@@ -8,17 +8,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.concurrent.thread
 
 class GlmUsageFetcherTest {
-    companion object {
-        init {
-            System.setProperty("sun.net.http.allowRestrictedHeaders", "true")
-        }
-    }
-
     @Test
     fun retriesWithoutBearerAfterBearerUnauthorizedResponse() {
         val authorizationHeaders = mutableListOf<String?>()
@@ -125,7 +118,7 @@ class GlmUsageFetcherTest {
     }
 
     @Test
-    fun webSessionFetchPreservesCapturedNativeHeaders() {
+    fun webSessionFetchSendsCookieAndCapturedNativeHeaders() {
         var cookieHeader: String? = null
         var authorizationHeader: String? = null
         var traceHeader: String? = null
@@ -171,10 +164,7 @@ class GlmUsageFetcherTest {
                 endpointUrl = "http://127.0.0.1:${server.localPort}/quota",
                 requestHeaders = mapOf(
                     "Authorization" to "Bearer browser-token",
-                    "X-Zai-Trace" to "trace-id",
-                    "Origin" to "https://chat.z.ai",
-                    "Referer" to "https://chat.z.ai/auth",
-                    "User-Agent" to "CapturedWebView/1.0"
+                    "X-Zai-Trace" to "trace-id"
                 )
             )
 
@@ -184,8 +174,8 @@ class GlmUsageFetcherTest {
             assertEquals("zai_session=session-value; other=value", cookieHeader)
             assertEquals("Bearer browser-token", authorizationHeader)
             assertEquals("trace-id", traceHeader)
-            assertEquals("https://chat.z.ai/auth", refererHeader)
-            assertEquals("CapturedWebView/1.0", userAgentHeader)
+            assertEquals(GlmProviderUrls.WEB_USAGE_URL, refererHeader)
+            org.junit.Assert.assertTrue(userAgentHeader.orEmpty().contains("Mozilla/5.0"))
         } finally {
             server.close()
             serverThread.join(1_000L)
@@ -202,102 +192,6 @@ class GlmUsageFetcherTest {
 
         assertNull(result.payload)
         org.junit.Assert.assertTrue(result.requiresAuth)
-        assertEquals("glm_web_authorization_missing", result.diagnostic)
-    }
-
-    @Test
-    fun repositoryWebSessionFetchReplaysSavedAuthorizationHeadersFromFreshStoreInstance() {
-        val persisted = linkedMapOf<String, Any>()
-        var cookieHeader: String? = null
-        var authorizationHeader: String? = null
-        var originHeader: String? = null
-        var refererHeader: String? = null
-        var userAgentHeader: String? = null
-        val server = ServerSocket().apply {
-            reuseAddress = true
-            bind(InetSocketAddress("127.0.0.1", 0))
-        }
-        val serverThread = thread(name = "glm-web-session-repository-test-server") {
-            server.accept().use { socket ->
-                val request = socket.getInputStream().bufferedReader(StandardCharsets.UTF_8)
-                while (true) {
-                    val line = request.readLine() ?: break
-                    if (line.isEmpty()) break
-                    if (line.startsWith("Cookie:", ignoreCase = true)) {
-                        cookieHeader = line.substringAfter(":").trim()
-                    }
-                    if (line.startsWith("Authorization:", ignoreCase = true)) {
-                        authorizationHeader = line.substringAfter(":").trim()
-                    }
-                    if (line.startsWith("Origin:", ignoreCase = true)) {
-                        originHeader = line.substringAfter(":").trim()
-                    }
-                    if (line.startsWith("Referer:", ignoreCase = true)) {
-                        refererHeader = line.substringAfter(":").trim()
-                    }
-                    if (line.startsWith("User-Agent:", ignoreCase = true)) {
-                        userAgentHeader = line.substringAfter(":").trim()
-                    }
-                }
-                socket.getOutputStream().writeHttpResponse(
-                    status = HttpURLConnection.HTTP_OK,
-                    reason = "OK",
-                    body = quotaBody()
-                )
-            }
-        }
-
-        try {
-            val endpointUrl = "http://127.0.0.1:${server.localPort}/quota"
-            GlmUsageRepository(
-                webSessionStore = InMemoryGlmWebSessionStore(persisted),
-                webSessionEndpointUrl = endpointUrl
-            ).apply {
-                saveWebSessionCookieHeader("zai_session=session-value; other=value")
-                saveWebSessionRequestHeaders(
-                    mapOf(
-                        "Authorization" to "Bearer browser-token",
-                        "Origin" to "https://chat.z.ai",
-                        "Referer" to "https://chat.z.ai/auth",
-                        "User-Agent" to "CapturedWebView/1.0"
-                    )
-                )
-            }
-
-            val result = GlmUsageRepository(
-                webSessionStore = InMemoryGlmWebSessionStore(persisted),
-                webSessionEndpointUrl = endpointUrl
-            ).fetchUsagePayloadFromWebSession()
-
-            assertEquals("ok", result.diagnostic)
-            assertFalse(result.requiresAuth)
-            assertNotNull(result.payload)
-            assertEquals("zai_session=session-value; other=value", cookieHeader)
-            assertEquals("Bearer browser-token", authorizationHeader)
-            assertEquals("https://chat.z.ai", originHeader)
-            assertEquals("https://chat.z.ai/auth", refererHeader)
-            assertEquals("CapturedWebView/1.0", userAgentHeader)
-        } finally {
-            server.close()
-            serverThread.join(1_000L)
-        }
-    }
-
-    @Test
-    fun repositoryWebSessionFetchKeepsCookieOnlyStateAuthRequired() {
-        val persisted = linkedMapOf<String, Any>()
-        GlmUsageRepository(
-            webSessionStore = InMemoryGlmWebSessionStore(persisted),
-            webSessionEndpointUrl = "http://127.0.0.1:1/quota"
-        ).saveWebSessionCookieHeader("zai_session=stale-cookie")
-
-        val result = GlmUsageRepository(
-            webSessionStore = InMemoryGlmWebSessionStore(persisted),
-            webSessionEndpointUrl = "http://127.0.0.1:1/quota"
-        ).fetchUsagePayloadFromWebSession()
-
-        assertNull(result.payload)
-        assertTrue(result.requiresAuth)
         assertEquals("glm_web_authorization_missing", result.diagnostic)
     }
 
@@ -352,30 +246,5 @@ class GlmUsageFetcherTest {
               }
             }
         """.trimIndent().toByteArray(StandardCharsets.UTF_8)
-    }
-
-    private class InMemoryGlmWebSessionStore(
-        private val persisted: MutableMap<String, Any>
-    ) : GlmWebSessionStore {
-        override fun cookieHeader(): String? {
-            return persisted["cookie"] as? String
-        }
-
-        override fun saveCookieHeader(cookieHeader: String) {
-            persisted["cookie"] = cookieHeader
-        }
-
-        override fun requestHeaders(): Map<String, String> {
-            @Suppress("UNCHECKED_CAST")
-            return persisted["headers"] as? Map<String, String> ?: emptyMap()
-        }
-
-        override fun saveRequestHeaders(headers: Map<String, String>) {
-            persisted["headers"] = headers.toMap()
-        }
-
-        override fun clear() {
-            persisted.clear()
-        }
     }
 }

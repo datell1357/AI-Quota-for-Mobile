@@ -20,10 +20,8 @@ object ProviderWebCollectorScripts {
                     ((host == "chatgpt.com" || host.endsWith(".chatgpt.com")) && path == "/auth/login")
             ProviderId.GLM ->
                 host == "accounts.google.com" ||
-                    ((host == "z.ai" || host == "www.z.ai") &&
-                        (path.contains("login") || path.contains("signin") || path.contains("auth"))) ||
-                    (host == "chat.z.ai" &&
-                        (path.contains("login") || path.contains("signin")))
+                    ((host == "z.ai" || host == "www.z.ai" || host == "chat.z.ai") &&
+                        (path.contains("login") || path.contains("signin") || path.contains("auth")))
             ProviderId.OPENCODE ->
                 host == "accounts.google.com" ||
                     host == "github.com" &&

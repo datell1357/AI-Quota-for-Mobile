@@ -2,7 +2,6 @@ package com.aiquota.mobile.providers
 
 import com.aiquota.mobile.local.ProviderId
 import java.io.File
-import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -56,38 +55,6 @@ class ProviderNativeUsagePayloadFetcherTest {
             assertTrue("Claude native fetch must forward headers for $expected", claudeBlock.contains(expected))
         }
         assertTrue(claudeBlock.contains("fetchJson"))
-    }
-
-    @Test
-    fun claudeNativeUsagePayloadIgnoresDateLikeGenericSubscriptionMetadata() {
-        val payload = claudeNativeUsagePayloadForTest(
-            """
-            {
-              "name": "2026-07-05",
-              "display_name": "2026-07-05T09:30:00Z",
-              "title": "2026/07/05",
-              "label": "Jul 5, 2026"
-            }
-            """.trimIndent()
-        )
-
-        assertNotNull(payload)
-        assertFalse(JSONObject(payload!!).has("plan"))
-    }
-
-    @Test
-    fun claudeNativeUsagePayloadUsesExplicitSafeSubscriptionPlanMetadata() {
-        val payload = claudeNativeUsagePayloadForTest(
-            """
-            {
-              "name": "2026-07-05",
-              "plan_name": "Claude Max 5x"
-            }
-            """.trimIndent()
-        )
-
-        assertNotNull(payload)
-        assertEquals("Claude Max 5x", JSONObject(payload!!).getString("plan"))
     }
 
     @Test
@@ -808,37 +775,6 @@ class ProviderNativeUsagePayloadFetcherTest {
             url == "https://chatgpt.com/codex/cloud/settings/analytics" -> """
                 {"analytics": []}
             """.trimIndent()
-            else -> "{}"
-        }
-    }
-
-    private fun claudeNativeUsagePayloadForTest(subscriptionJson: String): String? {
-        val method = ProviderNativeUsagePayloadFetcher::class.java.getDeclaredMethod(
-            "fetchClaudePayload",
-            String::class.java,
-            Function1::class.java,
-            Function4::class.java
-        )
-        method.isAccessible = true
-        val result = method.invoke(
-            ProviderNativeUsagePayloadFetcher,
-            "test-agent",
-            { _: String -> mapOf("Authorization" to "Selected auth") },
-            { _: ProviderId, url: String, _: String, _: Map<String, String> ->
-                ProviderNativeJsonBridge.wrappedResponse(url, 200, claudeResponseFor(url, subscriptionJson)).toString()
-            }
-        )
-        val payloadField = result.javaClass.getDeclaredField("payload")
-        payloadField.isAccessible = true
-        return payloadField.get(result) as String?
-    }
-
-    private fun claudeResponseFor(url: String, subscriptionJson: String): String {
-        return when {
-            url.endsWith("/api/organizations") -> """[{"uuid":"org_test"}]"""
-            url.endsWith("/api/account_profile") -> """{"email":"claude@example.com"}"""
-            url.contains("/subscription_details") -> subscriptionJson
-            url.contains("/usage") -> """{"usage":{"five_hour":{"used_percent":25}}}"""
             else -> "{}"
         }
     }

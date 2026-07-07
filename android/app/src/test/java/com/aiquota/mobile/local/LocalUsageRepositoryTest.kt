@@ -3,8 +3,6 @@
 import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 class LocalUsageRepositoryTest {
@@ -315,48 +313,6 @@ class LocalUsageRepositoryTest {
         assertEquals("gemini:25_flash", recovered.lines.single().key)
         assertEquals("2.5 flash", recovered.lines.single().label)
         assertEquals("Plus", recovered.planLabel)
-    }
-
-    @Test
-    fun persistedClaudeDateLikePlanLabelsAreSanitizedAtRepositoryBoundary() {
-        val source = java.io.File("src/main/java/com/aiquota/mobile/local/LocalUsageRepository.kt").readText()
-        val readSnapshots = source.substringAfter("fun readSnapshots()")
-            .substringBefore("private fun clearStaleRefreshing")
-        val saveSnapshots = source.substringAfter("fun saveSnapshots(")
-            .substringBefore("fun markConnecting")
-        val sanitizer = Class.forName("com.aiquota.mobile.local.LocalUsageRepositoryKt")
-            .declaredMethods
-            .firstOrNull { it.name == "normalizeClaudePersistedPlanLabel" }
-
-        assertEquals(true, readSnapshots.contains(".map(::normalizeClaudePersistedPlanLabel)"))
-        assertEquals(true, saveSnapshots.contains(".map(::normalizeClaudePersistedPlanLabel)"))
-        assertNotNull(sanitizer)
-
-        val persisted = ProviderUsageSnapshot(
-            providerId = ProviderId.CLAUDE,
-            connectionState = ProviderConnectionState.CONNECTED,
-            refreshState = ProviderRefreshState.IDLE,
-            planLabel = "2026-07-28",
-            account = "claude-account",
-            updatedAt = "2026-07-05T06:30:00Z",
-            statusUpdatedAt = "2026-07-05T06:31:00Z",
-            message = "Connected",
-            lines = listOf(ProviderUsageLine(label = "Claude Weekly", remainingPercent = 0.88f))
-        )
-        val naturalDate = persisted.copy(planLabel = "Jul 28, 2026")
-        val validPro = persisted.copy(planLabel = "Claude Pro")
-        val validMax = persisted.copy(planLabel = "Max 5x")
-
-        val sanitizedDate = sanitizer!!.invoke(null, persisted) as ProviderUsageSnapshot
-        val sanitizedNaturalDate = sanitizer.invoke(null, naturalDate) as ProviderUsageSnapshot
-        val sanitizedPro = sanitizer.invoke(null, validPro) as ProviderUsageSnapshot
-        val sanitizedMax = sanitizer.invoke(null, validMax) as ProviderUsageSnapshot
-
-        assertNull(sanitizedDate.planLabel)
-        assertNull(sanitizedNaturalDate.planLabel)
-        assertEquals(persisted.copy(planLabel = null), sanitizedDate)
-        assertEquals("Pro", sanitizedPro.planLabel)
-        assertEquals("Max 5x", sanitizedMax.planLabel)
     }
 
     @Test

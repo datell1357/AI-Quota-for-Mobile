@@ -21,16 +21,6 @@ enum class ProviderPayloadSource(val label: String, val confidence: Float) {
 }
 
 object ProviderUsageNormalizer {
-    private val CLAUDE_NUMERIC_DATE_PLAN_PATTERN = Regex("""\d{4}[-/]\d{1,2}[-/]\d{1,2}([T\s].*)?""")
-    private val CLAUDE_NATURAL_DATE_PLAN_PATTERN = Regex(
-        """\b(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t|tember)?|oct(ober)?|nov(ember)?|dec(ember)?)\.?\s+\d{1,2},?\s+\d{4}\b""",
-        RegexOption.IGNORE_CASE
-    )
-    private val CLAUDE_PLAN_WINDOW_LABEL_PATTERN = Regex(
-        """\b(reset|resets|renew|renews|renewal|billing\s*(window|period|cycle))\b""",
-        RegexOption.IGNORE_CASE
-    )
-
     fun normalize(
         providerId: ProviderId,
         rawPayload: String,
@@ -521,9 +511,6 @@ object ProviderUsageNormalizer {
 
     private fun claudePlanLabel(value: String?): String? {
         val trimmed = value?.trim()?.takeIf { it.isNotBlank() && it != "null" } ?: return null
-        if (trimmed.matches(CLAUDE_NUMERIC_DATE_PLAN_PATTERN)) return null
-        if (CLAUDE_NATURAL_DATE_PLAN_PATTERN.containsMatchIn(trimmed)) return null
-        if (CLAUDE_PLAN_WINDOW_LABEL_PATTERN.containsMatchIn(trimmed)) return null
         val compact = trimmed.lowercase(Locale.US).replace(Regex("[^a-z0-9]+"), "")
         if (compact == "claudeunknown" || compact == "unknown") return null
         return when (compact) {

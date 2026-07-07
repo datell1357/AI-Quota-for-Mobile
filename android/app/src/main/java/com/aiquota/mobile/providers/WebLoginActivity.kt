@@ -14,7 +14,6 @@ import android.view.ViewGroup
 import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
-import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceError
@@ -43,7 +42,6 @@ open class WebLoginActivity : Activity() {
     private lateinit var webView: WebView
     private lateinit var rootContainer: FrameLayout
     private lateinit var titleView: TextView
-    private var mainWebViewDestroyed = false
     @Volatile
     private var finished = false
     private var firstPageLogged = false
@@ -62,12 +60,9 @@ open class WebLoginActivity : Activity() {
     private var glmNativeCollectionStarted = false
     private var glmAuthRecoveryAttempted = false
     private var glmCookieMismatchRecoveryAttempts = 0
-    private var glmMainFramePainted = false
-    private var glmBlankPageRecoveryAttempted = false
     private var glmRetainedWebSessionCookieHeader = ""
     private var glmAuthenticatedSessionSeen = false
     private var glmAuthenticatedChatResourceSeen = false
-    private var glmAuthorizedQuotaResourceSeen = false
     private val glmNativeFetchHeaders = mutableMapOf<String, String>()
     private var lastGoogleOAuthUrl: String? = null
     private var openCodePostLoginRedirected = false
@@ -160,9 +155,7 @@ open class WebLoginActivity : Activity() {
         }
         popupViews.toList().forEach(::destroyPopupWindow)
         if (::webView.isInitialized) {
-            if (!mainWebViewDestroyed) {
-                webView.destroy()
-            }
+            webView.destroy()
         }
         loginScope.cancel()
         clearClaudeNativeFetchHeaders()
@@ -269,19 +262,12 @@ open class WebLoginActivity : Activity() {
                 return
             }
             noteBridgePageUrl(url)
-            scheduleGlmBlankPageRecovery(view, url)
             rememberGoogleOAuthStartUrl(url)
             if (maybeRecoverGoogleCookieMismatch(view, url)) return
             if (handleLoginCompleteNavigation(view, url)) return
             if (maybeRedirectGeminiToUsage(view, url)) return
             if (maybeRedirectOpenCodeToGo(view, url)) return
             injectCollectorIfReady(view, url, "")
-        }
-
-        override fun onPageCommitVisible(view: WebView, url: String) {
-            if (providerId != ProviderId.GLM) return
-            glmMainFramePainted = true
-            Log.i("AIQuotaLogin", "provider=glm pageCommitVisible host=${hostOf(url)}${pathOf(url)}")
         }
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -327,7 +313,6 @@ open class WebLoginActivity : Activity() {
                 view.post {
                     val pageUrl = view.url ?: GlmProviderUrls.WEB_USAGE_URL
                     if (maybeRedirectGlmAuthenticatedResourceToUsage(view, pageUrl)) return@post
-                    if (!glmAuthorizedQuotaResourceSeen) return@post
                     maybeStartGlmNativeCollection(
                         view,
                         GlmUsagePageRoutes.nativeCollectionUrlAfterAuthenticatedResource(
@@ -513,49 +498,6 @@ open class WebLoginActivity : Activity() {
                 failKeepingPrevious("Provider login returned HTTP ${errorResponse.statusCode}.", "main_frame_http_${errorResponse.statusCode}")
             }
         }
-
-        override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
-            Log.e(
-                "AIQuotaLogin",
-                "provider=${providerId.storageId} renderProcessGone didCrash=${detail.didCrash()}"
-            )
-            if (::rootContainer.isInitialized) {
-                rootContainer.removeView(view)
-            }
-            if (view === webView) {
-                mainWebViewDestroyed = true
-            } else {
-                popupViews.remove(view)
-            }
-            view.destroy()
-            failKeepingPrevious("Provider login WebView renderer stopped.", "webview_renderer_gone")
-            return true
-        }
-    }
-
-    private fun scheduleGlmBlankPageRecovery(view: WebView, url: String) {
-        if (providerId != ProviderId.GLM || url == "about:blank") return
-        glmMainFramePainted = false
-        val expectedUrl = url
-        view.postDelayed(
-            {
-                if (finished || providerId != ProviderId.GLM || glmMainFramePainted || glmNativeCollectionStarted) {
-                    return@postDelayed
-                }
-                if (currentBridgePageUrl != expectedUrl) return@postDelayed
-                if (glmBlankPageRecoveryAttempted) {
-                    Log.w("AIQuotaLogin", "provider=glm blankPageTimeout url=${safeUrlForLog(expectedUrl)}")
-                    failKeepingPrevious("GLM login page stayed blank. Please retry web login.", "glm_blank_page_timeout")
-                    return@postDelayed
-                }
-                glmBlankPageRecoveryAttempted = true
-                Log.w("AIQuotaLogin", "provider=glm blankPageReload url=${safeUrlForLog(expectedUrl)}")
-                view.stopLoading()
-                view.clearCache(true)
-                view.loadUrl(expectedUrl)
-            },
-            GLM_BLANK_PAGE_RECOVERY_DELAY_MS
-        )
     }
 
     private fun handleLoginCompleteNavigation(view: WebView, url: String): Boolean {
@@ -988,7 +930,7 @@ open class WebLoginActivity : Activity() {
         val isUsagePage = GlmUsagePageRoutes.isUsageUrl(url)
         val isMyPlanPage = GlmLoginPostRedirects.usageRedirectUrl(providerId, url) != null
         if (!isUsagePage && !isMyPlanPage) return false
-        if (!glmAuthorizedQuotaResourceSeen) return false
+        if (isUsagePage && !hasGlmNativeFetchHeaders() && !glmAuthenticatedChatResourceSeen) return false
         if (ProviderWebCollectorScripts.isRefreshLoginPage(providerId, url, pageText)) return false
         glmNativeCollectionStarted = true
         CookieManager.getInstance().flush()
@@ -1018,7 +960,6 @@ open class WebLoginActivity : Activity() {
         glmRetainedWebSessionCookieHeader = ""
         glmAuthenticatedSessionSeen = false
         glmAuthenticatedChatResourceSeen = false
-        glmAuthorizedQuotaResourceSeen = false
         glmNativeFetchHeaders.clear()
         collectorInjectionKeys.clear()
         Log.w("AIQuotaLogin", "provider=glm authRequiredRecovery=login")
@@ -1061,12 +1002,13 @@ open class WebLoginActivity : Activity() {
         if (hasAuthorization && isGlmTrustedAuthenticatedResource(host, path)) {
             glmAuthenticatedChatResourceSeen = true
         }
-        if (hasAuthorization && GlmUsagePageRoutes.isAuthorizedQuotaResource(url)) {
-            glmAuthorizedQuotaResourceSeen = true
+        if (hasAuthorization && isGlmReplayableWebSessionResource(host, path)) {
             glmNativeFetchHeaders.clear()
             glmNativeFetchHeaders.putAll(headers)
             GlmUsageRepository(applicationContext).saveWebSessionRequestHeaders(headers)
             saveGlmWebSessionCookieHeader("auth_header_resource", preferCurrent = true)
+        } else if (host == "api.z.ai" && glmNativeFetchHeaders.isEmpty()) {
+            glmNativeFetchHeaders.putAll(headers)
         }
         Log.i(
             "AIQuotaLogin",
@@ -1075,15 +1017,16 @@ open class WebLoginActivity : Activity() {
         return true
     }
 
+    private fun isGlmReplayableWebSessionResource(host: String, path: String): Boolean {
+        return host == "api.z.ai"
+    }
+
     private fun isGlmTrustedAuthenticatedResource(host: String, path: String): Boolean {
         return host == "api.z.ai" || (host == "chat.z.ai" && isGlmChatAuthValidationResource(path))
     }
 
     private fun isGlmChatAuthValidationResource(path: String): Boolean {
-        return path.trimEnd('/') in setOf(
-            "/api/v1/auths",
-            "/api/v1/users/user/settings/update"
-        )
+        return path.trimEnd('/') == "/api/v1/auths"
     }
 
     private fun isGlmApiResource(url: String): Boolean {
@@ -1091,6 +1034,10 @@ open class WebLoginActivity : Activity() {
         val host = uri.host.orEmpty().lowercase(Locale.US)
         val path = uri.path.orEmpty()
         return host == "api.z.ai" || host == "chat.z.ai" && path.startsWith("/api/")
+    }
+
+    private fun hasGlmNativeFetchHeaders(): Boolean {
+        return glmNativeFetchHeaders.keys.any { it.equals("Authorization", ignoreCase = true) }
     }
 
     private fun maybeRedirectOpenCodeToGo(view: WebView, url: String): Boolean {
@@ -1839,7 +1786,6 @@ open class WebLoginActivity : Activity() {
         private const val GEMINI_NETWORK_CHANGED_RETRY_DELAY_MS = 750L
         private const val GLM_COOKIE_MISMATCH_MAX_RECOVERIES = 2
         private const val GLM_AUTHENTICATED_COOKIE_MIN_COUNT = 2
-        private const val GLM_BLANK_PAGE_RECOVERY_DELAY_MS = 12_000L
         private const val CODEX_NATIVE_HEADER_FALLBACK_KEY = "*"
         private const val CLAUDE_NATIVE_HEADER_WILDCARD_KEY = "claude:*"
         private const val CLAUDE_ABOUT_BLANK_BASE_URL = "https://claude.ai/"
