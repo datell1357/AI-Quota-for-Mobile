@@ -188,7 +188,7 @@ class GlmWebSessionClearPolicyTest {
 
         assertTrue(service.contains("if (job.providerId == ProviderId.GLM)"))
         assertTrue(service.contains("if (connectionMode == GlmConnectionMode.WEB_OAUTH)"))
-        assertTrue(service.contains("repository.fetchUsagePayloadFromWebSession()"))
+        assertTrue(service.contains("repository.fetchUsagePayloadFromWebSession(includePlan = !automaticRefresh)"))
         assertTrue(repository.contains("class GlmWebSessionRequestHeaderStore"))
         assertTrue(repository.contains("const val STORE_NAME = \"ai_quota_glm_web_session_headers\""))
         assertTrue(repository.contains("fun saveWebSessionRequestHeaders(headers: Map<String, String>)"))

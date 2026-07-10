@@ -303,7 +303,7 @@ class GlmUsageFetcherTest {
     }
 
     @Test
-    fun webSessionFetchAddsPlanFromSubscriptionResponseWithoutBreakingUsage() {
+    fun webSessionFetchAddsPlanFromExplicitTierResponseWithoutBreakingUsage() {
         val paths = mutableListOf<String>()
         val server = ServerSocket().apply {
             reuseAddress = true
@@ -322,7 +322,7 @@ class GlmUsageFetcherTest {
                     socket.getOutputStream().writeHttpResponse(
                         status = HttpURLConnection.HTTP_OK,
                         reason = "OK",
-                        body = if (requestLine.contains("/quota")) quotaBody() else subscriptionBody("Coding Plan Pro")
+                        body = if (requestLine.contains("/quota")) quotaBody() else """{"data":[{"subscription":{"name":"GLM Coding Pro Plan"},"productName":"GLM Coding Pro Plan"}]}""".toByteArray(StandardCharsets.UTF_8)
                     )
                 }
             }
@@ -338,12 +338,111 @@ class GlmUsageFetcherTest {
 
             assertEquals("ok", result.diagnostic)
             assertFalse(result.requiresAuth)
-            assertEquals("Coding Plan Pro", payload.getString("plan"))
+            assertEquals("GLM Coding Pro Plan", payload.getString("plan"))
             assertEquals(
                 listOf(
                     "/api/monitor/usage/quota/limit",
-                    "/manage-apikey/coding-plan/personal/my-plan"
+                    "/api/biz/subscription/list"
                 ),
+                paths
+            )
+            assertEquals(3, payload.getJSONObject("data").getJSONArray("limits").length())
+        } finally {
+            server.close()
+            serverThread.join(1_000L)
+        }
+    }
+
+    @Test
+    fun webSessionFetchIgnoresDateOnlyAndGenericPlanFields() {
+        val paths = mutableListOf<String>()
+        val server = ServerSocket().apply {
+            reuseAddress = true
+            bind(InetSocketAddress("127.0.0.1", 0))
+        }
+        val serverThread = thread(name = "glm-web-session-plan-reject-test-server") {
+            repeat(2) {
+                server.accept().use { socket ->
+                    val request = socket.getInputStream().bufferedReader(StandardCharsets.UTF_8)
+                    val requestLine = request.readLine().orEmpty()
+                    paths += requestLine.split(" ").getOrNull(1).orEmpty()
+                    while (true) {
+                        val line = request.readLine() ?: break
+                        if (line.isEmpty()) break
+                    }
+                    socket.getOutputStream().writeHttpResponse(
+                        status = HttpURLConnection.HTTP_OK,
+                        reason = "OK",
+                        body = if (requestLine.contains("/quota")) quotaBody() else invalidPlanBody()
+                    )
+                }
+            }
+        }
+
+        try {
+            val result = GlmUsageFetcher.fetchUsagePayloadWithCookie(
+                cookieHeader = "zai_session=session-value",
+                endpointUrl = "http://127.0.0.1:${server.localPort}/api/monitor/usage/quota/limit",
+                requestHeaders = mapOf("Authorization" to "Bearer [REDACTED:Bearer token]")
+            )
+            val payload = JSONObject(result.payload!!)
+
+            assertEquals("ok", result.diagnostic)
+            assertFalse(result.requiresAuth)
+            assertFalse(payload.has("plan"))
+            assertEquals(3, payload.getJSONObject("data").getJSONArray("limits").length())
+            assertEquals(
+                listOf(
+                    "/api/monitor/usage/quota/limit",
+                    "/api/biz/subscription/list"
+                ),
+                paths
+            )
+        } finally {
+            server.close()
+            serverThread.join(1_000L)
+        }
+    }
+
+    @Test
+    fun webSessionFetchSkipsPlanWhenIncludePlanIsFalseAndKeepsQuotaRows() {
+        val paths = mutableListOf<String>()
+        val server = ServerSocket().apply {
+            reuseAddress = true
+            bind(InetSocketAddress("127.0.0.1", 0))
+        }
+        val serverThread = thread(name = "glm-web-session-no-plan-test-server") {
+            server.accept().use { socket ->
+                val request = socket.getInputStream().bufferedReader(StandardCharsets.UTF_8)
+                val requestLine = request.readLine().orEmpty()
+                paths += requestLine.split(" ").getOrNull(1).orEmpty()
+                while (true) {
+                    val line = request.readLine() ?: break
+                    if (line.isEmpty()) break
+                }
+                socket.getOutputStream().writeHttpResponse(
+                    status = HttpURLConnection.HTTP_OK,
+                    reason = "OK",
+                    body = quotaBody()
+                )
+            }
+        }
+
+        try {
+            val result = GlmUsageFetcher.fetchUsagePayloadWithCookie(
+                cookieHeader = "zai_session=session-value",
+                endpointUrl = "http://127.0.0.1:${server.localPort}/api/monitor/usage/quota/limit",
+                requestHeaders = mapOf("Authorization" to "Bearer [REDACTED:Bearer token]"),
+                includePlan = false
+            )
+            val payload = JSONObject(result.payload!!)
+
+            assertEquals("ok", result.diagnostic)
+            assertFalse(result.requiresAuth)
+            assertFalse(payload.has("plan"))
+            assertEquals(3, payload.getJSONObject("data").getJSONArray("limits").length())
+            assertEquals(
+                listOf("/api/monitor/usage/quota/limit"),
                 paths
             )
         } finally {
@@ -421,6 +520,18 @@ class GlmUsageFetcherTest {
                     "usage": 100,
                     "currentValue": 10,
                     "percentage": 10
+                  },
+                  {
+                    "type": "TOKENS_LIMIT",
+                    "usage": 200,
+                    "currentValue": 20,
+                    "percentage": 10
+                  },
+                  {
+                    "type": "TIME_LIMIT",
+                    "usage": 300,
+                    "currentValue": 30,
+                    "percentage": 10
                   }
                 ]
               }
@@ -447,12 +558,27 @@ class GlmUsageFetcherTest {
         """.trimIndent().toByteArray(StandardCharsets.UTF_8)
     }
 
-    private fun subscriptionBody(plan: String): ByteArray {
+    private fun explicitTierBody(plan: String): ByteArray {
         return """
             {
               "code": 200,
               "data": {
-                "plan": "$plan"
+                "tier": "$plan"
+              }
+            }
+        """.trimIndent().toByteArray(StandardCharsets.UTF_8)
+    }
+
+    private fun invalidPlanBody(): ByteArray {
+        return """
+            {
+              "code": 200,
+              "data": {
+                "tier": "2026-07-10",
+                "subscription": {
+                  "name": "Billing",
+                  "reset": "2026-07-10"
+                }
               }
             }
         """.trimIndent().toByteArray(StandardCharsets.UTF_8)

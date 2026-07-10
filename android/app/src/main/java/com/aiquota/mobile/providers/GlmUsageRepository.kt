@@ -20,6 +20,7 @@ object GlmProviderUrls {
     const val WEB_OAUTH_URL = "https://z.ai/manage-apikey/coding-plan/personal/my-plan"
     const val WEB_USAGE_URL = "https://z.ai/manage-apikey/coding-plan/personal/usage"
     const val API_QUOTA_URL = "https://api.z.ai/api/monitor/usage/quota/limit"
+    const val API_SUBSCRIPTION_URL = "https://api.z.ai/api/biz/subscription/list"
     val WEB_COOKIE_URLS = listOf(
         "https://z.ai",
         "https://www.z.ai",
@@ -28,7 +29,8 @@ object GlmProviderUrls {
         WEB_LOGIN_URL,
         WEB_OAUTH_URL,
         WEB_USAGE_URL,
-        API_QUOTA_URL
+        API_QUOTA_URL,
+        API_SUBSCRIPTION_URL
     )
 }
 
@@ -304,13 +306,14 @@ class GlmUsageRepository private constructor(
         return GlmUsageFetcher.fetchUsagePayload(apiKey)
     }
 
-    fun fetchUsagePayloadFromWebSession(): GlmUsageResult {
+    fun fetchUsagePayloadFromWebSession(includePlan: Boolean = true): GlmUsageResult {
         val cookieHeader = dependencies.webSessionStore.cookieHeader()
             ?: return GlmUsageResult(null, requiresAuth = true, diagnostic = "glm_web_cookie_missing")
         return GlmUsageFetcher.fetchUsagePayloadWithCookie(
             cookieHeader = cookieHeader,
             endpointUrl = dependencies.webSessionEndpointUrl,
-            requestHeaders = dependencies.webSessionStore.requestHeaders()
+            requestHeaders = dependencies.webSessionStore.requestHeaders(),
+            includePlan = includePlan
         )
     }
 }
@@ -337,15 +340,17 @@ object GlmUsageFetcher {
 
     fun fetchUsagePayloadWithCookie(
         cookieHeader: String,
-        requestHeaders: Map<String, String> = emptyMap()
+        requestHeaders: Map<String, String> = emptyMap(),
+        includePlan: Boolean = true
     ): GlmUsageResult {
-        return fetchUsagePayloadWithCookie(cookieHeader, GlmProviderUrls.API_QUOTA_URL, requestHeaders)
+        return fetchUsagePayloadWithCookie(cookieHeader, GlmProviderUrls.API_QUOTA_URL, requestHeaders, includePlan)
     }
 
     internal fun fetchUsagePayloadWithCookie(
         cookieHeader: String,
         endpointUrl: String,
-        requestHeaders: Map<String, String> = emptyMap()
+        requestHeaders: Map<String, String> = emptyMap(),
+        includePlan: Boolean = true
     ): GlmUsageResult {
         val trimmedCookieHeader = cookieHeader.trim()
         if (trimmedCookieHeader.isBlank()) {
@@ -360,7 +365,7 @@ object GlmUsageFetcher {
         val usageResult = executeFetch(endpointUrl, accountLabel = "z.ai web session") {
             applyWebSessionHeaders(trimmedCookieHeader, requestHeaders)
         }
-        if (usageResult.payload == null || usageResult.diagnostic != "ok") return usageResult
+        if (usageResult.payload == null || usageResult.diagnostic != "ok" || !includePlan) return usageResult
         val plan = fetchWebSessionPlan(trimmedCookieHeader, endpointUrl, requestHeaders)
         return usageResult.withOptionalPlan(plan)
     }
@@ -402,29 +407,98 @@ object GlmUsageFetcher {
             val stream = if (status in 200..299) connection.inputStream else connection.errorStream
             val text = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
             connection.disconnect()
-            if (status !in 200..299) return null
-            val json = runCatching { JSONObject(text) }.getOrNull() ?: return null
-            glmPlanFromJson(json)
+            if (status !in 200..299) {
+                logPlanProvenance(status, null, false, text)
+                return null
+            }
+            val json = runCatching { JSONObject(text) }.getOrNull()
+            val plan = json?.let(::glmPlanFromJson)
+            logPlanProvenance(status, json, plan != null, text)
+            plan
         }.getOrNull()
+    }
+
+    private fun logPlanProvenance(status: Int, source: JSONObject?, planPresent: Boolean, text: String) {
+        ProviderPlanProvenanceDiagnostics.log(
+            ProviderPlanProvenanceDiagnostics.Record(
+                provider = "glm",
+                endpointLabel = "glm_subscription_list",
+                httpStatus = status,
+                keyPath = "${'$'}.data",
+                jsonType = ProviderPlanProvenanceDiagnostics.jsonType(source),
+                present = source != null,
+                planPresent = planPresent,
+                accountPresent = false,
+                byteCount = text.toByteArray(StandardCharsets.UTF_8).size,
+                endpointCount = 2,
+                requestCountDelta = 0,
+                transformTarget = "T5_GLM_OBSERVED_PLAN_SHAPE",
+                fallbackPolicy = "PRESERVE_USAGE_WITHOUT_PLAN",
+                protectedFlow = "GlmUsageFetcher.fetchWebSessionPlan",
+                keyCount = ProviderPlanProvenanceDiagnostics.keyCount(source)
+            )
+        )
     }
 
     private fun glmPlanUrlFor(quotaEndpointUrl: String): String {
         val url = runCatching { URL(quotaEndpointUrl) }.getOrNull() ?: return GlmProviderUrls.WEB_OAUTH_URL
         if (url.host == "127.0.0.1" || url.host == "localhost") {
-            return URL(url.protocol, url.host, url.port, "/manage-apikey/coding-plan/personal/my-plan").toString()
+            return URL(url.protocol, url.host, url.port, "/api/biz/subscription/list").toString()
         }
-        return GlmProviderUrls.WEB_OAUTH_URL
+        return GlmProviderUrls.API_SUBSCRIPTION_URL
     }
 
     private fun glmPlanFromJson(json: JSONObject): String? {
-        return listOf(
-            json.optString("plan"),
-            json.optString("productName"),
-            json.optJSONObject("data")?.optString("plan"),
-            json.optJSONObject("data")?.optString("productName"),
-            json.optJSONObject("data")?.optJSONObject("plan")?.optString("name"),
-            json.optJSONObject("data")?.optJSONObject("subscription")?.optString("name")
-        ).firstOrNull { !it.isNullOrBlank() && it != "null" }
+        return firstGlmPlanCandidate(json)
+    }
+
+    private fun firstGlmPlanCandidate(value: Any?, allowString: Boolean = false): String? {
+        return when (value) {
+            is JSONObject -> {
+                val keys = value.keys()
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    val child = value.opt(key)
+                    if (allowString && key.equals("name", true)) {
+                        firstGlmPlanCandidate(child, true)?.let { return it }
+                    }
+                    if (isGlmPlanValueKey(key) || isGlmPlanContainerKey(key)) {
+                        firstGlmPlanCandidate(child, isGlmPlanValueKey(key))?.let { return it }
+                    } else {
+                        firstGlmPlanCandidate(child, false)?.let { return it }
+                    }
+                }
+                null
+            }
+            is org.json.JSONArray -> {
+                for (index in 0 until value.length()) {
+                    firstGlmPlanCandidate(value.opt(index), allowString)?.let { return it }
+                }
+                null
+            }
+            is String -> value.trim().takeIf { allowString && isSafeGlmPlanLabel(it) }
+            else -> null
+        }
+    }
+
+    private fun isGlmPlanValueKey(value: String): Boolean {
+        return value.equals("plan", true) || value.equals("tier", true) ||
+            value.equals("package", true) || value.equals("productName", true) ||
+            value.equals("product_name", true) || value.equals("planName", true) ||
+            value.equals("plan_name", true) || value.equals("subscriptionName", true) ||
+            value.equals("subscription_name", true)
+    }
+
+    private fun isGlmPlanContainerKey(value: String): Boolean {
+        return value.equals("plan", true) || value.equals("subscription", true) ||
+            value.equals("product", true) || value.equals("package", true)
+    }
+
+    private fun isSafeGlmPlanLabel(value: String): Boolean {
+        val trimmed = value.trim()
+        if (trimmed.isBlank() || trimmed.equals("null", ignoreCase = true)) return false
+        val compact = trimmed.lowercase().filter(Char::isLetterOrDigit)
+        return compact.contains("lite") || compact.contains("pro") || compact.contains("max")
     }
 
     private fun GlmUsageResult.withOptionalPlan(plan: String?): GlmUsageResult {

@@ -180,7 +180,7 @@ class ProviderBackgroundRefreshServicePolicyTest {
             .substringBefore("val requestId = ++nextRequestId")
 
         assertTrue(nativeCollector.contains("connectionMode()"))
-        assertTrue(nativeCollector.contains("fetchUsagePayloadFromWebSession()"))
+        assertTrue(nativeCollector.contains("fetchUsagePayloadFromWebSession(includePlan = !automaticRefresh)"))
         assertTrue(nativeCollector.contains("collectGlmWebOAuthUsage("))
         assertTrue(nativeCollector.contains("GlmIsolatedWebSession.collectUsage("))
         assertTrue(nativeCollector.contains("fallbackGate.canRunFallback(automaticRefresh)"))
@@ -197,7 +197,7 @@ class ProviderBackgroundRefreshServicePolicyTest {
             .substringBefore("object GlmUsageFetcher")
 
         assertTrue(storedFetch.contains("requiresAuth = true, diagnostic = \"glm_web_cookie_missing\""))
-        assertTrue(renewal.indexOf("repository.fetchUsagePayloadFromWebSession()") < renewal.indexOf("fallbackGate.canRunFallback(automaticRefresh)"))
+        assertTrue(renewal.indexOf("repository.fetchUsagePayloadFromWebSession(includePlan = !automaticRefresh)") < renewal.indexOf("fallbackGate.canRunFallback(automaticRefresh)"))
         assertTrue(renewal.indexOf("fallbackGate.recordFallbackAttempt()") < renewal.indexOf("GlmIsolatedWebSession.collectUsage("))
         assertFalse(renewal.substringBefore("GlmIsolatedWebSession.collectUsage(").contains("repository.failKeepingPrevious"))
     }

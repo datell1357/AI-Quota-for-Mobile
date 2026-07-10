@@ -499,7 +499,7 @@ class ProviderBackgroundRefreshService : Service() {
         automaticRefresh: Boolean
     ): ServiceRefreshOutcome {
         val result = withContext(Dispatchers.IO) {
-            repository.fetchUsagePayloadFromWebSession()
+            repository.fetchUsagePayloadFromWebSession(includePlan = !automaticRefresh)
         }
         val snapshot = result.payload?.let {
             ProviderUsageNormalizer.normalize(
