@@ -167,6 +167,78 @@ class ProviderWebCollectorScriptsTest {
         assertFalse(script.contains("c.text()"))
         assertFalse(script.contains("visible-dom"))
     }
+    @Test
+    fun claudeAboutBlankDebugPlanStructureCallbackUsesOnlyFixedPaths() {
+        val script = ProviderWebCollectorScripts.claudeAboutBlankApiPayload(
+            planStructureDebugCallbackEnabled = true
+        )
+        val callback = script
+            .substringAfter("var claudePlanStructureContainerKeys = [")
+            .substringBefore("function isRejectedClaudePlanValue")
+
+        assertTrue(script.contains("var planStructureDebugCallbackEnabled = true;"))
+        assertTrue(script.contains("postClaudeSubscriptionDetailsPlanStructure(subscription && subscription.json);"))
+        assertTrue(
+            script.indexOf("results.subscription = subscription;") <
+                script.indexOf("postClaudeSubscriptionDetailsPlanStructure(subscription && subscription.json);")
+        )
+        assertTrue(callback.contains("if (!planStructureDebugCallbackEnabled || !c.postClaudeSubscriptionDetailsPlanStructure) return;"))
+        assertTrue(callback.contains("routeId: \"claude_subscription_details\""))
+        assertTrue(callback.contains("requestCountDelta: 0"))
+        assertTrue(callback.contains("rootKeyCount: rootIsObject ? Object.keys(source).length : 0"))
+        assertTrue(callback.contains("c.postClaudeSubscriptionDetailsPlanStructure(JSON.stringify({"))
+        listOf(
+            "subscription",
+            "subscription_details",
+            "subscriptionDetails",
+            "billing",
+            "plan_info",
+            "planInfo",
+            "plan",
+            "plan_name",
+            "planName",
+            "plan_type",
+            "planType",
+            "subscription_plan",
+            "subscriptionPlan",
+            "tier",
+            "membershipType",
+            "product_name",
+            "productName"
+        ).forEach { fixedPathSegment ->
+            assertTrue(callback.contains("\"$fixedPathSegment\""))
+        }
+        assertFalse(callback.contains("document."))
+        assertFalse(callback.contains("pageText"))
+        assertFalse(callback.contains("innerText"))
+        assertFalse(callback.contains("textContent"))
+        assertFalse(callback.contains("response."))
+        assertFalse(callback.contains("rawBody"))
+        assertFalse(callback.contains("rawPayload"))
+        assertFalse(callback.contains("JSON.stringify(source)"))
+        assertFalse(callback.contains("fetch("))
+        assertFalse(callback.contains("JSON.parse"))
+        assertFalse(callback.contains("String("))
+        assertFalse(callback.contains("Object.keys(source).forEach"))
+    }
+
+    @Test
+    fun claudeAboutBlankCollectorSkipsRejectedPlanValuesBeforeLaterValidTier() {
+        val script = ProviderWebCollectorScripts.build(ProviderId.CLAUDE, emptyMap(), "", pageUrl = "about:blank")
+
+        assertTrue(script.contains("function firstClaudePlanValue(json, keys)"))
+        assertTrue(script.contains("function collectClaudePlanValues(value, key, depth, values)"))
+        assertTrue(script.contains("collectClaudePlanValues(json, keys[i], 0, values)"))
+        assertTrue(script.contains("function isRejectedClaudePlanValue(value)"))
+        assertTrue(script.contains("/^\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}(?:[T\\s].*)?$/.test(text)"))
+        assertTrue(script.contains("jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t|tember)?|oct(ober)?|nov(ember)?|dec(ember)?"))
+        assertTrue(script.contains("reset|resets|renew|renews|renewal|billing\\s*(window|period|cycle)"))
+        assertTrue(script.contains("/^\\d+(?:[.,]\\d+)?$/.test(text)"))
+        assertTrue(script.contains("compact === \"unknown\""))
+        assertTrue(script.contains("compact === \"claudeunknown\""))
+        assertTrue(script.contains("plan: firstClaudePlanValue(results.subscription && results.subscription.json"))
+        assertFalse(script.contains("plan: firstString(results.subscription && results.subscription.json"))
+    }
 
     @Test
     fun claudeAboutBlankCollectorReplaysCapturedFetchHeaders() {

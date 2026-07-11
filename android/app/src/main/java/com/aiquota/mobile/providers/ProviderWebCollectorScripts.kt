@@ -1,5 +1,6 @@
 package com.aiquota.mobile.providers
 
+import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.local.ProviderId
 import java.net.URI
 import java.util.Locale
@@ -457,7 +458,10 @@ object ProviderWebCollectorScripts {
         }
         val collectorScript = if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
             when (providerId) {
-                ProviderId.CLAUDE -> claudeAboutBlankApiPayload(providerRequestHeaders)
+                ProviderId.CLAUDE -> claudeAboutBlankApiPayload(
+                    requestHeaders = providerRequestHeaders,
+                    planStructureDebugCallbackEnabled = BuildConfig.DEBUG
+                )
                 ProviderId.CODEX -> codexAboutBlankJsonPayload(forceCollectorStart = awaitInteractiveLoginUsage)
                 else -> nativeProviderPayload(providerId)
             }
@@ -672,7 +676,10 @@ object ProviderWebCollectorScripts {
         """.trimIndent()
     }
 
-    internal fun claudeAboutBlankApiPayload(requestHeaders: Map<String, String> = emptyMap()): String {
+    internal fun claudeAboutBlankApiPayload(
+        requestHeaders: Map<String, String> = emptyMap(),
+        planStructureDebugCallbackEnabled: Boolean = BuildConfig.DEBUG
+    ): String {
         val requestHeadersJson = JSONObject().also { json ->
             requestHeaders.forEach { (name, value) ->
                 if (name.isNotBlank() && value.isNotBlank()) json.put(name, value)
@@ -684,6 +691,7 @@ object ProviderWebCollectorScripts {
               var c = window.__AIQuotaCollector;
               if (!c) return;
               var replayHeaders = $requestHeadersJson;
+              var planStructureDebugCallbackEnabled = $planStructureDebugCallbackEnabled;
               var maxAttempts = 4;
               var retryDelayMs = 2500;
               function first(object, keys) {
@@ -859,6 +867,110 @@ object ProviderWebCollectorScripts {
                 });
                 return summary;
               }
+              var claudePlanStructureContainerKeys = [
+                "subscription",
+                "subscription_details",
+                "subscriptionDetails",
+                "billing",
+                "plan_info",
+                "planInfo"
+              ];
+              var claudePlanStructureFieldKeys = [
+                "plan",
+                "plan_name",
+                "planName",
+                "plan_type",
+                "planType",
+                "subscription_plan",
+                "subscriptionPlan",
+                "tier",
+                "membershipType",
+                "product_name",
+                "productName"
+              ];
+              function claudePlanStructureJsonType(value) {
+                if (value === undefined) return "missing";
+                if (value === null) return "null";
+                if (Array.isArray(value)) return "array";
+                return typeof value === "object" ? "object" : typeof value;
+              }
+              function claudePlanStructurePropertyRecord(pathId, object, key) {
+                var present = !!object && typeof object === "object" && !Array.isArray(object) &&
+                  Object.prototype.hasOwnProperty.call(object, key);
+                return {
+                  pathId: pathId,
+                  jsonType: present ? claudePlanStructureJsonType(object[key]) : "missing",
+                  present: present
+                };
+              }
+              function postClaudeSubscriptionDetailsPlanStructure(source) {
+                if (!planStructureDebugCallbackEnabled || !c.postClaudeSubscriptionDetailsPlanStructure) return;
+                var rootPresent = source !== null && source !== undefined;
+                var rootIsObject = !!source && typeof source === "object" && !Array.isArray(source);
+                var paths = [{
+                  pathId: "root",
+                  jsonType: claudePlanStructureJsonType(source),
+                  present: rootPresent
+                }];
+                claudePlanStructureFieldKeys.forEach(function(field) {
+                  paths.push(claudePlanStructurePropertyRecord("root." + field, rootIsObject ? source : null, field));
+                });
+                claudePlanStructureContainerKeys.forEach(function(container) {
+                  var containerRecord = claudePlanStructurePropertyRecord(container, rootIsObject ? source : null, container);
+                  paths.push(containerRecord);
+                  claudePlanStructureFieldKeys.forEach(function(field) {
+                    paths.push(claudePlanStructurePropertyRecord(
+                      container + "." + field,
+                      containerRecord.present ? source[container] : null,
+                      field
+                    ));
+                  });
+                });
+                c.postClaudeSubscriptionDetailsPlanStructure(JSON.stringify({
+                  routeId: "claude_subscription_details",
+                  rootJsonType: claudePlanStructureJsonType(source),
+                  rootPresent: rootPresent,
+                  rootKeyCount: rootIsObject ? Object.keys(source).length : 0,
+                  requestCountDelta: 0,
+                  paths: paths
+                }));
+              }
+              function isRejectedClaudePlanValue(value) {
+                var text = String(value || "").trim();
+                var compact = text.toLowerCase().replace(/[^a-z0-9]+/g, "");
+                return !text
+                  || /^\d{4}[-/]\d{1,2}[-/]\d{1,2}(?:[T\s].*)?$/.test(text)
+                  || /\b(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t|tember)?|oct(ober)?|nov(ember)?|dec(ember)?)\.?\s+\d{1,2},?\s+\d{4}\b/i.test(text)
+                  || /\b(reset|resets|renew|renews|renewal|billing\s*(window|period|cycle))\b/i.test(text)
+                  || /^\d+(?:[.,]\d+)?$/.test(text)
+                  || compact === "unknown"
+                  || compact === "claudeunknown";
+              }
+              function firstClaudePlanValue(json, keys) {
+                for (var i = 0; i < keys.length; i++) {
+                  var values = [];
+                  collectClaudePlanValues(json, keys[i], 0, values);
+                  for (var valueIndex = 0; valueIndex < values.length; valueIndex++) {
+                    if (!isRejectedClaudePlanValue(values[valueIndex])) return values[valueIndex];
+                  }
+                }
+                return null;
+              }
+              function collectClaudePlanValues(value, key, depth, values) {
+                if (!value || depth > 7) return;
+                if (Array.isArray(value)) {
+                  for (var index = 0; index < value.length; index++) {
+                    collectClaudePlanValues(value[index], key, depth + 1, values);
+                  }
+                  return;
+                }
+                if (typeof value !== "object") return;
+                var direct = value[key];
+                if (typeof direct === "string" && direct.length > 0 && direct.length < 160) values.push(direct);
+                Object.keys(value).forEach(function(childKey) {
+                  collectClaudePlanValues(value[childKey], key, depth + 1, values);
+                });
+              }
               function probeClaudeSession() {
                 var results = {};
                 return fetchClaudeJson("https://claude.ai/api/organizations").then(function(organizations) {
@@ -880,6 +992,7 @@ object ProviderWebCollectorScripts {
                   var encodedOrgId = encodeURIComponent(orgId);
                   return fetchClaudeJson("https://claude.ai/api/organizations/" + encodedOrgId + "/subscription_details").then(function(subscription) {
                     results.subscription = subscription;
+                    postClaudeSubscriptionDetailsPlanStructure(subscription && subscription.json);
                     return fetchClaudeJson("https://claude.ai/api/organizations/" + encodedOrgId + "/usage");
                   }).then(function(usage) {
                     results.usage = usage;
@@ -893,7 +1006,7 @@ object ProviderWebCollectorScripts {
                         provider: "claude",
                         collectorMode: "aboutblank-js-fetch",
                         account: firstString(results.accountProfile && results.accountProfile.json, ["email", "account_email", "accountEmail", "user_email", "userEmail"], 0),
-                        plan: firstString(results.subscription && results.subscription.json, ["plan", "plan_type", "planType", "plan_name", "planName", "subscription_plan", "subscriptionPlan", "subscription_type", "subscriptionType", "tier", "sku", "name", "display_name", "displayName", "title"], 0),
+                        plan: firstClaudePlanValue(results.subscription && results.subscription.json, ["plan", "plan_type", "planType", "plan_name", "planName", "subscription_plan", "subscriptionPlan", "subscription_type", "subscriptionType", "tier", "sku", "name", "display_name", "displayName", "title"]),
                         organizationId: orgId,
                         usage: usagePayload
                       }

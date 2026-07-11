@@ -22,6 +22,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.R
 import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.local.ProviderId
@@ -42,6 +43,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import org.json.JSONArray
 import org.json.JSONObject
 
 class ProviderBackgroundRefreshService : Service() {
@@ -1132,6 +1134,16 @@ class ProviderBackgroundRefreshService : Service() {
                 completeWebJob(active.requestId, ServiceRefreshOutcome.Payload(rawPayload))
             }
         }
+        @JavascriptInterface
+        fun postClaudeSubscriptionDetailsPlanStructure(rawRecord: String) {
+            if (!BuildConfig.DEBUG || ownerProviderId != ProviderId.CLAUDE) return
+            mainHandler.post {
+                if (!BuildConfig.DEBUG || currentWebJobFor(ProviderId.CLAUDE) == null) return@post
+                val safeRecord = safeClaudeSubscriptionDetailsPlanStructureRecord(rawRecord) ?: return@post
+                Log.d(PLAN_PROVENANCE_DIAGNOSTICS_TAG, safeRecord)
+            }
+        }
+
 
         @JavascriptInterface
         fun postCollectorError(rawError: String) {
@@ -1373,7 +1385,7 @@ class ProviderBackgroundRefreshService : Service() {
             .keys
             .sorted()
             .joinToString("|")
-        Log.d(TAG, "capturedNativeHeaders provider=claude path=${pathOf(url)} names=$headerNames")
+        Log.d(TAG, "capturedNativeHeaders provider=claude route=allowlisted_json names=$headerNames")
         saveClaudeNativeRequestContext()
     }
 
@@ -1474,6 +1486,61 @@ class ProviderBackgroundRefreshService : Service() {
             url
         }
         return cookiesFor(cookieUrl)
+    }
+
+    private fun safeClaudeSubscriptionDetailsPlanStructureRecord(rawRecord: String): String? {
+        val record = runCatching { JSONObject(rawRecord) }.getOrNull() ?: return null
+        if (!record.hasExactPropertyNames(CLAUDE_PLAN_STRUCTURE_ROOT_PROPERTIES)) return null
+        if (record.opt("routeId") != CLAUDE_SUBSCRIPTION_DETAILS_ROUTE_ID) return null
+        val rootJsonType = record.opt("rootJsonType") as? String ?: return null
+        if (rootJsonType !in CLAUDE_PLAN_STRUCTURE_JSON_TYPES) return null
+        val rootPresent = record.opt("rootPresent") as? Boolean ?: return null
+        val rootKeyCount = nonNegativeInt(record.opt("rootKeyCount")) ?: return null
+        val requestCountDelta = record.opt("requestCountDelta") as? Number ?: return null
+        if (requestCountDelta.toDouble() != 0.0) return null
+        val paths = record.opt("paths") as? JSONArray ?: return null
+        if (paths.length() != CLAUDE_PLAN_STRUCTURE_PATH_IDS.size) return null
+
+        val safePaths = JSONArray()
+        CLAUDE_PLAN_STRUCTURE_PATH_IDS.forEachIndexed { index, expectedPathId ->
+            val path = paths.optJSONObject(index) ?: return null
+            if (!path.hasExactPropertyNames(CLAUDE_PLAN_STRUCTURE_PATH_PROPERTIES)) return null
+            if (path.opt("pathId") != expectedPathId) return null
+            val jsonType = path.opt("jsonType") as? String ?: return null
+            val present = path.opt("present") as? Boolean ?: return null
+            if (jsonType !in CLAUDE_PLAN_STRUCTURE_JSON_TYPES) return null
+            if (present && jsonType == "missing" || !present && jsonType != "missing") return null
+            safePaths.put(
+                JSONObject()
+                    .put("pathId", expectedPathId)
+                    .put("jsonType", jsonType)
+                    .put("present", present)
+            )
+        }
+        return JSONObject()
+            .put("routeId", CLAUDE_SUBSCRIPTION_DETAILS_ROUTE_ID)
+            .put("rootJsonType", rootJsonType)
+            .put("rootPresent", rootPresent)
+            .put("rootKeyCount", rootKeyCount)
+            .put("requestCountDelta", 0)
+            .put("paths", safePaths)
+            .toString()
+    }
+
+    private fun JSONObject.hasExactPropertyNames(expectedProperties: Set<String>): Boolean {
+        val actualProperties = mutableSetOf<String>()
+        val keys = keys()
+        while (keys.hasNext()) {
+            actualProperties += keys.next()
+        }
+        return actualProperties == expectedProperties
+    }
+
+    private fun nonNegativeInt(value: Any?): Int? {
+        val number = value as? Number ?: return null
+        val numberAsLong = number.toLong()
+        if (number.toDouble() != numberAsLong.toDouble() || numberAsLong !in 0..Int.MAX_VALUE) return null
+        return numberAsLong.toInt()
     }
 
     private fun hostOf(url: String): String {
@@ -1615,6 +1682,55 @@ class ProviderBackgroundRefreshService : Service() {
         private const val CLAUDE_ABOUT_BLANK_HTML = "<!doctype html><html><head><meta charset=\"utf-8\"></head><body></body></html>"
         private const val LOGIN_PAGE_REACHED_MESSAGE = "Background refresh reached a provider login page."
         private const val TAG = "AIQuotaBgRefreshService"
+        private const val PLAN_PROVENANCE_DIAGNOSTICS_TAG = "AIQuotaPlanProvenance"
+        private const val CLAUDE_SUBSCRIPTION_DETAILS_ROUTE_ID = "claude_subscription_details"
+        private val CLAUDE_PLAN_STRUCTURE_ROOT_PROPERTIES = setOf(
+            "routeId",
+            "rootJsonType",
+            "rootPresent",
+            "rootKeyCount",
+            "requestCountDelta",
+            "paths"
+        )
+        private val CLAUDE_PLAN_STRUCTURE_PATH_PROPERTIES = setOf("pathId", "jsonType", "present")
+        private val CLAUDE_PLAN_STRUCTURE_JSON_TYPES = setOf(
+            "missing",
+            "null",
+            "object",
+            "array",
+            "string",
+            "number",
+            "boolean"
+        )
+        private val CLAUDE_PLAN_STRUCTURE_CONTAINER_IDS = listOf(
+            "subscription",
+            "subscription_details",
+            "subscriptionDetails",
+            "billing",
+            "plan_info",
+            "planInfo"
+        )
+        private val CLAUDE_PLAN_STRUCTURE_FIELD_IDS = listOf(
+            "plan",
+            "plan_name",
+            "planName",
+            "plan_type",
+            "planType",
+            "subscription_plan",
+            "subscriptionPlan",
+            "tier",
+            "membershipType",
+            "product_name",
+            "productName"
+        )
+        private val CLAUDE_PLAN_STRUCTURE_PATH_IDS = mutableListOf<String>().apply {
+            add("root")
+            CLAUDE_PLAN_STRUCTURE_FIELD_IDS.forEach { fieldId -> add("root.$fieldId") }
+            CLAUDE_PLAN_STRUCTURE_CONTAINER_IDS.forEach { containerId ->
+                add(containerId)
+                CLAUDE_PLAN_STRUCTURE_FIELD_IDS.forEach { fieldId -> add("$containerId.$fieldId") }
+            }
+        }
         private const val PAGE_CAPTURE_SCRIPT =
             "(function(){return (document.documentElement.innerText||document.title||'').slice(0,12000);})()"
     }

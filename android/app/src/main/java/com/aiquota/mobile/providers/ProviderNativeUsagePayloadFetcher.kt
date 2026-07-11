@@ -166,8 +166,34 @@ object ProviderNativeUsagePayloadFetcher {
             .put("organizationId", orgId)
             .put("usage", usagePayload)
         findFirstString(accountProfile.jsonValue(), EMAIL_KEYS)?.let { payload.put("account", it) }
-        claudePlan(subscription.jsonValue())
-            ?.let { payload.put("plan", it) }
+        val subscriptionSource = subscription.jsonValue()
+        ProviderPlanProvenanceDiagnostics.logClaudeSubscriptionDetailsDebug(
+            source = subscriptionSource,
+            httpStatus = subscription.optInt("status", -1),
+            byteCount = subscription.toString().toByteArray(StandardCharsets.UTF_8).size
+        )
+        val plan = claudePlan(subscriptionSource)
+        ProviderPlanProvenanceDiagnostics.log(
+            ProviderPlanProvenanceDiagnostics.Record(
+                provider = "claude",
+                endpointLabel = "claude_subscription_details",
+                httpStatus = subscription.optInt("status", -1),
+                keyPath = "${'$'}.subscription_details",
+                jsonType = ProviderPlanProvenanceDiagnostics.jsonType(subscriptionSource),
+                present = subscriptionSource != null && subscriptionSource != JSONObject.NULL,
+                planPresent = plan != null,
+                accountPresent = payload.has("account"),
+                byteCount = subscription.toString().toByteArray(StandardCharsets.UTF_8).size,
+                endpointCount = statuses.size,
+                requestCountDelta = 0,
+                transformTarget = "T3_CLAUDE_OBSERVED_CANDIDATE",
+                fallbackPolicy = "PRESERVE_USAGE_WITHOUT_PLAN",
+                protectedFlow = "ProviderNativeUsagePayloadFetcher.fetchClaudePayload",
+                keyCount = ProviderPlanProvenanceDiagnostics.keyCount(subscriptionSource),
+                itemCount = ProviderPlanProvenanceDiagnostics.itemCount(subscriptionSource)
+            )
+        )
+        plan?.let { payload.put("plan", it) }
         return verifiedPayload(ProviderId.CLAUDE, payload, "claude_usage_unavailable", statuses)
     }
 
@@ -213,6 +239,32 @@ object ProviderNativeUsagePayloadFetcher {
         val plan = findFirstString(subscriptions.jsonValue(), PLAN_KEYS)
             ?: findFirstString(accountCheck.jsonValue(), PLAN_KEYS)
             ?: findFirstString(me.jsonValue(), PLAN_KEYS)
+        listOf(
+            "codex_subscriptions" to subscriptions,
+            "codex_wham_usage" to whamUsage
+        ).forEach { (endpointLabel, wrapped) ->
+            val source = wrapped.jsonValue()
+            ProviderPlanProvenanceDiagnostics.log(
+                ProviderPlanProvenanceDiagnostics.Record(
+                    provider = "codex",
+                    endpointLabel = endpointLabel,
+                    httpStatus = wrapped.optInt("status", -1),
+                    keyPath = "${'$'}.$endpointLabel",
+                    jsonType = ProviderPlanProvenanceDiagnostics.jsonType(source),
+                    present = source != null && source != JSONObject.NULL,
+                    planPresent = plan != null,
+                    accountPresent = accountEmail != null || accountId != null,
+                    byteCount = wrapped.toString().toByteArray(StandardCharsets.UTF_8).size,
+                    endpointCount = statuses.size,
+                    requestCountDelta = 0,
+                    transformTarget = "T4_CODEX_OBSERVED_SOURCE",
+                    fallbackPolicy = "PRESERVE_USAGE_WITHOUT_PLAN",
+                    protectedFlow = "ProviderNativeUsagePayloadFetcher.fetchCodexPayload",
+                    keyCount = ProviderPlanProvenanceDiagnostics.keyCount(source),
+                    itemCount = ProviderPlanProvenanceDiagnostics.itemCount(source)
+                )
+            )
+        }
         plan?.let { payload.put("plan", it) }
         return verifiedPayload(ProviderId.CODEX, payload, "codex_usage_unavailable", statuses)
     }

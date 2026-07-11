@@ -2,6 +2,7 @@ package com.aiquota.mobile.providers
 
 import com.aiquota.mobile.local.ProviderId
 import java.io.File
+import java.nio.charset.StandardCharsets
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -89,6 +90,71 @@ class ProviderNativeUsagePayloadFetcherTest {
         assertNotNull(payload)
         assertEquals("Claude Max 5x", JSONObject(payload!!).getString("plan"))
     }
+    @Test
+    fun claudeDebugObservationKeepsFetchOrderAndPayloadBytes() {
+        val requestedUrls = mutableListOf<String>()
+        val payload = claudeNativeUsagePayloadForTest(
+            """{"plan_name":"Claude Max 5x","resets_at":"2026-07-12T00:00:00Z"}""",
+            requestedUrls
+        )
+
+        assertEquals(
+            listOf(
+                "https://claude.ai/api/organizations",
+                "https://claude.ai/api/account_profile",
+                "https://claude.ai/api/organizations/org_test/subscription_details",
+                "https://claude.ai/api/organizations/org_test/usage"
+            ),
+            requestedUrls
+        )
+        assertEquals(
+            """{"organizationId":"org_test","provider":"claude","usage":{"five_hour":{"used_percent":25}},"plan":"Claude Max 5x","account":"claude@example.com"}""",
+            payload
+        )
+        assertEquals(145, payload!!.toByteArray(StandardCharsets.UTF_8).size)
+    }
+
+    @Test
+    fun claudeDebugObservationUsesOnlyStructuralAllowlistedFields() {
+        assertTrue(ProviderPlanProvenanceDiagnostics.isClaudeSubscriptionDetailsDebugObservationEnabled(true))
+        assertFalse(ProviderPlanProvenanceDiagnostics.isClaudeSubscriptionDetailsDebugObservationEnabled(false))
+
+        val observation = ProviderPlanProvenanceDiagnostics.formatClaudeSubscriptionDetailsObservationForTest(
+            JSONObject(
+                """{"plan_name":"Claude Max 5x","email":"claude@example.com","resets_at":"2026-07-12T00:00:00Z"}"""
+            ),
+            httpStatus = 200,
+            byteCount = 96
+        )
+        val json = JSONObject(observation)
+        val keys = mutableSetOf<String>()
+        val iterator = json.keys()
+        while (iterator.hasNext()) keys += iterator.next()
+
+        assertEquals(
+            setOf(
+                "provider",
+                "routeId",
+                "keyPathId",
+                "jsonType",
+                "present",
+                "objectKeyCount",
+                "arrayItemCount",
+                "httpStatus",
+                "byteCount",
+                "requestCountDelta"
+            ),
+            keys
+        )
+        assertEquals("claude_subscription_details", json.getString("routeId"))
+        assertEquals("object", json.getString("jsonType"))
+        assertTrue(json.getBoolean("present"))
+        assertEquals(0, json.getInt("requestCountDelta"))
+        listOf("Claude Max 5x", "claude@example.com", "2026-07-12", "plan_name", "email", "resets_at").forEach { scalar ->
+            assertFalse("observation must exclude $scalar", observation.contains(scalar))
+        }
+    }
+
 
     @Test
     fun nativeUsageDiagnosticsExposeOnlySafeOptimizationMetrics() {
@@ -812,7 +878,10 @@ class ProviderNativeUsagePayloadFetcherTest {
         }
     }
 
-    private fun claudeNativeUsagePayloadForTest(subscriptionJson: String): String? {
+    private fun claudeNativeUsagePayloadForTest(
+        subscriptionJson: String,
+        requestedUrls: MutableList<String> = mutableListOf()
+    ): String? {
         val method = ProviderNativeUsagePayloadFetcher::class.java.getDeclaredMethod(
             "fetchClaudePayload",
             String::class.java,
@@ -825,6 +894,7 @@ class ProviderNativeUsagePayloadFetcherTest {
             "test-agent",
             { _: String -> mapOf("Authorization" to "Selected auth") },
             { _: ProviderId, url: String, _: String, _: Map<String, String> ->
+                requestedUrls += url
                 ProviderNativeJsonBridge.wrappedResponse(url, 200, claudeResponseFor(url, subscriptionJson)).toString()
             }
         )

@@ -35,6 +35,7 @@ internal object GeminiUsagePageNativeFetcher {
         val sessionResult = fetchUsagePageParams(cookieHeader, requestUserAgent, requestUsagePageUrl)
         val statuses = sessionResult.statuses.toMutableList()
         sessionResult.bootstrapPayload?.let { payload ->
+            mergeGeminiMetadata(payload, sessionResult.bootstrapMetadata)
             return FetchResult(payload.toString(), "ok", statuses + "gemini_usage_page_bootstrap:200")
         }
         val params = sessionResult.params
@@ -53,7 +54,10 @@ internal object GeminiUsagePageNativeFetcher {
                 rpcId = rpcId
             )
             statuses += result.status
-            result.payload?.let { return FetchResult(it.toString(), "ok", statuses) }
+            result.payload?.let {
+                mergeGeminiMetadata(it, sessionResult.bootstrapMetadata)
+                return FetchResult(it.toString(), "ok", statuses)
+            }
         }
         val legacyResult = fetchBatchExecuteRpc(
             params = params,
@@ -63,7 +67,10 @@ internal object GeminiUsagePageNativeFetcher {
             rpcId = JSF9QC_RPC_ID
         )
         statuses += legacyResult.status
-        legacyResult.payload?.let { return FetchResult(it.toString(), "ok", statuses) }
+        legacyResult.payload?.let {
+            mergeGeminiMetadata(it, sessionResult.bootstrapMetadata)
+            return FetchResult(it.toString(), "ok", statuses)
+        }
         return FetchResult(null, "gemini_usage_page_rpc_unavailable", statuses)
     }
 
@@ -114,6 +121,26 @@ internal object GeminiUsagePageNativeFetcher {
                 )
             )
             val payload = if (status in 200..299) usagePayloadFromBatchExecute(text, rpcId) else null
+            ProviderPlanProvenanceDiagnostics.log(
+                ProviderPlanProvenanceDiagnostics.Record(
+                    provider = "gemini",
+                    endpointLabel = "gemini_usage_rpc",
+                    rpcLabel = rpcId,
+                    httpStatus = status,
+                    keyPath = "${'$'}.usage_rpc[0]",
+                    jsonType = ProviderPlanProvenanceDiagnostics.jsonType(payload),
+                    present = payload != null,
+                    planPresent = payload?.has("plan") == true,
+                    accountPresent = payload?.has("account") == true,
+                    byteCount = text.toByteArray(StandardCharsets.UTF_8).size,
+                    endpointCount = 2,
+                    requestCountDelta = 0,
+                    transformTarget = "T6_GEMINI_EXISTING_RESPONSE_MERGE",
+                    fallbackPolicy = "WEBVIEW_DEVTOOLS_ONLY_IF_NO_OBSERVED_SOURCE",
+                    protectedFlow = "GeminiUsagePageNativeFetcher.fetchBatchExecuteRpc",
+                    keyCount = ProviderPlanProvenanceDiagnostics.keyCount(payload)
+                )
+            )
             RpcFetchResult(payload, "$statusLabel:$status")
         }.getOrElse { error ->
             Log.d(TAG, "geminiUsageRpc usagePath=${usagePathForLog(usagePageUrl)} rpcId=$rpcId error=${error.javaClass.simpleName}")
@@ -156,6 +183,14 @@ internal object GeminiUsagePageNativeFetcher {
         return usagePayloadFromHtmlBootstrap(rawText)
     }
 
+    internal fun geminiPlanAccountFromHtmlForTest(rawText: String): JSONObject? {
+        return geminiPlanAccountFromHtml(rawText)
+    }
+
+    internal fun mergeGeminiMetadataForTest(payload: JSONObject, metadata: JSONObject?) {
+        mergeGeminiMetadata(payload, metadata)
+    }
+
     private fun fetchUsagePageParams(cookieHeader: String, userAgent: String, usagePageUrl: String): RpcSessionResult {
         val statusLabel = "gemini_usage_page_html"
         val usagePath = usagePathForLog(usagePageUrl)
@@ -183,6 +218,24 @@ internal object GeminiUsagePageNativeFetcher {
                     text.toByteArray(StandardCharsets.UTF_8).size
                 )
             )
+            ProviderPlanProvenanceDiagnostics.log(
+                ProviderPlanProvenanceDiagnostics.Record(
+                    provider = "gemini",
+                    endpointLabel = "gemini_usage_html",
+                    httpStatus = status,
+                    keyPath = "${'$'}.usage_html",
+                    jsonType = "string",
+                    present = text.isNotBlank(),
+                    planPresent = false,
+                    accountPresent = false,
+                    byteCount = text.toByteArray(StandardCharsets.UTF_8).size,
+                    endpointCount = 1,
+                    requestCountDelta = 0,
+                    transformTarget = "T6_GEMINI_EXISTING_RESPONSE_MERGE",
+                    fallbackPolicy = "WEBVIEW_DEVTOOLS_ONLY_IF_NO_OBSERVED_SOURCE",
+                    protectedFlow = "GeminiUsagePageNativeFetcher.fetchUsagePageParams"
+                )
+            )
             if (status !in 200..299) {
                 return RpcSessionResult(
                     params = null,
@@ -199,6 +252,7 @@ internal object GeminiUsagePageNativeFetcher {
                 usagePageUrl = usagePageUrl
             )
             val bootstrapPayload = usagePayloadFromHtmlBootstrap(text)
+            val bootstrapMetadata = geminiPlanAccountFromHtml(text)
             if (bootstrapPayload != null) {
                 Log.d(
                     TAG,
@@ -211,9 +265,17 @@ internal object GeminiUsagePageNativeFetcher {
                     diagnostic = "gemini_usage_page_rpc_params_unavailable",
                     statuses = listOf("$statusLabel:$status"),
                     candidateRpcIds = candidateRpcIds.ids,
-                    bootstrapPayload = bootstrapPayload
+                    bootstrapPayload = bootstrapPayload,
+                    bootstrapMetadata = bootstrapMetadata
                 )
-            RpcSessionResult(params, "ok", listOf("$statusLabel:$status") + candidateRpcIds.statuses, candidateRpcIds.ids, bootstrapPayload)
+            RpcSessionResult(
+                params = params,
+                diagnostic = "ok",
+                statuses = listOf("$statusLabel:$status") + candidateRpcIds.statuses,
+                candidateRpcIds = candidateRpcIds.ids,
+                bootstrapPayload = bootstrapPayload,
+                bootstrapMetadata = bootstrapMetadata
+            )
         }.getOrElse { error ->
             Log.d(TAG, "geminiUsagePageHtml usagePath=$usagePath error=${error.javaClass.simpleName}")
             RpcSessionResult(
@@ -297,16 +359,21 @@ internal object GeminiUsagePageNativeFetcher {
     private fun usagePayloadFromBatchExecute(rawText: String, rpcId: String): JSONObject? {
         val quotaPayload = findRpcPayload(rawText, rpcId) ?: return null
         quotaPayload.optJSONArray(1)?.let { rows ->
-            usagePayloadFromRows(rows, "native-usage-page-rpc")?.let { return it }
+            usagePayloadFromRows(rows, "native-usage-page-rpc")?.let { payload ->
+                geminiPlanAccountFromEnvelope(quotaPayload)?.let { metadata ->
+                    metadata.optionalStringOnly("plan")?.let { payload.put("plan", it) }
+                    metadata.optionalStringOnly("account")?.let { payload.put("account", it) }
+                }
+                return payload
+            }
         }
         return null
     }
 
     private fun usagePayloadFromHtmlBootstrap(rawText: String): JSONObject? {
         val rowsByType = linkedMapOf<Int, JSONArray>()
-        var account: JSONObject? = null
+        val metadata = geminiPlanAccountFromHtml(rawText)
         afDataArraysFromHtml(rawText).forEach { data ->
-            if (account == null) account = geminiAccountDeep(data)
             collectQuotaRowsDeep(data, rowsByType)
         }
         QUOTA_BOOTSTRAP_ROW_PATTERN.findAll(rawText).forEach { match ->
@@ -320,9 +387,7 @@ internal object GeminiUsagePageNativeFetcher {
         }
         if (rowsByType.isEmpty()) return null
         return usagePayloadFromRows(JSONArray(rowsByType.values.toList()), "native-usage-page-bootstrap")
-            ?.apply {
-                account?.let { put("account", it) }
-            }
+            ?.apply { mergeGeminiMetadata(this, metadata) }
     }
 
     private fun afDataArraysFromHtml(rawText: String): List<JSONArray> {
@@ -380,9 +445,62 @@ internal object GeminiUsagePageNativeFetcher {
         }
     }
 
+    private fun geminiPlanAccountFromHtml(rawText: String): JSONObject? {
+        afDataArraysFromHtml(rawText).forEach { data ->
+            geminiPlanAccountDeep(data)?.let { return it }
+        }
+        return null
+    }
+
+    private fun geminiPlanAccountFromEnvelope(value: Any?): JSONObject? {
+        return geminiPlanAccountDeep(value)
+    }
+
+    private fun geminiPlanAccountDeep(value: Any?): JSONObject? {
+        return when (value) {
+            is JSONObject -> {
+                val explicitPlan = sanitizedGeminiPlan(value.optionalStringOnly("plan"))
+                val explicitAccount = sanitizedGeminiAccount(value.optionalStringOnly("account"))
+                val compactPlan = value.optionalStringOnly("p")
+                    ?.takeIf { isPlausibleGeminiTierToken(it) }
+                    ?.let(::sanitizedGeminiPlan)
+                val compactAccount = value.optionalStringOnly("e")?.let(::sanitizedGeminiAccount)
+                val plan = explicitPlan ?: compactPlan.takeIf { compactAccount != null }
+                val account = explicitAccount ?: compactAccount.takeIf { compactPlan != null }
+                if (plan != null || account != null) {
+                    JSONObject().apply {
+                        plan?.let { put("plan", it) }
+                        account?.let { put("account", it) }
+                    }
+                } else {
+                    value.keys().asSequence().firstNotNullOfOrNull { key -> geminiPlanAccountDeep(value.opt(key)) }
+                }
+            }
+            is JSONArray -> {
+                for (index in 0 until value.length()) {
+                    geminiPlanAccountDeep(value.opt(index))?.let { return it }
+                }
+                null
+            }
+            else -> null
+        }
+    }
+
     private fun usagePayloadFromRows(rows: JSONArray, collectorMode: String): JSONObject? {
         val lines = quotaRows(rows)
         return usagePayloadFromLines(lines, collectorMode)
+    }
+
+    private fun mergeGeminiMetadata(payload: JSONObject, metadata: JSONObject?) {
+        val plan = sanitizedGeminiPlan(metadata?.optionalStringOnly("plan"))
+        val account = sanitizedGeminiAccount(metadata?.optionalStringOnly("account"))
+        if (plan != null && !payload.has("plan")) payload.put("plan", plan)
+        if (account != null && !payload.has("account")) {
+            payload.put("account", JSONObject().apply {
+                plan?.let { put("p", it) }
+                put("e", account)
+            })
+        }
     }
 
     private fun usagePayloadFromLines(lines: JSONArray, collectorMode: String): JSONObject? {
@@ -772,12 +890,29 @@ internal object GeminiUsagePageNativeFetcher {
         }
     }
 
+    private fun JSONObject.optionalStringOnly(key: String): String? {
+        return opt(key).takeIf { it is String } as? String
+    }
+
+    private fun sanitizedGeminiPlan(value: String?): String? {
+        return value?.trim()?.takeIf { it.isNotBlank() && !GEMINI_DATE_LIKE_PATTERN.matches(it) }
+    }
+
+    private fun sanitizedGeminiAccount(value: String?): String? {
+        return value?.trim()?.takeIf { it.isNotBlank() && !GEMINI_DATE_LIKE_PATTERN.matches(it) }
+    }
+
+    private fun isPlausibleGeminiTierToken(value: String): Boolean {
+        return Regex("""(?i)^(?:GEMINI|GOOGLE[_-]AI)(?:[_-][A-Z0-9]+)+$|^(?:G1_(?:PRO|ULTRA)_TIER|STANDARD_TIER|FREE_TIER|PAID|WORKSPACE|LEGACY)$""").matches(value.trim())
+    }
+
     private data class RpcSessionResult(
         val params: GeminiUsagePageRpcSession.Params?,
         val diagnostic: String,
         val statuses: List<String>,
         val candidateRpcIds: List<String>,
-        val bootstrapPayload: JSONObject?
+        val bootstrapPayload: JSONObject?,
+        val bootstrapMetadata: JSONObject? = null
     )
 
     private data class RpcFetchResult(
@@ -814,4 +949,5 @@ internal object GeminiUsagePageNativeFetcher {
     private val SCRIPT_SRC_PATTERN = Regex("""<script[^>]+src=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
     private val USAGE_CONTEXT_PATTERN = Regex("""usage|quota|limit|remaining""", RegexOption.IGNORE_CASE)
     private val RPC_ID_TOKEN_PATTERN = Regex("""["']([A-Za-z0-9_-]{5,16})["']""")
+    private val GEMINI_DATE_LIKE_PATTERN = Regex("""^\d{4}-\d{2}-\d{2}(?:[T ].*)?$|^\d{1,2}/\d{1,2}/\d{2,4}$|^\d{8}$""")
 }

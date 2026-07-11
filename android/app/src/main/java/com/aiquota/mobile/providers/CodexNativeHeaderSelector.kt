@@ -22,6 +22,19 @@ internal object CodexNativeHeaderSelector {
         return endpointHeaders.ifEmpty { fallbackHeaders }
     }
 
+    fun selectForCodexFetch(
+        endpointHeaders: Map<String, String>,
+        fallbackHeaders: Map<String, String>
+    ): Map<String, String> {
+        val merged = endpointHeaders.toMutableMap()
+        authContextHeaders(fallbackHeaders).forEach { (fallbackName, value) ->
+            if (merged.keys.none { it.equals(fallbackName, ignoreCase = true) }) {
+                merged[fallbackName] = value
+            }
+        }
+        return merged.ifEmpty { fallbackHeaders }
+    }
+
     fun authContextHeaders(headers: Map<String, String>): Map<String, String> {
         return headers
             .filterKeys { name -> AUTH_CONTEXT_HEADERS.any { it.equals(name, ignoreCase = true) } }

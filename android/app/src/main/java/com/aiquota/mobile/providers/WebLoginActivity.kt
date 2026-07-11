@@ -1436,7 +1436,7 @@ open class WebLoginActivity : Activity() {
             .joinToString("|")
         Log.d(
             "AIQuotaLogin",
-            "provider=claude capturedNativeHeaders path=${pathOf(url)} names=$headerNames"
+            "provider=claude capturedNativeHeaders route=allowlisted_json names=$headerNames"
         )
         saveClaudeNativeRequestContext()
         return true

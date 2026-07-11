@@ -31,7 +31,7 @@ internal object CodexNativeHeaderStore {
     ): Map<String, String> {
         val endpointHeaders = keyFor(url)?.let { storedHeaders[it] }.orEmpty()
         val fallbackHeaders = storedHeaders[fallbackKey].orEmpty()
-        return CodexNativeHeaderSelector.selectForFetch(endpointHeaders, fallbackHeaders)
+        return CodexNativeHeaderSelector.selectForCodexFetch(endpointHeaders, fallbackHeaders)
     }
 
     fun snapshotAuthContext(

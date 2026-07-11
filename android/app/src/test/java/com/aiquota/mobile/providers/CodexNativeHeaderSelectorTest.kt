@@ -45,7 +45,7 @@ class CodexNativeHeaderSelectorTest {
     }
 
     @Test
-    fun selectForFetchPrefersAuthenticatedFallbackOverUnauthenticatedEndpointHeaders() {
+    fun selectForCodexFetchMergesOnlyFallbackAuthHeadersIntoEndpointHeaders() {
         val endpointHeaders = mapOf(
             "accept" to "application/json",
             "Referer" to "https://chatgpt.com/"
@@ -53,17 +53,22 @@ class CodexNativeHeaderSelectorTest {
         val authenticatedFallback = mapOf(
             "Authorization" to "Bearer token",
             "OAI-Session-Id" to "session",
-            "Referer" to "https://chatgpt.com/"
+            "extra" to "must not copy"
         )
 
         assertEquals(
-            authenticatedFallback,
-            CodexNativeHeaderSelector.selectForFetch(endpointHeaders, authenticatedFallback)
+            mapOf(
+                "accept" to "application/json",
+                "Referer" to "https://chatgpt.com/",
+                "Authorization" to "Bearer token",
+                "OAI-Session-Id" to "session"
+            ),
+            CodexNativeHeaderSelector.selectForCodexFetch(endpointHeaders, authenticatedFallback)
         )
     }
 
     @Test
-    fun selectForFetchKeepsEndpointHeadersWhenTheyContainAuthContext() {
+    fun selectForCodexFetchKeepsEndpointHeadersWhenTheyContainAuthContext() {
         val endpointHeaders = mapOf(
             "Authorization" to "Bearer endpoint-token",
             "Referer" to "https://chatgpt.com/codex/cloud/settings/analytics"
@@ -75,7 +80,35 @@ class CodexNativeHeaderSelectorTest {
 
         assertEquals(
             endpointHeaders,
-            CodexNativeHeaderSelector.selectForFetch(endpointHeaders, fallback)
+            CodexNativeHeaderSelector.selectForCodexFetch(endpointHeaders, fallback)
         )
+    }
+
+    @Test
+    fun selectForCodexFetchKeepsEndpointAuthorizationCaseInsensitivelyAndAddsMissingAccountId() {
+        val endpointHeaders = mapOf("authorization" to "Bearer endpoint-token")
+        val fallback = mapOf(
+            "Authorization" to "Bearer fallback-token",
+            "ChatGPT-Account-ID" to "account"
+        )
+
+        assertEquals(
+            mapOf(
+                "authorization" to "Bearer endpoint-token",
+                "ChatGPT-Account-ID" to "account"
+            ),
+            CodexNativeHeaderSelector.selectForCodexFetch(endpointHeaders, fallback)
+        )
+    }
+
+    @Test
+    fun selectForFetchPrefersFullAuthenticatedFallbackOverNonAuthEndpointHeaders() {
+        val endpoint = mapOf("x-activity-session-id" to "endpoint-activity")
+        val fallback = mapOf(
+            "Authorization" to "Bearer fallback-token",
+            "x-activity-session-id" to "fallback-activity"
+        )
+
+        assertEquals(fallback, CodexNativeHeaderSelector.selectForFetch(endpoint, fallback))
     }
 }

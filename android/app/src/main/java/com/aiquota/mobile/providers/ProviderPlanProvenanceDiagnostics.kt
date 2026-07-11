@@ -1,6 +1,7 @@
 package com.aiquota.mobile.providers
 
 import android.util.Log
+import com.aiquota.mobile.BuildConfig
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -32,6 +33,19 @@ internal object ProviderPlanProvenanceDiagnostics {
     }
 
     internal fun formatForTest(record: Record): String = format(record)
+    internal fun isClaudeSubscriptionDetailsDebugObservationEnabled(isDebugBuild: Boolean): Boolean = isDebugBuild
+
+    fun logClaudeSubscriptionDetailsDebug(source: Any?, httpStatus: Int, byteCount: Int) {
+        if (!isClaudeSubscriptionDetailsDebugObservationEnabled(BuildConfig.DEBUG)) return
+        runCatching { Log.d(TAG, formatClaudeSubscriptionDetailsObservation(source, httpStatus, byteCount)) }
+    }
+
+    internal fun formatClaudeSubscriptionDetailsObservationForTest(
+        source: Any?,
+        httpStatus: Int,
+        byteCount: Int
+    ): String = formatClaudeSubscriptionDetailsObservation(source, httpStatus, byteCount)
+
 
     fun jsonType(source: Any?): String {
         return when (source) {
@@ -48,6 +62,24 @@ internal object ProviderPlanProvenanceDiagnostics {
     fun keyCount(source: Any?): Int? = (source as? JSONObject)?.length()
 
     fun itemCount(source: Any?): Int? = (source as? JSONArray)?.length()
+    private fun formatClaudeSubscriptionDetailsObservation(
+        source: Any?,
+        httpStatus: Int,
+        byteCount: Int
+    ): String {
+        return JSONObject()
+            .put("provider", "claude")
+            .put("routeId", "claude_subscription_details")
+            .put("keyPathId", "claude_subscription_details.root")
+            .put("jsonType", jsonType(source))
+            .put("present", source != null && source != JSONObject.NULL)
+            .put("objectKeyCount", keyCount(source) ?: 0)
+            .put("arrayItemCount", itemCount(source) ?: 0)
+            .put("httpStatus", httpStatus)
+            .put("byteCount", byteCount)
+            .put("requestCountDelta", 0)
+            .toString()
+    }
 
     private fun format(record: Record): String {
         return JSONObject()

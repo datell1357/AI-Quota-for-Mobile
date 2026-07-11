@@ -7,6 +7,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import org.json.JSONObject
 
 class GeminiUsagePageNativeFetcherTest {
     @Test
@@ -91,16 +92,18 @@ class GeminiUsagePageNativeFetcherTest {
     }
 
     @Test
-    fun batchExecuteJsf9QcDirectRowsBecomeUsagePayload() {
+    fun batchExecuteJsf9QcDirectRowsPreserveSanitizedMetadata() {
         val rawText = """
             )]}'
-            [["wrb.fr","jSf9Qc","[null,[[2357.0,0.02,1,[[1782793673,919528000]]],[48302.0,0.0,2,[[1783337273,919653000]]]]]"]]
+            [["wrb.fr","jSf9Qc","[{\"plan\":\"Gemini Pro\",\"account\":\"anon@example.com\"},[[2357.0,0.02,1,[[1782793673,919528000]]],[48302.0,0.0,2,[[1783337273,919653000]]]]]"]]
         """.trimIndent()
 
         val payload = GeminiUsagePageNativeFetcher.usagePayloadFromBatchExecuteForTest(rawText)
 
         assertNotNull(payload)
         assertEquals("native-usage-page-rpc", payload!!.getString("collectorMode"))
+        assertEquals("Gemini Pro", payload.getString("plan"))
+        assertEquals("anon@example.com", payload.getString("account"))
         val lines = payload.getJSONObject("usage").getJSONArray("x")
         assertEquals(2, lines.length())
         assertEquals(98.0, lines.getJSONObject(0).getDouble("remaining_percent"), 0.01)
@@ -109,6 +112,23 @@ class GeminiUsagePageNativeFetcherTest {
         assertEquals(0.0, lines.getJSONObject(1).getDouble("used"), 0.01)
         assertEquals(2.0, lines.getJSONObject(0).getDouble("used_percent"), 0.01)
         assertEquals(0.0, lines.getJSONObject(1).getDouble("used_percent"), 0.01)
+    }
+
+    @Test
+    fun batchExecuteRpcDropsMalformedAndDateLikeMetadata() {
+        val rawText = """
+            )]}'
+            [["wrb.fr","jSf9Qc","[{\"plan\":{\"bad\":true},\"account\":\"2026-07-10\"},[[2357.0,0.02,1,[[1782793673,919528000]]],[48302.0,0.0,2,[[1783337273,919653000]]]]]"]]
+        """.trimIndent()
+
+        val payload = GeminiUsagePageNativeFetcher.usagePayloadFromBatchExecuteForTest(rawText)
+        val lines = payload!!.getJSONObject("usage").getJSONArray("x")
+
+        assertFalse(payload.has("plan"))
+        assertFalse(payload.has("account"))
+        assertEquals(2, lines.length())
+        assertEquals(98.0, lines.getJSONObject(0).getDouble("remaining_percent"), 0.01)
+        assertEquals(100.0, lines.getJSONObject(1).getDouble("remaining_percent"), 0.01)
     }
 
     @Test
@@ -245,6 +265,38 @@ class GeminiUsagePageNativeFetcherTest {
         assertEquals("GEMINI_ULTRA", account?.getString("p"))
         assertEquals("user@example.com", account?.getString("e"))
         assertEquals(2, payload?.getJSONObject("usage")?.getJSONArray("x")?.length())
+    }
+
+    @Test
+    fun normalRpcPayloadReceivesHtmlMetadataWithoutChangingQuotaRows() {
+        val payload = JSONObject("""{"provider":"gemini","usage":{"x":[{"l":"5-hour limit","remaining_percent":75.0,"used":150.0},{"l":"Weekly limit","remaining_percent":50.0,"used":300.0}]}}""")
+        val before = payload.getJSONObject("usage").getJSONArray("x").toString()
+        val htmlMetadata = GeminiUsagePageNativeFetcher.geminiPlanAccountFromHtmlForTest(
+            """<script>AF_initDataCallback({data:[{"plan":"Gemini Pro","account":"user@example.com"}]});</script>"""
+        )
+
+        GeminiUsagePageNativeFetcher.mergeGeminiMetadataForTest(
+            payload,
+            htmlMetadata
+        )
+
+        assertEquals("Gemini Pro", payload.getString("plan"))
+        assertEquals("user@example.com", payload.getJSONObject("account").getString("e"))
+        assertEquals(before, payload.getJSONObject("usage").getJSONArray("x").toString())
+    }
+
+    @Test
+    fun compactMetadataRequiresValidPairAndSkipsArbitraryObjectForLaterValidObject() {
+        val html = """
+            <script>
+              AF_initDataCallback({data:[{"p":"position","e":"event"},{"p":"G1_PRO_TIER","e":"valid@example.com"}]});
+            </script>
+        """.trimIndent()
+
+        val metadata = GeminiUsagePageNativeFetcher.geminiPlanAccountFromHtmlForTest(html)
+
+        assertEquals("G1_PRO_TIER", metadata?.getString("plan"))
+        assertEquals("valid@example.com", metadata?.getString("account"))
     }
 
     @Test
