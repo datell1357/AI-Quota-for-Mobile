@@ -655,8 +655,12 @@ private fun ProviderPersonalSettingsDialog(
                         )
                     }
                     TextButton(
-                        enabled = normalizedInput != null,
-                        onClick = { onApplyColor(normalizedInput) }
+                        // Toggles above apply immediately, so Apply must always be able to
+                        // close the dialog; it only blocks while the colour input is invalid.
+                        enabled = !showError,
+                        onClick = {
+                            if (normalizedInput != null) onApplyColor(normalizedInput) else onDismiss()
+                        }
                     ) {
                         Text(
                             text = stringResource(R.string.provider_usage_color_apply),
@@ -717,123 +721,125 @@ private fun ProviderPersonalSettingsToggle(
     }
 }
 
-@Composable
-private fun ProviderGaugeColorDialog(
-    selectedColor: String?,
-    onDismiss: () -> Unit,
-    onApply: (String?) -> Unit
-) {
-    var input by remember(selectedColor) { mutableStateOf(selectedColor.orEmpty()) }
-    var showGradientPicker by remember { mutableStateOf(false) }
-    val normalizedInput = ProviderGaugeColor.normalize(input)
-    val showError = input.isNotBlank() && normalizedInput == null
-
-    val colors = AIQuotaTheme.colors
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 360.dp),
-            shape = RoundedCornerShape(if (colors.theme == AppTheme.MACOS) 16.dp else 2.dp),
-            color = colors.panel,
-            border = BorderStroke(if (colors.theme == AppTheme.MACOS) 1.dp else 2.dp, colors.border),
-            shadowElevation = if (colors.theme == AppTheme.MACOS) 12.dp else 2.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.provider_usage_color_title),
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = colors.textPrimary,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-                ProviderGaugeColorPalette(
-                    selectedColor = normalizedInput ?: selectedColor,
-                    onColorSelected = { input = it },
-                    onGradientClick = { showGradientPicker = true }
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedTextField(
-                        value = input,
-                        onValueChange = { input = it },
-                        label = {
-                            Text(
-                                text = stringResource(R.string.provider_usage_color_input_label),
-                                color = colors.textSecondary
-                            )
-                        },
-                        singleLine = true,
-                        isError = showError,
-                        supportingText = {
-                            if (showError) {
-                                Text(
-                                    text = stringResource(R.string.provider_usage_color_invalid),
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-                    Surface(
-                        modifier = Modifier.size(42.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        color = ProviderGaugeColor.toArgbOrNull(normalizedInput)?.let(::Color) ?: Color.Transparent,
-                        border = BorderStroke(1.dp, colors.border),
-                        content = {}
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(onClick = { onApply(null) }) {
-                        Text(
-                            text = stringResource(R.string.provider_usage_color_reset),
-                            color = colors.primary
-                        )
-                    }
-                    TextButton(onClick = onDismiss) {
-                        Text(
-                            text = stringResource(R.string.settings_close),
-                            color = colors.primary
-                        )
-                    }
-                    TextButton(
-                        enabled = normalizedInput != null,
-                        onClick = { onApply(normalizedInput) }
-                    ) {
-                        Text(
-                            text = stringResource(R.string.provider_usage_color_apply),
-                            color = colors.primary
-                        )
-                    }
-                }
-            }
-        }
-    }
-    if (showGradientPicker) {
-        ProviderGaugeGradientPickerDialog(
-            selectedColor = normalizedInput ?: selectedColor,
-            onColorSelected = { input = it },
-            onDismiss = { showGradientPicker = false }
-        )
-    }
-}
-
+// NOTE: Unused since the colour picker moved inline into ProviderPersonalSettingsDialog.
+// Kept (commented out) in case the standalone colour dialog is needed again.
+// @Composable
+// private fun ProviderGaugeColorDialog(
+//     selectedColor: String?,
+//     onDismiss: () -> Unit,
+//     onApply: (String?) -> Unit
+// ) {
+//     var input by remember(selectedColor) { mutableStateOf(selectedColor.orEmpty()) }
+//     var showGradientPicker by remember { mutableStateOf(false) }
+//     val normalizedInput = ProviderGaugeColor.normalize(input)
+//     val showError = input.isNotBlank() && normalizedInput == null
+//
+//     val colors = AIQuotaTheme.colors
+//     Dialog(onDismissRequest = onDismiss) {
+//         Surface(
+//             modifier = Modifier
+//                 .fillMaxWidth()
+//                 .widthIn(max = 360.dp),
+//             shape = RoundedCornerShape(if (colors.theme == AppTheme.MACOS) 16.dp else 2.dp),
+//             color = colors.panel,
+//             border = BorderStroke(if (colors.theme == AppTheme.MACOS) 1.dp else 2.dp, colors.border),
+//             shadowElevation = if (colors.theme == AppTheme.MACOS) 12.dp else 2.dp
+//         ) {
+//             Column(
+//                 modifier = Modifier.padding(18.dp),
+//                 verticalArrangement = Arrangement.spacedBy(14.dp)
+//             ) {
+//                 Row(
+//                     modifier = Modifier.fillMaxWidth(),
+//                     horizontalArrangement = Arrangement.spacedBy(12.dp),
+//                     verticalAlignment = Alignment.CenterVertically
+//                 ) {
+//                     Text(
+//                         text = stringResource(R.string.provider_usage_color_title),
+//                         modifier = Modifier.weight(1f),
+//                         style = MaterialTheme.typography.titleMedium,
+//                         color = colors.textPrimary,
+//                         fontWeight = FontWeight.SemiBold
+//                     )
+//                 }
+//                 ProviderGaugeColorPalette(
+//                     selectedColor = normalizedInput ?: selectedColor,
+//                     onColorSelected = { input = it },
+//                     onGradientClick = { showGradientPicker = true }
+//                 )
+//                 Row(
+//                     modifier = Modifier.fillMaxWidth(),
+//                     horizontalArrangement = Arrangement.spacedBy(12.dp),
+//                     verticalAlignment = Alignment.CenterVertically
+//                 ) {
+//                     OutlinedTextField(
+//                         value = input,
+//                         onValueChange = { input = it },
+//                         label = {
+//                             Text(
+//                                 text = stringResource(R.string.provider_usage_color_input_label),
+//                                 color = colors.textSecondary
+//                             )
+//                         },
+//                         singleLine = true,
+//                         isError = showError,
+//                         supportingText = {
+//                             if (showError) {
+//                                 Text(
+//                                     text = stringResource(R.string.provider_usage_color_invalid),
+//                                     color = MaterialTheme.colorScheme.error
+//                                 )
+//                             }
+//                         },
+//                         modifier = Modifier.weight(1f)
+//                     )
+//                     Surface(
+//                         modifier = Modifier.size(42.dp),
+//                         shape = RoundedCornerShape(8.dp),
+//                         color = ProviderGaugeColor.toArgbOrNull(normalizedInput)?.let(::Color) ?: Color.Transparent,
+//                         border = BorderStroke(1.dp, colors.border),
+//                         content = {}
+//                     )
+//                 }
+//                 Row(
+//                     modifier = Modifier.fillMaxWidth(),
+//                     horizontalArrangement = Arrangement.End,
+//                     verticalAlignment = Alignment.CenterVertically
+//                 ) {
+//                     TextButton(onClick = { onApply(null) }) {
+//                         Text(
+//                             text = stringResource(R.string.provider_usage_color_reset),
+//                             color = colors.primary
+//                         )
+//                     }
+//                     TextButton(onClick = onDismiss) {
+//                         Text(
+//                             text = stringResource(R.string.settings_close),
+//                             color = colors.primary
+//                         )
+//                     }
+//                     TextButton(
+//                         enabled = normalizedInput != null,
+//                         onClick = { onApply(normalizedInput) }
+//                     ) {
+//                         Text(
+//                             text = stringResource(R.string.provider_usage_color_apply),
+//                             color = colors.primary
+//                         )
+//                     }
+//                 }
+//             }
+//         }
+//     }
+//     if (showGradientPicker) {
+//         ProviderGaugeGradientPickerDialog(
+//             selectedColor = normalizedInput ?: selectedColor,
+//             onColorSelected = { input = it },
+//             onDismiss = { showGradientPicker = false }
+//         )
+//     }
+// }
+//
 @Composable
 private fun ProviderGaugeGradientButton(
     onClick: () -> Unit
