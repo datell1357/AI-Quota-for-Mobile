@@ -29,3 +29,4 @@ icons/
 data/
 .env
 .env.*
+upload_certificate.pem
