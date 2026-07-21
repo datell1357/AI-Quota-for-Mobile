@@ -732,16 +732,15 @@ private fun ProviderUsageCard(
                 color = colors.content,
                 border = BorderStroke(1.dp, colors.border)
             ) {
-                Column(
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(cardContentPadding),
-                    verticalArrangement = Arrangement.spacedBy(cardContentSpacing)
+                        .padding(cardContentPadding)
                 ) {
+                    // Content fills the whole card body so the provider icon and status stay
+                    // vertically centred even when the connect button sits at the bottom.
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
+                        modifier = Modifier.fillMaxSize(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -775,7 +774,9 @@ private fun ProviderUsageCard(
                                         ?: snapshot.message
                                         ?: stringResource(R.string.dashboard_no_lines),
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = if (colors.theme == com.aiquota.mobile.local.AppTheme.MACOS) colors.textMuted else colors.textSecondary
+                                    color = if (colors.theme == com.aiquota.mobile.local.AppTheme.MACOS) colors.textMuted else colors.textSecondary,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             } else {
                                 dashboardUsagePreviewLines(snapshot).forEachIndexed { index, line ->
@@ -793,14 +794,11 @@ private fun ProviderUsageCard(
                     }
 
                     if (snapshot.shouldShowDashboardConnectAction()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End,
-                            verticalAlignment = Alignment.CenterVertically
+                        Button(
+                            onClick = { onConnectProvider(providerId) },
+                            modifier = Modifier.align(Alignment.BottomEnd)
                         ) {
-                            Button(onClick = { onConnectProvider(providerId) }) {
-                                Text(stringResource(R.string.provider_connect))
-                            }
+                            Text(stringResource(R.string.provider_connect))
                         }
                     }
                 }
@@ -816,6 +814,7 @@ private fun ProviderUsageCard(
 internal fun dashboardProviderIdentityLabel(providerId: ProviderId): String {
     return when (providerId) {
         ProviderId.ANTIGRAVITY -> "Anti\nGravity"
+        ProviderId.OPENCODE -> "Open\nCode"
         else -> providerId.displayName
     }
 }

@@ -118,9 +118,16 @@ class UnifiedDashboardDragReorderTest {
         assertTrue(dashboardSource.contains("val usageColumnSpacing = dashboardUsageLineSpacingDp("))
         assertTrue(dashboardSource.contains("gaugeHeight = dashboardGaugeHeight"))
         assertTrue(
-            "Dashboard content row should take remaining content height and center provider usage vertically.",
-            dashboardSource.contains(".fillMaxWidth()\n                            .weight(1f)") &&
-                dashboardSource.contains("verticalAlignment = Alignment.CenterVertically")
+            "Dashboard content row should fill the card body and center provider usage vertically " +
+                "so the icon and status stay centered even when the connect button is shown.",
+            dashboardSource.contains(
+                "modifier = Modifier.fillMaxSize(),\n" +
+                    "                        verticalAlignment = Alignment.CenterVertically"
+            )
+        )
+        assertTrue(
+            "Connect button should be pinned to the card's bottom end instead of taking layout height.",
+            dashboardSource.contains("modifier = Modifier.align(Alignment.BottomEnd)")
         )
     }
 

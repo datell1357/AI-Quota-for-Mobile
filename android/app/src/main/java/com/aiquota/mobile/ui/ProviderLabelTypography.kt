@@ -6,7 +6,7 @@ import com.aiquota.mobile.local.ProviderId
 internal const val ProviderLineBreakLineHeightMultiplier = 0.7f
 
 internal fun usesCompactProviderLineBreak(providerId: ProviderId): Boolean {
-    return providerId == ProviderId.ANTIGRAVITY
+    return providerId == ProviderId.ANTIGRAVITY || providerId == ProviderId.OPENCODE
 }
 
 internal fun compactProviderLineBreakStyle(providerId: ProviderId, style: TextStyle): TextStyle {
