@@ -155,6 +155,9 @@ fun AIQuotaAppShell(
     var claudeAutoResetPrimeEnabled by remember {
         mutableStateOf(providerPreferencesRepository.isClaudeAutoResetPrimeEnabled())
     }
+    var resetNotificationProviders by remember {
+        mutableStateOf(providerPreferencesRepository.resetNotificationEnabledProviders())
+    }
     var batteryOptimizationExempt by remember {
         mutableStateOf(isBatteryOptimizationExempt(appContext))
     }
@@ -554,6 +557,11 @@ fun AIQuotaAppShell(
         claudeAutoResetPrimeEnabled = enabled
     }
 
+    fun setResetNotificationEnabled(providerId: ProviderId, enabled: Boolean) {
+        providerPreferencesRepository.setResetNotificationEnabled(providerId, enabled)
+        resetNotificationProviders = providerPreferencesRepository.resetNotificationEnabledProviders()
+    }
+
     fun applyTheme(theme: AppTheme) {
         themePreferencesRepository.saveTheme(theme)
         currentTheme = themePreferencesRepository.currentTheme()
@@ -718,6 +726,12 @@ fun AIQuotaAppShell(
                                 onConnect = { connectProvider(currentRoute.providerId) },
                                 onDisconnect = { disconnectProvider(currentRoute.providerId) },
                                 onAddWidget = { requestProviderWidget(currentRoute.providerId) },
+                                resetNotificationEnabled = currentRoute.providerId in resetNotificationProviders,
+                                onResetNotificationChange = { enabled ->
+                                    setResetNotificationEnabled(currentRoute.providerId, enabled)
+                                },
+                                autoResetPrimeEnabled = claudeAutoResetPrimeEnabled,
+                                onAutoResetPrimeChange = ::setClaudeAutoResetPrimeEnabled,
                                 gaugeColorHex = providerGaugeColors[currentRoute.providerId],
                                 onGaugeColorChange = { color -> setProviderGaugeColor(currentRoute.providerId, color) },
                                 modifier = Modifier.fillMaxSize()
@@ -731,8 +745,6 @@ fun AIQuotaAppShell(
                             onNotificationEnabledChanged = ::setNotificationEnabled,
                             onOpenNotificationSettings = ::openNotificationSettings,
                             onOpenBatteryOptimizationSettings = ::openBatteryOptimizationSettings,
-                            claudeAutoResetPrimeEnabled = claudeAutoResetPrimeEnabled,
-                            onClaudeAutoResetPrimeChanged = ::setClaudeAutoResetPrimeEnabled,
                             providerOrder = providerOrder,
                             snapshots = snapshots,
                             onConnectProvider = ::connectProvider,

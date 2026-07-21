@@ -20,8 +20,8 @@
     <string name="settings_close">Close</string>
     <string name="settings_status_bar_gauges">Status bar notification</string>
     <string name="settings_status_bar_gauges_description">Remaining AI usage is available from the notification shade.</string>
-    <string name="settings_claude_auto_reset_prime_title">Claude auto-start after reset</string>
-    <string name="settings_claude_auto_reset_prime_description">When Claude\'s 5-hour window resets, automatically send a short message to start the next cycle right away. This uses your Claude account and consumes a small amount of quota.</string>
+    <string name="settings_claude_auto_reset_prime_title">Auto wake-up</string>
+    <string name="settings_claude_auto_reset_prime_description">Sends a message to start the timer.</string>
     <string name="settings_notifications_permission_required">Android notifications are off for AI Quota. Turn them on to show the status bar notification.</string>
     <string name="settings_open_notification_settings">Open notification settings</string>
     <string name="settings_battery_optimization_title">Battery optimization</string>
@@ -103,7 +103,10 @@
     <string name="provider_hidden_snackbar">%1$s is hidden. Restore it in Settings.</string>
     <string name="provider_updated">Updated %1$s</string>
     <string name="provider_usage_title">Usage</string>
+    <string name="provider_personal_settings">Personal settings</string>
     <string name="provider_usage_color_button">Change color</string>
+    <string name="provider_reset_notification_setting_title">Reset alerts</string>
+    <string name="provider_reset_notification_setting_description">Get notified when usage resets.</string>
     <string name="provider_usage_color_title">Gauge color</string>
     <string name="provider_usage_color_input_label">Hex or RGB code</string>
     <string name="provider_usage_color_apply">Apply</string>

@@ -20,8 +20,8 @@
     <string name="settings_close">닫기</string>
     <string name="settings_status_bar_gauges">상태 표시줄 알림</string>
     <string name="settings_status_bar_gauges_description">AI 남은 사용량을 알림창을 통해 확인 가능합니다.</string>
-    <string name="settings_claude_auto_reset_prime_title">Claude 리셋 후 자동 시작</string>
-    <string name="settings_claude_auto_reset_prime_description">Claude 5시간 창이 리셋되면 짧은 메시지를 자동으로 보내 다음 사이클을 바로 시작합니다. 사용자의 Claude 계정으로 발송되며 소량의 사용량이 소모됩니다.</string>
+    <string name="settings_claude_auto_reset_prime_title">자동 깨우기</string>
+    <string name="settings_claude_auto_reset_prime_description">메시지 전송으로 타이머를 시작합니다.</string>
     <string name="settings_notifications_permission_required">AI Quota의 Android 알림이 꺼져 있습니다. 상태 표시줄 알림을 보려면 알림을 켜세요.</string>
     <string name="settings_open_notification_settings">알림 설정 열기</string>
     <string name="settings_battery_optimization_title">배터리 최적화</string>
@@ -103,7 +103,10 @@
     <string name="provider_hidden_snackbar">%1$s 숨김 처리됨. 설정에서 다시 불러올 수 있습니다.</string>
     <string name="provider_updated">%1$s</string>
     <string name="provider_usage_title">사용량</string>
+    <string name="provider_personal_settings">개인설정</string>
     <string name="provider_usage_color_button">색상 변경</string>
+    <string name="provider_reset_notification_setting_title">리셋 알림</string>
+    <string name="provider_reset_notification_setting_description">사용량 리셋 시 알림을 받습니다.</string>
     <string name="provider_usage_color_title">게이지 색상</string>
     <string name="provider_usage_color_input_label">색상 코드 또는 RGB</string>
     <string name="provider_usage_color_apply">적용</string>

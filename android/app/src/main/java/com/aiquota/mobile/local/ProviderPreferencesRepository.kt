@@ -118,7 +118,11 @@ class ProviderPreferencesRepository(context: Context) {
     }
 
     fun isResetNotificationEnabled(providerId: ProviderId): Boolean {
-        return preferences.getBoolean("$KEY_RESET_NOTIFICATION_PREFIX${providerId.storageId}", false)
+        return preferences.getBoolean("$KEY_RESET_NOTIFICATION_PREFIX${providerId.storageId}", true)
+    }
+
+    fun resetNotificationEnabledProviders(): Set<ProviderId> {
+        return ProviderId.defaultOrder().filterTo(mutableSetOf(), ::isResetNotificationEnabled)
     }
 
     fun setResetNotificationEnabled(providerId: ProviderId, enabled: Boolean) {

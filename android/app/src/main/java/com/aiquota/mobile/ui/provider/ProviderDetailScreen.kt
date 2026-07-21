@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,10 +22,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Surface
@@ -39,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -48,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.aiquota.mobile.R
 import com.aiquota.mobile.local.AppTheme
@@ -91,6 +97,10 @@ fun ProviderDetailScreen(
     onConnect: () -> Unit,
     onDisconnect: () -> Unit,
     onAddWidget: () -> Unit,
+    resetNotificationEnabled: Boolean,
+    onResetNotificationChange: (Boolean) -> Unit,
+    autoResetPrimeEnabled: Boolean,
+    onAutoResetPrimeChange: (Boolean) -> Unit,
     gaugeColorHex: String?,
     onGaugeColorChange: (String?) -> Unit,
     modifier: Modifier = Modifier
@@ -113,6 +123,10 @@ fun ProviderDetailScreen(
             onConnect = onConnect,
             onDisconnect = onDisconnect,
             onAddWidget = onAddWidget,
+            resetNotificationEnabled = resetNotificationEnabled,
+            onResetNotificationChange = onResetNotificationChange,
+            autoResetPrimeEnabled = autoResetPrimeEnabled,
+            onAutoResetPrimeChange = onAutoResetPrimeChange,
             gaugeColorHex = gaugeColorHex,
             onGaugeColorChange = onGaugeColorChange
         )
@@ -127,6 +141,10 @@ private fun ClassicProviderWindow(
     onConnect: () -> Unit,
     onDisconnect: () -> Unit,
     onAddWidget: () -> Unit,
+    resetNotificationEnabled: Boolean,
+    onResetNotificationChange: (Boolean) -> Unit,
+    autoResetPrimeEnabled: Boolean,
+    onAutoResetPrimeChange: (Boolean) -> Unit,
     gaugeColorHex: String?,
     onGaugeColorChange: (String?) -> Unit
 ) {
@@ -226,6 +244,10 @@ private fun ClassicProviderWindow(
                         onConnect = onConnect,
                         onDisconnect = onDisconnect,
                         onAddWidget = onAddWidget,
+                        resetNotificationEnabled = resetNotificationEnabled,
+            onResetNotificationChange = onResetNotificationChange,
+            autoResetPrimeEnabled = autoResetPrimeEnabled,
+            onAutoResetPrimeChange = onAutoResetPrimeChange,
                         gaugeColorHex = gaugeColorHex,
                         onGaugeColorChange = onGaugeColorChange
                     )
@@ -264,12 +286,16 @@ private fun ProviderSummaryBlock(
     onConnect: () -> Unit,
     onDisconnect: () -> Unit,
     onAddWidget: () -> Unit,
+    resetNotificationEnabled: Boolean,
+    onResetNotificationChange: (Boolean) -> Unit,
+    autoResetPrimeEnabled: Boolean,
+    onAutoResetPrimeChange: (Boolean) -> Unit,
     gaugeColorHex: String?,
     onGaugeColorChange: (String?) -> Unit
 ) {
     val colors = AIQuotaTheme.colors
     val connectionAction = snapshot.primaryConnectionAction()
-    var showColorDialog by remember { mutableStateOf(false) }
+    var showPersonalSettings by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -287,6 +313,11 @@ private fun ProviderSummaryBlock(
                 color = if (colors.theme == AppTheme.MACOS) colors.titleText else colors.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            ProviderResetAlertBell(
+                enabled = resetNotificationEnabled,
+                onToggle = { onResetNotificationChange(!resetNotificationEnabled) }
             )
         }
 
@@ -347,24 +378,29 @@ private fun ProviderSummaryBlock(
                 )
             }
             OutlinedButton(
-                onClick = { showColorDialog = true },
+                onClick = { showPersonalSettings = true },
                 modifier = Modifier.widthIn(min = 112.dp, max = 180.dp)
             ) {
                 Text(
-                    text = stringResource(R.string.provider_usage_color_button),
+                    text = stringResource(R.string.provider_personal_settings),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
         }
     }
-    if (showColorDialog) {
-        ProviderGaugeColorDialog(
+    if (showPersonalSettings) {
+        ProviderPersonalSettingsDialog(
+            providerId = snapshot.providerId,
             selectedColor = gaugeColorHex,
-            onDismiss = { showColorDialog = false },
-            onApply = { color ->
+            resetNotificationEnabled = resetNotificationEnabled,
+            onResetNotificationChange = onResetNotificationChange,
+            autoResetPrimeEnabled = autoResetPrimeEnabled,
+            onAutoResetPrimeChange = onAutoResetPrimeChange,
+            onDismiss = { showPersonalSettings = false },
+            onApplyColor = { color ->
                 onGaugeColorChange(color)
-                showColorDialog = false
+                showPersonalSettings = false
             }
         )
     }
@@ -445,6 +481,239 @@ private fun ProviderUsageLineRow(
                 )
             }
         }
+    }
+}
+
+/**
+ * Small bell under the provider name that shows and toggles reset alerts for that provider.
+ * Off state adds a top-right to bottom-left slash across the bell.
+ */
+@Composable
+private fun ProviderResetAlertBell(
+    enabled: Boolean,
+    onToggle: () -> Unit
+) {
+    val colors = AIQuotaTheme.colors
+    val tint = if (enabled) colors.primary else colors.textMuted
+    Canvas(
+        modifier = Modifier
+            .size(18.dp)
+            .clickable(onClick = onToggle)
+    ) {
+        val w = size.width
+        val h = size.height
+        val stroke = Stroke(width = w * 0.09f)
+
+        // Bell body: dome on top of a flared rim.
+        val body = Path().apply {
+            moveTo(w * 0.24f, h * 0.63f)
+            lineTo(w * 0.24f, h * 0.45f)
+            cubicTo(w * 0.24f, h * 0.24f, w * 0.36f, h * 0.16f, w * 0.50f, h * 0.16f)
+            cubicTo(w * 0.64f, h * 0.16f, w * 0.76f, h * 0.24f, w * 0.76f, h * 0.45f)
+            lineTo(w * 0.76f, h * 0.63f)
+            lineTo(w * 0.84f, h * 0.73f)
+            lineTo(w * 0.16f, h * 0.73f)
+            close()
+        }
+        drawPath(path = body, color = tint, style = stroke)
+        // Clapper.
+        drawCircle(color = tint, radius = w * 0.08f, center = Offset(w * 0.50f, h * 0.82f))
+        // Top nub.
+        drawCircle(color = tint, radius = w * 0.05f, center = Offset(w * 0.50f, h * 0.12f))
+
+        if (!enabled) {
+            drawLine(
+                color = tint,
+                start = Offset(w * 0.86f, h * 0.14f),
+                end = Offset(w * 0.14f, h * 0.86f),
+                strokeWidth = w * 0.11f
+            )
+        }
+    }
+}
+
+/**
+ * Per-provider personal settings: reset alerts, Claude auto-start, and the gauge colour
+ * picker (shown inline here instead of behind its own button).
+ */
+@Composable
+private fun ProviderPersonalSettingsDialog(
+    providerId: ProviderId,
+    selectedColor: String?,
+    resetNotificationEnabled: Boolean,
+    onResetNotificationChange: (Boolean) -> Unit,
+    autoResetPrimeEnabled: Boolean,
+    onAutoResetPrimeChange: (Boolean) -> Unit,
+    onDismiss: () -> Unit,
+    onApplyColor: (String?) -> Unit
+) {
+    var input by remember(selectedColor) { mutableStateOf(selectedColor.orEmpty()) }
+    var showGradientPicker by remember { mutableStateOf(false) }
+    val normalizedInput = ProviderGaugeColor.normalize(input)
+    val showError = input.isNotBlank() && normalizedInput == null
+
+    val colors = AIQuotaTheme.colors
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 360.dp),
+            shape = RoundedCornerShape(if (colors.theme == AppTheme.MACOS) 16.dp else 2.dp),
+            color = colors.panel,
+            border = BorderStroke(if (colors.theme == AppTheme.MACOS) 1.dp else 2.dp, colors.border),
+            shadowElevation = if (colors.theme == AppTheme.MACOS) 12.dp else 2.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(18.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.provider_personal_settings),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = colors.textPrimary,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                ProviderPersonalSettingsToggle(
+                    title = stringResource(R.string.provider_reset_notification_setting_title),
+                    description = stringResource(R.string.provider_reset_notification_setting_description),
+                    checked = resetNotificationEnabled,
+                    onCheckedChange = onResetNotificationChange
+                )
+
+                if (providerId == ProviderId.CLAUDE) {
+                    ProviderPersonalSettingsToggle(
+                        title = stringResource(R.string.settings_claude_auto_reset_prime_title),
+                        description = stringResource(R.string.settings_claude_auto_reset_prime_description),
+                        checked = autoResetPrimeEnabled,
+                        onCheckedChange = onAutoResetPrimeChange
+                    )
+                }
+
+                Text(
+                    text = stringResource(R.string.provider_usage_color_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = colors.textPrimary,
+                    fontWeight = FontWeight.SemiBold
+                )
+                ProviderGaugeColorPalette(
+                    selectedColor = normalizedInput ?: selectedColor,
+                    onColorSelected = { input = it },
+                    onGradientClick = { showGradientPicker = true }
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = input,
+                        onValueChange = { input = it },
+                        label = {
+                            Text(
+                                text = stringResource(R.string.provider_usage_color_input_label),
+                                color = colors.textSecondary
+                            )
+                        },
+                        singleLine = true,
+                        isError = showError,
+                        supportingText = {
+                            if (showError) {
+                                Text(
+                                    text = stringResource(R.string.provider_usage_color_invalid),
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    Surface(
+                        modifier = Modifier.size(42.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        color = ProviderGaugeColor.toArgbOrNull(normalizedInput)?.let(::Color) ?: Color.Transparent,
+                        border = BorderStroke(1.dp, colors.border),
+                        content = {}
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = { onApplyColor(null) }) {
+                        Text(
+                            text = stringResource(R.string.provider_usage_color_reset),
+                            color = colors.primary
+                        )
+                    }
+                    TextButton(onClick = onDismiss) {
+                        Text(
+                            text = stringResource(R.string.settings_close),
+                            color = colors.primary
+                        )
+                    }
+                    TextButton(
+                        enabled = normalizedInput != null,
+                        onClick = { onApplyColor(normalizedInput) }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.provider_usage_color_apply),
+                            color = colors.primary
+                        )
+                    }
+                }
+            }
+        }
+    }
+    if (showGradientPicker) {
+        ProviderGaugeGradientPickerDialog(
+            selectedColor = normalizedInput ?: selectedColor,
+            onColorSelected = { input = it },
+            onDismiss = { showGradientPicker = false }
+        )
+    }
+}
+
+@Composable
+private fun ProviderPersonalSettingsToggle(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    val colors = AIQuotaTheme.colors
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = colors.textPrimary,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.textMuted
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = colors.panel,
+                checkedTrackColor = colors.primary,
+                checkedBorderColor = colors.primary,
+                uncheckedThumbColor = colors.textMuted,
+                uncheckedTrackColor = colors.progressTrack,
+                uncheckedBorderColor = colors.border
+            )
+        )
     }
 }
 
