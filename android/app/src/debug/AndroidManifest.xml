@@ -31,5 +31,12 @@
         <action android:name="com.aiquota.mobile.debug.FAKE_RESET_NOTIFICATION" />
       </intent-filter>
     </receiver>
+    <receiver
+      android:name=".debug.DebugClaudePrimeReceiver"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="com.aiquota.mobile.debug.FORCE_CLAUDE_PRIME" />
+      </intent-filter>
+    </receiver>
   </application>
 </manifest>
