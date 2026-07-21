@@ -27,3 +27,5 @@ store-assets/
 icons/
 .codegraph/
 data/
+.env
+.env.*
