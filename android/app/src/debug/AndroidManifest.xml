@@ -24,5 +24,12 @@
         <action android:name="com.aiquota.mobile.debug.RESET_PROVIDER" />
       </intent-filter>
     </receiver>
+    <receiver
+      android:name=".debug.DebugResetNotificationReceiver"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="com.aiquota.mobile.debug.FAKE_RESET_NOTIFICATION" />
+      </intent-filter>
+    </receiver>
   </application>
 </manifest>

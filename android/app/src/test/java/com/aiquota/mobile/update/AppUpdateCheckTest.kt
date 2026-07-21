@@ -38,7 +38,7 @@ class AppUpdateCheckTest {
     }
 
     @Test
-    fun appEntryShowsUpdatePromptAndOpensStoreWithoutImmediateRedirect() {
+    fun appEntryRunsInAppFlexibleUpdateWithStoreFallback() {
         val build = File("build.gradle.kts").readText()
         val mainActivity = File("src/main/java/com/aiquota/mobile/MainActivity.kt").readText()
         val coordinator = File("src/main/java/com/aiquota/mobile/update/AppUpdateCoordinator.kt").readText()
@@ -50,17 +50,24 @@ class AppUpdateCheckTest {
         assertTrue(mainActivity.contains("delay(APP_UPDATE_CHECK_STARTUP_DELAY_MS)"))
         assertTrue(mainActivity.contains("appUpdateCoordinator.checkForStoreUpdate()"))
         assertTrue(mainActivity.contains("AppUpdatePromptDialog"))
-        assertTrue(mainActivity.contains("openStoreListing()"))
-        assertFalse(mainActivity.contains("resumeRequiredUpdateIfNeeded"))
-        assertTrue(coordinator.contains("AppUpdateManagerFactory.create"))
+        // In-app flexible update is started instead of redirecting to the store listing.
+        assertTrue(mainActivity.contains("ActivityResultContracts.StartIntentSenderForResult"))
+        assertTrue(mainActivity.contains("appUpdateCoordinator.startFlexibleUpdate(updateFlowLauncher)"))
+        assertTrue(mainActivity.contains("AppUpdateInstallDialog"))
+        assertTrue(mainActivity.contains("appUpdateCoordinator.completeFlexibleUpdate()"))
+        assertTrue(mainActivity.contains("appUpdateCoordinator.resumeDownloadedUpdate()"))
+        assertFalse(mainActivity.contains("appUpdateCoordinator.openStoreListing()"))
+        assertTrue(coordinator.contains("AppUpdateManagerProvider.create"))
         assertTrue(coordinator.contains("UpdateAvailability.UPDATE_AVAILABLE"))
         assertTrue(coordinator.contains("onUpdateAvailable"))
+        assertTrue(coordinator.contains("startUpdateFlowForResult"))
+        assertTrue(coordinator.contains("AppUpdateType.FLEXIBLE"))
+        assertTrue(coordinator.contains("completeUpdate()"))
+        // Store listing is retained only as a fallback when in-app update is not permitted.
         assertTrue(coordinator.contains("AppUpdateStoreNavigator.open"))
         assertTrue(navigator.contains("market://details?id="))
         assertTrue(navigator.contains("https://play.google.com/store/apps/details?id="))
-        assertFalse(coordinator.contains("startUpdateFlowForResult"))
         assertFalse(coordinator.contains("AppUpdateType.IMMEDIATE"))
-        assertFalse(coordinator.contains("ActivityResultContracts.StartIntentSenderForResult"))
     }
 
     @Test

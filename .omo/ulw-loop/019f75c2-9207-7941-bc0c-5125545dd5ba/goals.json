@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "evidenceLayoutVersion": 2,
+  "createdAt": "2026-07-19T15:01:31.735Z",
+  "updatedAt": "2026-07-19T15:05:31.665Z",
+  "briefPath": ".omo/ulw-loop/019f75c2-9207-7941-bc0c-5125545dd5ba/brief.md",
+  "goalsPath": ".omo/ulw-loop/019f75c2-9207-7941-bc0c-5125545dd5ba/goals.json",
+  "ledgerPath": ".omo/ulw-loop/019f75c2-9207-7941-bc0c-5125545dd5ba/ledger.jsonl",
+  "codexGoalMode": "aggregate",
+  "goals": [
+    {
+      "id": "G001-create-a-detailed-implementation-pla",
+      "title": "Create a detailed implementation plan, not product code, for an AI Qu...",
+      "objective": "Create a detailed implementation plan, not product code, for an AI Quota Android optional (default-off) Claude 5-hour-session activation feature. Preserve the existing dirty worktree. Research existing reset scheduling, settings, background WebView collection, and test seams. The plan must not prescribe hidden automatic subscription-session message traffic or third-party routing against Claude subscription limits; instead identify a compliant opt-in alternative and the explicit product decision needed. Success is an evidence-backed planning draft and approval brief, with no product code edits.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "CLI data surface: draft records default-off setting, existing reset seams, and a compliant activation approach",
+          "userModel": "happy",
+          "expectedEvidence": ".omo/drafts/claude-optional-session-activation.md contains cited repository findings and an awaiting-approval gate",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "Boundary: requested hidden consumer-session automation is rejected and only a compliant alternative is presented",
+          "userModel": "edge",
+          "expectedEvidence": "Official Anthropic Consumer Terms URL plus recorded Scope OUT entry in the draft",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "Regression: planning artifacts do not change product source or user-owned dirty files",
+          "userModel": "regression",
+          "expectedEvidence": "git status --short shows only .omo planning artifacts added by this turn, while pre-existing modified tracked files remain untouched",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-19T15:01:31.735Z",
+      "updatedAt": "2026-07-19T15:05:31.665Z"
+    }
+  ],
+  "codexObjective": "Complete the durable ulw-loop plan in .omo/ulw-loop/019f75c2-9207-7941-bc0c-5125545dd5ba/goals.json, including later accepted/appended stories, under the original brief constraints; use .omo/ulw-loop/019f75c2-9207-7941-bc0c-5125545dd5ba/ledger.jsonl as the audit trail."
+}

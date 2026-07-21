@@ -26,7 +26,9 @@ import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.R
 import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.local.ProviderId
+import com.aiquota.mobile.local.ProviderPreferencesRepository
 import com.aiquota.mobile.local.ProviderUsageSnapshot
+import com.aiquota.mobile.notification.ProviderResetNotificationController
 import com.aiquota.mobile.notification.UsageLimitNotificationController
 import com.aiquota.mobile.update.AppUpdatedRefreshCooldown
 import com.aiquota.mobile.widget.WidgetRefreshActions
@@ -258,6 +260,7 @@ class ProviderBackgroundRefreshService : Service() {
             jobs.forEach { job ->
                 refreshProvider(job, automaticRefresh = manualProviderId == null)
             }
+            evaluateResetNotifications()
         } finally {
             if (manualWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
                 WidgetRefreshFeedback.clearWidgetRefresh(applicationContext, manualWidgetId)
@@ -398,6 +401,56 @@ class ProviderBackgroundRefreshService : Service() {
             }
         }
         UsageSurfaceRefresher.refresh(applicationContext, repository)
+        if (effectiveJob.providerId == ProviderId.CLAUDE) {
+            maybePrimeClaudeSession()
+        }
+    }
+
+    private fun evaluateResetNotifications() {
+        val preferences = ProviderPreferencesRepository(applicationContext)
+        val stateRepository = ProviderResetNotificationStateRepository(applicationContext)
+        val result = ProviderResetNotificationPolicy.evaluate(
+            snapshots = repository.readSnapshots(),
+            isEnabled = { preferences.isResetNotificationEnabled(it) },
+            storedPending = stateRepository.readPending(),
+            lastNotified = stateRepository.readNotified()
+        )
+        stateRepository.write(result.pending, result.notified)
+        result.notifications.forEach { notification ->
+            Log.i(TAG, "resetNotification provider=${notification.providerId.storageId} line=${notification.lineKey}")
+            ProviderResetNotificationController.notifyReset(applicationContext, notification)
+        }
+    }
+
+    private suspend fun maybePrimeClaudeSession() {
+        val enabled = ProviderPreferencesRepository(applicationContext).isClaudeAutoResetPrimeEnabled()
+        val snapshot = repository.readSnapshots().firstOrNull { it.providerId == ProviderId.CLAUDE }
+        val primeState = ClaudeSessionPrimeStateRepository(applicationContext)
+        val decision = ClaudeSessionPrimePolicy.evaluate(
+            snapshot = snapshot,
+            enabled = enabled,
+            storedPendingMillis = primeState.pendingResetMillis(),
+            lastPrimedMillis = primeState.lastPrimedResetMillis()
+        )
+        primeState.savePendingResetMillis(decision.pendingResetMillis)
+        val target = decision.primeTargetMillis
+        if (target == null) {
+            val fiveHourReset = snapshot?.lines?.firstOrNull { it.key == ClaudeSessionPrimePolicy.FIVE_HOUR_LINE_KEY }?.resetsAt
+            Log.d(
+                TAG,
+                "provider=claude autoPrime skip enabled=$enabled connState=${snapshot?.connectionState} " +
+                    "pending=${decision.pendingResetMillis} nowMs=${System.currentTimeMillis()} fiveHourReset=$fiveHourReset"
+            )
+            return
+        }
+        // Record before attempting so a failed attempt is not retried every cycle;
+        // the next window yields a new reset boundary and a fresh attempt.
+        primeState.recordPrimed(target)
+        val result = withContext(Dispatchers.IO) { ClaudeSessionPrimer.prime(applicationContext) }
+        Log.i(TAG, "provider=claude autoPrime ok=${result.ok} target=$target detail=${result.detail}")
+        if (result.ok) {
+            refreshProvider(ProviderRefreshPlan.manualJobFor(ProviderId.CLAUDE), automaticRefresh = true)
+        }
     }
 
     private fun resolveRuntimeRefreshJob(job: ProviderRefreshJob): ProviderRefreshJob {

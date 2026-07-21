@@ -62,8 +62,12 @@ fun SettingsPanel(
     notificationEnabled: Boolean,
     canPostNotifications: Boolean,
     liveRefreshState: SettingsLiveRefreshState = SettingsLiveRefreshState.STOPPED,
+    batteryOptimizationExempt: Boolean = true,
     onNotificationEnabledChanged: (Boolean) -> Unit,
     onOpenNotificationSettings: () -> Unit,
+    onOpenBatteryOptimizationSettings: () -> Unit = {},
+    claudeAutoResetPrimeEnabled: Boolean = false,
+    onClaudeAutoResetPrimeChanged: (Boolean) -> Unit = {},
     providerOrder: List<ProviderId> = ProviderId.defaultOrder(),
     snapshots: List<ProviderUsageSnapshot> = emptyList(),
     onConnectProvider: (ProviderId) -> Unit = {},
@@ -90,8 +94,14 @@ fun SettingsPanel(
             notificationEnabled = notificationEnabled,
             canPostNotifications = canPostNotifications,
             liveRefreshState = liveRefreshState,
+            batteryOptimizationExempt = batteryOptimizationExempt,
             onNotificationEnabledChanged = onNotificationEnabledChanged,
-            onOpenNotificationSettings = onOpenNotificationSettings
+            onOpenNotificationSettings = onOpenNotificationSettings,
+            onOpenBatteryOptimizationSettings = onOpenBatteryOptimizationSettings
+        )
+        ClaudeAutoResetPrimeSection(
+            enabled = claudeAutoResetPrimeEnabled,
+            onEnabledChanged = onClaudeAutoResetPrimeChanged
         )
         ThemeSettingsSection(
             currentTheme = currentTheme,
@@ -115,8 +125,10 @@ private fun NotificationSettingsSection(
     notificationEnabled: Boolean,
     canPostNotifications: Boolean,
     liveRefreshState: SettingsLiveRefreshState,
+    batteryOptimizationExempt: Boolean,
     onNotificationEnabledChanged: (Boolean) -> Unit,
-    onOpenNotificationSettings: () -> Unit
+    onOpenNotificationSettings: () -> Unit,
+    onOpenBatteryOptimizationSettings: () -> Unit
 ) {
     val layoutMetrics = rememberAppLayoutMetrics()
     val colors = AIQuotaTheme.colors
@@ -183,6 +195,85 @@ private fun NotificationSettingsSection(
                 OutlinedButton(onClick = onOpenNotificationSettings) {
                     Text(stringResource(R.string.settings_open_notification_settings))
                 }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_battery_optimization_title),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.textMuted,
+                    fontWeight = FontWeight.SemiBold
+                )
+                if (!batteryOptimizationExempt) {
+                    OutlinedButton(onClick = onOpenBatteryOptimizationSettings) {
+                        Text(stringResource(R.string.settings_open_battery_optimization_settings))
+                    }
+                }
+            }
+            Text(
+                text = stringResource(
+                    if (batteryOptimizationExempt) {
+                        R.string.settings_battery_optimization_exempt
+                    } else {
+                        R.string.settings_battery_optimization_recommended
+                    }
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (batteryOptimizationExempt) colors.textMuted else MaterialTheme.colorScheme.error
+            )
+        }
+    }
+}
+
+@Composable
+private fun ClaudeAutoResetPrimeSection(
+    enabled: Boolean,
+    onEnabledChanged: (Boolean) -> Unit
+) {
+    val layoutMetrics = rememberAppLayoutMetrics()
+    val colors = AIQuotaTheme.colors
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = colors.panel,
+        border = BorderStroke(1.dp, colors.borderSoft)
+    ) {
+        Column(
+            modifier = Modifier.padding(layoutMetrics.cardPaddingDp.dp),
+            verticalArrangement = Arrangement.spacedBy(layoutMetrics.cardSpacingDp.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.settings_claude_auto_reset_prime_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_claude_auto_reset_prime_description),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.textMuted
+                    )
+                }
+                Switch(
+                    checked = enabled,
+                    onCheckedChange = onEnabledChanged,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = colors.panel,
+                        checkedTrackColor = colors.primary,
+                        checkedBorderColor = colors.primary,
+                        uncheckedThumbColor = colors.textMuted,
+                        uncheckedTrackColor = colors.progressTrack,
+                        uncheckedBorderColor = colors.border
+                    )
+                )
             }
         }
     }

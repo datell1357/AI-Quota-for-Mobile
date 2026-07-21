@@ -1,12 +1,8 @@
 ﻿package com.aiquota.mobile.notification
 
 import java.io.File
-import javax.xml.parsers.DocumentBuilderFactory
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.w3c.dom.Document
-import org.w3c.dom.Element
 
 class NotificationPermissionLaunchTest {
     @Test
@@ -45,19 +41,22 @@ class NotificationPermissionLaunchTest {
     }
 
     @Test
-    fun firstEntryLiveRefreshPromptDoesNotRecommendBatteryOptimizationExemption() {
-        val manifestPermissions = manifestElements("uses-permission").map { it.getAttribute("android:name") }.toSet()
-        val manifestReceivers = manifestElements("receiver").map { it.getAttribute("android:name") }.toSet()
-        val englishStrings = stringResources("src/main/res/values/strings.xml")
-        val koreanStrings = stringResources("src/main/res/values-ko/strings.xml")
+    fun firstEntryLiveRefreshPromptRecommendsBatteryOptimizationExemption() {
+        val manifest = File("src/main/AndroidManifest.xml").readText()
+        val appShell = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
+        val english = File("src/main/res/values/strings.xml").readText()
+        val korean = File("src/main/res/values-ko/strings.xml").readText()
 
-        assertFalse(manifestPermissions.contains("android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"))
-        assertTrue(manifestPermissions.contains("android.permission.POST_NOTIFICATIONS"))
-        assertFalse(englishStrings.containsBatteryOptimizationPrompt())
-        assertFalse(koreanStrings.containsBatteryOptimizationPrompt())
-        assertTrue(manifestReceivers.contains(".widget.AIQuotaCircularWidgetProvider"))
-        assertTrue(englishStrings.hasNonBlank("dashboard_widget_picker_battery"))
-        assertTrue(koreanStrings.hasNonBlank("dashboard_widget_picker_battery"))
+        assertTrue(manifest.contains("android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"))
+        assertTrue(appShell.contains("PowerManager"))
+        assertTrue(appShell.contains("isIgnoringBatteryOptimizations"))
+        assertTrue(appShell.contains("Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"))
+        assertTrue(appShell.contains("Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS"))
+        assertTrue(appShell.contains("onOpenBatteryOptimizationSettings"))
+        assertTrue(appShell.contains("live_refresh_prompt_battery_title"))
+        assertTrue(appShell.contains("live_refresh_prompt_open_battery_settings"))
+        assertTrue(english.contains("Recommended for 1-minute live refresh"))
+        assertTrue(korean.contains("1분 주기 라이브 갱신 안정성을 위해 권장"))
     }
 
     @Test
@@ -68,32 +67,5 @@ class NotificationPermissionLaunchTest {
         assertTrue(!providerDetail.contains("RefreshIconButton"))
         assertTrue(!providerDetail.contains("onRefresh:"))
         assertTrue(!appShell.contains("onRefresh = { refreshProvider"))
-    }
-
-    private fun manifestElements(tagName: String): List<Element> {
-        return elementsNamed(xmlDocument("src/main/AndroidManifest.xml"), tagName)
-    }
-
-    private fun stringResources(path: String): Map<String, String> {
-        return elementsNamed(xmlDocument(path), "string")
-            .associate { it.getAttribute("name") to it.textContent }
-    }
-
-    private fun xmlDocument(path: String): Document {
-        return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(File(path))
-    }
-
-    private fun elementsNamed(document: Document, tagName: String): List<Element> {
-        val nodes = document.getElementsByTagName(tagName)
-        return (0 until nodes.length).mapNotNull { nodes.item(it) as? Element }
-    }
-
-    private fun Map<String, String>.containsBatteryOptimizationPrompt(): Boolean {
-        return keys.any { it.startsWith("live_refresh_prompt_") && it.contains("battery") } ||
-            values.any { it.contains("battery optimization", ignoreCase = true) || it.contains("배터리 최적화") }
-    }
-
-    private fun Map<String, String>.hasNonBlank(name: String): Boolean {
-        return this[name]?.isNotBlank() == true
     }
 }

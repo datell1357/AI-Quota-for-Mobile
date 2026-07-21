@@ -5,6 +5,9 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -29,6 +32,9 @@ class MainActivity : ComponentActivity() {
     private lateinit var appUpdateCoordinator: AppUpdateCoordinator
     private var routeRequest by mutableStateOf<AppRoute?>(null)
 
+    private val updateFlowLauncher: ActivityResultLauncher<IntentSenderRequest> =
+        registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         FirebaseGatewayBootstrap.install()
@@ -37,13 +43,19 @@ class MainActivity : ComponentActivity() {
         postCachedNotificationWhenAllowed()
         setContent {
             var showUpdatePrompt by remember { mutableStateOf(false) }
+            var showInstallPrompt by remember { mutableStateOf(false) }
             DisposableEffect(appUpdateCoordinator) {
                 appUpdateCoordinator.onUpdateAvailable = {
                     showUpdatePrompt = true
                     postCachedNotificationWhenAllowed()
                 }
+                appUpdateCoordinator.onUpdateDownloaded = {
+                    showUpdatePrompt = false
+                    showInstallPrompt = true
+                }
                 onDispose {
                     appUpdateCoordinator.onUpdateAvailable = {}
+                    appUpdateCoordinator.onUpdateDownloaded = {}
                 }
             }
             AIQuotaAppShell(
@@ -55,9 +67,18 @@ class MainActivity : ComponentActivity() {
                 AppUpdatePromptDialog(
                     onUpdate = {
                         showUpdatePrompt = false
-                        appUpdateCoordinator.openStoreListing()
+                        appUpdateCoordinator.startFlexibleUpdate(updateFlowLauncher)
                     },
                     onDismiss = { showUpdatePrompt = false }
+                )
+            }
+            if (showInstallPrompt) {
+                AppUpdateInstallDialog(
+                    onInstall = {
+                        showInstallPrompt = false
+                        appUpdateCoordinator.completeFlexibleUpdate()
+                    },
+                    onDismiss = { showInstallPrompt = false }
                 )
             }
         }
@@ -71,6 +92,16 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         routeRequest = routeFromIntent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        appUpdateCoordinator.resumeDownloadedUpdate()
+    }
+
+    override fun onDestroy() {
+        appUpdateCoordinator.dispose()
+        super.onDestroy()
     }
 
     private fun postCachedNotificationWhenAllowed() {
@@ -122,6 +153,28 @@ private fun AppUpdatePromptDialog(
         confirmButton = {
             TextButton(onClick = onUpdate) {
                 Text(stringResource(R.string.app_update_prompt_update))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.app_update_prompt_later))
+            }
+        }
+    )
+}
+
+@Composable
+private fun AppUpdateInstallDialog(
+    onInstall: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.app_update_install_prompt_title)) },
+        text = { Text(stringResource(R.string.app_update_install_prompt_body)) },
+        confirmButton = {
+            TextButton(onClick = onInstall) {
+                Text(stringResource(R.string.app_update_install_prompt_restart))
             }
         },
         dismissButton = {
