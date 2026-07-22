@@ -190,9 +190,14 @@ class AntigravityOAuthRepository(context: Context) {
         secureStore.putString(KEY_ACCESS_TOKEN, accessToken)
         secureStore.putString(KEY_REFRESH_TOKEN, refreshToken)
         tokenJson.optNullableString("id_token")?.let { secureStore.putString(KEY_ID_TOKEN, it) }
+        // A missing lifetime used to mark the token as already expired, so every collection
+        // refreshed it again. Fall back to a lifetime shorter than Google's usual hour instead.
+        val lifetimeSeconds = tokenJson.optLong("expires_in", 0L)
+            .takeIf { it > 0L }
+            ?: FALLBACK_ACCESS_TOKEN_LIFETIME_SECONDS
         secureStore.putLong(
             KEY_ACCESS_EXPIRES_AT,
-            System.currentTimeMillis() + tokenJson.optLong("expires_in", 0L) * 1000L
+            System.currentTimeMillis() + lifetimeSeconds * 1000L
         )
     }
 
@@ -240,6 +245,7 @@ class AntigravityOAuthRepository(context: Context) {
         private const val CLIENT_VERSION = "2.0.0"
         private const val NETWORK_TIMEOUT_MS = 10_000
         private const val TOKEN_EXPIRY_SKEW_MILLIS = 5 * 60_000L
+        private const val FALLBACK_ACCESS_TOKEN_LIFETIME_SECONDS = 45L * 60L
         private const val TAG = "AIQuotaAntigravity"
         fun isLoopbackOAuthCallback(url: String): Boolean {
             val uri = runCatching { URI(url) }.getOrNull() ?: return false

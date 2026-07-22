@@ -622,6 +622,9 @@ test("refreshAntigravityAccessToken refreshes through Firebase secret without re
   assert.equal(result.ok, true);
   assert.equal(result.accessToken, "new-access-secret");
   assert.equal(result.refreshToken, "refresh-secret");
+  // Dropping this made the client treat the token as already expired and refresh on every
+  // collection.
+  assert.equal(result.expiresIn, 3600);
   assert.equal(JSON.stringify(result).includes("client-secret"), false);
 });
 

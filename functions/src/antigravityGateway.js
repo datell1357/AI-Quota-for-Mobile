@@ -640,9 +640,12 @@ export async function refreshAntigravityAccessToken({
   if (!tokenResponse.ok) {
     throw new Error(tokenResponse.errorKind ?? "GOOGLE_REFRESH_FAILED");
   }
+  // Forward the lifetime Google reported. Without it the client cannot cache the access token
+  // and refreshes on every single collection.
   return tokenResult({
     access_token: tokenResponse.accessToken,
-    refresh_token: refreshToken
+    refresh_token: refreshToken,
+    expires_in: tokenResponse.expiresIn
   });
 }
 
@@ -779,7 +782,11 @@ async function refreshGoogleAccessToken({ fetchImpl, refreshToken, oauthClientId
       retryable: false
     };
   }
-  return { ok: true, accessToken: tokenResponse.access_token };
+  return {
+    ok: true,
+    accessToken: tokenResponse.access_token,
+    expiresIn: tokenResponse.expires_in
+  };
 }
 
 async function callAntigravityApi({ fetchImpl, accessToken, methodName, body }) {

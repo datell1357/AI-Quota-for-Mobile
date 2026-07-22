@@ -136,17 +136,23 @@ class AntigravityLoopbackOAuthActivity : Activity() {
         webView.stopLoading()
         activityScope.launch {
             val repository = AntigravityOAuthRepository(applicationContext)
-            val payload = runCatching {
+            val outcome = runCatching {
                 withContext(Dispatchers.IO) {
                     val tokenResult = AntigravityFirebaseGateway(applicationContext).completeOAuth(url)
                     repository.fetchUsagePayloadFromGatewayTokenResult(tokenResult)
                 }
             }.onFailure { error ->
-                Log.w(TAG, "webviewOAuth completeFailed=${error.javaClass.simpleName}")
-            }.getOrNull()
+                Log.w(
+                    TAG,
+                    "webviewOAuth completeFailed=${error.javaClass.simpleName} code=${error.message}"
+                )
+            }
+            val payload = outcome.getOrNull()
             val diagnostic = repository.lastFailureDiagnostic()
             if (!payload.isNullOrBlank()) {
                 completeWithPayload(payload)
+            } else if (AntigravityOAuthErrorPolicy.requiresFreshSignIn(outcome.exceptionOrNull())) {
+                finishSignInExpired()
             } else {
                 finishGoogleUsagePending(
                     diagnostic ?: "Antigravity OAuth completed, but quota payload was not available.",
@@ -189,6 +195,19 @@ class AntigravityLoopbackOAuthActivity : Activity() {
         val repository = LocalUsageRepository(applicationContext)
         repository.markGoogleUsagePending(ProviderId.ANTIGRAVITY, message)
         Log.w(TAG, "webviewOAuth errorKind=$errorKind usagePending=true")
+        UsageSurfaceRefresher.refresh(applicationContext, repository)
+        finish()
+    }
+
+    private fun finishSignInExpired() {
+        if (finished) return
+        finished = true
+        val repository = LocalUsageRepository(applicationContext)
+        repository.markSessionExpired(
+            ProviderId.ANTIGRAVITY,
+            AntigravityOAuthErrorPolicy.SIGN_IN_RESTART_MESSAGE
+        )
+        Log.w(TAG, "webviewOAuth errorKind=antigravity_oauth_state_expired signInRequired=true")
         UsageSurfaceRefresher.refresh(applicationContext, repository)
         finish()
     }
