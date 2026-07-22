@@ -16,7 +16,7 @@ class AntigravityOAuthRepositoryTest {
         assertTrue(source.contains("fetchUsagePayloadFromGatewayTokenResult"))
         assertTrue(source.contains("AntigravityFirebaseGateway(appContext).refreshAccessToken(refreshToken)"))
         assertTrue(source.contains("http://127.0.0.1:8080/callback"))
-        assertTrue(build.contains("1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"))
+        assertFalse(build.contains("1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"))
         assertFalse(source.contains("loopbackAuthorizationUrl"))
         assertFalse(source.contains("fetchUsagePayloadFromLoopbackCallback"))
         assertFalse(source.contains("https://oauth2.googleapis.com/token"))

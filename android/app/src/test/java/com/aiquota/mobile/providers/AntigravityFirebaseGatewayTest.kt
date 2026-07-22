@@ -13,7 +13,7 @@ class AntigravityFirebaseGatewayTest {
         val activity = File("src/main/java/com/aiquota/mobile/providers/AntigravityLoopbackOAuthActivity.kt").readText()
         val build = File("build.gradle.kts").readText()
 
-        assertTrue(build.contains("1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"))
+        assertFalse(build.contains("1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"))
         assertTrue(gateway.contains("callWithAppCheckRetry(appCheck, \"startAntigravityOAuth\""))
         assertTrue(gateway.contains("callWithAppCheckRetry(appCheck, \"completeAntigravityOAuth\""))
         assertTrue(gateway.contains("callWithAppCheckRetry("))

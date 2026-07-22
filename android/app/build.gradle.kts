@@ -28,8 +28,6 @@ val googleAndroidOAuthClientId = localProperties.getProperty("aiquota.googleAndr
     ?.trim()
     ?.takeIf { it.isNotBlank() }
     ?: ""
-val geminiCliOAuthClientId = "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"
-val antigravityOAuthClientId = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
 val googleAndroidOAuthRedirectScheme = googleAndroidOAuthClientId
     .takeIf { it.endsWith(".apps.googleusercontent.com") }
     ?.removeSuffix(".apps.googleusercontent.com")
@@ -90,8 +88,6 @@ android {
         versionName = "1.1.2"
         buildConfigField("String", "GOOGLE_ANDROID_OAUTH_CLIENT_ID", "\"$googleAndroidOAuthClientId\"")
         buildConfigField("String", "GOOGLE_ANDROID_OAUTH_REDIRECT_SCHEME", "\"$googleAndroidOAuthRedirectScheme\"")
-        buildConfigField("String", "GEMINI_CLI_OAUTH_CLIENT_ID", "\"$geminiCliOAuthClientId\"")
-        buildConfigField("String", "ANTIGRAVITY_OAUTH_CLIENT_ID", "\"$antigravityOAuthClientId\"")
         manifestPlaceholders["appAuthRedirectScheme"] = googleAndroidOAuthRedirectScheme
     }
 

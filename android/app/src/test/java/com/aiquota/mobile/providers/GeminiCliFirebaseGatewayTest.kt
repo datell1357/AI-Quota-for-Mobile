@@ -34,8 +34,8 @@ class GeminiCliFirebaseGatewayTest {
         val antigravityGateway = File("src/main/java/com/aiquota/mobile/providers/AntigravityFirebaseGateway.kt").readText()
         val build = File("build.gradle.kts").readText()
 
-        assertTrue(build.contains("681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"))
-        assertTrue(build.contains("1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"))
+        assertFalse(build.contains("681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"))
+        assertFalse(build.contains("1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"))
         assertFalse(appShell.contains("GeminiCliLoopbackOAuthActivity.createIntent"))
         assertTrue(appShell.contains("AntigravityLoopbackOAuthActivity.createIntent"))
         assertTrue(geminiActivity.contains("WebView"))
