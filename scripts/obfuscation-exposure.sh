@@ -30,11 +30,11 @@ mkdir -p "$(dirname "$out")"
   echo "## Class name obfuscation"
   if [ -f "$mapping" ]; then
     total=$(grep -cE '^com\.aiquota\.mobile\..* -> ' "$mapping" || true)
-    # "renamed" = the mapped name's last segment collapsed to a short token
-    renamed=$(grep -E '^com\.aiquota\.mobile\..* -> ' "$mapping" \
-      | awk -F' -> ' '{print $2}' | grep -cE '\.[a-z]{1,3}:$' || true)
+    # A class is still readable if its obfuscated name kept the original identifier.
+    readable=$(grep -E '^com\.aiquota\.mobile\..* -> ' "$mapping" \
+      | awk -F' -> ' '{split($1,a,"."); n=a[length(a)]; if (index($2, n)) print}' | wc -l | tr -d ' ')
     echo "app classes in mapping : $total"
-    echo "renamed to short names : $renamed"
+    echo "still readable by name : $readable"
   else
     echo "mapping.txt not found"
   fi

@@ -1,0 +1,112 @@
+# Obfuscation exposure report
+generated: 2026-07-22T06:47:56Z
+
+## Class name obfuscation
+app classes in mapping : 1005
+still readable by name : 22
+
+## Package structure (top-level packages still readable in dex)
+  Lcom/aiquota/mobile/a
+  Lcom/aiquota/mobile/b
+  Lcom/aiquota/mobile/c
+  Lcom/aiquota/mobile/d
+  Lcom/aiquota/mobile/e
+  Lcom/aiquota/mobile/f
+  Lcom/aiquota/mobile/g
+
+## Readable assets
+  antigravity_collector.js
+
+## Provider endpoints visible in dex
+  https://account.z.ai
+  https://accounts.z.ai
+  https://antigravity.google
+  https://antigravity.google/
+  https://api.z.ai
+  https://api.z.ai/api/biz/subscription/list
+  https://api.z.ai/api/monitor/usage/quota/limit
+  https://auth.openai.com
+  https://auth.openai.com/authorize
+  https://auth.openai.com/u/login
+  https://auth.opencode.ai
+  https://auth.z.ai
+  https://chat.openai.com
+  https://chat.z.ai
+  https://chat.z.ai/auth
+  https://chatgpt.com
+  https://chatgpt.com/
+  https://chatgpt.com/api/auth/session
+  https://chatgpt.com/auth/login
+  https://chatgpt.com/backend-api/accounts/check/v4-2023-04-27
+  https://chatgpt.com/backend-api/me
+  https://chatgpt.com/backend-api/subscriptions
+  https://chatgpt.com/backend-api/wham/usage
+  https://chatgpt.com/codex/cloud/settings/analytics
+  https://chatgpt.com/codex/settings/usage
+  https://claude.ai
+  https://claude.ai/
+  https://claude.ai/api/account_profile
+  https://claude.ai/api/organizations
+  https://claude.ai/api/organizations/
+  https://claude.ai/api/organizations/{organizationId}/usage
+  https://claude.ai/api/organizations/me
+  https://claude.ai/login
+  https://cursor.com
+  https://cursor.com/api/auth/stripe
+  https://cursor.com/api/auth/usage
+  https://cursor.com/api/dashboard/get-credit-grants-balance
+  https://cursor.com/api/usage
+  https://cursor.com/api/usage-summary
+  https://cursor.com/dashboard
+  https://login.z.ai
+  https://opencode.ai
+  https://opencode.ai/_server
+  https://opencode.ai/auth
+  https://opencode.ai/workspace/
+  https://opencode.ai/workspace/{workspaceId}/go
+  https://opencode.ai/zen/go/usage
+  https://sentinel.openai.com
+  https://ws.chatgpt.com
+  https://www.antigravity.google
+  https://www.claude.ai
+  https://www.claude.ai/
+  https://www.cursor.com
+  https://www.opencode.ai
+  https://www.z.ai
+  https://z.ai
+  https://z.ai/chat
+  https://z.ai/manage-apikey
+  https://z.ai/manage-apikey/coding-plan
+  https://z.ai/manage-apikey/coding-plan/personal
+  https://z.ai/manage-apikey/coding-plan/personal/my-plan
+  https://z.ai/manage-apikey/coding-plan/personal/usage
+  https://z.ai/manage-apikey/subscription
+  -- provider api paths --
+  /api/account_profile
+  /api/bootstrap/
+  /api/monitor/usage
+  /api/monitor/usage/quota/limit
+  /api/organizations
+  /api/organizations/
+  /api/organizations/{organizationId}/usage
+  /api/organizations/me
+  /api/usage
+  /api/usage-summary
+  /backend-api/accounts/check
+  /backend-api/accounts/check/v4-2023-04-27
+  /backend-api/me
+  /backend-api/subscriptions
+  /backend-api/wham/usage
+
+## Collector / bridge identifiers visible in dex
+     9 AIQuotaCollectorBridge
+     8 __AIQuotaStartProviderCollector
+     4 __AIQuotaCollector
+     2 chat_conversations
+     2 __AIQuotaProviderCollectorState
+     1 rendering_mode
+     1 parent_message_uuid
+
+## OAuth client ids visible in dex (public by design, tracked for completeness)
+  1071006060591-tmhssin2h21lcre235vtolojh4g403ep
+  681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j

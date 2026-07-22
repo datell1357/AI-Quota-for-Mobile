@@ -7,6 +7,11 @@
 -dontshrink
 -dontoptimize
 
+# Flatten every obfuscated class into a single unnamed package so the release bundle no longer
+# reveals the module layout (local/providers/sync/ui/update/widget). Manifest components and the
+# rules below keep their original names, so runtime lookups are unaffected.
+-repackageclasses ''
+
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
 
 -keep class com.aiquota.mobile.AIQuotaApplication { public <init>(); }
