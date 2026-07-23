@@ -110,7 +110,7 @@
     <string name="provider_reset_notification_setting_title">리셋 알림</string>
     <string name="provider_reset_notification_setting_description">사용량 리셋 시 알림을 받습니다.</string>
     <string name="provider_usage_threshold_setting_title">사용량 알림</string>
-    <string name="provider_usage_threshold_setting_description">남은 사용량이 일정\n 수치 이하 시 알려줍니다.</string>
+    <string name="provider_usage_threshold_setting_description">남은 사용량이 일정 수치 이하 시\n 알림을 띄웁니다.</string>
     <string name="provider_usage_threshold_percent_label">%</string>
     <string name="provider_usage_color_title">게이지 색상</string>
     <string name="provider_usage_color_input_label">색상 코드 또는 RGB</string>

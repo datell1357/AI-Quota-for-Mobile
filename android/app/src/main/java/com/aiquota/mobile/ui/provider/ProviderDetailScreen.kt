@@ -54,6 +54,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
@@ -789,7 +790,14 @@ private fun ProviderUsageThresholdToggle(
             )
             Text(
                 text = description,
-                style = MaterialTheme.typography.bodySmall,
+                // Trim.None keeps the first line's ascenders from being clipped on
+                // multi-line Korean text.
+                style = MaterialTheme.typography.bodySmall.copy(
+                    lineHeightStyle = LineHeightStyle(
+                        alignment = LineHeightStyle.Alignment.Center,
+                        trim = LineHeightStyle.Trim.None
+                    )
+                ),
                 color = colors.textMuted
             )
         }
