@@ -3,9 +3,11 @@
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,6 +47,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -790,24 +793,44 @@ private fun ProviderUsageThresholdToggle(
                 color = colors.textMuted
             )
         }
-        // Numeric threshold input sits to the left of the on/off switch.
-        OutlinedTextField(
-            value = input,
-            onValueChange = { raw ->
-                val digits = raw.filter { it.isDigit() }.take(2)
-                input = digits
-                digits.toIntOrNull()
-                    ?.coerceIn(
-                        ProviderPreferencesRepository.MIN_USAGE_THRESHOLD_PERCENT,
-                        ProviderPreferencesRepository.MAX_USAGE_THRESHOLD_PERCENT
-                    )
-                    ?.let(onPercentChange)
-            },
-            suffix = { Text(text = stringResource(R.string.provider_usage_threshold_percent_label)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.width(84.dp)
-        )
+        // Compact numeric threshold input, sized to match the on/off switch to its right.
+        Box(
+            modifier = Modifier
+                .height(32.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .border(BorderStroke(1.dp, colors.border), RoundedCornerShape(8.dp))
+                .padding(horizontal = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                BasicTextField(
+                    value = input,
+                    onValueChange = { raw ->
+                        val digits = raw.filter { it.isDigit() }.take(2)
+                        input = digits
+                        digits.toIntOrNull()
+                            ?.coerceIn(
+                                ProviderPreferencesRepository.MIN_USAGE_THRESHOLD_PERCENT,
+                                ProviderPreferencesRepository.MAX_USAGE_THRESHOLD_PERCENT
+                            )
+                            ?.let(onPercentChange)
+                    },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodySmall.copy(
+                        color = colors.textPrimary,
+                        textAlign = TextAlign.End
+                    ),
+                    cursorBrush = SolidColor(colors.primary),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.width(20.dp)
+                )
+                Text(
+                    text = stringResource(R.string.provider_usage_threshold_percent_label),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.textMuted
+                )
+            }
+        }
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
