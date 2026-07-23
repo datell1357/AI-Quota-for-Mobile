@@ -83,7 +83,7 @@ android {
     defaultConfig {
         applicationId = "com.aiquota.mobile"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 34
         versionName = "1.1.2"
         buildConfigField("String", "GOOGLE_ANDROID_OAUTH_CLIENT_ID", "\"$googleAndroidOAuthClientId\"")
