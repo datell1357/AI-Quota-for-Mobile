@@ -78,7 +78,7 @@ val verifyReleaseFirebaseResources = tasks.register("verifyReleaseFirebaseResour
 
 android {
     namespace = "com.aiquota.mobile"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.aiquota.mobile"
