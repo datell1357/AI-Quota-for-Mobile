@@ -70,6 +70,8 @@
     <string name="app_update_status_bar_text">AI Quota update available</string>
     <string name="provider_reset_notification_channel">Reset alerts</string>
     <string name="provider_reset_notification_title">%1$s %2$s has reset!</string>
+    <string name="provider_usage_threshold_notification_channel">Usage alerts</string>
+    <string name="provider_usage_threshold_notification_title">%1$s %2$s below %3$d%%!</string>
     <string name="settings_live_refresh_status">Live refresh status: %1$s</string>
     <string name="settings_live_refresh_status_running">Running</string>
     <string name="settings_live_refresh_status_stopped">Stopped</string>
@@ -107,6 +109,9 @@
     <string name="provider_usage_color_button">Change color</string>
     <string name="provider_reset_notification_setting_title">Reset alerts</string>
     <string name="provider_reset_notification_setting_description">Get notified when usage resets.</string>
+    <string name="provider_usage_threshold_setting_title">Usage alerts</string>
+    <string name="provider_usage_threshold_setting_description">Get notified when remaining usage\ndrops below a threshold.</string>
+    <string name="provider_usage_threshold_percent_label">%</string>
     <string name="provider_usage_color_title">Gauge color</string>
     <string name="provider_usage_color_input_label">Hex or RGB code</string>
     <string name="provider_usage_color_apply">Apply</string>

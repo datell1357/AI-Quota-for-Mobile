@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,6 +50,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
@@ -61,6 +63,7 @@ import com.aiquota.mobile.local.ProviderGaugeColor
 import com.aiquota.mobile.local.ProviderConnectionAction
 import com.aiquota.mobile.local.ProviderConnectionState
 import com.aiquota.mobile.local.ProviderId
+import com.aiquota.mobile.local.ProviderPreferencesRepository
 import com.aiquota.mobile.local.ProviderRefreshState
 import com.aiquota.mobile.local.ProviderUsageLine
 import com.aiquota.mobile.local.ProviderUsageSnapshot
@@ -101,6 +104,10 @@ fun ProviderDetailScreen(
     onResetNotificationChange: (Boolean) -> Unit,
     autoResetPrimeEnabled: Boolean,
     onAutoResetPrimeChange: (Boolean) -> Unit,
+    usageThresholdEnabled: Boolean,
+    onUsageThresholdEnabledChange: (Boolean) -> Unit,
+    usageThresholdPercent: Int,
+    onUsageThresholdPercentChange: (Int) -> Unit,
     gaugeColorHex: String?,
     onGaugeColorChange: (String?) -> Unit,
     modifier: Modifier = Modifier
@@ -127,6 +134,10 @@ fun ProviderDetailScreen(
             onResetNotificationChange = onResetNotificationChange,
             autoResetPrimeEnabled = autoResetPrimeEnabled,
             onAutoResetPrimeChange = onAutoResetPrimeChange,
+            usageThresholdEnabled = usageThresholdEnabled,
+            onUsageThresholdEnabledChange = onUsageThresholdEnabledChange,
+            usageThresholdPercent = usageThresholdPercent,
+            onUsageThresholdPercentChange = onUsageThresholdPercentChange,
             gaugeColorHex = gaugeColorHex,
             onGaugeColorChange = onGaugeColorChange
         )
@@ -145,6 +156,10 @@ private fun ClassicProviderWindow(
     onResetNotificationChange: (Boolean) -> Unit,
     autoResetPrimeEnabled: Boolean,
     onAutoResetPrimeChange: (Boolean) -> Unit,
+    usageThresholdEnabled: Boolean,
+    onUsageThresholdEnabledChange: (Boolean) -> Unit,
+    usageThresholdPercent: Int,
+    onUsageThresholdPercentChange: (Int) -> Unit,
     gaugeColorHex: String?,
     onGaugeColorChange: (String?) -> Unit
 ) {
@@ -248,6 +263,10 @@ private fun ClassicProviderWindow(
             onResetNotificationChange = onResetNotificationChange,
             autoResetPrimeEnabled = autoResetPrimeEnabled,
             onAutoResetPrimeChange = onAutoResetPrimeChange,
+                        usageThresholdEnabled = usageThresholdEnabled,
+                        onUsageThresholdEnabledChange = onUsageThresholdEnabledChange,
+                        usageThresholdPercent = usageThresholdPercent,
+                        onUsageThresholdPercentChange = onUsageThresholdPercentChange,
                         gaugeColorHex = gaugeColorHex,
                         onGaugeColorChange = onGaugeColorChange
                     )
@@ -290,6 +309,10 @@ private fun ProviderSummaryBlock(
     onResetNotificationChange: (Boolean) -> Unit,
     autoResetPrimeEnabled: Boolean,
     onAutoResetPrimeChange: (Boolean) -> Unit,
+    usageThresholdEnabled: Boolean,
+    onUsageThresholdEnabledChange: (Boolean) -> Unit,
+    usageThresholdPercent: Int,
+    onUsageThresholdPercentChange: (Int) -> Unit,
     gaugeColorHex: String?,
     onGaugeColorChange: (String?) -> Unit
 ) {
@@ -397,6 +420,10 @@ private fun ProviderSummaryBlock(
             onResetNotificationChange = onResetNotificationChange,
             autoResetPrimeEnabled = autoResetPrimeEnabled,
             onAutoResetPrimeChange = onAutoResetPrimeChange,
+            usageThresholdEnabled = usageThresholdEnabled,
+            onUsageThresholdEnabledChange = onUsageThresholdEnabledChange,
+            usageThresholdPercent = usageThresholdPercent,
+            onUsageThresholdPercentChange = onUsageThresholdPercentChange,
             onDismiss = { showPersonalSettings = false },
             onApplyColor = { color ->
                 onGaugeColorChange(color)
@@ -544,6 +571,10 @@ private fun ProviderPersonalSettingsDialog(
     onResetNotificationChange: (Boolean) -> Unit,
     autoResetPrimeEnabled: Boolean,
     onAutoResetPrimeChange: (Boolean) -> Unit,
+    usageThresholdEnabled: Boolean,
+    onUsageThresholdEnabledChange: (Boolean) -> Unit,
+    usageThresholdPercent: Int,
+    onUsageThresholdPercentChange: (Int) -> Unit,
     onDismiss: () -> Unit,
     onApplyColor: (String?) -> Unit
 ) {
@@ -591,6 +622,15 @@ private fun ProviderPersonalSettingsDialog(
                         onCheckedChange = onAutoResetPrimeChange
                     )
                 }
+
+                ProviderUsageThresholdToggle(
+                    title = stringResource(R.string.provider_usage_threshold_setting_title),
+                    description = stringResource(R.string.provider_usage_threshold_setting_description),
+                    checked = usageThresholdEnabled,
+                    onCheckedChange = onUsageThresholdEnabledChange,
+                    percent = usageThresholdPercent,
+                    onPercentChange = onUsageThresholdPercentChange
+                )
 
                 Text(
                     text = stringResource(R.string.provider_usage_color_title),
@@ -706,6 +746,68 @@ private fun ProviderPersonalSettingsToggle(
                 color = colors.textMuted
             )
         }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = colors.panel,
+                checkedTrackColor = colors.primary,
+                checkedBorderColor = colors.primary,
+                uncheckedThumbColor = colors.textMuted,
+                uncheckedTrackColor = colors.progressTrack,
+                uncheckedBorderColor = colors.border
+            )
+        )
+    }
+}
+
+@Composable
+private fun ProviderUsageThresholdToggle(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    percent: Int,
+    onPercentChange: (Int) -> Unit
+) {
+    val colors = AIQuotaTheme.colors
+    var input by remember(percent) { mutableStateOf(percent.toString()) }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = colors.textPrimary,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.textMuted
+            )
+        }
+        // Numeric threshold input sits to the left of the on/off switch.
+        OutlinedTextField(
+            value = input,
+            onValueChange = { raw ->
+                val digits = raw.filter { it.isDigit() }.take(2)
+                input = digits
+                digits.toIntOrNull()
+                    ?.coerceIn(
+                        ProviderPreferencesRepository.MIN_USAGE_THRESHOLD_PERCENT,
+                        ProviderPreferencesRepository.MAX_USAGE_THRESHOLD_PERCENT
+                    )
+                    ?.let(onPercentChange)
+            },
+            suffix = { Text(text = stringResource(R.string.provider_usage_threshold_percent_label)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.width(84.dp)
+        )
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,

@@ -158,6 +158,12 @@ fun AIQuotaAppShell(
     var resetNotificationProviders by remember {
         mutableStateOf(providerPreferencesRepository.resetNotificationEnabledProviders())
     }
+    var usageThresholdProviders by remember {
+        mutableStateOf(providerPreferencesRepository.usageThresholdEnabledProviders())
+    }
+    var usageThresholdPercents by remember {
+        mutableStateOf(providerPreferencesRepository.usageThresholdPercents())
+    }
     var batteryOptimizationExempt by remember {
         mutableStateOf(isBatteryOptimizationExempt(appContext))
     }
@@ -562,6 +568,16 @@ fun AIQuotaAppShell(
         resetNotificationProviders = providerPreferencesRepository.resetNotificationEnabledProviders()
     }
 
+    fun setUsageThresholdEnabled(providerId: ProviderId, enabled: Boolean) {
+        providerPreferencesRepository.setUsageThresholdNotificationEnabled(providerId, enabled)
+        usageThresholdProviders = providerPreferencesRepository.usageThresholdEnabledProviders()
+    }
+
+    fun setUsageThresholdPercent(providerId: ProviderId, percent: Int) {
+        providerPreferencesRepository.setUsageThresholdPercent(providerId, percent)
+        usageThresholdPercents = providerPreferencesRepository.usageThresholdPercents()
+    }
+
     fun applyTheme(theme: AppTheme) {
         themePreferencesRepository.saveTheme(theme)
         currentTheme = themePreferencesRepository.currentTheme()
@@ -732,6 +748,15 @@ fun AIQuotaAppShell(
                                 },
                                 autoResetPrimeEnabled = claudeAutoResetPrimeEnabled,
                                 onAutoResetPrimeChange = ::setClaudeAutoResetPrimeEnabled,
+                                usageThresholdEnabled = currentRoute.providerId in usageThresholdProviders,
+                                onUsageThresholdEnabledChange = { enabled ->
+                                    setUsageThresholdEnabled(currentRoute.providerId, enabled)
+                                },
+                                usageThresholdPercent = usageThresholdPercents[currentRoute.providerId]
+                                    ?: ProviderPreferencesRepository.DEFAULT_USAGE_THRESHOLD_PERCENT,
+                                onUsageThresholdPercentChange = { percent ->
+                                    setUsageThresholdPercent(currentRoute.providerId, percent)
+                                },
                                 gaugeColorHex = providerGaugeColors[currentRoute.providerId],
                                 onGaugeColorChange = { color -> setProviderGaugeColor(currentRoute.providerId, color) },
                                 modifier = Modifier.fillMaxSize()

@@ -131,6 +131,38 @@ class ProviderPreferencesRepository(context: Context) {
             .apply()
     }
 
+    fun isUsageThresholdNotificationEnabled(providerId: ProviderId): Boolean {
+        return preferences.getBoolean("$KEY_USAGE_THRESHOLD_ENABLED_PREFIX${providerId.storageId}", false)
+    }
+
+    fun setUsageThresholdNotificationEnabled(providerId: ProviderId, enabled: Boolean) {
+        preferences.edit()
+            .putBoolean("$KEY_USAGE_THRESHOLD_ENABLED_PREFIX${providerId.storageId}", enabled)
+            .apply()
+    }
+
+    fun usageThresholdEnabledProviders(): Set<ProviderId> {
+        return ProviderId.defaultOrder().filterTo(mutableSetOf(), ::isUsageThresholdNotificationEnabled)
+    }
+
+    fun usageThresholdPercents(): Map<ProviderId, Int> {
+        return ProviderId.defaultOrder().associateWith(::usageThresholdPercent)
+    }
+
+    fun usageThresholdPercent(providerId: ProviderId): Int {
+        val stored = preferences.getInt("$KEY_USAGE_THRESHOLD_PERCENT_PREFIX${providerId.storageId}", DEFAULT_USAGE_THRESHOLD_PERCENT)
+        return stored.coerceIn(MIN_USAGE_THRESHOLD_PERCENT, MAX_USAGE_THRESHOLD_PERCENT)
+    }
+
+    fun setUsageThresholdPercent(providerId: ProviderId, percent: Int) {
+        preferences.edit()
+            .putInt(
+                "$KEY_USAGE_THRESHOLD_PERCENT_PREFIX${providerId.storageId}",
+                percent.coerceIn(MIN_USAGE_THRESHOLD_PERCENT, MAX_USAGE_THRESHOLD_PERCENT)
+            )
+            .apply()
+    }
+
     fun providerGaugeColor(providerId: ProviderId): String? {
         val key = "$KEY_PROVIDER_GAUGE_COLOR_PREFIX${providerId.storageId}"
         return ProviderGaugeColor.normalize(preferences.getString(key, null))
@@ -164,5 +196,10 @@ class ProviderPreferencesRepository(context: Context) {
         private const val KEY_PROVIDER_GAUGE_COLOR_PREFIX = "provider_gauge_color_"
         private const val KEY_CLAUDE_AUTO_RESET_PRIME = "claude_auto_reset_prime_enabled"
         private const val KEY_RESET_NOTIFICATION_PREFIX = "reset_notification_enabled_"
+        private const val KEY_USAGE_THRESHOLD_ENABLED_PREFIX = "usage_threshold_enabled_"
+        private const val KEY_USAGE_THRESHOLD_PERCENT_PREFIX = "usage_threshold_percent_"
+        const val DEFAULT_USAGE_THRESHOLD_PERCENT = 5
+        const val MIN_USAGE_THRESHOLD_PERCENT = 1
+        const val MAX_USAGE_THRESHOLD_PERCENT = 99
     }
 }

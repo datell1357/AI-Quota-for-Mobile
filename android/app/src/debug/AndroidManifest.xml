@@ -38,5 +38,12 @@
         <action android:name="com.aiquota.mobile.debug.FORCE_CLAUDE_PRIME" />
       </intent-filter>
     </receiver>
+    <receiver
+      android:name=".debug.DebugUsageThresholdNotificationReceiver"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="com.aiquota.mobile.debug.FAKE_USAGE_THRESHOLD_NOTIFICATION" />
+      </intent-filter>
+    </receiver>
   </application>
 </manifest>
