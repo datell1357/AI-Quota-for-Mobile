@@ -803,6 +803,60 @@ class ProviderNativeUsagePayloadFetcherTest {
         assertEquals(0.80f, snapshot!!.lines.single { it.key == "codex:primary_window" }.remainingPercent ?: 0f, 0.001f)
     }
 
+    /**
+     * Codex auth fallback (안 B) safety: a Cloudflare 403 on the ancillary session/me/subscriptions
+     * endpoints must not block usage collection when wham/usage still returns 200. This is what lets
+     * the service override a false interactive-auth signal and keep the provider CONNECTED.
+     */
+    @Test
+    fun codexNativeUsageSurvivesAncillary403WhenWhamUsageSucceeds() {
+        val payload = ProviderNativeUsagePayloadFetcher.codexUsagePayloadForTest(
+            userAgent = "test-agent",
+            requestHeadersForUrl = { mapOf("Authorization" to "Selected auth") },
+            fetchJson = { _, url, _, _ ->
+                val status = if (url == "https://chatgpt.com/backend-api/wham/usage") 200 else 403
+                ProviderNativeJsonBridge.wrappedResponse(url, status, codexResponseFor(url)).toString()
+            }
+        )
+
+        assertNotNull(payload)
+        val snapshot = ProviderUsageNormalizer.normalize(
+            providerId = ProviderId.CODEX,
+            rawPayload = payload!!,
+            source = ProviderPayloadSource.NETWORK_RESPONSE,
+            fetchedAt = "2026-07-24T00:00:00Z"
+        )
+        assertNotNull(snapshot)
+        assertEquals(
+            0.80f,
+            snapshot!!.lines.single { it.key == "codex:primary_window" }.remainingPercent ?: 0f,
+            0.001f
+        )
+    }
+
+    /**
+     * Codex auth fallback (안 B) logout preservation: when wham/usage itself fails (no usage body),
+     * the native fetch yields no payload, so the service keeps the interactive-auth failure. A real
+     * sign-out fails wham/usage too, so genuine logout detection is preserved.
+     */
+    @Test
+    fun codexNativeUsageIsNullWhenWhamUsageUnavailable() {
+        val payload = ProviderNativeUsagePayloadFetcher.codexUsagePayloadForTest(
+            userAgent = "test-agent",
+            requestHeadersForUrl = { mapOf("Authorization" to "Selected auth") },
+            fetchJson = { _, url, _, _ ->
+                val status = if (url == "https://chatgpt.com/backend-api/wham/usage") 403 else 200
+                ProviderNativeJsonBridge.wrappedResponse(
+                    url,
+                    status,
+                    codexResponseFor(url, includeWhamUsage = false)
+                ).toString()
+            }
+        )
+
+        assertNull(payload)
+    }
+
     @Test
     fun codexNativeUsagePayloadDoesNotUseDashboardHtmlFallback() {
         val payload = ProviderNativeUsagePayloadFetcher.codexUsagePayloadForTest(

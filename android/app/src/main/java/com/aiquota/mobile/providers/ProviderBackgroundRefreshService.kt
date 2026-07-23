@@ -704,7 +704,41 @@ class ProviderBackgroundRefreshService : Service() {
                 )
             )
         }
-        return result ?: ServiceRefreshOutcome.Failure(ProviderRefreshTimeoutPolicy.failureFor(job.providerId, lastUrl))
+        val outcome = result
+            ?: ServiceRefreshOutcome.Failure(ProviderRefreshTimeoutPolicy.failureFor(job.providerId, lastUrl))
+        // A Cloudflare 403 on Codex's session probe (chatgpt.com/api/auth/session) flags interactive
+        // auth even while the usage endpoint (backend-api/wham/usage) still returns 200. Confirm the
+        // sign-out against a native usage fetch before trusting it: only keep auth-required when usage
+        // is genuinely gone. A real logout fails wham/usage too, so this preserves logout detection.
+        if (job.providerId == ProviderId.CODEX &&
+            outcome is ServiceRefreshOutcome.Failure &&
+            outcome.failure.kind == ProviderRefreshFailureKind.INTERACTIVE_AUTH_REQUIRED
+        ) {
+            codexNativeUsageFallbackOutcome()?.let { return it }
+        }
+        return outcome
+    }
+
+    /**
+     * Reruns Codex usage collection natively (the same wham/usage path the web collector uses) to
+     * decide whether an interactive-auth signal is a real sign-out or a transient session-probe 403.
+     * Returns a usage [ServiceRefreshOutcome.Payload] when usage is still available, or null to keep
+     * the original auth-required failure.
+     */
+    private suspend fun codexNativeUsageFallbackOutcome(): ServiceRefreshOutcome? {
+        val userAgent = ProviderWebViewUserAgent.hiddenCollectorUserAgent(this, ProviderId.CODEX)
+        val bridgeResult = withContext(Dispatchers.IO) {
+            ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(
+                providerId = ProviderId.CODEX,
+                userAgent = userAgent,
+                requestHeadersForUrl = { url -> codexNativeFetchHeadersFor(url) }
+            )
+        }
+        val json = runCatching { JSONObject(bridgeResult) }.getOrNull() ?: return null
+        if (!json.optBoolean("ok", false)) return null
+        val payload = json.optJSONObject("payload") ?: return null
+        Log.i(TAG, "codexAuthFallback nativeUsage=ok overrideAuthRequired=true")
+        return ServiceRefreshOutcome.Payload(payload.toString())
     }
 
     @SuppressLint("SetJavaScriptEnabled")
