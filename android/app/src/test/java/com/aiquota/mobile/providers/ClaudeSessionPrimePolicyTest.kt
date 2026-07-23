@@ -8,6 +8,7 @@ import com.aiquota.mobile.local.ProviderUsageSnapshot
 import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ClaudeSessionPrimePolicyTest {
@@ -141,6 +142,32 @@ class ClaudeSessionPrimePolicyTest {
                     resetsAt = resetsAt
                 )
             )
+        )
+    }
+
+    /**
+     * Regression guard for the auto-wake stuck-on-failure bug: recordPrimed must run only after a
+     * successful prime. Recording the boundary before the attempt stranded the feature — a single
+     * failed prime marked the reset done and, with no new window created, it never retried.
+     */
+    @Test
+    fun recordPrimedRunsOnlyAfterSuccessfulPrime() {
+        val service = java.io.File(
+            "src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt"
+        ).readText()
+
+        val primeCall = service.indexOf("ClaudeSessionPrimer.prime(applicationContext)")
+        val recordPrimed = service.indexOf("primeState.recordPrimed(target)")
+        assertTrue("Expected the prime call in the source.", primeCall >= 0)
+        assertTrue("Expected recordPrimed(target) in the source.", recordPrimed >= 0)
+        // recordPrimed must come after the prime attempt, inside the success branch.
+        assertTrue("recordPrimed(target) must run after the prime attempt.", recordPrimed > primeCall)
+
+        val successBranch = service.substring(service.indexOf("if (result.ok) {", primeCall))
+            .substringBefore("refreshProvider(ProviderRefreshPlan.manualJobFor")
+        assertTrue(
+            "recordPrimed(target) must be inside the if (result.ok) success branch.",
+            successBranch.contains("primeState.recordPrimed(target)")
         )
     }
 }

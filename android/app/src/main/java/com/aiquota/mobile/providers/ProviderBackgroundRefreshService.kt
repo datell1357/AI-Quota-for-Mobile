@@ -465,12 +465,14 @@ class ProviderBackgroundRefreshService : Service() {
             )
             return
         }
-        // Record before attempting so a failed attempt is not retried every cycle;
-        // the next window yields a new reset boundary and a fresh attempt.
-        primeState.recordPrimed(target)
         val result = withContext(Dispatchers.IO) { ClaudeSessionPrimer.prime(applicationContext) }
         Log.i(TAG, "provider=claude autoPrime ok=${result.ok} target=$target detail=${result.detail}")
         if (result.ok) {
+            // Record the boundary as primed only on success. Recording before the attempt used to
+            // strand the feature: a single failed prime marked the boundary done, and since no new
+            // window was created the reset stayed unprimed forever. On failure we leave it unrecorded
+            // so the next refresh cycle retries the same boundary until it succeeds.
+            primeState.recordPrimed(target)
             refreshProvider(ProviderRefreshPlan.manualJobFor(ProviderId.CLAUDE), automaticRefresh = true)
         }
     }
