@@ -78,12 +78,12 @@ val verifyReleaseFirebaseResources = tasks.register("verifyReleaseFirebaseResour
 
 android {
     namespace = "com.aiquota.mobile"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.aiquota.mobile"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 35
         versionName = "1.1.2"
         buildConfigField("String", "GOOGLE_ANDROID_OAUTH_CLIENT_ID", "\"$googleAndroidOAuthClientId\"")
