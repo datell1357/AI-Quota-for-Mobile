@@ -293,7 +293,11 @@ internal object GeminiUsagePageNativeFetcher {
         nowMillis: Long = System.currentTimeMillis()
     ): GeminiUsagePageRpcSession.Params? {
         val data = wizGlobalDataFromHtml(rawText) ?: return null
-        val at = data.optString("SNlM0e").takeIf { it.startsWith("AD1_") }.orEmpty()
+        // The SNlM0e XSRF token is required for the usage batchexecute RPC — omitting it returns
+        // HTTP 400 ("xsrf"). Google changed the token prefix (e.g. AD1_ → ADR5za…), so accept any
+        // non-blank token instead of hardcoding a prefix, which previously dropped valid tokens and
+        // broke Gemini usage collection.
+        val at = data.optString("SNlM0e").takeIf { it.isNotBlank() }.orEmpty()
         val fSid = data.optString("FdrFJe").takeIf { it.isNotBlank() } ?: return null
         val bl = data.optString("cfb2h").takeIf { it.isNotBlank() } ?: return null
         val hl = data.optString("hl")

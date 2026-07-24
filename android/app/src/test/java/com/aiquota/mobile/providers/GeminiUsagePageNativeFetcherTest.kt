@@ -1,5 +1,6 @@
 package com.aiquota.mobile.providers
 
+import com.aiquota.mobile.local.ProviderId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -42,6 +43,54 @@ class GeminiUsagePageNativeFetcherTest {
         assertEquals("", params?.at)
         assertEquals("-123", params?.fSid)
         assertEquals("boq_assistant", params?.bl)
+    }
+
+    /**
+     * Regression guard: Google changed the SNlM0e XSRF token prefix (AD1_ → ADR5za…). The old
+     * startsWith("AD1_") filter dropped the valid token, so the usage batchexecute went out without
+     * `at` and returned HTTP 400 ("xsrf"), breaking Gemini usage collection. Any non-blank token
+     * must now be accepted.
+     */
+    @Test
+    fun usagePageHtmlAcceptsNonAd1AtTokenPrefix() {
+        val html = """
+            <html><head><script>
+              window.WIZ_global_data = {"SNlM0e":"ADR5zaXsRfTokenValue","FdrFJe":"-123","cfb2h":"boq_assistant","hl":"ko"};
+            </script></head></html>
+        """.trimIndent()
+
+        val params = GeminiUsagePageNativeFetcher.usagePageParamsFromHtmlForTest(html, nowMillis = 1234L)
+
+        assertNotNull(params)
+        assertEquals("ADR5zaXsRfTokenValue", params?.at)
+    }
+
+    /**
+     * The live batchexecute usage response (captured 2026-07-24) still uses the historical row
+     * shape `[limit, used, type, [[resetEpoch, nanos]]]` — types 1 (5-hour) and 2 (weekly), with
+     * an ignorable type 4. Only the request's `at` token was the problem, so the existing parser
+     * must extract usage lines from this payload.
+     */
+    @Test
+    fun batchExecuteResponseInCurrentFormatParsesUsageLines() {
+        val raw = ")]}'\n\n234\n" +
+            "[[\"wrb.fr\",\"jSf9Qc\"," +
+            "\"[1,[[12096,0,2,[[1785401913,33483000]]]," +
+            "[0,0,4,null,null,[[1784874204,16436000],4]]," +
+            "[600,0,1,[[1784872713,33384000]]]]]\"," +
+            "null,null,null,\"generic\"]]"
+
+        val payload = GeminiUsagePageNativeFetcher.usagePayloadFromBatchExecuteForTest(raw)
+
+        assertNotNull(payload)
+        val snapshot = ProviderUsageNormalizer.normalize(
+            providerId = ProviderId.GEMINI,
+            rawPayload = payload!!.toString(),
+            source = ProviderPayloadSource.NETWORK_RESPONSE,
+            fetchedAt = "2026-07-24T00:00:00Z"
+        )
+        assertNotNull(snapshot)
+        assertTrue(snapshot!!.lines.isNotEmpty())
     }
 
     @Test
