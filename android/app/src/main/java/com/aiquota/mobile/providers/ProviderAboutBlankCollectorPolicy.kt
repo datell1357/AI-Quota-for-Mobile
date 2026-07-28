@@ -10,6 +10,8 @@ object ProviderAboutBlankCollectorPolicy {
             providerId == ProviderId.COPILOT ||
             providerId == ProviderId.GLM ||
             providerId == ProviderId.OPENCODE ||
-            providerId == ProviderId.CURSOR
+            providerId == ProviderId.CURSOR ||
+            providerId == ProviderId.GROK ||
+            providerId == ProviderId.KIMI
     }
 }

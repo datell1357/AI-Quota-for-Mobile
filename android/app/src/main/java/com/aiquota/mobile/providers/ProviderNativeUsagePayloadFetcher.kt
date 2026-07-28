@@ -12,6 +12,10 @@ import org.json.JSONTokener
 internal typealias NativeJsonFetcher = (ProviderId, String, String, Map<String, String>) -> String
 internal typealias CursorJsonFetcher = (String, String?) -> String
 
+internal typealias GrokJsonFetcher = (String, String?) -> String
+
+internal typealias KimiJsonFetcher = (String, String?) -> String
+
 object ProviderNativeUsagePayloadFetcher {
     fun bridgeUsagePayload(
         providerId: ProviderId,
@@ -56,6 +60,8 @@ object ProviderNativeUsagePayloadFetcher {
             ProviderId.GLM -> fetchGlmPayload(cookieHeaderForUrl, requestHeadersForUrl)
             ProviderId.OPENCODE -> fetchOpenCodePayload(userAgent, bridgePageUrl, fetchJson)
             ProviderId.CURSOR -> fetchCursorPayload()
+            ProviderId.GROK -> fetchGrokPayload()
+            ProviderId.KIMI -> fetchKimiPayload()
             ProviderId.COPILOT -> NativePayloadResult(
                 payload = CopilotNativeUsageFetcher.fetchUsagePayload(),
                 diagnostic = "copilot_usage_unavailable"
@@ -91,6 +97,14 @@ object ProviderNativeUsagePayloadFetcher {
 
     internal fun cursorUsagePayloadForTest(fetchJson: CursorJsonFetcher): String? {
         return fetchCursorPayload(fetchJson).payload
+    }
+
+    internal fun grokUsagePayloadForTest(fetchJson: GrokJsonFetcher): String? {
+        return fetchGrokPayload(fetchJson).payload
+    }
+
+    internal fun kimiUsagePayloadForTest(fetchJson: KimiJsonFetcher): String? {
+        return fetchKimiPayload(fetchJson).payload
     }
 
     private fun codexFetchedPayload(rawText: String, plan: String?, accountId: String?, account: String?): JSONObject? {
@@ -474,6 +488,112 @@ object ProviderNativeUsagePayloadFetcher {
             is String -> value.toDoubleOrNull()
             else -> null
         }?.takeIf { it.isFinite() }
+    }
+
+    private fun fetchGrokPayload(
+        fetchJson: GrokJsonFetcher = GrokNativeUsageFetcher::fetchJson
+    ): NativePayloadResult {
+        val statuses = mutableListOf<String>()
+        val buckets = JSONArray()
+        GROK_NATIVE_PROBES.forEach { probe ->
+            val response = fetchGrokWrapped(probe, statuses, fetchJson)
+            if (!response.optBoolean("ok", false)) return@forEach
+            val json = response.jsonValue() as? JSONObject ?: return@forEach
+            grokBuckets(probe, json).forEach(buckets::put)
+        }
+        val payload = JSONObject()
+            .put("provider", ProviderId.GROK.storageId)
+            .put("buckets", buckets)
+        return verifiedPayload(ProviderId.GROK, payload, "grok_usage_unavailable", statuses)
+    }
+
+    private fun fetchGrokWrapped(
+        probe: GrokProbe,
+        statuses: MutableList<String>,
+        fetchJson: GrokJsonFetcher
+    ): JSONObject {
+        val wrapped = runCatching { JSONObject(fetchJson(GROK_RATE_LIMITS_URL, probe.body())) }
+            .getOrElse {
+                JSONObject().put("ok", false).put("url", GROK_RATE_LIMITS_URL).put("error", it.javaClass.simpleName)
+            }
+        statuses += "${urlStatusLabel(GROK_RATE_LIMITS_URL)}:${probe.label()}:" +
+            "${wrapped.optInt("status", -1)}:${wrapped.optString("error")}"
+        return wrapped
+    }
+
+    private fun grokBuckets(probe: GrokProbe, json: JSONObject): List<JSONObject> {
+        return listOfNotNull(
+            grokBucket(json, probe, null),
+            grokBucket(json.optJSONObject("lowEffortRateLimits"), probe, "low"),
+            grokBucket(json.optJSONObject("highEffortRateLimits"), probe, "high")
+        )
+    }
+
+    private fun fetchKimiPayload(
+        fetchJson: KimiJsonFetcher = KimiNativeUsageFetcher::fetchJson
+    ): NativePayloadResult {
+        val statuses = mutableListOf<String>()
+        val wrapped = runCatching { JSONObject(fetchJson(KIMI_SUBSCRIPTION_STATS_URL, "{}")) }
+            .getOrElse {
+                JSONObject().put("ok", false).put("error", it.javaClass.simpleName)
+            }
+        statuses += "${urlStatusLabel(KIMI_SUBSCRIPTION_STATS_URL)}:" +
+            "${wrapped.optInt("status", -1)}:${wrapped.optString("error")}"
+        if (!wrapped.optBoolean("ok", false)) {
+            return NativePayloadResult(null, "kimi_usage_unavailable", statuses)
+        }
+        val json = wrapped.jsonValue() as? JSONObject
+            ?: return NativePayloadResult(null, "kimi_usage_unavailable", statuses)
+        val entries = JSONArray()
+        kimiEntries(json).forEach(entries::put)
+        val payload = JSONObject()
+            .put("provider", ProviderId.KIMI.storageId)
+            .put("entries", entries)
+        return verifiedPayload(ProviderId.KIMI, payload, "kimi_usage_unavailable", statuses)
+    }
+
+    private fun kimiEntries(json: JSONObject): List<JSONObject> {
+        val output = mutableListOf<JSONObject>()
+        kimiEntry(json.optJSONObject("subscriptionBalance"), "kimi:subscription", "Membership credits")
+            ?.let(output::add)
+        KIMI_RATE_LIMIT_KEYS.forEach { (field, label) ->
+            kimiEntry(json.optJSONObject(field), "kimi:${field.lowercase(Locale.US)}", label)?.let(output::add)
+        }
+        json.optJSONArray("giftBalances")?.let { gifts ->
+            for (index in 0 until gifts.length()) {
+                kimiEntry(gifts.optJSONObject(index), "kimi:gift:$index", "Gift balance ${index + 1}")
+                    ?.let(output::add)
+            }
+        }
+        return output
+    }
+
+    private fun kimiEntry(source: JSONObject?, key: String, label: String): JSONObject? {
+        if (source == null) return null
+        val usedRatio = cursorNumber(source.opt("amountUsedRatio"))
+            ?: cursorNumber(source.opt("usedRatio"))
+            ?: return null
+        val entry = JSONObject()
+            .put("key", key)
+            .put("label", label)
+            .put("usedRatio", usedRatio)
+        source.opt("expireTime")?.takeIf { it != JSONObject.NULL }?.let { entry.put("expireTime", it) }
+        source.opt("resetTime")?.takeIf { it != JSONObject.NULL }?.let { entry.put("resetTime", it) }
+        cursorNumber(source.opt("kimiCodeUsedRatio"))?.let { entry.put("kimiCodeUsedRatio", it) }
+        return entry
+    }
+
+    private fun grokBucket(source: JSONObject?, probe: GrokProbe, effort: String?): JSONObject? {
+        if (source == null) return null
+        val remaining = cursorNumber(source.opt("remainingQueries")) ?: return null
+        val bucket = JSONObject()
+            .put("key", listOfNotNull("grok", probe.requestKind, probe.modelName, effort).joinToString(":"))
+            .put("label", probe.label() + (effort?.let { " ($it effort)" }.orEmpty()))
+            .put("remainingQueries", remaining)
+        cursorNumber(source.opt("totalQueries"))?.let { bucket.put("totalQueries", it) }
+        cursorNumber(source.opt("waitTimeSeconds"))?.let { bucket.put("waitTimeSeconds", it) }
+        cursorNumber(source.opt("windowSizeSeconds"))?.let { bucket.put("windowSizeSeconds", it) }
+        return bucket
     }
 
     private fun fetchOpenCodeServerSubscriptionPayload(
@@ -1069,6 +1189,16 @@ object ProviderNativeUsagePayloadFetcher {
     private const val CODEX_SUBSCRIPTIONS_URL = "https://chatgpt.com/backend-api/subscriptions"
     private const val CODEX_WHAM_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage"
     private const val GEMINI_USAGE_PAGE_URL = "https://gemini.google.com/usage"
+    private const val GROK_RATE_LIMITS_URL = "https://grok.com/rest/rate-limits"
+    private const val KIMI_SUBSCRIPTION_STATS_URL =
+        "https://www.kimi.com/apiv2/kimi.gateway.membership.v2.MembershipService/GetSubscriptionStats"
+
+    private val KIMI_RATE_LIMIT_KEYS = listOf(
+        "ratelimit5h" to "5h rate limit",
+        "ratelimitCode5h" to "Kimi Code 5h",
+        "ratelimit7d" to "7d rate limit",
+        "ratelimitCode7d" to "Kimi Code 7d"
+    )
     private const val CURSOR_STRIPE_URL = "https://cursor.com/api/auth/stripe"
     private const val CURSOR_USAGE_URL = "https://cursor.com/api/usage"
     private const val CURSOR_AUTH_USAGE_URL = "https://cursor.com/api/auth/usage"
@@ -1153,6 +1283,24 @@ object ProviderNativeUsagePayloadFetcher {
         "accountemail"
     )
     private data class CursorProbe(val url: String, val body: String? = null)
+
+    private data class GrokProbe(val requestKind: String, val modelName: String) {
+        fun body(): String = JSONObject()
+            .put("requestKind", requestKind)
+            .put("modelName", modelName)
+            .toString()
+
+        fun label(): String = "$modelName ${requestKind.lowercase(Locale.US)}"
+    }
+
+    // requestKind/modelName 조합은 서버 버킷 선택값이라 계정·릴리스마다 다르다.
+    // 실계정 QA에서 실제 활성 조합을 확인한 뒤 이 목록을 확정한다.
+    private val GROK_NATIVE_PROBES = listOf(
+        GrokProbe("DEFAULT", "grok-4"),
+        GrokProbe("DEFAULT", "grok-3"),
+        GrokProbe("REASONING", "grok-4"),
+        GrokProbe("DEEPSEARCH", "grok-4")
+    )
 
     private val CURSOR_NATIVE_PROBES = listOf(
         CursorProbe(CURSOR_CURRENT_PERIOD_USAGE_URL, "{}"),

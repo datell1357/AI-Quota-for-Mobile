@@ -23,6 +23,8 @@ fun providerIconRes(providerId: ProviderId): Int {
         ProviderId.COPILOT -> R.drawable.ic_provider_copilot
         ProviderId.ANTIGRAVITY -> R.drawable.ic_provider_antigravity
         ProviderId.CURSOR -> R.drawable.ic_provider_cursor
+        ProviderId.GROK -> R.drawable.ic_provider_grok
+        ProviderId.KIMI -> R.drawable.ic_provider_kimi
     }
 }
 
@@ -38,6 +40,8 @@ fun providerIconRes(providerId: String): Int {
         "copilot", "github-copilot", "github_copilot" -> R.drawable.ic_provider_copilot
         "antigravity" -> R.drawable.ic_provider_antigravity
         "cursor" -> R.drawable.ic_provider_cursor
+        "grok", "xai", "x-ai" -> R.drawable.ic_provider_grok
+        "kimi", "moonshot", "moonshotai" -> R.drawable.ic_provider_kimi
         else -> R.drawable.ic_provider_unknown
     }
 }
@@ -70,5 +74,7 @@ internal fun providerIconVisualScale(providerId: ProviderId): Float {
         ProviderId.COPILOT -> 0.64f
         ProviderId.ANTIGRAVITY -> 0.78f
         ProviderId.CURSOR -> 0.73f
+        ProviderId.GROK -> 0.80f
+        ProviderId.KIMI -> 0.80f
     }
 }

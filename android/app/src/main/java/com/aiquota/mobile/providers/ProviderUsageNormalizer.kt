@@ -48,6 +48,8 @@ object ProviderUsageNormalizer {
             ProviderId.COPILOT -> normalizeCopilot(json, source, fetchedAt)
             ProviderId.ANTIGRAVITY -> normalizeAntigravity(json, source, fetchedAt)
             ProviderId.CURSOR -> normalizeCursor(json, source, fetchedAt)
+            ProviderId.GROK -> normalizeGrok(json, source, fetchedAt)
+            ProviderId.KIMI -> normalizeKimi(json, source, fetchedAt)
         }
         return snapshot?.takeIf { it.lines.isNotEmpty() }
     }
@@ -975,6 +977,91 @@ object ProviderUsageNormalizer {
             fetchedAt = fetchedAt,
             lines = lines
         )
+    }
+
+    private fun normalizeGrok(json: JSONObject, source: ProviderPayloadSource, fetchedAt: String): ProviderUsageSnapshot? {
+        val buckets = json.optJSONArray("buckets") ?: return null
+        val lines = (0 until buckets.length()).mapNotNull { index ->
+            buckets.optJSONObject(index)?.toGrokLine(source)
+        }
+        return snapshot(
+            providerId = ProviderId.GROK,
+            plan = json.optionalString("plan"),
+            account = json.optionalString("email") ?: json.optionalString("account"),
+            fetchedAt = fetchedAt,
+            lines = lines
+        )
+    }
+
+    private fun JSONObject.toGrokLine(source: ProviderPayloadSource): ProviderUsageLine? {
+        val key = optionalString("key") ?: return null
+        val remaining = optionalNumber("remainingQueries") ?: return null
+        val limit = optionalNumber("totalQueries")?.takeIf { it > 0.0 }
+        return ProviderUsageLine(
+            key = key,
+            label = optionalString("label") ?: key,
+            remainingPercent = limit?.let { (remaining / it).toFloat().coerceIn(0f, 1f) },
+            resetsAt = grokResetAt(),
+            usedAmount = limit?.let { (it - remaining).coerceAtLeast(0.0) },
+            limitAmount = limit,
+            remainingAmount = remaining.coerceAtLeast(0.0),
+            unit = "queries",
+            sourceLabel = source.label,
+            confidence = source.confidence
+        )
+    }
+
+    private fun JSONObject.grokResetAt(): String? {
+        val waitSeconds = optionalNumber("waitTimeSeconds")?.toLong()?.takeIf { it > 0L } ?: return null
+        return runCatching { Instant.now().plusSeconds(waitSeconds).toString() }.getOrNull()
+    }
+
+    private fun normalizeKimi(json: JSONObject, source: ProviderPayloadSource, fetchedAt: String): ProviderUsageSnapshot? {
+        val entries = json.optJSONArray("entries") ?: return null
+        val lines = (0 until entries.length()).mapNotNull { index ->
+            entries.optJSONObject(index)?.toKimiLine(source)
+        }
+        return snapshot(
+            providerId = ProviderId.KIMI,
+            plan = json.optionalString("plan"),
+            account = json.optionalString("email") ?: json.optionalString("account"),
+            fetchedAt = fetchedAt,
+            lines = lines
+        )
+    }
+
+    private fun JSONObject.toKimiLine(source: ProviderPayloadSource): ProviderUsageLine? {
+        val key = optionalString("key") ?: return null
+        val usedFraction = optionalNumber("usedRatio")?.kimiRatioAsFraction() ?: return null
+        return ProviderUsageLine(
+            key = key,
+            label = optionalString("label") ?: key,
+            remainingPercent = (1.0 - usedFraction).toFloat().coerceIn(0f, 1f),
+            resetsAt = kimiResetAt(),
+            unit = "percent",
+            sourceLabel = source.label,
+            confidence = source.confidence
+        )
+    }
+
+    // amountUsedRatio가 0~1 비율인지 0~100 퍼센트인지 실계정 payload로 확정되지 않았다.
+    // 1을 넘으면 퍼센트로 간주한다.
+    private fun Double.kimiRatioAsFraction(): Double? {
+        if (!isFinite() || this < 0.0) return null
+        return if (this > 1.0) (this / 100.0).coerceAtMost(1.0) else this
+    }
+
+    private fun JSONObject.kimiResetAt(): String? {
+        listOf("resetTime", "expireTime").forEach { field ->
+            optionalString(field)?.takeIf { it.isNotBlank() && it.toDoubleOrNull() == null }?.let { return it }
+            optionalNumber(field)?.let { value ->
+                val raw = value.toLong()
+                if (raw <= 0L) return@let
+                val millis = if (raw < 10_000_000_000L) raw * 1000L else raw
+                runCatching { Instant.ofEpochMilli(millis).toString() }.getOrNull()?.let { return it }
+            }
+        }
+        return null
     }
 
     private fun normalizeAntigravity(json: JSONObject, source: ProviderPayloadSource, fetchedAt: String): ProviderUsageSnapshot? {

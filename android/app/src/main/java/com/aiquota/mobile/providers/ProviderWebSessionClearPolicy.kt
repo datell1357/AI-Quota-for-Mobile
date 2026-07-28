@@ -62,6 +62,17 @@ object ProviderWebSessionClearPolicy {
                 "https://www.opencode.ai",
                 "https://auth.opencode.ai"
             ) + GOOGLE_AUTH_COOKIE_URLS + GITHUB_AUTH_COOKIE_URLS
+            ProviderId.GROK -> listOf(
+                "https://grok.com",
+                "https://www.grok.com",
+                "https://auth.grok.com",
+                "https://accounts.x.ai",
+                "https://x.ai"
+            ) + GOOGLE_AUTH_COOKIE_URLS + listOf("https://appleid.apple.com")
+            ProviderId.KIMI -> listOf(
+                "https://kimi.com",
+                "https://www.kimi.com"
+            ) + GOOGLE_AUTH_COOKIE_URLS + listOf("https://appleid.apple.com")
         }
     }
 

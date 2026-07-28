@@ -41,6 +41,8 @@ object ProviderScriptProviders {
             ProviderId.GEMINI -> "d260503"
             ProviderId.ANTIGRAVITY -> "c260503"
             ProviderId.CURSOR -> "cursor-local"
+            ProviderId.GROK -> "grok-local"
+            ProviderId.KIMI -> "kimi-local"
         }
     }
 }
