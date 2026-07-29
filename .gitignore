@@ -30,3 +30,6 @@ data/
 .env
 .env.*
 upload_certificate.pem
+
+# 로컬 전용 디버그 Firebase 설정 백업
+android/app/src/debug/google-services.json.dummy-backup
