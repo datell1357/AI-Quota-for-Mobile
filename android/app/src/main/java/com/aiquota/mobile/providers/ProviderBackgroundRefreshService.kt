@@ -671,6 +671,17 @@ class ProviderBackgroundRefreshService : Service() {
             suspendCancellableCoroutine { continuation ->
                 mainHandler.post {
                     val warmUpUrl = webSessionWarmUpUrl(job)
+                    if (warmUpUrl != null &&
+                        ProviderSessionRevivePolicy.isReviveUrl(job.providerId, warmUpUrl)
+                    ) {
+                        // 이번 주기에서 실제로 provider 페이지를 로드하므로 여기서 대기를 해제한다.
+                        ProviderSessionReviveStore.clear(job.providerId)
+                        Log.i(
+                            TAG,
+                            "sessionRevive provider=${job.providerId.storageId} " +
+                                "warmUp=${hostOf(warmUpUrl)}${pathOf(warmUpUrl)}"
+                        )
+                    }
                     val active = ServiceWebRefreshJob(
                         requestId = requestId,
                         job = job,
@@ -1909,13 +1920,15 @@ class ProviderBackgroundRefreshService : Service() {
         return if (webSessionWarmUpUrl(job) == null) baseTimeout else baseTimeout + WEB_SESSION_WARM_UP_TIMEOUT_MILLIS
     }
 
+    /**
+     * 부작용이 없어야 한다. 이 함수는 타임아웃 예산 계산과 잡 생성에서 각각 호출되므로,
+     * 여기서 재활성 대기 상태를 소비하면 두 번째 호출이 null을 돌려받아 워밍업이 건너뛰어진다.
+     * 소비는 잡을 만들 때 한 번만 한다.
+     */
     private fun webSessionWarmUpUrl(job: ProviderRefreshJob): String? {
         return when (job.providerId) {
             ProviderId.COPILOT -> "https://github.com/"
-            // 세션 만료를 감지한 다음 한 주기만 provider 페이지를 먼저 로드해 쿠키를 갱신한다.
-            else -> ProviderSessionReviveStore.consumeReviveUrl(job.providerId)?.also {
-                Log.i(TAG, "sessionRevive provider=${job.providerId.storageId} warmUp=${hostOf(it)}${pathOf(it)}")
-            }
+            else -> ProviderSessionReviveStore.pendingReviveUrl(job.providerId)
         }?.takeUnless { it == job.startUrl }
     }
 }

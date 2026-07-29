@@ -66,6 +66,15 @@ object ProviderSessionReviveStore {
     fun isPending(providerId: ProviderId): Boolean = pending.contains(providerId)
 
     /**
+     * 대기 중이면 되살릴 URL을 돌려주되 대기 상태는 유지한다. 이 값을 여러 번 조회하는
+     * 호출부(타임아웃 예산 계산과 잡 생성)가 있어 조회와 소비를 분리해 둔다.
+     */
+    fun pendingReviveUrl(providerId: ProviderId): String? {
+        if (!pending.contains(providerId)) return null
+        return ProviderSessionRevivePolicy.reviveUrl(providerId)
+    }
+
+    /**
      * 대기 중이면 되살릴 URL을 돌려주고 대기 상태를 해제한다. 해제해 두므로 회복에
      * 실패해도 매 주기마다 페이지를 다시 로드하지 않고, 다음 만료 진단에서 재무장된다.
      */
