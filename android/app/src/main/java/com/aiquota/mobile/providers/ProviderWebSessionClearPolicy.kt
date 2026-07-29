@@ -73,6 +73,13 @@ object ProviderWebSessionClearPolicy {
                 "https://kimi.com",
                 "https://www.kimi.com"
             ) + GOOGLE_AUTH_COOKIE_URLS + listOf("https://appleid.apple.com")
+            ProviderId.KIRO -> listOf(
+                "https://app.kiro.dev",
+                "https://kiro.dev",
+                "https://www.kiro.dev",
+                "https://prod.us-east-1.auth.desktop.kiro.dev",
+                "https://kiro-prod-us-east-1.auth.us-east-1.amazoncognito.com"
+            ) + GOOGLE_AUTH_COOKIE_URLS + GITHUB_AUTH_COOKIE_URLS
         }
     }
 

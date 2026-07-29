@@ -43,6 +43,7 @@ object ProviderScriptProviders {
             ProviderId.CURSOR -> "cursor-local"
             ProviderId.GROK -> "grok-local"
             ProviderId.KIMI -> "kimi-local"
+            ProviderId.KIRO -> "kiro-local"
         }
     }
 }

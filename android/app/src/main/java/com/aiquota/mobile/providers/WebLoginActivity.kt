@@ -75,6 +75,7 @@ open class WebLoginActivity : Activity() {
     private var codexPostLoginUsageRedirected = false
     private var codexNativeCollectionStarted = false
     private var cursorNativeCollectionStarted = false
+    private var aboutBlankNativeCollectionStarted = false
     private var claudeNativeCollectionStarted = false
     private var geminiNativeCollectionStarted = false
     private var geminiNativeUsagePageUrl = ""
@@ -382,6 +383,11 @@ open class WebLoginActivity : Activity() {
             ) {
                 view.post { maybeStartCursorNativeCollection(view, url, "resource") }
             }
+            if (ABOUT_BLANK_NATIVE_LOGIN_PROVIDERS.contains(providerId) &&
+                ProviderWebCollectorScripts.shouldRunCollectorOnResource(providerId, url)
+            ) {
+                view.post { maybeStartAboutBlankNativeCollection(view, url, "resource") }
+            }
             return if (ProviderLoginWebViewPolicy.shouldInterceptRequest(providerId, url)) {
                 super.shouldInterceptRequest(view, request)
             } else {
@@ -446,6 +452,10 @@ open class WebLoginActivity : Activity() {
                 return
             }
             if (providerId == ProviderId.CURSOR && effectiveUrl == "about:blank") {
+                injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
+                return
+            }
+            if (ABOUT_BLANK_NATIVE_LOGIN_PROVIDERS.contains(providerId) && effectiveUrl == "about:blank") {
                 injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
                 return
             }
@@ -1152,8 +1162,30 @@ open class WebLoginActivity : Activity() {
         return true
     }
 
-    private fun maybeStartCursorNativeCollection(view: WebView, url: String, reason: String): Boolean {
-        if (providerId != ProviderId.CURSOR || finished || cursorNativeCollectionStarted || url == "about:blank") return false
+    /**
+     * Grok·Kimi·Kiro는 provider 페이지가 사용량 엔드포인트를 부르는 순간 about:blank로
+     * 옮겨가 네이티브 수집으로 전환한다. Cursor와 같은 흐름이지만 provider별 전용 코드를
+     * 늘리지 않도록 한 곳에서 처리한다.
+     */
+    private fun maybeStartAboutBlankNativeCollection(view: WebView, url: String, reason: String): Boolean {
+        if (finished || aboutBlankNativeCollectionStarted || url == "about:blank") return false
+        if (!ABOUT_BLANK_NATIVE_LOGIN_PROVIDERS.contains(providerId)) return false
+        if (!ProviderWebCollectorScripts.shouldRunCollectorOnResource(providerId, url)) return false
+        aboutBlankNativeCollectionStarted = true
+        CookieManager.getInstance().flush()
+        collectorInjectionKeys.clear()
+        noteBridgePageUrl("about:blank")
+        Log.i(
+            "AIQuotaLogin",
+            "provider=${providerId.storageId} nativeCollectorStart=aboutblank " +
+                "reason=$reason from=${hostOf(url)}${pathOf(url)}"
+        )
+        view.stopLoading()
+        view.loadUrl("about:blank")
+        return true
+    }
+
+    private fun maybeStartCursorNativeCollection(view: WebView, url: String, reason: String): Boolean {        if (providerId != ProviderId.CURSOR || finished || cursorNativeCollectionStarted || url == "about:blank") return false
         if (!ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CURSOR, url)) return false
         cursorNativeCollectionStarted = true
         CookieManager.getInstance().flush()
@@ -1832,6 +1864,11 @@ open class WebLoginActivity : Activity() {
         private const val EXTRA_START_URL = "startUrl"
         private const val BRIDGE_NAME = "AIQuotaCollectorBridge"
         private const val CURSOR_NATIVE_FETCH_TIMEOUT_MS = 20_000
+        private val ABOUT_BLANK_NATIVE_LOGIN_PROVIDERS = setOf(
+            ProviderId.GROK,
+            ProviderId.KIMI,
+            ProviderId.KIRO
+        )
         private const val GEMINI_USAGE_REDIRECT_MIN_INTERVAL_MS = 1_500L
         private const val GEMINI_USAGE_REDIRECT_MAX_ATTEMPTS = 2
         private const val GEMINI_SIGN_IN_CLICK_MAX_ATTEMPTS = 2

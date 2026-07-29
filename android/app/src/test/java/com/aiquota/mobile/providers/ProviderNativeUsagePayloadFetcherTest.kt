@@ -1040,6 +1040,79 @@ class ProviderNativeUsagePayloadFetcherTest {
         assertNull(payload)
     }
 
+    @Test
+    fun kiroNativeUsagePayloadCollectsCreditBreakdownFromCapturedCborResponse() {
+        val decoded = CborJson.decodeObject(
+            ByteArray(CborJsonTest.KIRO_USAGE_RESPONSE_HEX.length / 2) { index ->
+                CborJsonTest.KIRO_USAGE_RESPONSE_HEX
+                    .substring(index * 2, index * 2 + 2)
+                    .toInt(16)
+                    .toByte()
+            }
+        )
+        assertNotNull(decoded)
+
+        val payload = ProviderNativeUsagePayloadFetcher.kiroUsagePayloadForTest { url, body ->
+            assertEquals(
+                "https://app.kiro.dev/service/KiroWebPortalService/operation/GetUserUsageAndLimits",
+                url
+            )
+            assertNull(body)
+            JSONObject()
+                .put("ok", true)
+                .put("status", 200)
+                .put("json", decoded)
+                .toString()
+        }
+
+        assertNotNull(payload)
+        val json = JSONObject(payload!!)
+        assertEquals("kiro", json.getString("provider"))
+        assertEquals("KIRO PRO MAX", json.getString("plan"))
+        assertEquals("Q_DEVELOPER_STANDALONE_PRO_MAX", json.getString("planType"))
+        val entries = json.getJSONArray("entries")
+        assertEquals(1, entries.length())
+        val entry = entries.getJSONObject(0)
+        assertEquals("kiro:credit", entry.getString("key"))
+        assertEquals("Credits", entry.getString("label"))
+        assertEquals(66.05, entry.getDouble("used"), 0.001)
+        assertEquals(5000.0, entry.getDouble("limit"), 0.001)
+        assertEquals(1785542400.0, entry.getDouble("resetsAt"), 0.5)
+        // overageEnabled=false, currentOverages=0이면 오버리지 라인을 만들지 않는다.
+        assertEquals(false, entry.has("overages"))
+    }
+
+    @Test
+    fun kiroNativeUsagePayloadIsNullWhenSessionCookieIsMissing() {
+        val payload = ProviderNativeUsagePayloadFetcher.kiroUsagePayloadForTest { _, _ ->
+            """{"ok":false,"error":"missing_kiro_cookie"}"""
+        }
+
+        assertNull(payload)
+    }
+
+    @Test
+    fun kiroNativeUsagePayloadIsNullWhenCborDecodeFails() {
+        val payload = ProviderNativeUsagePayloadFetcher.kiroUsagePayloadForTest { _, _ ->
+            """{"ok":false,"status":200,"json":{"decodeFailed":true,"byteCount":12}}"""
+        }
+
+        assertNull(payload)
+    }
+
+    @Test
+    fun kiroSessionExpiryIsReportedSeparatelyFromOtherFailures() {
+        val expired = ProviderNativeUsagePayloadFetcher.kiroDiagnosticForTest { _, _ ->
+            """{"ok":false,"status":401,"authFailed":true}"""
+        }
+        val unavailable = ProviderNativeUsagePayloadFetcher.kiroDiagnosticForTest { _, _ ->
+            """{"ok":false,"status":503,"authFailed":false}"""
+        }
+
+        assertEquals("kiro_session_expired", expired)
+        assertEquals("kiro_usage_unavailable", unavailable)
+    }
+
     private fun claudeResponseFor(url: String, subscriptionJson: String): String {
         return when {
             url.endsWith("/api/organizations") -> """[{"uuid":"org_test"}]"""

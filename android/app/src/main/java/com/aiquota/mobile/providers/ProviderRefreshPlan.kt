@@ -113,6 +113,7 @@ object ProviderRefreshPlan {
             ProviderId.CURSOR -> "about:blank"
             ProviderId.GROK -> "about:blank"
             ProviderId.KIMI -> "about:blank"
+            ProviderId.KIRO -> "about:blank"
         }
     }
 

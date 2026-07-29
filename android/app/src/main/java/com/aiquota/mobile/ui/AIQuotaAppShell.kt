@@ -1260,6 +1260,7 @@ private fun providerNavigationLabel(providerId: ProviderId): String {
         ProviderId.CURSOR -> "Cursor"
         ProviderId.GROK -> "Grok"
         ProviderId.KIMI -> "Kimi"
+        ProviderId.KIRO -> "Kiro"
     }
 }
 

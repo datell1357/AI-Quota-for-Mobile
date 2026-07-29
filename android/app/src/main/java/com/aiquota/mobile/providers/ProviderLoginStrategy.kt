@@ -34,6 +34,8 @@ object ProviderLoginStrategy {
                 false
             ProviderId.KIMI ->
                 false
+            ProviderId.KIRO ->
+                false
         }
     }
 

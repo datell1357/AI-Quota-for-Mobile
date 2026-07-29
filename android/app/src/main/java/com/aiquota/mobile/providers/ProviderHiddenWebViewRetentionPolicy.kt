@@ -13,7 +13,8 @@ object ProviderHiddenWebViewRetentionPolicy {
             ProviderId.GEMINI,
             ProviderId.CURSOR,
             ProviderId.GROK,
-            ProviderId.KIMI -> true
+            ProviderId.KIMI,
+            ProviderId.KIRO -> true
             ProviderId.ANTIGRAVITY -> false
         }
     }

@@ -60,6 +60,13 @@ object ProviderWebCollectorScripts {
                 host == "accounts.google.com" ||
                     ((host == "kimi.com" || host == "www.kimi.com") &&
                         (path.contains("login") || path.contains("signin") || path.contains("sign-in")))
+            ProviderId.KIRO ->
+                host == "accounts.google.com" ||
+                    host == "github.com" ||
+                    host == "signin.aws.amazon.com" ||
+                    host.endsWith(".amazoncognito.com") ||
+                    (host == "app.kiro.dev" &&
+                        (path.contains("login") || path.contains("signin") || path.contains("sign-in")))
         }
     }
 
@@ -214,6 +221,11 @@ object ProviderWebCollectorScripts {
                     !path.contains("login") &&
                     !path.contains("signin") &&
                     !path.contains("sign-in")
+            ProviderId.KIRO ->
+                host == "app.kiro.dev" &&
+                    !path.contains("login") &&
+                    !path.contains("signin") &&
+                    !path.contains("sign-in")
         }
     }
 
@@ -262,6 +274,7 @@ object ProviderWebCollectorScripts {
             ProviderId.OPENCODE,
             ProviderId.GROK,
             ProviderId.KIMI,
+            ProviderId.KIRO,
             ProviderId.ANTIGRAVITY -> false
         }
     }
@@ -377,7 +390,15 @@ object ProviderWebCollectorScripts {
                     path == "/rest/rate-limits"
             ProviderId.KIMI ->
                 (host == "kimi.com" || host == "www.kimi.com") &&
-                    path == "/apiv2/kimi.gateway.membership.v2.MembershipService/GetSubscriptionStats"
+                    // path는 위에서 lowercase돼 있으므로 대문자를 포함한 오퍼레이션 경로는
+                    // 반드시 대소문자 무시로 비교한다.
+                    path.equals(
+                        "/apiv2/kimi.gateway.membership.v2.MembershipService/GetSubscriptionStats",
+                        ignoreCase = true
+                    )
+            ProviderId.KIRO ->
+                host == "app.kiro.dev" &&
+                    path.equals(KiroNativeUsageFetcher.USAGE_OPERATION_PATH, ignoreCase = true)
             ProviderId.GEMINI ->
                 false
             ProviderId.COPILOT ->

@@ -300,6 +300,42 @@ object ProviderDefinitionRegistry {
             authStoreKind = ProviderAuthStoreKind.WEBVIEW_PROFILE,
             collectionKind = ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE,
             sessionProbeUrl = "https://www.kimi.com/"
+        ),
+        ProviderDefinition(
+            providerId = ProviderId.KIRO,
+            loginStartUrl = "https://app.kiro.dev/settings/account",
+            allowedHosts = setOf(
+                "app.kiro.dev",
+                "assets.app.kiro.dev",
+                "kiro.dev",
+                "www.kiro.dev",
+                "prod.us-east-1.auth.desktop.kiro.dev",
+                "kiro-prod-us-east-1.auth.us-east-1.amazoncognito.com",
+                "github.com",
+                "api.github.com",
+                "accounts.google.com",
+                "myaccount.google.com",
+                "google.com",
+                "www.google.com",
+                "oauth2.googleapis.com",
+                "accounts.youtube.com",
+                "play.google.com",
+                "signin.aws.amazon.com",
+                "us-east-1.signin.aws",
+                "challenges.cloudflare.com",
+                "www.recaptcha.net",
+                "recaptcha.net",
+                "ssl.gstatic.com",
+                "www.gstatic.com"
+            ),
+            collectorAllowedHosts = setOf(
+                "app.kiro.dev"
+            ),
+            preferredUsageEndpoint =
+                "https://app.kiro.dev${KiroNativeUsageFetcher.USAGE_OPERATION_PATH}",
+            authStoreKind = ProviderAuthStoreKind.WEBVIEW_PROFILE,
+            collectionKind = ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE,
+            sessionProbeUrl = "https://app.kiro.dev/settings/account"
         )
     ).sortedBy { ProviderId.defaultOrder().indexOf(it.providerId) }
 

@@ -71,7 +71,8 @@ class ProviderSessionResetter(context: Context) {
             ProviderId.COPILOT,
             ProviderId.CURSOR,
             ProviderId.GROK,
-            ProviderId.KIMI -> Unit
+            ProviderId.KIMI,
+            ProviderId.KIRO -> Unit
         }
     }
 }

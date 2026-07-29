@@ -2364,8 +2364,71 @@ class ProviderUsageNormalizerTest {
     }
 
     @Test
-    fun grokBucketWithoutWaitTimeHasNoResetGuess() {
+    fun kiroCreditBreakdownBecomesRemainingPercentWithResetInstant() {
         val snapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.KIRO,
+            """
+            {
+              "provider": "kiro",
+              "plan": "KIRO PRO MAX",
+              "planType": "Q_DEVELOPER_STANDALONE_PRO_MAX",
+              "resetsAt": 1785542400,
+              "entries": [
+                {"key": "kiro:credit", "label": "Credits", "used": 66.05, "limit": 5000.0, "resetsAt": 1785542400}
+              ]
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.NETWORK_RESPONSE
+        )!!
+
+        assertEquals("KIRO PRO MAX", snapshot.planLabel)
+        val credit = snapshot.lines.single()
+        assertEquals("Credits", credit.label)
+        assertEquals("credits", credit.unit)
+        assertEquals(0.98679f, credit.remainingPercent ?: 0f, 0.0005f)
+        assertEquals(66.05, credit.usedAmount ?: 0.0, 0.001)
+        assertEquals(5000.0, credit.limitAmount ?: 0.0, 0.001)
+        assertEquals(4933.95, credit.remainingAmount ?: 0.0, 0.001)
+        assertEquals("2026-08-01T00:00:00Z", credit.resetsAt)
+    }
+
+    @Test
+    fun kiroSentinelLimitIsTreatedAsUncappedUsage() {
+        val snapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.KIRO,
+            """
+            {"entries": [{"key": "kiro:credit", "label": "Credits", "used": 320.0, "limit": 999999}]}
+            """.trimIndent(),
+            ProviderPayloadSource.NETWORK_RESPONSE
+        )!!
+
+        val credit = snapshot.lines.single()
+        assertNull(credit.remainingPercent)
+        assertNull(credit.limitAmount)
+        assertNull(credit.remainingAmount)
+        assertEquals(320.0, credit.usedAmount ?: 0.0, 0.001)
+    }
+
+    @Test
+    fun kiroPayloadWithoutUsableEntriesIsRejected() {
+        assertNull(
+            ProviderUsageNormalizer.normalize(
+                ProviderId.KIRO,
+                """{"provider": "kiro", "entries": [{"key": "kiro:credit"}]}""",
+                ProviderPayloadSource.NETWORK_RESPONSE
+            )
+        )
+        assertNull(
+            ProviderUsageNormalizer.normalize(
+                ProviderId.KIRO,
+                """{"provider": "kiro"}""",
+                ProviderPayloadSource.NETWORK_RESPONSE
+            )
+        )
+    }
+
+    @Test
+    fun grokBucketWithoutWaitTimeHasNoResetGuess() {        val snapshot = ProviderUsageNormalizer.normalize(
             ProviderId.GROK,
             """
             {

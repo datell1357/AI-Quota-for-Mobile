@@ -16,6 +16,8 @@ internal typealias GrokJsonFetcher = (String, String?) -> String
 
 internal typealias KimiJsonFetcher = (String, String?) -> String
 
+internal typealias KiroJsonFetcher = (String, String?) -> String
+
 object ProviderNativeUsagePayloadFetcher {
     fun bridgeUsagePayload(
         providerId: ProviderId,
@@ -62,6 +64,7 @@ object ProviderNativeUsagePayloadFetcher {
             ProviderId.CURSOR -> fetchCursorPayload()
             ProviderId.GROK -> fetchGrokPayload()
             ProviderId.KIMI -> fetchKimiPayload()
+            ProviderId.KIRO -> fetchKiroPayload()
             ProviderId.COPILOT -> NativePayloadResult(
                 payload = CopilotNativeUsageFetcher.fetchUsagePayload(),
                 diagnostic = "copilot_usage_unavailable"
@@ -105,6 +108,14 @@ object ProviderNativeUsagePayloadFetcher {
 
     internal fun kimiUsagePayloadForTest(fetchJson: KimiJsonFetcher): String? {
         return fetchKimiPayload(fetchJson).payload
+    }
+
+    internal fun kiroUsagePayloadForTest(fetchJson: KiroJsonFetcher): String? {
+        return fetchKiroPayload(fetchJson).payload
+    }
+
+    internal fun kiroDiagnosticForTest(fetchJson: KiroJsonFetcher): String? {
+        return fetchKiroPayload(fetchJson).diagnostic
     }
 
     private fun codexFetchedPayload(rawText: String, plan: String?, accountId: String?, account: String?): JSONObject? {
@@ -581,6 +592,74 @@ object ProviderNativeUsagePayloadFetcher {
         source.opt("resetTime")?.takeIf { it != JSONObject.NULL }?.let { entry.put("resetTime", it) }
         cursorNumber(source.opt("kimiCodeUsedRatio"))?.let { entry.put("kimiCodeUsedRatio", it) }
         return entry
+    }
+
+    private fun fetchKiroPayload(
+        fetchJson: KiroJsonFetcher = KiroNativeUsageFetcher::fetchJson
+    ): NativePayloadResult {
+        val statuses = mutableListOf<String>()
+        val wrapped = runCatching { JSONObject(fetchJson(KIRO_USAGE_URL, null)) }
+            .getOrElse {
+                JSONObject().put("ok", false).put("error", it.javaClass.simpleName)
+            }
+        statuses += "${urlStatusLabel(KIRO_USAGE_URL)}:" +
+            "${wrapped.optInt("status", -1)}:${wrapped.optString("error")}"
+        if (!wrapped.optBoolean("ok", false)) {
+            val diagnostic = if (wrapped.optBoolean("authFailed", false)) {
+                "kiro_session_expired"
+            } else {
+                "kiro_usage_unavailable"
+            }
+            return NativePayloadResult(null, diagnostic, statuses)
+        }
+        val json = wrapped.jsonValue() as? JSONObject
+            ?: return NativePayloadResult(null, "kiro_usage_unavailable", statuses)
+        val entries = JSONArray()
+        kiroEntries(json).forEach(entries::put)
+        val payload = JSONObject()
+            .put("provider", ProviderId.KIRO.storageId)
+            .put("entries", entries)
+        json.optJSONObject("subscriptionInfo")?.let { subscription ->
+            subscription.nonBlankString("subscriptionTitle")?.let { payload.put("plan", it) }
+            subscription.nonBlankString("type")?.let { payload.put("planType", it) }
+        }
+        cursorNumber(json.opt("nextDateReset"))?.let { payload.put("resetsAt", it) }
+        return verifiedPayload(ProviderId.KIRO, payload, "kiro_usage_unavailable", statuses)
+    }
+
+    private fun kiroEntries(json: JSONObject): List<JSONObject> {
+        val breakdowns = json.optJSONArray("usageBreakdownList") ?: return emptyList()
+        val fallbackReset = cursorNumber(json.opt("nextDateReset"))
+        val output = mutableListOf<JSONObject>()
+        for (index in 0 until breakdowns.length()) {
+            val source = breakdowns.optJSONObject(index) ?: continue
+            val used = cursorNumber(source.opt("currentUsageWithPrecision"))
+                ?: cursorNumber(source.opt("currentUsage"))
+                ?: continue
+            val resourceType = source.nonBlankString("resourceType") ?: "usage"
+            val entry = JSONObject()
+                .put("key", "kiro:${resourceType.lowercase(Locale.US)}")
+                .put(
+                    "label",
+                    source.nonBlankString("displayNamePlural")
+                        ?: source.nonBlankString("displayName")
+                        ?: resourceType
+                )
+                .put("used", used)
+            val limit = cursorNumber(source.opt("usageLimitWithPrecision"))
+                ?: cursorNumber(source.opt("usageLimit"))
+            limit?.let { entry.put("limit", it) }
+            (cursorNumber(source.opt("nextDateReset")) ?: fallbackReset)?.let { entry.put("resetsAt", it) }
+            val overages = cursorNumber(source.opt("currentOveragesWithPrecision"))
+                ?: cursorNumber(source.opt("currentOverages"))
+            if (overages != null && overages > 0.0) entry.put("overages", overages)
+            output += entry
+        }
+        return output
+    }
+
+    private fun JSONObject.nonBlankString(field: String): String? {
+        return optString(field).takeIf { it.isNotBlank() && it != "null" }
     }
 
     private fun grokBucket(source: JSONObject?, probe: GrokProbe, effort: String?): JSONObject? {
@@ -1192,6 +1271,8 @@ object ProviderNativeUsagePayloadFetcher {
     private const val GROK_RATE_LIMITS_URL = "https://grok.com/rest/rate-limits"
     private const val KIMI_SUBSCRIPTION_STATS_URL =
         "https://www.kimi.com/apiv2/kimi.gateway.membership.v2.MembershipService/GetSubscriptionStats"
+
+    private val KIRO_USAGE_URL = "https://app.kiro.dev${KiroNativeUsageFetcher.USAGE_OPERATION_PATH}"
 
     private val KIMI_RATE_LIMIT_KEYS = listOf(
         "ratelimit5h" to "5h rate limit",
