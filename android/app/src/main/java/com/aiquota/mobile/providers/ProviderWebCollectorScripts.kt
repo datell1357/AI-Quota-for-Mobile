@@ -60,6 +60,13 @@ object ProviderWebCollectorScripts {
                 host == "accounts.google.com" ||
                     ((host == "kimi.com" || host == "www.kimi.com") &&
                         (path.contains("login") || path.contains("signin") || path.contains("sign-in")))
+            ProviderId.KIRO ->
+                host == "accounts.google.com" ||
+                    host == "github.com" ||
+                    host == "signin.aws.amazon.com" ||
+                    host.endsWith(".amazoncognito.com") ||
+                    (host == "app.kiro.dev" &&
+                        (path.contains("login") || path.contains("signin") || path.contains("sign-in")))
         }
     }
 
@@ -214,6 +221,11 @@ object ProviderWebCollectorScripts {
                     !path.contains("login") &&
                     !path.contains("signin") &&
                     !path.contains("sign-in")
+            ProviderId.KIRO ->
+                host == "app.kiro.dev" &&
+                    !path.contains("login") &&
+                    !path.contains("signin") &&
+                    !path.contains("sign-in")
         }
     }
 
@@ -262,6 +274,7 @@ object ProviderWebCollectorScripts {
             ProviderId.OPENCODE,
             ProviderId.GROK,
             ProviderId.KIMI,
+            ProviderId.KIRO,
             ProviderId.ANTIGRAVITY -> false
         }
     }
@@ -378,6 +391,8 @@ object ProviderWebCollectorScripts {
             ProviderId.KIMI ->
                 (host == "kimi.com" || host == "www.kimi.com") &&
                     path == "/apiv2/kimi.gateway.membership.v2.MembershipService/GetSubscriptionStats"
+            ProviderId.KIRO ->
+                host == "app.kiro.dev" && path == KiroNativeUsageFetcher.USAGE_OPERATION_PATH
             ProviderId.GEMINI ->
                 false
             ProviderId.COPILOT ->

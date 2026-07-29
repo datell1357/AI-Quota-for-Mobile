@@ -12,6 +12,7 @@ object ProviderAboutBlankCollectorPolicy {
             providerId == ProviderId.OPENCODE ||
             providerId == ProviderId.CURSOR ||
             providerId == ProviderId.GROK ||
-            providerId == ProviderId.KIMI
+            providerId == ProviderId.KIMI ||
+            providerId == ProviderId.KIRO
     }
 }

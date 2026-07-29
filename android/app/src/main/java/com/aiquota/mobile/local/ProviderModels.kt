@@ -13,11 +13,12 @@ enum class ProviderId(val storageId: String, val displayName: String) {
     ANTIGRAVITY("antigravity", "Antigravity"),
     CURSOR("cursor", "Cursor"),
     GROK("grok", "Grok"),
-    KIMI("kimi", "Kimi");
+    KIMI("kimi", "Kimi"),
+    KIRO("kiro", "Kiro");
 
     companion object {
         fun defaultOrder(): List<ProviderId> =
-            listOf(CLAUDE, CODEX, CURSOR, GROK, KIMI, OPENCODE, GLM, ANTIGRAVITY, GEMINI, COPILOT)
+            listOf(CLAUDE, CODEX, CURSOR, GROK, KIMI, KIRO, OPENCODE, GLM, ANTIGRAVITY, GEMINI, COPILOT)
 
         fun fromStorageId(value: String?): ProviderId? {
             val normalized = value?.trim().orEmpty()

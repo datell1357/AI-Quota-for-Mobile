@@ -50,6 +50,7 @@ object ProviderUsageNormalizer {
             ProviderId.CURSOR -> normalizeCursor(json, source, fetchedAt)
             ProviderId.GROK -> normalizeGrok(json, source, fetchedAt)
             ProviderId.KIMI -> normalizeKimi(json, source, fetchedAt)
+            ProviderId.KIRO -> normalizeKiro(json, source, fetchedAt)
         }
         return snapshot?.takeIf { it.lines.isNotEmpty() }
     }
@@ -1064,8 +1065,52 @@ object ProviderUsageNormalizer {
         return null
     }
 
-    private fun normalizeAntigravity(json: JSONObject, source: ProviderPayloadSource, fetchedAt: String): ProviderUsageSnapshot? {
-        val usage = json.optObject("usage") ?: json
+    private fun normalizeKiro(json: JSONObject, source: ProviderPayloadSource, fetchedAt: String): ProviderUsageSnapshot? {
+        val entries = json.optJSONArray("entries") ?: return null
+        val lines = (0 until entries.length()).mapNotNull { index ->
+            entries.optJSONObject(index)?.toKiroLine(source)
+        }
+        return snapshot(
+            providerId = ProviderId.KIRO,
+            plan = json.optionalString("plan"),
+            account = json.optionalString("email") ?: json.optionalString("account"),
+            fetchedAt = fetchedAt,
+            lines = lines
+        )
+    }
+
+    private fun JSONObject.toKiroLine(source: ProviderPayloadSource): ProviderUsageLine? {
+        val key = optionalString("key") ?: return null
+        val used = optionalNumber("used") ?: return null
+        // per-user cap이 없는 계정(엔터프라이즈 풀링 등)에는 서버가 999999 센티넬을 준다.
+        val limit = optionalNumber("limit")
+            ?.takeIf { it > 0.0 && it < KIRO_UNLIMITED_SENTINEL }
+        val label = optionalString("label") ?: key
+        return ProviderUsageLine(
+            key = key,
+            label = label,
+            remainingPercent = limit?.let { ((it - used) / it).toFloat().coerceIn(0f, 1f) },
+            resetsAt = kiroResetAt(),
+            usedAmount = used.coerceAtLeast(0.0),
+            limitAmount = limit,
+            remainingAmount = limit?.let { (it - used).coerceAtLeast(0.0) },
+            unit = label.lowercase(),
+            sourceLabel = source.label,
+            confidence = source.confidence
+        )
+    }
+
+    private fun JSONObject.kiroResetAt(): String? {
+        val raw = optionalNumber("resetsAt") ?: return null
+        if (raw <= 0.0) return null
+        // CBOR tag(1) epoch초가 그대로 올라온다. 밀리초로 들어오는 경우도 방어한다.
+        val millis = if (raw < 10_000_000_000.0) (raw * 1000.0).toLong() else raw.toLong()
+        return runCatching { Instant.ofEpochMilli(millis).toString() }.getOrNull()
+    }
+
+    private const val KIRO_UNLIMITED_SENTINEL = 999_999.0
+
+    private fun normalizeAntigravity(json: JSONObject, source: ProviderPayloadSource, fetchedAt: String): ProviderUsageSnapshot? {        val usage = json.optObject("usage") ?: json
         val reset = antigravityReset(json) ?: antigravityReset(usage)
         val compactLines = antigravityCompactLines(
             usage.optJSONArray("x")

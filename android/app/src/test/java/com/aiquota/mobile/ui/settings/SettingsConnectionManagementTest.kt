@@ -38,6 +38,7 @@ class SettingsConnectionManagementTest {
                 ProviderId.CODEX,
                 ProviderId.GROK,
                 ProviderId.KIMI,
+                ProviderId.KIRO,
                 ProviderId.OPENCODE,
                 ProviderId.GLM,
                 ProviderId.GEMINI,
