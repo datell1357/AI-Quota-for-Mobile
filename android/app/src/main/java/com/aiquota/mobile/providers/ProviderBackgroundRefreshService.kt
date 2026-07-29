@@ -944,8 +944,50 @@ class ProviderBackgroundRefreshService : Service() {
 
     private fun maybeCompleteWebSessionWarmUp(active: ServiceWebRefreshJob, view: WebView, url: String): Boolean {
         if (!isWebSessionWarmUpPage(active, url)) return false
+        if (ProviderSessionRevivePolicy.reviveUrl(active.job.providerId) == null) {
+            finishWebSessionWarmUp(active, view, url)
+            return true
+        }
+        // 세션 재활성은 웹 앱이 토큰 갱신 XHR을 끝낼 시간이 필요하다. 사용량 엔드포인트
+        // 호출을 보면 즉시 넘어가고(shouldInterceptRequest), 못 보면 이 지연으로 넘어간다.
+        if (active.warmUpTransitionScheduled) return true
+        active.warmUpTransitionScheduled = true
+        val requestId = active.requestId
+        val providerId = active.job.providerId
+        Log.d(
+            TAG,
+            "sessionReviveSettle provider=${providerId.storageId} " +
+                "from=${hostOf(url)}${pathOf(url)} delayMs=$SESSION_REVIVE_SETTLE_MILLIS"
+        )
+        mainHandler.postDelayed({
+            val current = currentWebJobFor(providerId) ?: return@postDelayed
+            if (current.requestId != requestId || !current.warmUpPending) return@postDelayed
+            finishWebSessionWarmUp(current, view, url)
+        }, SESSION_REVIVE_SETTLE_MILLIS)
+        return true
+    }
+
+    private fun maybeCompleteSessionReviveFromResource(providerId: ProviderId, view: WebView, url: String) {
+        val active = currentWebJobFor(providerId) ?: return
+        if (!active.warmUpPending) return
+        if (ProviderSessionRevivePolicy.reviveUrl(providerId) == null) return
+        if (!ProviderWebCollectorScripts.shouldRunCollectorOnResource(providerId, url)) return
+        val requestId = active.requestId
+        mainHandler.post {
+            val current = currentWebJobFor(providerId) ?: return@post
+            if (current.requestId != requestId || !current.warmUpPending) return@post
+            Log.i(
+                TAG,
+                "sessionReviveReady provider=${providerId.storageId} from=${hostOf(url)}${pathOf(url)}"
+            )
+            finishWebSessionWarmUp(current, view, current.warmUpUrl.orEmpty())
+        }
+    }
+
+    private fun finishWebSessionWarmUp(active: ServiceWebRefreshJob, view: WebView, url: String) {
         active.warmUpPending = false
         collectorInjectionKeys.removeAll { it.contains(":${active.job.providerId.storageId}:") }
+        CookieManager.getInstance().flush()
         val nextUrl = active.job.startUrl
         Log.d(
             TAG,
@@ -954,7 +996,6 @@ class ProviderBackgroundRefreshService : Service() {
         )
         view.stopLoading()
         view.loadUrl(nextUrl)
-        return true
     }
 
     private fun isWebSessionWarmUpPage(active: ServiceWebRefreshJob, url: String): Boolean {
@@ -1107,6 +1148,7 @@ class ProviderBackgroundRefreshService : Service() {
             captureClaudeNativeFetchHeaders(ownerProviderId, url, request.requestHeaders.orEmpty())
             maybeStartCodexAboutBlankCollection(ownerProviderId, view, url)
             maybeStartClaudeAboutBlankCollection(ownerProviderId, view, url)
+            maybeCompleteSessionReviveFromResource(ownerProviderId, view, url)
             return null
         }
 
@@ -1242,6 +1284,7 @@ class ProviderBackgroundRefreshService : Service() {
                         "summary=${payloadSignal(rawPayload)}"
                 )
                 CookieManager.getInstance().flush()
+                ProviderSessionReviveStore.clear(ownerProviderId)
                 completeWebJob(active.requestId, ServiceRefreshOutcome.Payload(rawPayload))
             }
         }
@@ -1290,6 +1333,12 @@ class ProviderBackgroundRefreshService : Service() {
                         }
                     }
                     return@post
+                }
+                if (ProviderSessionReviveStore.arm(ownerProviderId, errorKind)) {
+                    Log.i(
+                        TAG,
+                        "sessionReviveArmed provider=${ownerProviderId.storageId} errorKind=$errorKind"
+                    )
                 }
                 val failure = ProviderCollectorErrorPolicy.failureFor(ownerProviderId, rawError)
                 completeWebJob(active.requestId, ServiceRefreshOutcome.Failure(failure))
@@ -1734,6 +1783,7 @@ class ProviderBackgroundRefreshService : Service() {
         val job: ProviderRefreshJob,
         val warmUpUrl: String? = null,
         var warmUpPending: Boolean = false,
+        var warmUpTransitionScheduled: Boolean = false,
         val collectorRetryCounts: MutableMap<String, Int> = mutableMapOf(),
         var lastGeminiRefreshRedirectKey: String? = null,
         var lastGeminiRefreshRedirectAtMs: Long = 0L,
@@ -1782,6 +1832,7 @@ class ProviderBackgroundRefreshService : Service() {
         private const val BRIDGE_NAME = "AIQuotaCollectorBridge"
         private const val INITIAL_AUTO_REFRESH_DELAY_MILLIS = 3_000L
         private const val WEB_SESSION_WARM_UP_TIMEOUT_MILLIS = 8_000L
+        private const val SESSION_REVIVE_SETTLE_MILLIS = 4_000L
         private const val GEMINI_USAGE_REDIRECT_MIN_INTERVAL_MS = 1_500L
         private const val GEMINI_USAGE_REDIRECT_MAX_ATTEMPTS = 2
         private const val GEMINI_SIGN_IN_CLICK_MAX_ATTEMPTS = 1
@@ -1861,7 +1912,10 @@ class ProviderBackgroundRefreshService : Service() {
     private fun webSessionWarmUpUrl(job: ProviderRefreshJob): String? {
         return when (job.providerId) {
             ProviderId.COPILOT -> "https://github.com/"
-            else -> null
+            // 세션 만료를 감지한 다음 한 주기만 provider 페이지를 먼저 로드해 쿠키를 갱신한다.
+            else -> ProviderSessionReviveStore.consumeReviveUrl(job.providerId)?.also {
+                Log.i(TAG, "sessionRevive provider=${job.providerId.storageId} warmUp=${hostOf(it)}${pathOf(it)}")
+            }
         }?.takeUnless { it == job.startUrl }
     }
 }

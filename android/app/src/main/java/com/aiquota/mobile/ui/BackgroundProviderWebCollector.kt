@@ -44,6 +44,8 @@ import com.aiquota.mobile.providers.ProviderRefreshJob
 import com.aiquota.mobile.providers.ProviderRefreshMode
 import com.aiquota.mobile.providers.ProviderRefreshPlan
 import com.aiquota.mobile.providers.ProviderScopedStateRepository
+import com.aiquota.mobile.providers.ProviderSessionRevivePolicy
+import com.aiquota.mobile.providers.ProviderSessionReviveStore
 import com.aiquota.mobile.providers.ProviderRefreshTimeoutPolicy
 import com.aiquota.mobile.providers.ProviderWebCollectorScripts
 import com.aiquota.mobile.providers.ProviderWebViewUserAgent
@@ -171,11 +173,17 @@ fun BackgroundProviderWebCollector(
                     }
                     if (loadedRequestIds[providerId] != activeJob.requestId) {
                         loadedRequestIds[providerId] = activeJob.requestId
+                        // 세션 만료를 감지했으면 이번 주기만 provider 페이지를 먼저 로드해
+                        // 웹 앱이 토큰 쿠키를 갱신하게 한 뒤 about:blank 수집으로 돌아온다.
+                        val reviveUrl = ProviderSessionReviveStore.consumeReviveUrl(providerId)
+                            ?.takeUnless { it == activeJob.job.startUrl }
+                        val targetUrl = reviveUrl ?: activeJob.job.startUrl
                         Log.d(
                             "AIQuotaBgCollector",
-                            "load provider=${providerId.storageId} start=${hostOf(activeJob.job.startUrl)}${pathOf(activeJob.job.startUrl)}"
+                            "load provider=${providerId.storageId} start=${hostOf(targetUrl)}${pathOf(targetUrl)} " +
+                                "sessionRevive=${reviveUrl != null}"
                         )
-                        webView.loadUrl(activeJob.job.startUrl)
+                        webView.loadUrl(targetUrl)
                     }
                 }
             }
@@ -293,6 +301,23 @@ private class BackgroundCollectorWebViewClient(
         )
         if (ProviderWebCollectorScripts.isRefreshLoginPage(providerId, url)) {
             finishWithErrorOnce(job, ProviderRefreshFailure.interactiveAuthRequired(LOGIN_PAGE_REACHED_MESSAGE))
+            return
+        }
+        if (ProviderSessionRevivePolicy.isReviveUrl(providerId, url) && job.job.startUrl != url) {
+            // 토큰 갱신 XHR이 끝날 시간을 준 뒤 수집 페이지로 돌아간다.
+            Log.d(
+                "AIQuotaBgCollector",
+                "sessionReviveSettle provider=${providerId.storageId} to=${hostOf(job.job.startUrl)}${pathOf(job.job.startUrl)}"
+            )
+            val requestId = job.requestId
+            val targetUrl = job.job.startUrl
+            view.postDelayed({
+                val activeJob = currentProviderJob() ?: return@postDelayed
+                if (activeJob.requestId != requestId || activeJob.job.providerId != providerId) return@postDelayed
+                CookieManager.getInstance().flush()
+                view.stopLoading()
+                view.loadUrl(targetUrl)
+            }, SESSION_REVIVE_SETTLE_MILLIS)
             return
         }
         view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
@@ -443,6 +468,7 @@ private class BackgroundUsageBridge(
                 ProviderScopedStateRepository(applicationContext).saveOpenCodeUsageUrl(pageUrl)
             }
             CookieManager.getInstance().flush()
+            ProviderSessionReviveStore.clear(job.job.providerId)
             onPayload(job, rawPayload)
             onFinished(job.requestId)
         }
@@ -467,6 +493,12 @@ private class BackgroundUsageBridge(
                 "AIQuotaBgCollector",
                 "error provider=${job.job.providerId.storageId} kind=$errorKind messagePresent=$messagePresent"
             )
+            if (ProviderSessionReviveStore.arm(job.job.providerId, errorKind)) {
+                Log.i(
+                    "AIQuotaBgCollector",
+                    "sessionReviveArmed provider=${job.job.providerId.storageId} errorKind=$errorKind"
+                )
+            }
             val failure = ProviderCollectorErrorPolicy.failureFor(job.job.providerId, rawError)
             if (ProviderHiddenWebViewRetentionPolicy.shouldRecreateAfterFailure(failure.kind)) {
                 onRecreateWebView(job.job.providerId)
@@ -584,6 +616,7 @@ private fun decodeJsString(value: String?): String {
 }
 
 private const val BRIDGE_NAME = "AIQuotaCollectorBridge"
+private const val SESSION_REVIVE_SETTLE_MILLIS = 4_000L
 private const val LOGIN_PAGE_REACHED_MESSAGE = "Background refresh reached a provider login page."
 private const val PAGE_CAPTURE_SCRIPT =
     "(function(){return (document.documentElement.innerText||document.title||'').slice(0,12000);})()"
