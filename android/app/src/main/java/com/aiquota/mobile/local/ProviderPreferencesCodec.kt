@@ -46,7 +46,10 @@ object ProviderPreferencesCodec {
     }
 
     private fun normalizeOrder(order: List<ProviderId>): List<ProviderId> {
-        return (order + ProviderId.defaultOrder()).distinct()
+        // 노출 대상은 defaultOrder()가 정한다. 이전 빌드에서 저장된 순서에 지금은 노출하지
+        // 않는 provider가 남아 있어도 화면에 다시 나타나지 않게 걸러낸다.
+        val released = ProviderId.defaultOrder()
+        return (order + released).distinct().filter { it in released }
     }
 
     private const val STORAGE_SEPARATOR = ","

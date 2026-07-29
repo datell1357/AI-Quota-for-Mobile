@@ -46,8 +46,6 @@ class ProviderNavigationLayoutTest {
                 ProviderId.CODEX,
                 ProviderId.GEMINI,
                 ProviderId.COPILOT,
-                ProviderId.GROK,
-                ProviderId.KIMI,
                 ProviderId.KIRO,
                 ProviderId.OPENCODE,
                 ProviderId.GLM

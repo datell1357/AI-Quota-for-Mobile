@@ -17,8 +17,14 @@ enum class ProviderId(val storageId: String, val displayName: String) {
     KIRO("kiro", "Kiro");
 
     companion object {
+        /**
+         * 화면·설정·위젯에 노출되는 provider 목록이자 표시 순서다.
+         *
+         * GROK·KIMI는 구현은 들어와 있지만 실계정 검증을 마치지 못해 38버전 노출 대상에서
+         * 빼둔다. 검증이 끝나면 CURSOR 다음에 GROK, KIMI를 다시 넣으면 그대로 살아난다.
+         */
         fun defaultOrder(): List<ProviderId> =
-            listOf(CLAUDE, CODEX, CURSOR, GROK, KIMI, KIRO, OPENCODE, GLM, ANTIGRAVITY, GEMINI, COPILOT)
+            listOf(CLAUDE, CODEX, CURSOR, KIRO, OPENCODE, GLM, ANTIGRAVITY, GEMINI, COPILOT)
 
         fun fromStorageId(value: String?): ProviderId? {
             val normalized = value?.trim().orEmpty()

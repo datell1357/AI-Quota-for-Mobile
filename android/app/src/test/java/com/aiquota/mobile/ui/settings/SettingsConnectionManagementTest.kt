@@ -36,8 +36,6 @@ class SettingsConnectionManagementTest {
                 ProviderId.ANTIGRAVITY,
                 ProviderId.CLAUDE,
                 ProviderId.CODEX,
-                ProviderId.GROK,
-                ProviderId.KIMI,
                 ProviderId.KIRO,
                 ProviderId.OPENCODE,
                 ProviderId.GLM,

@@ -12,7 +12,9 @@ class ProviderDefinitionRegistryTest {
         val definitions = ProviderDefinitionRegistry.all()
         val definitionsByProvider = definitions.associateBy { it.providerId }
 
-        assertEquals(ProviderId.defaultOrder(), definitions.map { it.providerId })
+        assertEquals(ProviderId.defaultOrder(), ProviderDefinitionRegistry.released().map { it.providerId })
+        // 노출하지 않는 provider의 정의도 조회 가능해야 한다(definitionFor는 예외를 던지지 않는다).
+        assertEquals(ProviderId.entries.size, definitions.size)
         assertEquals("https://claude.ai/login", definitionsByProvider[ProviderId.CLAUDE]?.loginStartUrl)
         assertEquals(
             "https://chatgpt.com/codex/cloud/settings/analytics#usage",
