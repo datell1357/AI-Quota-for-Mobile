@@ -1100,6 +1100,19 @@ class ProviderNativeUsagePayloadFetcherTest {
         assertNull(payload)
     }
 
+    @Test
+    fun kiroSessionExpiryIsReportedSeparatelyFromOtherFailures() {
+        val expired = ProviderNativeUsagePayloadFetcher.kiroDiagnosticForTest { _, _ ->
+            """{"ok":false,"status":401,"authFailed":true}"""
+        }
+        val unavailable = ProviderNativeUsagePayloadFetcher.kiroDiagnosticForTest { _, _ ->
+            """{"ok":false,"status":503,"authFailed":false}"""
+        }
+
+        assertEquals("kiro_session_expired", expired)
+        assertEquals("kiro_usage_unavailable", unavailable)
+    }
+
     private fun claudeResponseFor(url: String, subscriptionJson: String): String {
         return when {
             url.endsWith("/api/organizations") -> """[{"uuid":"org_test"}]"""

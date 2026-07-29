@@ -114,6 +114,10 @@ object ProviderNativeUsagePayloadFetcher {
         return fetchKiroPayload(fetchJson).payload
     }
 
+    internal fun kiroDiagnosticForTest(fetchJson: KiroJsonFetcher): String? {
+        return fetchKiroPayload(fetchJson).diagnostic
+    }
+
     private fun codexFetchedPayload(rawText: String, plan: String?, accountId: String?, account: String?): JSONObject? {
         val parsed = runCatching { JSONTokener(rawText).nextValue() }.getOrNull()
         val usage = codexUsageFromValue(parsed)
@@ -601,7 +605,12 @@ object ProviderNativeUsagePayloadFetcher {
         statuses += "${urlStatusLabel(KIRO_USAGE_URL)}:" +
             "${wrapped.optInt("status", -1)}:${wrapped.optString("error")}"
         if (!wrapped.optBoolean("ok", false)) {
-            return NativePayloadResult(null, "kiro_usage_unavailable", statuses)
+            val diagnostic = if (wrapped.optBoolean("authFailed", false)) {
+                "kiro_session_expired"
+            } else {
+                "kiro_usage_unavailable"
+            }
+            return NativePayloadResult(null, diagnostic, statuses)
         }
         val json = wrapped.jsonValue() as? JSONObject
             ?: return NativePayloadResult(null, "kiro_usage_unavailable", statuses)

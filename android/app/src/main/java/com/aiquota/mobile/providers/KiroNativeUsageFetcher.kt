@@ -45,6 +45,9 @@ object KiroNativeUsageFetcher {
                 .put("ok", status in 200..299 && decoded != null)
                 .put("status", status)
                 .put("endpoint", endpoint)
+                // 세션 만료(401/403/423)는 파싱 실패나 네트워크 오류와 구분해야 한다.
+                // 만료 시에만 세션을 되살리는 폴백을 걸 수 있어야 하기 때문이다.
+                .put("authFailed", status == 401 || status == 403 || status == 423)
                 .put(
                     "json",
                     decoded ?: JSONObject().put("decodeFailed", true).put("byteCount", raw.size)
@@ -75,7 +78,9 @@ object KiroNativeUsageFetcher {
             CookieManager.getInstance().getCookie("https://kiro.dev")
         ).mapNotNull { it?.takeIf(String::isNotBlank) }
         val header = values.joinToString("; ").takeIf { it.isNotBlank() } ?: return null
-        return header.takeIf { AUTH_COOKIE_HINTS.any(it::contains) }
+        return header.takeIf { candidate ->
+            AUTH_COOKIE_HINTS.any { hint -> candidate.contains(hint, ignoreCase = true) }
+        }
     }
 
     private fun kiroEndpoint(url: String): String? {
@@ -97,5 +102,10 @@ object KiroNativeUsageFetcher {
     private const val NETWORK_TIMEOUT_MS = 10_000
     private val EMPTY_CBOR_MAP = byteArrayOf(0xa0.toByte())
     private val HEX_BODY = Regex("^(?:[0-9a-fA-F]{2})+$")
-    private val AUTH_COOKIE_HINTS = listOf("aws-token", "awsd2c-token")
+    /**
+     * Android WebView 세션에서 app.kiro.dev가 심는 인증 쿠키는 httpOnly·persistent인
+     * `AccessToken`/`RefreshToken`이다(로그인 시각 기준 7일 만료). 데스크톱 브라우저에서
+     * 관측된 `aws-token`/`awsd2c-token` 계열도 함께 받아들인다.
+     */
+    private val AUTH_COOKIE_HINTS = listOf("AccessToken", "RefreshToken", "aws-token", "awsd2c-token")
 }
