@@ -85,7 +85,9 @@ test("Android local-first shell keeps provider snapshots in local display cache"
   const foregroundPolicy = source("android/app/src/main/java/com/aiquota/mobile/sync/ForegroundRefreshPolicy.kt");
   const manifest = source("android/app/src/main/AndroidManifest.xml");
 
-  assert.match(main, /AIQuotaAppShell\(context = this\)/);
+  // AIQuotaAppShell 호출은 인자가 늘어 여러 줄로 쓰여 있다. 한 줄 표기를 강제하지 않고
+  // 컴포저블 진입과 필수 인자만 확인한다.
+  assert.match(main, /AIQuotaAppShell\(\s*\n?\s*context = this/);
   assert.match(appShell, /UsageLimitNotificationController\.canPostNotifications/);
   assert.match(appShell, /rememberLauncherForActivityResult/);
   assert.match(main, /ForegroundRefreshController/);
@@ -133,8 +135,11 @@ test("Android web collectors remain for visible-session providers", () => {
   assert.match(collectionService, /class ProviderUsageCollectionService : Service\(\)/);
   assert.match(collectionService, /ProviderUsageNormalizer\.normalize\(providerId, effectivePayload, source\)/);
   assert.match(backgroundRefreshService, /ProviderWebCollectorScripts\.build/);
-  assert.match(scriptProviders, /class GeminiScriptProvider/);
-  assert.match(scriptProviders, /class AntigravityScriptProvider/);
+  // provider별 ScriptProvider 클래스는 provider id 기반 메타데이터 조회로 통합됐다.
+  assert.match(scriptProviders, /fun metadataFor\(providerId: ProviderId\): ProviderScriptMetadata/);
+  assert.match(scriptProviders, /fun storeNamesFor\(providerId: ProviderId\): ProviderStoreNames/);
+  assert.match(scriptProviders, /ProviderId\.GEMINI -> "[a-z0-9]+"/);
+  assert.match(scriptProviders, /ProviderId\.ANTIGRAVITY -> "[a-z0-9]+"/);
   assert.match(definitions, /providerId = ProviderId\.COPILOT,[\s\S]*?collectionKind = ProviderCollectionKind\.WEBVIEW_COLLECTOR/);
 });
 
@@ -170,8 +175,10 @@ test("Google native OAuth routes through Firebase token exchange without client 
   assert.match(main, /FirebaseGatewayBootstrap\.install\(\)/);
   assert.match(debugBootstrap, /DebugAppCheckProviderFactory/);
   assert.match(releaseBootstrap, /PlayIntegrityAppCheckProviderFactory/);
-  assert.match(gradle, /681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j\.apps\.googleusercontent\.com/);
-  assert.match(gradle, /1071006060591-tmhssin2h21lcre235vtolojh4g403ep\.apps\.googleusercontent\.com/);
+  // 앱에서 쓰지 않는 Google OAuth client id는 secu/remove-oauth-client-ids에서 제거했다.
+  // 빌드 설정에 다시 들어오면 회귀이므로, 존재가 아니라 부재를 확인한다.
+  assert.doesNotMatch(gradle, /681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j\.apps\.googleusercontent\.com/);
+  assert.doesNotMatch(gradle, /1071006060591-tmhssin2h21lcre235vtolojh4g403ep\.apps\.googleusercontent\.com/);
   assert.match(geminiGateway, /FirebaseAuth/);
   assert.match(geminiGateway, /callWithAppCheckRetry\(appCheck, "startGeminiCliOAuth"/);
   assert.match(geminiGateway, /callWithAppCheckRetry\(appCheck, "completeGeminiCliOAuth"/);
@@ -193,16 +200,18 @@ test("Google native OAuth routes through Firebase token exchange without client 
   assert.match(antigravityActivity, /fetchUsagePayloadFromGatewayTokenResult/);
   assert.match(geminiRepository, /GeminiCliFirebaseGateway\(appContext\)\.refreshAccessToken\(refreshToken\)/);
   assert.match(antigravityRepository, /AntigravityFirebaseGateway\(appContext\)\.refreshAccessToken\(refreshToken\)/);
-  assert.match(geminiBlock, /authStoreKind = ProviderAuthStoreKind\.NATIVE_TOKEN/);
-  assert.match(geminiBlock, /collectionKind = ProviderCollectionKind\.NATIVE_API/);
+  // Gemini는 CLI 게이트웨이 대신 gemini.google.com/usage WebView 세션으로 수집한다.
+  assert.match(geminiBlock, /authStoreKind = ProviderAuthStoreKind\.WEBVIEW_PROFILE/);
+  assert.match(geminiBlock, /collectionKind = ProviderCollectionKind\.WEBVIEW_COLLECTOR/);
   assert.match(antigravityBlock, /authStoreKind = ProviderAuthStoreKind\.NATIVE_TOKEN/);
   assert.match(antigravityBlock, /collectionKind = ProviderCollectionKind\.NATIVE_API/);
   assert.match(refreshPlan, /ProviderCollectionKind\.NATIVE_API -> ProviderRefreshMode\.NATIVE_API/);
-  assert.match(appShell, /GeminiCliLoopbackOAuthActivity\.createIntent/);
+  // Gemini CLI 로그인·저장 자격 증명 경로는 도달 불가로 남겨 두었다. 되살아나면 회귀다.
+  assert.doesNotMatch(appShell, /GeminiCliLoopbackOAuthActivity\.createIntent/);
   assert.match(appShell, /AntigravityLoopbackOAuthActivity\.createIntent/);
   assert.doesNotMatch(appShell, /GeminiCliOAuthRepository\(appContext\)\.fetchUsagePayloadFromStoredCredential\(\)/);
   assert.doesNotMatch(appShell, /AntigravityOAuthRepository\(appContext\)\.fetchUsagePayloadFromStoredCredential\(\)/);
-  assert.match(refreshService, /GeminiCliOAuthRepository\(applicationContext\)\.fetchUsagePayloadFromStoredCredential\(\)/);
+  assert.doesNotMatch(refreshService, /GeminiCliOAuthRepository\(applicationContext\)/);
   assert.match(refreshService, /AntigravityOAuthRepository\(applicationContext\)\.fetchUsagePayloadFromStoredCredential\(\)/);
   assert.doesNotMatch(
     `${geminiGateway}\n${antigravityGateway}\n${geminiActivity}\n${antigravityActivity}\n${geminiRepository}\n${antigravityRepository}\n${gradle}`,
@@ -269,19 +278,27 @@ test("release R8 keeps shrink and optimize disabled while narrowing Android entr
 test("release R8 preserves JavaScript bridge method names used by collector scripts", () => {
   const rules = source("android/app/proguard-rules.pro");
   const scripts = source("android/app/src/main/java/com/aiquota/mobile/providers/ProviderWebCollectorScripts.kt");
+  const refreshService = source("android/app/src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt");
 
   assert.match(rules, /@android\.webkit\.JavascriptInterface <methods>;/);
   assertContains(scripts, "window.AIQuotaCollectorBridge.postUsagePayload", "collector scripts");
   assertContains(scripts, "window.AIQuotaCollectorBridge.postCollectorError", "collector scripts");
-  assertContains(scripts, "window.AIQuotaCollectorBridge.fetchCopilotJson", "collector scripts");
-  assertContains(scripts, "window.AIQuotaCollectorBridge.fetchCopilotJsonWithAuthorization", "collector scripts");
-  assertContains(scripts, "window.AIQuotaCollectorBridge.fetchCursorJson", "collector scripts");
+  // provider별 fetch 브리지는 범용 두 개로 통합됐다. 네이티브 쪽 @JavascriptInterface는
+  // 그대로 남아 R8 keep 규칙의 대상이 된다.
+  assertContains(scripts, "window.AIQuotaCollectorBridge.fetchProviderJson", "collector scripts");
+  assertContains(scripts, "window.AIQuotaCollectorBridge.fetchProviderUsagePayload", "collector scripts");
+  assertContains(refreshService, "fun fetchProviderJson", "background refresh bridge");
+  assertContains(refreshService, "fun fetchProviderUsagePayload", "background refresh bridge");
+  assertContains(refreshService, "fun fetchCopilotJson", "background refresh bridge");
+  assertContains(refreshService, "fun fetchCursorJson", "background refresh bridge");
 });
 
 test("release obfuscation phase does not transform provider asset JavaScript", () => {
+  // Gemini 수집은 JS 에셋에서 네이티브 batchexecute fetcher로 옮겨갔고, 남은 JS 에셋은
+  // Antigravity 하나다.
   assertPathsExist([
-    "android/app/src/main/assets/gemini_collector.js",
-    "android/app/src/main/assets/antigravity_collector.js"
+    "android/app/src/main/assets/antigravity_collector.js",
+    "android/app/src/main/java/com/aiquota/mobile/providers/GeminiUsagePageNativeFetcher.kt"
   ]);
 
   const gradle = source("android/app/build.gradle.kts");
@@ -290,8 +307,7 @@ test("release obfuscation phase does not transform provider asset JavaScript", (
   const combinedBuildConfig = `${gradle}\n${packageJson}`;
 
   assert.doesNotMatch(combinedBuildConfig, /terser|uglify|javascript-obfuscator|js-minify|minifyJs|encode.*collector/i);
-  assert.match(scripts, /geminiCollectorAsset/);
-  assert.match(scripts, /antigravityCollectorAsset/);
+  assert.match(scripts, /fun metadataFor\(providerId: ProviderId\): ProviderScriptMetadata/);
 });
 
 test("Antigravity backend Functions expose Secret Manager and AES-GCM-backed gateway only", () => {
