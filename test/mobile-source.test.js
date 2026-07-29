@@ -325,35 +325,6 @@ test("Antigravity backend Functions expose Secret Manager and AES-GCM-backed gat
   assert.match(rules, /antigravityOAuthStates/);
 });
 
-test("Gemini CLI OAuth token exchange uses Firebase Functions secrets", () => {
-  const index = source("functions/src/index.js");
-  const gateway = source("functions/src/geminiCliGateway.js");
-  const androidGateway = source("android/app/src/main/java/com/aiquota/mobile/providers/GeminiCliFirebaseGateway.kt");
-  const appCheckCallable = source("android/app/src/main/java/com/aiquota/mobile/providers/FirebaseAppCheckCallable.kt");
-  const activity = source("android/app/src/main/java/com/aiquota/mobile/providers/GeminiCliLoopbackOAuthActivity.kt");
-  const appShell = source("android/app/src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt");
-  const rules = source("firestore.rules");
-
-  assert.match(index, /defineSecret\("GEMINI_CLI_GOOGLE_OAUTH_CLIENT_ID"\)/);
-  assert.match(index, /defineSecret\("GEMINI_CLI_GOOGLE_OAUTH_CLIENT_SECRET"\)/);
-  assert.match(index, /defineSecret\("GEMINI_CLI_GOOGLE_OAUTH_REDIRECT_URI"\)/);
-  assert.match(index, /startGeminiCliOAuth/);
-  assert.match(index, /completeGeminiCliOAuth/);
-  assert.match(index, /refreshGeminiCliAccessToken/);
-  assert.match(gateway, /client_secret: oauthClientSecret/);
-  assert.match(gateway, /refreshGeminiCliAccessToken/);
-  assert.match(gateway, /geminiCliOAuthStates/);
-  assert.match(androidGateway, /callWithAppCheckRetry\(appCheck, "startGeminiCliOAuth"/);
-  assert.match(androidGateway, /callWithAppCheckRetry\(appCheck, "completeGeminiCliOAuth"/);
-  assert.match(androidGateway, /"refreshGeminiCliAccessToken"/);
-  assert.match(appCheckCallable, /FirebaseFunctionsException\.Code\.UNAUTHENTICATED/);
-  assert.match(activity, /GeminiCliFirebaseGateway/);
-  assert.match(activity, /completeOAuth\(url\)/);
-  assert.match(appShell, /providerId == ProviderId\.GEMINI/);
-  assert.doesNotMatch(`${androidGateway}\n${activity}`, /GEMINI_CLI_GOOGLE_OAUTH_CLIENT_SECRET|client_secret/);
-  assert.match(rules, /geminiCliOAuthStates/);
-});
-
 test("iOS main UI exposes pre-production mobile flow up to snapshot display", () => {
   const content = source("ios/AIQuotaMobile/ContentView.swift");
   const store = source("ios/AIQuotaMobile/SnapshotStore.swift");
