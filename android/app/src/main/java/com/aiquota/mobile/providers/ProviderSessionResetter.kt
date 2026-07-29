@@ -1,6 +1,8 @@
 package com.aiquota.mobile.providers
 
 import android.content.Context
+import android.util.Log
+import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.local.ProviderId
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
@@ -13,6 +15,7 @@ class ProviderSessionResetter(context: Context) {
     private val appContext = context.applicationContext
 
     fun disconnect(providerId: ProviderId) {
+        logDisconnectEntry(providerId, "disconnect")
         clearStoredProviderCredentials(providerId)
         ProviderWebSessionCleaner.clearProviderWebSession(appContext, providerId)
         ProviderWebSessionCleanupJobs.schedule(providerId) {
@@ -22,9 +25,26 @@ class ProviderSessionResetter(context: Context) {
     }
 
     suspend fun disconnectAndWait(providerId: ProviderId) {
+        logDisconnectEntry(providerId, "disconnectAndWait")
         clearStoredProviderCredentials(providerId)
         ProviderWebSessionCleaner.clearProviderWebSessionAndWait(appContext, providerId)
         notifyProviderSessionReset(providerId)
+    }
+
+    /**
+     * 연결 해제는 provider 웹 세션 쿠키를 지워 재로그인을 요구한다. 의도치 않은 호출을
+     * 추적할 수 있도록 디버그 빌드에서만 호출 경로를 남긴다. 릴리스에서는 아무 일도 하지 않는다.
+     */
+    private fun logDisconnectEntry(providerId: ProviderId, entry: String) {
+        if (!BuildConfig.DEBUG) return
+        val caller = Throwable().stackTrace
+            .drop(1)
+            .take(8)
+            .joinToString(" <- ") { "${it.className.substringAfterLast('.')}.${it.methodName}" }
+        Log.i(
+            "AIQuotaSessionReset",
+            "provider=${providerId.storageId} entry=$entry caller=$caller"
+        )
     }
 
     suspend fun awaitProviderWebSessionCleanup(providerId: ProviderId) {
