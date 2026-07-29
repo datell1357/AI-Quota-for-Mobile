@@ -337,9 +337,19 @@ object ProviderDefinitionRegistry {
             collectionKind = ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE,
             sessionProbeUrl = "https://app.kiro.dev/settings/account"
         )
-    ).sortedBy { ProviderId.defaultOrder().indexOf(it.providerId) }
+    // 노출 순서는 defaultOrder()를 따르고, 아직 노출하지 않는 provider(GROK·KIMI)의 정의는
+    // 목록 뒤에 남겨 둔다. 정의를 지우면 definitionFor()가 예외를 던지므로 순서만 미룬다.
+    ).sortedBy { definition ->
+        val index = ProviderId.defaultOrder().indexOf(definition.providerId)
+        if (index < 0) Int.MAX_VALUE else index
+    }
 
     fun all(): List<ProviderDefinition> = definitions
+
+    /** 화면에 노출되는 provider 정의만 돌려준다. */
+    fun released(): List<ProviderDefinition> = definitions.filter {
+        ProviderId.defaultOrder().contains(it.providerId)
+    }
 
     fun definitionFor(providerId: ProviderId): ProviderDefinition {
         return definitions.first { it.providerId == providerId }
