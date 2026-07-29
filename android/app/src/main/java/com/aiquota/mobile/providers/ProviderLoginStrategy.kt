@@ -30,6 +30,10 @@ object ProviderLoginStrategy {
                 false
             ProviderId.CURSOR ->
                 false
+            ProviderId.GROK ->
+                false
+            ProviderId.KIMI ->
+                false
         }
     }
 

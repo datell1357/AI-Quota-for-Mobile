@@ -69,7 +69,9 @@ class ProviderSessionResetter(context: Context) {
                 ClaudeNativeRequestContextStore(appContext).clear()
             }
             ProviderId.COPILOT,
-            ProviderId.CURSOR -> Unit
+            ProviderId.CURSOR,
+            ProviderId.GROK,
+            ProviderId.KIMI -> Unit
         }
     }
 }

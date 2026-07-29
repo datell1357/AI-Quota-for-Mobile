@@ -111,6 +111,8 @@ object ProviderRefreshPlan {
             ProviderId.ANTIGRAVITY -> "https://antigravity.google/"
             ProviderId.GEMINI -> "https://gemini.google.com/usage"
             ProviderId.CURSOR -> "about:blank"
+            ProviderId.GROK -> "about:blank"
+            ProviderId.KIMI -> "about:blank"
         }
     }
 

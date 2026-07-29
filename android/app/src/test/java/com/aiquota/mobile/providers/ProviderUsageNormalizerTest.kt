@@ -2292,4 +2292,94 @@ class ProviderUsageNormalizerTest {
         assertFalse(json.contains("cookie"))
         assertFalse(json.contains("secret"))
     }
+
+    @Test
+    fun grokRateLimitBucketsNormalizeToQueryLines() {
+        val snapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.GROK,
+            """
+            {
+              "provider": "grok",
+              "buckets": [
+                {
+                  "key": "grok:DEFAULT:grok-4",
+                  "label": "grok-4 default",
+                  "remainingQueries": 24,
+                  "totalQueries": 25,
+                  "waitTimeSeconds": 600,
+                  "windowSizeSeconds": 7200
+                }
+              ]
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.NETWORK_RESPONSE
+        )!!
+
+        val line = snapshot.lines.single()
+        assertEquals("grok:DEFAULT:grok-4", line.key)
+        assertEquals("grok-4 default", line.label)
+        assertEquals(0.96f, line.remainingPercent ?: 0f, 0.001f)
+        assertEquals(24.0, line.remainingAmount ?: 0.0, 0.001)
+        assertEquals(25.0, line.limitAmount ?: 0.0, 0.001)
+        assertEquals(1.0, line.usedAmount ?: 0.0, 0.001)
+        assertEquals("queries", line.unit)
+        assertNotNull(line.resetsAt)
+    }
+
+    @Test
+    fun kimiEntriesNormalizeUsedRatioToRemainingPercent() {
+        val snapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.KIMI,
+            """
+            {
+              "provider": "kimi",
+              "entries": [
+                {"key": "kimi:subscription", "label": "Membership credits", "usedRatio": 0.42, "expireTime": 1790000000000},
+                {"key": "kimi:ratelimit5h", "label": "5h rate limit", "usedRatio": 0.1}
+              ]
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.NETWORK_RESPONSE
+        )!!
+
+        val subscription = snapshot.lines.single { it.key == "kimi:subscription" }
+        assertEquals(0.58f, subscription.remainingPercent ?: 0f, 0.001f)
+        assertEquals("2026-09-21T14:13:20Z", subscription.resetsAt)
+        val rateLimit = snapshot.lines.single { it.key == "kimi:ratelimit5h" }
+        assertEquals(0.9f, rateLimit.remainingPercent ?: 0f, 0.001f)
+        assertNull(rateLimit.resetsAt)
+    }
+
+    @Test
+    fun kimiPercentStyleRatioIsTreatedAsPercentNotFraction() {
+        val snapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.KIMI,
+            """
+            {"entries": [{"key": "kimi:subscription", "label": "Membership credits", "usedRatio": 42}]}
+            """.trimIndent(),
+            ProviderPayloadSource.NETWORK_RESPONSE
+        )!!
+
+        assertEquals(0.58f, snapshot.lines.single().remainingPercent ?: 0f, 0.001f)
+    }
+
+    @Test
+    fun grokBucketWithoutWaitTimeHasNoResetGuess() {
+        val snapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.GROK,
+            """
+            {
+              "buckets": [
+                {"key": "grok:DEFAULT:grok-4", "label": "grok-4 default", "remainingQueries": 5, "windowSizeSeconds": 7200}
+              ]
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.NETWORK_RESPONSE
+        )!!
+
+        val line = snapshot.lines.single()
+        assertNull(line.resetsAt)
+        assertNull(line.remainingPercent)
+        assertEquals(5.0, line.remainingAmount ?: 0.0, 0.001)
+    }
 }

@@ -957,6 +957,89 @@ class ProviderNativeUsagePayloadFetcherTest {
         return payloadField.get(result) as String?
     }
 
+    @Test
+    fun grokNativeUsagePayloadSplitsEffortBuckets() {
+        val requested = mutableListOf<String?>()
+        val payload = ProviderNativeUsagePayloadFetcher.grokUsagePayloadForTest { url, body ->
+            assertEquals("https://grok.com/rest/rate-limits", url)
+            requested += body
+            if (body?.contains("\"modelName\":\"grok-4\"") == true && body.contains("\"requestKind\":\"DEFAULT\"")) {
+                """
+                {
+                  "ok": true,
+                  "status": 200,
+                  "json": {
+                    "remainingQueries": 24,
+                    "totalQueries": 25,
+                    "windowSizeSeconds": 7200,
+                    "waitTimeSeconds": 1014,
+                    "highEffortRateLimits": {"remainingQueries": 3, "totalQueries": 10}
+                  }
+                }
+                """.trimIndent()
+            } else {
+                """{"ok":false,"status":404,"json":{}}"""
+            }
+        }
+
+        assertNotNull(payload)
+        val buckets = JSONObject(payload!!).getJSONArray("buckets")
+        assertEquals(2, buckets.length())
+        assertEquals("grok:DEFAULT:grok-4", buckets.getJSONObject(0).getString("key"))
+        assertEquals(24.0, buckets.getJSONObject(0).getDouble("remainingQueries"), 0.001)
+        assertEquals("grok:DEFAULT:grok-4:high", buckets.getJSONObject(1).getString("key"))
+        assertEquals(4, requested.size)
+    }
+
+    @Test
+    fun grokNativeUsagePayloadIsNullWhenNoBucketReturnsQueries() {
+        val payload = ProviderNativeUsagePayloadFetcher.grokUsagePayloadForTest { _, _ ->
+            """{"ok":false,"status":403,"json":{}}"""
+        }
+
+        assertNull(payload)
+    }
+
+    @Test
+    fun kimiNativeUsagePayloadCollectsSubscriptionRateLimitsAndGifts() {
+        val payload = ProviderNativeUsagePayloadFetcher.kimiUsagePayloadForTest { url, body ->
+            assertEquals(
+                "https://www.kimi.com/apiv2/kimi.gateway.membership.v2.MembershipService/GetSubscriptionStats",
+                url
+            )
+            assertEquals("{}", body)
+            """
+            {
+              "ok": true,
+              "status": 200,
+              "json": {
+                "subscriptionBalance": {"amountUsedRatio": 0.42, "expireTime": 1790000000000},
+                "ratelimit5h": {"amountUsedRatio": 0.1},
+                "ratelimit7d": {"amountUsedRatio": 0.25},
+                "giftBalances": [{"amountUsedRatio": 0.5, "expireTime": 1790000000000}]
+              }
+            }
+            """.trimIndent()
+        }
+
+        assertNotNull(payload)
+        val entries = JSONObject(payload!!).getJSONArray("entries")
+        assertEquals(4, entries.length())
+        assertEquals("kimi:subscription", entries.getJSONObject(0).getString("key"))
+        assertEquals("kimi:ratelimit5h", entries.getJSONObject(1).getString("key"))
+        assertEquals("kimi:ratelimit7d", entries.getJSONObject(2).getString("key"))
+        assertEquals("kimi:gift:0", entries.getJSONObject(3).getString("key"))
+    }
+
+    @Test
+    fun kimiNativeUsagePayloadIsNullWhenUnauthorized() {
+        val payload = ProviderNativeUsagePayloadFetcher.kimiUsagePayloadForTest { _, _ ->
+            """{"ok":false,"status":401,"error":"missing_kimi_cookie"}"""
+        }
+
+        assertNull(payload)
+    }
+
     private fun claudeResponseFor(url: String, subscriptionJson: String): String {
         return when {
             url.endsWith("/api/organizations") -> """[{"uuid":"org_test"}]"""

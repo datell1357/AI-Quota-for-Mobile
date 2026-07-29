@@ -50,6 +50,16 @@ object ProviderWebCollectorScripts {
                             path.contains("two-factor"))) ||
                     ((host == "cursor.com" || host == "www.cursor.com") &&
                         (path.contains("login") || path.contains("signin")))
+            ProviderId.GROK ->
+                host == "accounts.google.com" ||
+                    host == "auth.grok.com" ||
+                    host == "accounts.x.ai" ||
+                    ((host == "grok.com" || host == "www.grok.com") &&
+                        (path.contains("login") || path.contains("signin") || path.contains("sign-in")))
+            ProviderId.KIMI ->
+                host == "accounts.google.com" ||
+                    ((host == "kimi.com" || host == "www.kimi.com") &&
+                        (path.contains("login") || path.contains("signin") || path.contains("sign-in")))
         }
     }
 
@@ -194,6 +204,16 @@ object ProviderWebCollectorScripts {
             ProviderId.CURSOR ->
                 (host == "cursor.com" || host == "www.cursor.com") &&
                     (path.contains("dashboard") || path.contains("settings") || path.contains("account") || path.contains("billing"))
+            ProviderId.GROK ->
+                (host == "grok.com" || host == "www.grok.com") &&
+                    !path.contains("login") &&
+                    !path.contains("signin") &&
+                    !path.contains("sign-in")
+            ProviderId.KIMI ->
+                (host == "kimi.com" || host == "www.kimi.com") &&
+                    !path.contains("login") &&
+                    !path.contains("signin") &&
+                    !path.contains("sign-in")
         }
     }
 
@@ -240,6 +260,8 @@ object ProviderWebCollectorScripts {
             ProviderId.CURSOR,
             ProviderId.CODEX,
             ProviderId.OPENCODE,
+            ProviderId.GROK,
+            ProviderId.KIMI,
             ProviderId.ANTIGRAVITY -> false
         }
     }
@@ -350,6 +372,12 @@ object ProviderWebCollectorScripts {
                         path == "/api/auth/usage" ||
                         path == "/api/usage-summary" ||
                         path == "/api/dashboard/get-credit-grants-balance")
+            ProviderId.GROK ->
+                (host == "grok.com" || host == "www.grok.com") &&
+                    path == "/rest/rate-limits"
+            ProviderId.KIMI ->
+                (host == "kimi.com" || host == "www.kimi.com") &&
+                    path == "/apiv2/kimi.gateway.membership.v2.MembershipService/GetSubscriptionStats"
             ProviderId.GEMINI ->
                 false
             ProviderId.COPILOT ->

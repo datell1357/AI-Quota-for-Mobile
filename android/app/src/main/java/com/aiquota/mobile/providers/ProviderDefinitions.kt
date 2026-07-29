@@ -237,8 +237,71 @@ object ProviderDefinitionRegistry {
             authStoreKind = ProviderAuthStoreKind.TOKEN_OR_WEBVIEW_FALLBACK,
             collectionKind = ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE,
             sessionProbeUrl = "https://cursor.com/dashboard"
+        ),
+        ProviderDefinition(
+            providerId = ProviderId.GROK,
+            loginStartUrl = "https://grok.com/sign-in",
+            allowedHosts = setOf(
+                "grok.com",
+                "www.grok.com",
+                "auth.grok.com",
+                "accounts.x.ai",
+                "x.ai",
+                "accounts.google.com",
+                "myaccount.google.com",
+                "google.com",
+                "www.google.com",
+                "oauth2.googleapis.com",
+                "accounts.youtube.com",
+                "play.google.com",
+                "appleid.apple.com",
+                "challenges.cloudflare.com",
+                "www.recaptcha.net",
+                "recaptcha.net",
+                "ssl.gstatic.com",
+                "www.gstatic.com"
+            ),
+            collectorAllowedHosts = setOf(
+                "grok.com",
+                "www.grok.com"
+            ),
+            preferredUsageEndpoint = "https://grok.com/rest/rate-limits",
+            authStoreKind = ProviderAuthStoreKind.WEBVIEW_PROFILE,
+            collectionKind = ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE,
+            sessionProbeUrl = "https://grok.com/"
+        ),
+        ProviderDefinition(
+            providerId = ProviderId.KIMI,
+            loginStartUrl = "https://www.kimi.com/",
+            allowedHosts = setOf(
+                "kimi.com",
+                "www.kimi.com",
+                "statics.moonshot.cn",
+                "accounts.google.com",
+                "myaccount.google.com",
+                "google.com",
+                "www.google.com",
+                "oauth2.googleapis.com",
+                "accounts.youtube.com",
+                "play.google.com",
+                "appleid.apple.com",
+                "challenges.cloudflare.com",
+                "www.recaptcha.net",
+                "recaptcha.net",
+                "ssl.gstatic.com",
+                "www.gstatic.com"
+            ),
+            collectorAllowedHosts = setOf(
+                "kimi.com",
+                "www.kimi.com"
+            ),
+            preferredUsageEndpoint =
+                "https://www.kimi.com/apiv2/kimi.gateway.membership.v2.MembershipService/GetSubscriptionStats",
+            authStoreKind = ProviderAuthStoreKind.WEBVIEW_PROFILE,
+            collectionKind = ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE,
+            sessionProbeUrl = "https://www.kimi.com/"
         )
-    )
+    ).sortedBy { ProviderId.defaultOrder().indexOf(it.providerId) }
 
     fun all(): List<ProviderDefinition> = definitions
 
