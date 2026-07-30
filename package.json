@@ -5,10 +5,10 @@
   "description": "Android app foundation for AI Quota.",
   "type": "module",
   "scripts": {
-    "test": "node --test functions/test/core.test.js functions/test/antigravityGateway.test.js && node test/structure.test.js && node test/mobile-source.test.js",
+    "test": "node --test functions/test/core.test.js functions/test/antigravityGateway.test.js && node test/structure.test.js && node test/mobile-source.test.js && node test/release-hardening.test.js",
     "test:mobile": "node test/structure.test.js && node test/mobile-source.test.js",
     "test:functions": "node --test functions/test/core.test.js functions/test/antigravityGateway.test.js",
-    "lint": "node --check functions/src/core.js && node --check functions/src/index.js && node --check test/structure.test.js && node --check test/mobile-source.test.js"
+    "lint": "node --check functions/src/core.js && node --check functions/src/index.js && node --check test/structure.test.js && node --check test/mobile-source.test.js && node --check test/release-hardening.test.js"
   },
   "engines": {
     "node": ">=22"

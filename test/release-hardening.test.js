@@ -18,12 +18,14 @@ test("WebView login debugging is disabled for debug and release builds", () => {
   assert.match(loginActivity, /if \(capabilities\.webContentsDebuggingEnabled\)/);
 });
 
-test("Gemini and Antigravity callable gateways enforce Firebase App Check", () => {
+test("Antigravity callable gateway enforces Firebase App Check", () => {
   const index = source("functions/src/index.js");
 
   assert.match(index, /createAntigravityGatewayHandlers\(\{[\s\S]*?enforceAppCheck: true/);
-  assert.match(index, /createGeminiCliGatewayHandlers\(\{[\s\S]*?enforceAppCheck: true/);
   assert.doesNotMatch(index, /enforceAppCheck: false/);
+  // Gemini CLI 게이트웨이는 삭제했다. 되살릴 때 App Check 강제를 다시 검토하도록
+  // 부재를 고정한다.
+  assert.doesNotMatch(index, /createGeminiCliGatewayHandlers/);
 });
 
 test("WebViews with JavaScript collectors disable file access", () => {
@@ -113,9 +115,9 @@ test("release builds obfuscate internal classes while preserving runtime entry p
   assert.match(rules, /-dontshrink/);
   assert.match(rules, /-dontoptimize/);
   assert.match(rules, /-keepattributes \*Annotation\*,Signature,InnerClasses,EnclosingMethod/);
-  assert.match(rules, /extends android\.app\.Activity/);
-  assert.match(rules, /extends android\.app\.Service/);
-  assert.match(rules, /extends android\.content\.BroadcastReceiver/);
-  assert.match(rules, /ForegroundRefreshHealthWorker/);
+  // 매니페스트 컴포넌트는 AGP가 aapt_rules.txt로 자동 keep한다. 여기서는 매니페스트
+  // 선언만으로 보장되지 않는 이름 기반 참조만 확인한다.
+  assert.match(rules, /-keep class com\.aiquota\.mobile\.sync\.ForegroundRefreshHealthWorker/);
+  assert.match(rules, /-keep class net\.openid\.appauth\.RedirectUriReceiverActivity/);
   assert.match(rules, /@android\.webkit\.JavascriptInterface <methods>;/);
 });
