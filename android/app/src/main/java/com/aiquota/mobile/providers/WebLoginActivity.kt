@@ -228,14 +228,12 @@ open class WebLoginActivity : Activity() {
 
     private inner class LoginWebChromeClient : WebChromeClient() {
         override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-            val message = if (providerId == ProviderId.CODEX) {
-                " message=${consoleMessage.message().take(240)}"
-            } else {
-                ""
-            }
+            // provider 페이지의 콘솔 원문에는 토큰·계정·요청 URL이 실릴 수 있어 남기지 않는다.
+            // 수준과 줄 번호만 남긴다(BackgroundProviderWebCollector와 동일한 규약).
             Log.d(
                 "AIQuotaLoginConsole",
-                "provider=${providerId.storageId} consoleLevel=${consoleMessage.messageLevel()} line=${consoleMessage.lineNumber()}$message"
+                "provider=${providerId.storageId} consoleLevel=${consoleMessage.messageLevel()} " +
+                    "line=${consoleMessage.lineNumber()}"
             )
             return true
         }
