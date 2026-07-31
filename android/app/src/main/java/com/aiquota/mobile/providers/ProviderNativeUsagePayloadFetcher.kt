@@ -235,14 +235,26 @@ object ProviderNativeUsagePayloadFetcher {
             ?: findFirstString(accountCheck.jsonValue(), CODEX_ACCOUNT_ID_KEYS)
             ?: findFirstString(session.jsonValue(), CODEX_ACCOUNT_ID_KEYS)
         val subscriptionsUrl = accountId?.let { "$CODEX_SUBSCRIPTIONS_URL?account_id=${encodeQuery(it)}" } ?: CODEX_SUBSCRIPTIONS_URL
-        val subscriptions = fetchWrapped(
-            ProviderId.CODEX,
-            subscriptionsUrl,
-            statuses,
-            userAgent,
-            requestHeadersForUrl(subscriptionsUrl),
-            fetchJson
-        )
+        // subscriptions는 plan 라벨만 공급한다. accounts/check·me에서 plan이 나오면 호출할 이유가 없고,
+        // 계정 엔드포인트가 전부 차단된 사이클에서는 이 호출도 차단되어 얻을 게 없다. 실측상 차단 시
+        // 이 엔드포인트만 약 11KB짜리 HTML 차단 페이지를 돌려주므로 건너뛰는 편이 데이터·배터리에 낫다.
+        val planFromAccountEndpoints = findFirstString(accountCheck.jsonValue(), PLAN_KEYS)
+            ?: findFirstString(me.jsonValue(), PLAN_KEYS)
+        val accountEndpointsBlocked = listOf(session, me, accountCheck)
+            .none { it.optInt("status", -1) in 200..299 }
+        val subscriptions = if (planFromAccountEndpoints == null && !accountEndpointsBlocked) {
+            fetchWrapped(
+                ProviderId.CODEX,
+                subscriptionsUrl,
+                statuses,
+                userAgent,
+                requestHeadersForUrl(subscriptionsUrl),
+                fetchJson
+            )
+        } else {
+            statuses += "${urlStatusLabel(subscriptionsUrl)}:skipped:"
+            JSONObject()
+        }
         val whamUsage = fetchWrapped(
             ProviderId.CODEX,
             CODEX_WHAM_USAGE_URL,
@@ -262,8 +274,7 @@ object ProviderNativeUsagePayloadFetcher {
             ?: findFirstString(accountCheck.jsonValue(), EMAIL_KEYS)
         accountEmail?.let { payload.put("account", it) }
         val plan = findFirstString(subscriptions.jsonValue(), PLAN_KEYS)
-            ?: findFirstString(accountCheck.jsonValue(), PLAN_KEYS)
-            ?: findFirstString(me.jsonValue(), PLAN_KEYS)
+            ?: planFromAccountEndpoints
         listOf(
             "codex_subscriptions" to subscriptions,
             "codex_wham_usage" to whamUsage
