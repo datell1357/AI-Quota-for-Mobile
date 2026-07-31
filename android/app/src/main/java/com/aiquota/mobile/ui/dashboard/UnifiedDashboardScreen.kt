@@ -28,6 +28,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -49,6 +51,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -156,6 +159,7 @@ fun UnifiedDashboardScreen(
     onConnectProvider: (ProviderId) -> Unit,
     onReorderProvider: (ProviderId, Int) -> Unit,
     onAddWidget: () -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val layoutMetrics = rememberAppLayoutMetrics()
@@ -247,6 +251,14 @@ fun UnifiedDashboardScreen(
                         text = stringResource(R.string.dashboard_add_widget),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
+                    )
+                }
+                // 종합 설정 진입점은 대시보드에만 둔다. 개별 provider 탭에서는 노출하지 않는다.
+                IconButton(onClick = onOpenSettings) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_settings),
+                        contentDescription = stringResource(R.string.nav_settings),
+                        tint = colors.textSecondary
                     )
                 }
             }
