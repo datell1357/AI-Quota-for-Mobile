@@ -73,13 +73,17 @@ object ProviderWebSessionClearPolicy {
                 "https://kimi.com",
                 "https://www.kimi.com"
             ) + GOOGLE_AUTH_COOKIE_URLS + listOf("https://appleid.apple.com")
+            // Kiro 연결 해제는 Kiro 자체 세션만 지운다. 로그인 IdP(GitHub·Google·AWS Builder ID)
+            // 세션은 Copilot(GitHub)과 Gemini·Antigravity·Claude(Google)가 함께 쓰기 때문에,
+            // 여기에 IdP 도메인을 넣으면 Kiro만 끊었는데 다른 provider까지 로그아웃된다.
+            // Kiro 전용 Cognito 호스트는 Kiro 세션의 일부라 계속 포함한다.
             ProviderId.KIRO -> listOf(
                 "https://app.kiro.dev",
                 "https://kiro.dev",
                 "https://www.kiro.dev",
                 "https://prod.us-east-1.auth.desktop.kiro.dev",
                 "https://kiro-prod-us-east-1.auth.us-east-1.amazoncognito.com"
-            ) + GOOGLE_AUTH_COOKIE_URLS + GITHUB_AUTH_COOKIE_URLS
+            )
         }
     }
 
