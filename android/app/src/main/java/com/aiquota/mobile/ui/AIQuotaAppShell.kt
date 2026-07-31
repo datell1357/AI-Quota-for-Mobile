@@ -704,7 +704,6 @@ fun AIQuotaAppShell(
                     AppTopBar(
                         route = route,
                         layoutMetrics = layoutMetrics,
-                        onSettingsClick = { route = AppRoute.Settings },
                         onHomeClick = { route = AppRoute.Home }
                     )
                 },
@@ -729,6 +728,7 @@ fun AIQuotaAppShell(
                             onConnectProvider = ::connectProvider,
                             onReorderProvider = ::reorderVisibleProvider,
                             onAddWidget = { showDashboardWidgetPicker = true },
+                            onOpenSettings = { route = AppRoute.Settings },
                             modifier = Modifier.fillMaxSize()
                         )
                         is AppRoute.ProviderDetail -> {
@@ -1049,14 +1049,11 @@ private fun LiveRefreshPermissionDialog(
 private fun AppTopBar(
     route: AppRoute,
     layoutMetrics: AppLayoutMetrics,
-    onSettingsClick: () -> Unit,
     onHomeClick: () -> Unit
 ) {
     val colors = AIQuotaTheme.colors
+    // 종합 설정 진입점은 대시보드 헤더로 옮겼다. 상단바는 설정 화면에서 돌아가는 역할만 한다.
     val isSettingsRoute = route is AppRoute.Settings
-    val actionIcon = if (isSettingsRoute) R.drawable.ic_arrow_back else R.drawable.ic_settings
-    val actionContentDescription = if (isSettingsRoute) R.string.nav_home else R.string.nav_settings
-    val actionClick = if (isSettingsRoute) onHomeClick else onSettingsClick
 
     Surface(
         color = colors.appBackground,
@@ -1074,15 +1071,17 @@ private fun AppTopBar(
             ),
             contentAlignment = Alignment.CenterEnd
         ) {
-            IconButton(
-                modifier = Modifier.offset(y = layoutMetrics.topBarSettingsYOffsetDp.dp),
-                onClick = actionClick
-            ) {
-                Icon(
-                    painter = painterResource(actionIcon),
-                    contentDescription = stringResource(actionContentDescription),
-                    tint = colors.textSecondary
-                )
+            if (isSettingsRoute) {
+                IconButton(
+                    modifier = Modifier.offset(y = layoutMetrics.topBarSettingsYOffsetDp.dp),
+                    onClick = onHomeClick
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_arrow_back),
+                        contentDescription = stringResource(R.string.nav_home),
+                        tint = colors.textSecondary
+                    )
+                }
             }
         }
     }
