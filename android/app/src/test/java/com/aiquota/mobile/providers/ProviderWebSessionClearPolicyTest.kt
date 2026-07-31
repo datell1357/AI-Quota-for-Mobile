@@ -115,6 +115,55 @@ class ProviderWebSessionClearPolicyTest {
     }
 
     @Test
+    fun kiroDisconnectClearsOnlyKiroOwnedSessionDomains() {
+        val kiroCookieUrls = ProviderWebSessionClearPolicy.cookieUrls(ProviderId.KIRO)
+
+        assertTrue(kiroCookieUrls.contains("https://app.kiro.dev"))
+        assertTrue(kiroCookieUrls.contains("https://kiro.dev"))
+        assertTrue(kiroCookieUrls.contains("https://www.kiro.dev"))
+        assertTrue(kiroCookieUrls.contains("https://prod.us-east-1.auth.desktop.kiro.dev"))
+        assertTrue(kiroCookieUrls.contains("https://kiro-prod-us-east-1.auth.us-east-1.amazoncognito.com"))
+        assertTrue(
+            "Kiro disconnect must stay inside kiro.dev and its dedicated Cognito host",
+            kiroCookieUrls.all {
+                it.contains("kiro.dev") ||
+                    it.contains("kiro-prod-us-east-1.auth.us-east-1.amazoncognito.com")
+            }
+        )
+    }
+
+    @Test
+    fun kiroDisconnectPreservesSharedIdentityProviderSessions() {
+        val kiroCookieUrls = ProviderWebSessionClearPolicy.cookieUrls(ProviderId.KIRO)
+
+        ProviderWebSessionClearPolicy.googleAuthCookieUrls().forEach { url ->
+            assertFalse(
+                "Kiro disconnect must keep the shared Google identity session: $url",
+                kiroCookieUrls.contains(url)
+            )
+        }
+        listOf("https://github.com", "https://www.github.com", "https://api.github.com").forEach { url ->
+            assertFalse(
+                "Kiro disconnect must keep the GitHub session Copilot depends on: $url",
+                kiroCookieUrls.contains(url)
+            )
+        }
+
+        // 대조군: GitHub·Google이 provider 자신의 도메인인 경우에는 계속 지운다.
+        assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.COPILOT).contains("https://github.com"))
+        assertTrue(ProviderWebSessionClearPolicy.cookieUrls(ProviderId.GEMINI).contains("https://accounts.google.com"))
+    }
+
+    @Test
+    fun kiroDisconnectStorageOriginsStayKiroScoped() {
+        val origins = ProviderWebSessionClearPolicy.storageOrigins(ProviderId.KIRO)
+
+        assertTrue(origins.contains("https://app.kiro.dev"))
+        assertFalse(origins.contains("https://github.com"))
+        assertFalse(origins.contains("https://accounts.google.com"))
+    }
+
+    @Test
     fun explicitDisconnectAlsoClearsProviderStorageOrigins() {
         ProviderId.entries.forEach { providerId ->
             assertTrue(
