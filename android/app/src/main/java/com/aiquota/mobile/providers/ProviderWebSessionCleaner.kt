@@ -10,6 +10,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebStorage
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.local.ProviderId
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
@@ -29,12 +30,35 @@ internal object ProviderWebSessionMaintenanceGate {
 }
 
 object ProviderWebSessionCleaner {
-    fun clearProviderWebSession(context: Context, providerId: ProviderId) {
+    fun clearProviderWebSession(
+        context: Context,
+        providerId: ProviderId,
+        alsoDisconnecting: Collection<ProviderId> = emptyList()
+    ) {
         if (!ProviderWebSessionClearPolicy.shouldClearOnDisconnect(providerId)) return
         if (providerId == ProviderId.GLM) {
             GlmIsolatedWebSession.clear(context.applicationContext)
         }
-        clearProviderWebSession(providerId)
+        val retained = retainedProviders(context, providerId, alsoDisconnecting)
+        clearProviderWebSession(CookieManager.getInstance(), WebStorage.getInstance(), providerId, retained)
+    }
+
+    /**
+     * 지금 끊는 provider를 뺀 나머지 연결 상태 provider. 이들이 쓰는 로그인 IdP 세션은
+     * 보존해야 하므로 삭제 대상 URL을 좁히는 데 쓴다. 스냅샷 읽기가 실패하면 빈 목록이 되어
+     * 기존처럼 전부 지운다.
+     */
+    private fun retainedProviders(
+        context: Context,
+        providerId: ProviderId,
+        alsoDisconnecting: Collection<ProviderId>
+    ): List<ProviderId> {
+        val disconnecting = alsoDisconnecting.toSet() + providerId
+        return runCatching {
+            LocalUsageRepository(context.applicationContext).readSnapshots()
+                .filter { ProviderWebSessionClearPolicy.retainsSharedIdentity(it.connectionState) }
+                .map { it.providerId }
+        }.getOrDefault(emptyList()).filterNot { it in disconnecting }
     }
 
     fun clearProviderWebSession(providerId: ProviderId) {
@@ -49,15 +73,20 @@ object ProviderWebSessionCleaner {
         }
     }
 
-    suspend fun clearProviderWebSessionAndWait(context: Context, providerId: ProviderId) {
+    suspend fun clearProviderWebSessionAndWait(
+        context: Context,
+        providerId: ProviderId,
+        alsoDisconnecting: Collection<ProviderId> = emptyList()
+    ) {
         if (!ProviderWebSessionClearPolicy.shouldClearOnDisconnect(providerId)) return
+        val retained = retainedProviders(context, providerId, alsoDisconnecting)
         ProviderWebSessionMaintenanceGate.withMaintenanceLock(providerId) {
             withContext(Dispatchers.Main.immediate) {
                 if (providerId == ProviderId.GLM) {
                     GlmIsolatedWebSession.clearAndWait(context.applicationContext)
                 }
-                clearProviderWebSessionCookiesAndWait(CookieManager.getInstance(), providerId)
-                clearProviderWebStorageOrigins(WebStorage.getInstance(), providerId)
+                clearProviderWebSessionCookiesAndWait(CookieManager.getInstance(), providerId, retained)
+                clearProviderWebStorageOrigins(WebStorage.getInstance(), providerId, retained)
                 clearProviderBrowserStorageWithWebView(context.applicationContext, providerId)
                 if (providerId == ProviderId.GLM) {
                     GlmIsolatedWebViewProfile.killIsolatedProcessIfRunning(context.applicationContext, "web_session_clear")
@@ -69,20 +98,22 @@ object ProviderWebSessionCleaner {
     fun clearProviderWebSession(
         cookieManager: CookieManager,
         webStorage: WebStorage,
-        providerId: ProviderId
+        providerId: ProviderId,
+        retainedProviders: Collection<ProviderId> = emptyList()
     ) {
-        clearProviderWebSessionCookies(cookieManager, providerId)
-        clearProviderWebStorageOrigins(webStorage, providerId)
+        clearProviderWebSessionCookies(cookieManager, providerId, retainedProviders)
+        clearProviderWebStorageOrigins(webStorage, providerId, retainedProviders)
     }
 
     suspend fun clearProviderWebSessionAndWait(
         cookieManager: CookieManager,
         webStorage: WebStorage,
-        providerId: ProviderId
+        providerId: ProviderId,
+        retainedProviders: Collection<ProviderId> = emptyList()
     ) {
         withContext(Dispatchers.Main.immediate) {
-            clearProviderWebSessionCookiesAndWait(cookieManager, providerId)
-            clearProviderWebStorageOrigins(webStorage, providerId)
+            clearProviderWebSessionCookiesAndWait(cookieManager, providerId, retainedProviders)
+            clearProviderWebStorageOrigins(webStorage, providerId, retainedProviders)
         }
     }
 
@@ -91,8 +122,12 @@ object ProviderWebSessionCleaner {
         clearProviderWebSessionCookies(CookieManager.getInstance(), providerId)
     }
 
-    fun clearProviderWebSessionCookies(cookieManager: CookieManager, providerId: ProviderId) {
-        ProviderWebSessionClearPolicy.cookieUrls(providerId).forEach { url ->
+    fun clearProviderWebSessionCookies(
+        cookieManager: CookieManager,
+        providerId: ProviderId,
+        retainedProviders: Collection<ProviderId> = emptyList()
+    ) {
+        ProviderWebSessionClearPolicy.cookieUrls(providerId, retainedProviders).forEach { url ->
             ProviderWebSessionClearPolicy.expiringCookieHeaders(
                 cookieHeader = cookieManager.getCookie(url),
                 url = url
@@ -105,9 +140,10 @@ object ProviderWebSessionCleaner {
 
     private suspend fun clearProviderWebSessionCookiesAndWait(
         cookieManager: CookieManager,
-        providerId: ProviderId
+        providerId: ProviderId,
+        retainedProviders: Collection<ProviderId> = emptyList()
     ) {
-        val cookieHeaders = ProviderWebSessionClearPolicy.cookieUrls(providerId).flatMap { url ->
+        val cookieHeaders = ProviderWebSessionClearPolicy.cookieUrls(providerId, retainedProviders).flatMap { url ->
             ProviderWebSessionClearPolicy.expiringCookieHeaders(
                 cookieHeader = cookieManager.getCookie(url),
                 url = url
@@ -136,8 +172,12 @@ object ProviderWebSessionCleaner {
         cookieManager.flush()
     }
 
-    private fun clearProviderWebStorageOrigins(webStorage: WebStorage, providerId: ProviderId) {
-        ProviderWebSessionClearPolicy.storageOrigins(providerId).forEach { origin ->
+    private fun clearProviderWebStorageOrigins(
+        webStorage: WebStorage,
+        providerId: ProviderId,
+        retainedProviders: Collection<ProviderId> = emptyList()
+    ) {
+        ProviderWebSessionClearPolicy.storageOrigins(providerId, retainedProviders).forEach { origin ->
             webStorage.deleteOrigin(origin)
         }
     }

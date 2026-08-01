@@ -159,7 +159,7 @@ class GlmWebSessionClearPolicyTest {
     fun glmAwaitedWebSessionClearKillsOldIsolatedWebViewProcessBeforeNextLogin() {
         val cleaner = File("src/main/java/com/aiquota/mobile/providers/ProviderWebSessionCleaner.kt").readText()
         val contextClear = cleaner
-            .substringAfter("suspend fun clearProviderWebSessionAndWait(context: Context, providerId: ProviderId)")
+            .substringAfter("suspend fun clearProviderWebSessionAndWait(")
             .substringBefore("fun clearProviderWebSession(")
 
         assertTrue(contextClear.contains("GlmIsolatedWebSession.clearAndWait(context.applicationContext)"))
@@ -445,8 +445,8 @@ class GlmWebSessionClearPolicyTest {
 
         assertTrue(cleaner.contains("if (providerId == ProviderId.GLM)"))
         assertTrue(cleaner.contains("GlmIsolatedWebSession.clearAndWait(context.applicationContext)"))
-        assertTrue(cleaner.contains("clearProviderWebSessionCookiesAndWait(CookieManager.getInstance(), providerId)"))
-        assertTrue(cleaner.contains("clearProviderWebStorageOrigins(WebStorage.getInstance(), providerId)"))
+        assertTrue(cleaner.contains("clearProviderWebSessionCookiesAndWait(CookieManager.getInstance(), providerId, retained)"))
+        assertTrue(cleaner.contains("clearProviderWebStorageOrigins(WebStorage.getInstance(), providerId, retained)"))
         assertTrue(resetter.contains("ProviderWebSessionCleaner.clearProviderWebSession(appContext, providerId)"))
         assertTrue(isolated.contains("cookieManager.removeAllCookies"))
         assertTrue(isolated.contains("WebStorage.getInstance().deleteAllData()"))
@@ -459,7 +459,7 @@ class GlmWebSessionClearPolicyTest {
         val disconnectAll = resetter.substringAfter("suspend fun disconnectAllAndWait")
             .substringBefore("private fun notifyProviderSessionReset")
 
-        assertTrue(disconnectAll.contains("disconnectAndWait(providerId)"))
+        assertTrue(disconnectAll.contains("disconnectAndWait(providerId, alsoDisconnecting = providerIds)"))
         assertFalse(disconnectAll.contains("clearAllProviderWebSessionsAndWait"))
         assertFalse(cleaner.contains("removeAllCookies"))
         assertFalse(cleaner.contains("deleteAllData"))
@@ -469,7 +469,7 @@ class GlmWebSessionClearPolicyTest {
     fun webSessionCleanupAndHiddenRefreshUseSameMaintenanceGate() {
         val cleaner = File("src/main/java/com/aiquota/mobile/providers/ProviderWebSessionCleaner.kt").readText()
         val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
-        val contextCleanup = cleaner.substringAfter("suspend fun clearProviderWebSessionAndWait(context: Context")
+        val contextCleanup = cleaner.substringAfter("suspend fun clearProviderWebSessionAndWait(")
             .substringBefore("fun clearProviderWebSession(")
         val hiddenCollectorBranch = service.substringAfter("ProviderRefreshMode.HIDDEN_WEB_COLLECTOR ->")
             .substringBefore("}")

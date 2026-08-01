@@ -29,8 +29,8 @@ class ProviderSessionResetterTest {
             .substringBefore("private fun clearStoredProviderCredentials")
 
         assertTrue(method.contains("clearStoredProviderCredentials(providerId)"))
-        assertTrue(method.contains("ProviderWebSessionCleaner.clearProviderWebSessionAndWait(appContext, providerId)"))
-        assertTrue(method.indexOf("clearStoredProviderCredentials(providerId)") < method.indexOf("ProviderWebSessionCleaner.clearProviderWebSessionAndWait(appContext, providerId)"))
+        assertTrue(method.contains("ProviderWebSessionCleaner.clearProviderWebSessionAndWait(appContext, providerId, alsoDisconnecting)"))
+        assertTrue(method.indexOf("clearStoredProviderCredentials(providerId)") < method.indexOf("ProviderWebSessionCleaner.clearProviderWebSessionAndWait(appContext, providerId, alsoDisconnecting)"))
     }
 
     @Test
@@ -179,7 +179,7 @@ class ProviderSessionResetterTest {
             awaitedMethod.contains("withContext(Dispatchers.Main.immediate)") &&
                 cleaner.contains("suspendCancellableCoroutine") &&
                 cleaner.contains("ValueCallback<Boolean>") &&
-                cleaner.contains("clearProviderWebSessionCookiesAndWait(cookieManager, providerId)")
+                cleaner.contains("clearProviderWebSessionCookiesAndWait(cookieManager, providerId, retainedProviders)")
         )
     }
 
