@@ -17,6 +17,11 @@ keystore.properties
 android/keystores/
 .android-home/
 .tmp/
+
+# ~/Documents가 iCloud 동기화 대상이라 .git이 충돌 사본(" 2")으로 복제돼 ref와 index가
+# 깨졌다. 실제 저장소는 .git.nosync에 두고 .git 심볼릭 링크로 접근한다. 이때 git이
+# .git.nosync를 자기 디렉터리로 인식하지 못해 untracked로 잡히므로 명시적으로 제외한다.
+.git.nosync/
 android/.gradle/
 android/.kotlin/
 android/app/build/
