@@ -22,8 +22,12 @@ class ProviderSessionResetter(context: Context) {
     }
 
     suspend fun disconnectAndWait(providerId: ProviderId) {
+        disconnectAndWait(providerId, alsoDisconnecting = emptyList())
+    }
+
+    private suspend fun disconnectAndWait(providerId: ProviderId, alsoDisconnecting: Collection<ProviderId>) {
         clearStoredProviderCredentials(providerId)
-        ProviderWebSessionCleaner.clearProviderWebSessionAndWait(appContext, providerId)
+        ProviderWebSessionCleaner.clearProviderWebSessionAndWait(appContext, providerId, alsoDisconnecting)
         notifyProviderSessionReset(providerId)
     }
 
@@ -31,9 +35,13 @@ class ProviderSessionResetter(context: Context) {
         ProviderWebSessionCleanupJobs.await(providerId)
     }
 
+    /**
+     * 전체 연결 해제. 스냅샷 제거는 호출부가 나중에 하므로, 아직 연결 상태로 보이는
+     * 나머지 대상까지 함께 넘겨야 공유 IdP 세션이 마지막 하나까지 정리된다.
+     */
     suspend fun disconnectAllAndWait(providerIds: List<ProviderId>) {
         providerIds.forEach { providerId ->
-            disconnectAndWait(providerId)
+            disconnectAndWait(providerId, alsoDisconnecting = providerIds)
         }
     }
 

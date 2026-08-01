@@ -28,8 +28,8 @@ class WebViewSessionPersistenceTest {
         }
 
         val cleaner = File("src/main/java/com/aiquota/mobile/providers/ProviderWebSessionCleaner.kt").readText()
-        assertTrue(cleaner.contains("clearProviderWebSessionCookies(cookieManager, providerId)"))
-        assertTrue(cleaner.contains("clearProviderWebStorageOrigins(webStorage, providerId)"))
+        assertTrue(cleaner.contains("clearProviderWebSessionCookies(cookieManager, providerId, retainedProviders)"))
+        assertTrue(cleaner.contains("clearProviderWebStorageOrigins(webStorage, providerId, retainedProviders)"))
         assertTrue(cleaner.contains("webStorage.deleteOrigin(origin)"))
     }
 

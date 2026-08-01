@@ -7,6 +7,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProviderWebSessionClearPolicyTest {
+    private val GITHUB_URLS = listOf("https://github.com", "https://www.github.com", "https://api.github.com")
+
     @Test
     fun cursorClearsWebSessionBeforeInteractiveReauth() {
         assertTrue(
@@ -161,6 +163,98 @@ class ProviderWebSessionClearPolicyTest {
         assertTrue(origins.contains("https://app.kiro.dev"))
         assertFalse(origins.contains("https://github.com"))
         assertFalse(origins.contains("https://accounts.google.com"))
+    }
+
+    @Test
+    fun copilotDisconnectKeepsGitHubSessionWhileAnotherGitHubProviderStaysConnected() {
+        val urls = ProviderWebSessionClearPolicy.cookieUrls(
+            ProviderId.COPILOT,
+            retainedProviders = listOf(ProviderId.KIRO)
+        )
+
+        GITHUB_URLS.forEach { url ->
+            assertFalse(
+                "Copilot disconnect must keep the GitHub session Kiro logs in with: $url",
+                urls.contains(url)
+            )
+        }
+    }
+
+    @Test
+    fun cursorDisconnectKeepsIdentitySessionsOtherConnectedProvidersDependOn() {
+        val urls = ProviderWebSessionClearPolicy.cookieUrls(
+            ProviderId.CURSOR,
+            retainedProviders = listOf(ProviderId.GEMINI, ProviderId.COPILOT)
+        )
+
+        assertTrue("Cursor's own session must still be cleared", urls.contains("https://cursor.com"))
+        assertTrue(urls.contains("https://auth.workos.com"))
+        ProviderWebSessionClearPolicy.googleAuthCookieUrls().forEach { url ->
+            assertFalse("Gemini depends on this Google session: $url", urls.contains(url))
+        }
+        GITHUB_URLS.forEach { url ->
+            assertFalse("Copilot depends on this GitHub session: $url", urls.contains(url))
+        }
+    }
+
+    @Test
+    fun sharedIdentityIsClearedOnlyWhenNoRemainingProviderNeedsIt() {
+        // GLM은 Google만 쓰므로 Google은 남고 GitHub은 지워진다.
+        val withGlmConnected = ProviderWebSessionClearPolicy.cookieUrls(
+            ProviderId.CURSOR,
+            retainedProviders = listOf(ProviderId.GLM)
+        )
+        assertFalse(withGlmConnected.contains("https://accounts.google.com"))
+        assertTrue(withGlmConnected.contains("https://github.com"))
+
+        // 남는 provider가 없으면 전부 지워 실제 로그아웃이 된다.
+        val lastOne = ProviderWebSessionClearPolicy.cookieUrls(ProviderId.CURSOR)
+        assertTrue(lastOne.contains("https://accounts.google.com"))
+        assertTrue(lastOne.contains("https://github.com"))
+        assertTrue(lastOne.contains("https://cursor.com"))
+    }
+
+    @Test
+    fun disconnectingProviderItselfNeverRetainsItsOwnIdentity() {
+        val urls = ProviderWebSessionClearPolicy.cookieUrls(
+            ProviderId.COPILOT,
+            retainedProviders = listOf(ProviderId.COPILOT)
+        )
+
+        assertTrue(
+            "The provider being disconnected must not keep its own identity session alive",
+            urls.contains("https://github.com")
+        )
+    }
+
+    @Test
+    fun onlyLiveConnectionStatesRetainSharedIdentitySessions() {
+        assertFalse(ProviderWebSessionClearPolicy.retainsSharedIdentity(null))
+        assertFalse(ProviderWebSessionClearPolicy.retainsSharedIdentity(ProviderConnectionState.DISCONNECTED))
+        assertFalse(ProviderWebSessionClearPolicy.retainsSharedIdentity(ProviderConnectionState.NOT_CONNECTED))
+        listOf(
+            ProviderConnectionState.CONNECTING,
+            ProviderConnectionState.CONNECTED,
+            ProviderConnectionState.COLLECTING,
+            ProviderConnectionState.STALE,
+            ProviderConnectionState.INTERACTIVE_AUTH_REQUIRED,
+            ProviderConnectionState.UNAVAILABLE,
+            ProviderConnectionState.ERROR
+        ).forEach { state ->
+            assertTrue("$state should keep the shared identity session", ProviderWebSessionClearPolicy.retainsSharedIdentity(state))
+        }
+    }
+
+    @Test
+    fun disconnectAllPassesTheWholeBatchSoSharedIdentitiesStillGetCleared() {
+        val resetter = java.io.File("src/main/java/com/aiquota/mobile/providers/ProviderSessionResetter.kt").readText()
+        val disconnectAll = resetter.substringAfter("suspend fun disconnectAllAndWait(providerIds: List<ProviderId>)")
+            .substringBefore("private fun notifyProviderSessionReset")
+
+        assertTrue(
+            "Snapshots are removed after this loop, so the batch must be passed explicitly.",
+            disconnectAll.contains("alsoDisconnecting = providerIds")
+        )
     }
 
     @Test
