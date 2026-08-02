@@ -18,13 +18,20 @@ android/keystores/
 .android-home/
 .tmp/
 
-# ~/Documents가 iCloud 동기화 대상이라 .git이 충돌 사본(" 2")으로 복제돼 ref와 index가
-# 깨졌다. 실제 저장소는 .git.nosync에 두고 .git 심볼릭 링크로 접근한다. 이때 git이
-# .git.nosync를 자기 디렉터리로 인식하지 못해 untracked로 잡히므로 명시적으로 제외한다.
+# ~/Documents가 iCloud 동기화 대상이라 빌드 산출물과 .git이 충돌 사본(" 2")으로 복제됐다.
+# dex 병합이 깨지고 refs/heads·index까지 손상됐다. 이름이 .nosync로 끝나는 항목은 iCloud
+# 데몬이 업로드에서 건너뛰므로, 실제 디렉터리를 *.nosync로 두고 원래 이름의 심볼릭 링크로
+# 접근한다. 경로와 물리적 저장 위치는 그대로다. git은 심볼릭 링크와 .nosync 양쪽을 모두
+# 무시해야 하고, 특히 .git.nosync는 저장소 자신이라 빠지면 git add -A에 통째로 딸려온다.
+*.nosync
 .git.nosync/
+android/.gradle
 android/.gradle/
+android/.kotlin
 android/.kotlin/
+android/app/build
 android/app/build/
+functions/node_modules
 android-emulator-*.png
 screenshot/
 artifacts/
