@@ -12,6 +12,8 @@ data class AppLayoutMetrics(
     val topBarVerticalPaddingDp: Int,
     val topBarTopExtraPaddingDp: Int,
     val topBarSettingsYOffsetDp: Int,
+    /** 상단바 광고 자리의 최소 높이. 광고를 넣지 않으면 이 높이는 잡히지 않는다. */
+    val topBarAdMinHeightDp: Int,
     val mainContentTopLiftDp: Int,
     val navHorizontalPaddingDp: Int,
     val navVerticalPaddingDp: Int,
@@ -80,6 +82,8 @@ fun appLayoutMetrics(
         topBarVerticalPaddingDp = if (isTablet) scaled(18, 26) else scaled(14, 18),
         topBarTopExtraPaddingDp = if (isTablet) 0 else 13,
         topBarSettingsYOffsetDp = if (isTablet) 5 else 4,
+        // AdMob 앵커드 어댑티브 배너 기준 높이. 폰은 50dp, 태블릿은 리더보드(728x90)에 맞춘다.
+        topBarAdMinHeightDp = if (isTablet) 90 else 50,
         mainContentTopLiftDp = if (isTablet) 8 else 8,
         navHorizontalPaddingDp = navHorizontalPadding,
         navVerticalPaddingDp = navVerticalPadding,

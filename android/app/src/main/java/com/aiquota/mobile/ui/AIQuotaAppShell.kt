@@ -701,6 +701,8 @@ fun AIQuotaAppShell(
                     SnackbarHost(hostState = snackbarHostState)
                 },
                 topBar = {
+                    // 광고를 붙일 때는 여기에 adContent = { <배너 컴포저블>() } 을 넘긴다.
+                    // 넘기지 않으면 상단바는 지금처럼 높이를 잡지 않는다.
                     AppTopBar(
                         route = route,
                         layoutMetrics = layoutMetrics,
@@ -1049,11 +1051,16 @@ private fun LiveRefreshPermissionDialog(
 private fun AppTopBar(
     route: AppRoute,
     layoutMetrics: AppLayoutMetrics,
-    onHomeClick: () -> Unit
+    onHomeClick: () -> Unit,
+    adContent: (@Composable () -> Unit)? = null
 ) {
     val colors = AIQuotaTheme.colors
     // 종합 설정 진입점은 대시보드 헤더로 옮겼다. 상단바는 설정 화면에서 돌아가는 역할만 한다.
     val isSettingsRoute = route is AppRoute.Settings
+    // 톱니바퀴가 빠지면서 비워진 상단바 자리를 광고 슬롯으로 쓴다. adContent가 null이면
+    // 아무 높이도 잡지 않아 지금 레이아웃과 동일하다. 설정 화면에서는 뒤로가기와 자리가
+    // 겹치므로 광고를 띄우지 않는다.
+    val showAd = !isSettingsRoute && adContent != null
 
     Surface(
         color = colors.appBackground,
@@ -1081,6 +1088,16 @@ private fun AppTopBar(
                         contentDescription = stringResource(R.string.nav_home),
                         tint = colors.textSecondary
                     )
+                }
+            }
+            if (showAd) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = layoutMetrics.topBarAdMinHeightDp.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    adContent?.invoke()
                 }
             }
         }
