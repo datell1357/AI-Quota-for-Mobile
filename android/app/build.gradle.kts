@@ -33,6 +33,14 @@ val googleAndroidOAuthRedirectScheme = googleAndroidOAuthClientId
     ?.removeSuffix(".apps.googleusercontent.com")
     ?.let { "com.googleusercontent.apps.$it" }
     ?: "com.aiquota"
+// AdMob. local.properties에 실제 ID가 없으면 Google 공식 테스트 ID로 빌드한다. 테스트 ID로
+// 빌드된 릴리스는 광고를 띄우지 않는다(AdConfig.isBannerEnabled 참고).
+val admobTestAppId = "ca-app-pub-3940256099942544~3347511713"
+val admobTestBannerUnitId = "ca-app-pub-3940256099942544/6300978111"
+val admobAppId = localProperties.getProperty("aiquota.admobAppId")?.trim()?.takeIf { it.isNotBlank() }
+val admobBannerUnitId = localProperties.getProperty("aiquota.admobBannerUnitId")?.trim()?.takeIf { it.isNotBlank() }
+val usesAdmobTestIds = admobAppId == null || admobBannerUnitId == null
+
 val hasLocalDebugKeystore = listOf(
     debugStoreFilePath,
     debugStorePassword,
@@ -89,6 +97,9 @@ android {
         buildConfigField("String", "GOOGLE_ANDROID_OAUTH_CLIENT_ID", "\"$googleAndroidOAuthClientId\"")
         buildConfigField("String", "GOOGLE_ANDROID_OAUTH_REDIRECT_SCHEME", "\"$googleAndroidOAuthRedirectScheme\"")
         manifestPlaceholders["appAuthRedirectScheme"] = googleAndroidOAuthRedirectScheme
+        manifestPlaceholders["admobAppId"] = admobAppId ?: admobTestAppId
+        buildConfigField("String", "ADMOB_BANNER_UNIT_ID", "\"${admobBannerUnitId ?: admobTestBannerUnitId}\"")
+        buildConfigField("boolean", "ADMOB_TEST_IDS", usesAdmobTestIds.toString())
     }
 
     signingConfigs {
@@ -160,6 +171,7 @@ tasks.matching { task -> task.name in setOf("bundleRelease", "assembleRelease") 
 }
 
 dependencies {
+    implementation("com.google.android.gms:play-services-ads:24.0.0")
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")

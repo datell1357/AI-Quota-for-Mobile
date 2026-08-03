@@ -107,6 +107,8 @@ import kotlinx.coroutines.launch
 import com.aiquota.mobile.support.BugReportDiagnostics
 import com.aiquota.mobile.support.BugReportEmailComposer
 import com.aiquota.mobile.support.BugReportRequest
+import com.aiquota.mobile.ui.ads.AdConfig
+import com.aiquota.mobile.ui.ads.TopBarAdBanner
 
 @Composable
 fun AIQuotaAppShell(
@@ -701,12 +703,16 @@ fun AIQuotaAppShell(
                     SnackbarHost(hostState = snackbarHostState)
                 },
                 topBar = {
-                    // 광고를 붙일 때는 여기에 adContent = { <배너 컴포저블>() } 을 넘긴다.
-                    // 넘기지 않으면 상단바는 지금처럼 높이를 잡지 않는다.
+                    // 광고 ID가 설정되지 않은 빌드에서는 슬롯을 아예 넘기지 않아 빈 높이가 생기지 않는다.
                     AppTopBar(
                         route = route,
                         layoutMetrics = layoutMetrics,
-                        onHomeClick = { route = AppRoute.Home }
+                        onHomeClick = { route = AppRoute.Home },
+                        adContent = if (AdConfig.isBannerEnabled()) {
+                            { TopBarAdBanner() }
+                        } else {
+                            null
+                        }
                     )
                 },
                 bottomBar = {
