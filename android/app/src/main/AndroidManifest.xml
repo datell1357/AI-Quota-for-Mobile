@@ -13,6 +13,16 @@
     android:roundIcon="@mipmap/ic_launcher_round"
     android:supportsRtl="true"
     android:theme="@style/Theme.AIQuota">
+    <!-- AdMob SDK가 요구하는 앱 ID. 빠지면 앱이 시작 즉시 크래시한다.
+         값은 local.properties의 aiquota.admobAppId, 없으면 Google 테스트 ID가 들어간다. -->
+    <meta-data
+      android:name="com.google.android.gms.ads.APPLICATION_ID"
+      android:value="${admobAppId}" />
+    <!-- 광고 SDK 초기화는 앱 화면이 보일 때만 한다. 백그라운드 수집·위젯 갱신으로 프로세스가
+         떠 있는 동안 SDK가 스스로 초기화하지 않도록 자동 초기화를 끈다. -->
+    <meta-data
+      android:name="com.google.android.gms.ads.flag.OPTIMIZE_INITIALIZATION"
+      android:value="true" />
     <activity
       android:name=".providers.WebLoginActivity"
       android:exported="false" />
