@@ -7,16 +7,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * 38버전 노출 범위: Grok·Kimi는 구현이 들어와 있지만 실계정 검증 전이라 노출하지 않는다.
+ * 39버전 노출 범위: Grok을 다시 노출한다. Kimi는 실계정이 없어 검증하지 못했으므로 계속 감춘다.
  * 노출 여부는 ProviderId.defaultOrder() 한 곳에서 결정된다.
  */
 class ProviderReleaseScopeTest {
     @Test
-    fun unverifiedProvidersAreNotExposedWhileKiroIs() {
+    fun unverifiedProvidersAreNotExposedWhileKiroAndGrokAre() {
         val order = ProviderId.defaultOrder()
 
         assertTrue(order.contains(ProviderId.KIRO))
-        assertFalse(order.contains(ProviderId.GROK))
+        assertTrue(order.contains(ProviderId.GROK))
         assertFalse(order.contains(ProviderId.KIMI))
     }
 
@@ -26,10 +26,31 @@ class ProviderReleaseScopeTest {
 
         val visible = ProviderPreferencesCodec.visibleProviders(storedOrder, emptySet())
 
-        assertFalse(visible.contains(ProviderId.GROK))
-        assertFalse(visible.contains(ProviderId.KIMI))
+        assertFalse("Kimi는 계속 감춘다", visible.contains(ProviderId.KIMI))
         assertTrue(visible.contains(ProviderId.KIRO))
         assertEquals(ProviderId.defaultOrder().size, visible.size)
+    }
+
+    @Test
+    fun newlyExposedProviderAppearsForUsersWhoStoredTheOldOrder() {
+        // 이전 빌드에서 저장된 순서에는 Grok이 없다. 노출을 되살리면 뒤에 덧붙어 나타나야 한다.
+        val storedOrder = listOf(
+            ProviderId.CLAUDE,
+            ProviderId.CODEX,
+            ProviderId.CURSOR,
+            ProviderId.KIRO,
+            ProviderId.OPENCODE,
+            ProviderId.GLM,
+            ProviderId.ANTIGRAVITY,
+            ProviderId.GEMINI,
+            ProviderId.COPILOT
+        )
+
+        val visible = ProviderPreferencesCodec.visibleProviders(storedOrder, emptySet())
+
+        assertTrue(visible.contains(ProviderId.GROK))
+        assertEquals(ProviderId.GROK, visible.last())
+        assertEquals(storedOrder, visible.dropLast(1))
     }
 
     @Test
