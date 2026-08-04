@@ -48,6 +48,19 @@ class ConnectScreenAdTest {
     }
 
     @Test
+    fun glmConnectionMethodChooserKeepsTheBanner() {
+        // GLM은 연결 버튼을 누르면 웹 로그인 전에 선택 화면이 먼저 전면을 덮는다.
+        val chooser = File("src/main/java/com/aiquota/mobile/providers/GlmApiKeyActivity.kt").readText()
+
+        assertTrue(chooser.contains("topBanner = ActivityTopBanner(this)"))
+        assertTrue(chooser.contains("topBanner.attachTo(this, activityScope)"))
+        assertTrue(chooser.contains("topMargin = topBanner.heightPx"))
+        assertTrue(chooser.contains("topBanner.resume()"))
+        assertTrue(chooser.contains("topBanner.pause()"))
+        assertTrue(chooser.contains("topBanner.destroy()"))
+    }
+
+    @Test
     fun everyFullScreenConnectFlowKeepsTheBanner() {
         // GLM Web Login은 WebLoginActivity를 상속하므로 같은 배너를 받는다.
         assertTrue(

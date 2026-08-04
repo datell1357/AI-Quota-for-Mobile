@@ -30,6 +30,12 @@ import com.aiquota.mobile.widget.widgetConfigureRoundedBackground
 import com.aiquota.mobile.widget.widgetConfigureStatusBarInsetPx
 import com.aiquota.mobile.widget.widgetConfigureStyle
 import kotlinx.coroutines.launch
+import android.widget.FrameLayout
+import com.aiquota.mobile.ui.ads.ActivityTopBanner
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 
 internal suspend fun runGlmWebOAuthStartSequence(
     clearStaleSession: suspend () -> Unit,
@@ -46,6 +52,8 @@ class GlmApiKeyActivity : ComponentActivity() {
     private lateinit var statusText: TextView
     private lateinit var saveButton: TextView
     private lateinit var webOAuthButton: TextView
+    private lateinit var topBanner: ActivityTopBanner
+    private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(newBase.withAppLanguageForDeviceLanguage())
@@ -54,6 +62,8 @@ class GlmApiKeyActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         title = getString(R.string.glm_connection_title)
+        // 이 화면도 전면을 덮으므로 상단 배너를 유지한다.
+        topBanner = ActivityTopBanner(this)
         setContentView(createContentView())
     }
 
@@ -135,7 +145,7 @@ class GlmApiKeyActivity : ComponentActivity() {
             addView(card, matchWrapParams())
         }
 
-        return ScrollView(this).apply {
+        val scroller = ScrollView(this).apply {
             setBackgroundColor(style.backgroundColor)
             isFillViewport = true
             addView(
@@ -146,6 +156,33 @@ class GlmApiKeyActivity : ComponentActivity() {
                 )
             )
         }
+        return FrameLayout(this).apply {
+            setBackgroundColor(style.backgroundColor)
+            addView(
+                scroller,
+                FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                ).apply { topMargin = topBanner.heightPx }
+            )
+            topBanner.attachTo(this, activityScope)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::topBanner.isInitialized) topBanner.resume()
+    }
+
+    override fun onPause() {
+        if (::topBanner.isInitialized) topBanner.pause()
+        super.onPause()
+    }
+
+    override fun onDestroy() {
+        if (::topBanner.isInitialized) topBanner.destroy()
+        activityScope.cancel()
+        super.onDestroy()
     }
 
     private fun header(style: WidgetConfigureStyle): LinearLayout {
