@@ -38,7 +38,7 @@ class TopBarAdBannerTest {
         assertTrue(banner.contains("Lifecycle.Event.ON_RESUME ->"))
         assertTrue(
             "resume 전에는 AdView를 만들지도, 광고를 요청하지도 않는다.",
-            banner.contains("if (!resumed || adView != null) return@LaunchedEffect")
+            banner.contains("if (!resumed || adView != null || widthDp <= 0) return@LaunchedEffect")
         )
     }
 
