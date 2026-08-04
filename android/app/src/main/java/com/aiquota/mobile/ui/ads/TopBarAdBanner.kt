@@ -1,6 +1,8 @@
 package com.aiquota.mobile.ui.ads
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.util.Log
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -27,6 +29,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 private const val TAG = "AIQuotaAds"
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
 
 /**
  * 광고 노출 여부. 테스트 ID로 빌드된 릴리스는 사용자에게 테스트 광고를 보여주게 되므로 띄우지 않는다.
@@ -103,6 +111,12 @@ fun TopBarAdBanner(modifier: Modifier = Modifier) {
 
     LaunchedEffect(resumed, unitId) {
         if (!resumed || adView != null) return@LaunchedEffect
+        // 동의 절차가 끝나기 전에는 광고를 요청하지 않는다. Activity가 없으면 띄우지 않는다.
+        val activity = context.findActivity() ?: return@LaunchedEffect
+        if (!AdConsentManager.ensureConsent(activity)) {
+            Log.i(TAG, "topBanner skipped reason=consent_not_granted")
+            return@LaunchedEffect
+        }
         AdMobInitializer.ensureInitialized(context)
         adView = AdView(context).apply {
             setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, widthDp))
