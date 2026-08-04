@@ -48,6 +48,19 @@ class ConnectScreenAdTest {
     }
 
     @Test
+    fun dashboardBannerIsSizedToTheSlotNotTheWholeScreen() {
+        // 상단바는 좌우 패딩을 갖는다. 화면 폭으로 배너를 요청하면 그만큼 오른쪽이 잘린다.
+        val compose = File("src/main/java/com/aiquota/mobile/ui/ads/TopBarAdBanner.kt").readText()
+
+        assertTrue(compose.contains("BoxWithConstraints"))
+        assertTrue(compose.contains("availableWidthDp = maxWidth.value.toInt()"))
+        assertTrue(
+            "화면 폭(screenWidthDp)으로 배너 크기를 잡으면 안 된다.",
+            !compose.contains("LocalConfiguration.current.screenWidthDp")
+        )
+    }
+
+    @Test
     fun glmConnectionMethodChooserKeepsTheBanner() {
         // GLM은 연결 버튼을 누르면 웹 로그인 전에 선택 화면이 먼저 전면을 덮는다.
         val chooser = File("src/main/java/com/aiquota/mobile/providers/GlmApiKeyActivity.kt").readText()
