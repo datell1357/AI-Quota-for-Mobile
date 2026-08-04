@@ -247,6 +247,24 @@ object ProviderDefinitionRegistry {
                 "auth.grok.com",
                 "accounts.x.ai",
                 "x.ai",
+                // Grok 로그인은 accounts.x.ai에서 X 계정 인증(x.com/i/oauth2/authorize)으로 넘어간다.
+                // 이 호스트가 빠져 있어 그 단계에서 navigation이 차단되고 로딩이 멈췄다.
+                "x.com",
+                "www.x.com",
+                "api.x.com",
+                "twitter.com",
+                "www.twitter.com",
+                "api.twitter.com",
+                "abs.twimg.com",
+                "pbs.twimg.com",
+                // 토큰 교환 직후 auth.grokipedia.com/set-cookie 로 넘어가며 세션 쿠키를 심는다.
+                "grokipedia.com",
+                "www.grokipedia.com",
+                "auth.grokipedia.com",
+                // 같은 SSO 체인의 다음 단계. 실측으로 확인했다(2026-08-04).
+                "grokusercontent.com",
+                "www.grokusercontent.com",
+                "auth.grokusercontent.com",
                 "accounts.google.com",
                 "myaccount.google.com",
                 "google.com",

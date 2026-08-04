@@ -543,6 +543,18 @@ object ProviderNativeUsagePayloadFetcher {
         return wrapped
     }
 
+    /** 한도 창 길이를 라벨에 드러내 2시간 한도임을 오해하지 않게 한다. */
+    private fun grokLabel(probe: GrokProbe, source: JSONObject, effort: String?): String {
+        val window = cursorNumber(source.opt("windowSizeSeconds"))?.toLong()
+        val windowLabel = when {
+            window == null || window <= 0L -> null
+            window % 3600L == 0L -> "${window / 3600L}h limit"
+            else -> "${window / 60L}m limit"
+        }
+        return listOfNotNull(probe.label(), effort?.let { "$it effort" }, windowLabel)
+            .joinToString(" · ")
+    }
+
     private fun grokBuckets(probe: GrokProbe, json: JSONObject): List<JSONObject> {
         return listOfNotNull(
             grokBucket(json, probe, null),
@@ -677,8 +689,8 @@ object ProviderNativeUsagePayloadFetcher {
         if (source == null) return null
         val remaining = cursorNumber(source.opt("remainingQueries")) ?: return null
         val bucket = JSONObject()
-            .put("key", listOfNotNull("grok", probe.requestKind, probe.modelName, effort).joinToString(":"))
-            .put("label", probe.label() + (effort?.let { " ($it effort)" }.orEmpty()))
+            .put("key", listOfNotNull("grok", probe.modelName, effort).joinToString(":"))
+            .put("label", grokLabel(probe, source, effort))
             .put("remainingQueries", remaining)
         cursorNumber(source.opt("totalQueries"))?.let { bucket.put("totalQueries", it) }
         cursorNumber(source.opt("waitTimeSeconds"))?.let { bucket.put("waitTimeSeconds", it) }
@@ -1382,16 +1394,16 @@ object ProviderNativeUsagePayloadFetcher {
             .put("modelName", modelName)
             .toString()
 
-        fun label(): String = "$modelName ${requestKind.lowercase(Locale.US)}"
+        fun label(): String = modelName
     }
 
-    // requestKind/modelName 조합은 서버 버킷 선택값이라 계정·릴리스마다 다르다.
-    // 실계정 QA에서 실제 활성 조합을 확인한 뒤 이 목록을 확정한다.
+    // 2026-08-04 실계정 확인: /rest/rate-limits 응답을 가르는 건 modelName 뿐이고
+    // requestKind(DEFAULT/REASONING/DEEPSEARCH/BUILD/AGENT/…)는 값에 영향을 주지 않는다.
+    // 예전 목록은 같은 버킷을 세 번 표시하고 있었다. grok-4-1·grok-4-fast·grok-code는 404다.
+    // 이 응답은 windowSizeSeconds=7200, 즉 2시간 롤링 한도이며 주간 SuperGrok 한도와는 다르다.
     private val GROK_NATIVE_PROBES = listOf(
         GrokProbe("DEFAULT", "grok-4"),
-        GrokProbe("DEFAULT", "grok-3"),
-        GrokProbe("REASONING", "grok-4"),
-        GrokProbe("DEEPSEARCH", "grok-4")
+        GrokProbe("DEFAULT", "grok-3")
     )
 
     private val CURSOR_NATIVE_PROBES = listOf(

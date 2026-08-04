@@ -985,10 +985,13 @@ class ProviderNativeUsagePayloadFetcherTest {
         assertNotNull(payload)
         val buckets = JSONObject(payload!!).getJSONArray("buckets")
         assertEquals(2, buckets.length())
-        assertEquals("grok:DEFAULT:grok-4", buckets.getJSONObject(0).getString("key"))
+        assertEquals("grok:grok-4", buckets.getJSONObject(0).getString("key"))
         assertEquals(24.0, buckets.getJSONObject(0).getDouble("remainingQueries"), 0.001)
-        assertEquals("grok:DEFAULT:grok-4:high", buckets.getJSONObject(1).getString("key"))
-        assertEquals(4, requested.size)
+        // 라벨에 한도 창을 드러내 2시간 한도임을 오해하지 않게 한다.
+        assertEquals("grok-4 · 2h limit", buckets.getJSONObject(0).getString("label"))
+        assertEquals("grok:grok-4:high", buckets.getJSONObject(1).getString("key"))
+        // requestKind는 응답에 영향이 없어 modelName 두 개만 조회한다.
+        assertEquals(2, requested.size)
     }
 
     @Test
