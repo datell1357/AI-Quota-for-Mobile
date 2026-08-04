@@ -10,9 +10,11 @@ import org.junit.Test
  * 차지하므로 본문이 배너 높이만큼 밀려야 하고, 대시보드 배너와 같은 포그라운드 전용 규칙을
  * 지켜야 한다.
  */
-class LoginScreenAdTest {
+class ConnectScreenAdTest {
     private val activity = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
-    private val slot = File("src/main/java/com/aiquota/mobile/ui/ads/LoginScreenAd.kt").readText()
+    private val banner = File("src/main/java/com/aiquota/mobile/ui/ads/ActivityTopBanner.kt").readText()
+    private val antigravity =
+        File("src/main/java/com/aiquota/mobile/providers/AntigravityLoopbackOAuthActivity.kt").readText()
 
     @Test
     fun loginScreenReservesRoomAboveTheWebViewForTheBanner() {
@@ -31,34 +33,46 @@ class LoginScreenAdTest {
         val onCreate = activity.substringAfter("override fun onCreate(savedInstanceState: Bundle?)")
             .substringBefore("override fun onResume()")
 
-        assertTrue(onCreate.contains("loginAdHeight = if (LoginScreenAd.isEnabled(providerId))"))
+        assertTrue(onCreate.contains("topBanner = ActivityTopBanner(this)"))
         assertTrue(
             "높이 확정이 rootContainer 구성보다 앞서야 한다.",
-            onCreate.indexOf("loginAdHeight = if") < onCreate.indexOf("rootContainer = FrameLayout(this)")
+            onCreate.indexOf("topBanner = ActivityTopBanner(this)") < onCreate.indexOf("rootContainer = FrameLayout(this)")
         )
     }
 
     @Test
     fun loginBannerFollowsActivityForegroundLifecycle() {
-        assertTrue(activity.contains("loginAdView?.resume()"))
-        assertTrue(activity.contains("loginAdView?.pause()"))
-        assertTrue(activity.contains("loginAdView?.destroy()"))
+        assertTrue(activity.contains("topBanner.resume()"))
+        assertTrue(activity.contains("topBanner.pause()"))
+        assertTrue(activity.contains("topBanner.destroy()"))
     }
 
     @Test
-    fun loginBannerNeverRunsInTheIsolatedGlmProcess() {
+    fun everyFullScreenConnectFlowKeepsTheBanner() {
+        // GLM Web Login은 WebLoginActivity를 상속하므로 같은 배너를 받는다.
         assertTrue(
-            "GLM 로그인은 격리 프로세스에서 돌고 blank page 복구 로직이 얹혀 있어 제외한다.",
-            slot.contains("providerId != ProviderId.GLM")
+            File("src/main/java/com/aiquota/mobile/providers/GlmWebLoginActivity.kt").readText()
+                .contains("class GlmWebLoginActivity : WebLoginActivity()")
         )
+        // Antigravity OAuth 화면도 전면을 덮으므로 배너를 유지한다.
+        assertTrue(antigravity.contains("topBanner = ActivityTopBanner(this)"))
+        assertTrue(antigravity.contains("topBanner.attachTo(root, activityScope)"))
+        assertTrue(
+            "본문이 배너 높이만큼 내려가야 가리지 않는다.",
+            antigravity.contains("topMargin = topBanner.heightPx")
+        )
+        assertTrue(antigravity.contains("topBanner.resume()"))
+        assertTrue(antigravity.contains("topBanner.pause()"))
+        assertTrue(antigravity.contains("topBanner.destroy()"))
     }
 
     @Test
     fun loginBannerIsSkippedEntirelyWhenAdsAreOff() {
-        assertTrue(slot.contains("AdConfig.isBannerEnabled()"))
+        assertTrue(banner.contains("AdConfig.isBannerEnabled()"))
         assertTrue(
             "광고가 꺼져 있으면 높이가 0이라 기존 레이아웃과 동일해야 한다.",
-            activity.contains("if (loginAdHeight <= 0) return")
+            banner.contains("if (AdConfig.isBannerEnabled()) adSize().getHeightInPixels(activity) else 0") &&
+                banner.contains("if (!enabled) return")
         )
     }
 
@@ -68,6 +82,6 @@ class LoginScreenAdTest {
             "Application 기동 경로에서 광고 SDK가 뜨면 안 된다.",
             File("src/main/java/com/aiquota/mobile/AIQuotaApplication.kt").readText().contains("MobileAds")
         )
-        assertTrue(activity.contains("AdMobInitializer.ensureInitialized(this@WebLoginActivity)"))
+        assertTrue(banner.contains("AdMobInitializer.ensureInitialized(activity)"))
     }
 }

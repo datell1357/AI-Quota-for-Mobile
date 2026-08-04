@@ -38,17 +38,15 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import android.view.Gravity
-import com.google.android.gms.ads.AdView
-import com.aiquota.mobile.ui.ads.AdMobInitializer
-import com.aiquota.mobile.ui.ads.LoginScreenAd
+import com.aiquota.mobile.ui.ads.ActivityTopBanner
 
 open class WebLoginActivity : Activity() {
     private lateinit var providerId: ProviderId
     private lateinit var webView: WebView
     private lateinit var rootContainer: FrameLayout
     private lateinit var titleView: TextView
-    private var loginAdView: AdView? = null
-    private var loginAdHeight = 0
+    private lateinit var topBanner: ActivityTopBanner
+    private val loginAdHeight: Int get() = if (::topBanner.isInitialized) topBanner.heightPx else 0
     private var mainWebViewDestroyed = false
     @Volatile
     private var finished = false
@@ -129,7 +127,7 @@ open class WebLoginActivity : Activity() {
             setPadding(32, 24, 32, 24)
         }
         // 배너 높이를 먼저 확정해야 제목·WebView·팝업의 상단 오프셋을 한 번에 맞출 수 있다.
-        loginAdHeight = if (LoginScreenAd.isEnabled(providerId)) LoginScreenAd.heightPx(this) else 0
+        topBanner = ActivityTopBanner(this)
         val cookieManager = CookieManager.getInstance()
         val capabilities = ProviderLoginWebViewPolicy.capabilities()
         cookieManager.setAcceptCookie(true)
@@ -160,18 +158,17 @@ open class WebLoginActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        loginAdView?.resume()
+        if (::topBanner.isInitialized) topBanner.resume()
     }
 
     override fun onPause() {
         // 화면을 벗어나면 배너 갱신과 광고 요청을 멈춘다.
-        loginAdView?.pause()
+        if (::topBanner.isInitialized) topBanner.pause()
         super.onPause()
     }
 
     override fun onDestroy() {
-        loginAdView?.destroy()
-        loginAdView = null
+        if (::topBanner.isInitialized) topBanner.destroy()
         if (::providerId.isInitialized && !finished) {
             if (oauthCallbackHandled && isGoogleProvider()) {
                 Log.i(
@@ -228,26 +225,11 @@ open class WebLoginActivity : Activity() {
     }
 
     /**
-     * 로그인 화면에서도 상단 광고를 유지한다. 광고 SDK 초기화는 화면이 뜬 뒤에만 하고,
-     * 배너는 onResume/onPause/onDestroy를 따라가므로 화면을 벗어나면 요청이 멈춘다.
+     * 로그인 화면에서도 상단 광고를 유지한다. 배너는 Activity 수명주기를 따라가므로
+     * 화면을 벗어나면 요청이 멈춘다.
      */
     private fun attachLoginAdBanner() {
-        if (loginAdHeight <= 0) return
-        val banner = LoginScreenAd.createBanner(this)
-        loginAdView = banner
-        rootContainer.addView(
-            banner,
-            FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, loginAdHeight).apply {
-                gravity = Gravity.TOP
-            }
-        )
-        loginScope.launch {
-            AdMobInitializer.ensureInitialized(this@WebLoginActivity)
-            runCatching { LoginScreenAd.loadInto(banner) }
-                .onFailure { error ->
-                    Log.w("AIQuotaAds", "loginAdLoad ok=false error=${error.javaClass.simpleName}")
-                }
-        }
+        topBanner.attachTo(rootContainer, loginScope)
     }
 
     private fun loginTitleHeight(): Int = 96

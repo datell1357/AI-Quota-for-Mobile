@@ -24,6 +24,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.aiquota.mobile.ui.ads.ActivityTopBanner
 
 class AntigravityLoopbackOAuthActivity : Activity() {
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -33,10 +34,13 @@ class AntigravityLoopbackOAuthActivity : Activity() {
     private var processingCallback = false
     private lateinit var webView: WebView
     private lateinit var statusView: TextView
+    private lateinit var topBanner: ActivityTopBanner
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         LocalUsageRepository(applicationContext).markConnecting(ProviderId.ANTIGRAVITY)
+        // 이 화면도 전면을 덮으므로 대시보드와 같은 배너를 상단에 유지한다.
+        topBanner = ActivityTopBanner(this)
         webView = createOAuthWebView()
         statusView = TextView(this).apply {
             text = "Preparing Google sign-in."
@@ -44,28 +48,33 @@ class AntigravityLoopbackOAuthActivity : Activity() {
             textSize = 16f
             visibility = View.VISIBLE
         }
-        setContentView(
-            FrameLayout(this).apply {
-                addView(
-                    webView,
-                    FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                )
-                addView(
-                    statusView,
-                    FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                )
-            }
-        )
+        val contentLayoutParams = {
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            ).apply { topMargin = topBanner.heightPx }
+        }
+        val root = FrameLayout(this).apply {
+            addView(webView, contentLayoutParams())
+            addView(statusView, contentLayoutParams())
+        }
+        topBanner.attachTo(root, activityScope)
+        setContentView(root)
         startFirebaseOAuth()
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (::topBanner.isInitialized) topBanner.resume()
+    }
+
+    override fun onPause() {
+        if (::topBanner.isInitialized) topBanner.pause()
+        super.onPause()
+    }
+
     override fun onDestroy() {
+        if (::topBanner.isInitialized) topBanner.destroy()
         activityScope.cancel()
         runCatching {
             webView.stopLoading()
