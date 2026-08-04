@@ -42,6 +42,11 @@ class ActivityTopBanner(private val activity: Activity) {
             }
         )
         scope.launch {
+            // 동의 절차가 끝나기 전에는 광고를 요청하지 않는다.
+            if (!AdConsentManager.ensureConsent(activity)) {
+                Log.i(TAG, "activityBanner skipped reason=consent_not_granted")
+                return@launch
+            }
             AdMobInitializer.ensureInitialized(activity)
             runCatching { banner.loadAd(AdRequest.Builder().build()) }
                 .onFailure { error ->
