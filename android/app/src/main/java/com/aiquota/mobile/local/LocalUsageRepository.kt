@@ -322,19 +322,41 @@ internal fun mergeFreshSnapshotWithPreviousLines(
         return if (planLabel == snapshot.planLabel) snapshot else snapshot.copy(planLabel = planLabel)
     }
 
+    // 키 스키마가 바뀌면 옛 키가 병합으로 계속 살아남아 화면에 유령 라인이 남는다.
+    val previousLines = previous.lines.filterNot {
+        isRetiredUsageLineKey(snapshot.providerId, it.mergeKey())
+    }
+    if (previousLines.isEmpty()) {
+        return if (planLabel == snapshot.planLabel) snapshot else snapshot.copy(planLabel = planLabel)
+    }
     val incomingByKey = snapshot.lines.associateBy { it.mergeKey() }
-    val previousKeys = previous.lines.map { it.mergeKey() }.toSet()
+    val previousKeys = previousLines.map { it.mergeKey() }.toSet()
     val mergedLines = if (snapshot.providerId == ProviderId.GLM) {
         val incomingKeys = snapshot.lines.map { it.mergeKey() }.toSet()
-        snapshot.lines + previous.lines.filter { it.mergeKey() !in incomingKeys }
+        snapshot.lines + previousLines.filter { it.mergeKey() !in incomingKeys }
     } else {
-        previous.lines.map { line ->
+        previousLines.map { line ->
             incomingByKey[line.mergeKey()] ?: line
         } + snapshot.lines.filter { it.mergeKey() !in previousKeys }
     }
 
     if (mergedLines == snapshot.lines && planLabel == snapshot.planLabel) return snapshot
     return snapshot.copy(lines = mergedLines, planLabel = planLabel)
+}
+
+/**
+ * 더 이상 수집하지 않는 옛 키 스키마인지 판단한다.
+ *
+ * Grok은 2026-08-04까지 requestKind를 키에 넣었다(grok:DEFAULT:grok-4). 그런데 서버 응답이
+ * requestKind와 무관하다는 것이 확인돼 grok:grok-4 형태로 바뀌었다. 이전 스냅샷에 남은 옛
+ * 키를 걸러내지 않으면 같은 값이 중복 표시된 채 영원히 남는다.
+ */
+internal fun isRetiredUsageLineKey(providerId: ProviderId, key: String): Boolean {
+    if (providerId != ProviderId.GROK) return false
+    val parts = key.split(":")
+    if (parts.size < 3 || parts[0] != "grok") return false
+    val second = parts[1]
+    return second.isNotEmpty() && second.all { it.isUpperCase() || it == '_' }
 }
 
 private fun ProviderUsageLine.mergeKey(): String {
