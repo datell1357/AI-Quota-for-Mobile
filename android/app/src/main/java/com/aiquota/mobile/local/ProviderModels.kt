@@ -24,7 +24,7 @@ enum class ProviderId(val storageId: String, val displayName: String) {
          * 빼둔다. 검증이 끝나면 CURSOR 다음에 GROK, KIMI를 다시 넣으면 그대로 살아난다.
          */
         fun defaultOrder(): List<ProviderId> =
-            listOf(CLAUDE, CODEX, CURSOR, KIRO, OPENCODE, GLM, ANTIGRAVITY, GEMINI, COPILOT, GROK)
+            listOf(CLAUDE, CODEX, CURSOR, GROK, KIRO, OPENCODE, GLM, ANTIGRAVITY, GEMINI, COPILOT)
 
         fun fromStorageId(value: String?): ProviderId? {
             val normalized = value?.trim().orEmpty()

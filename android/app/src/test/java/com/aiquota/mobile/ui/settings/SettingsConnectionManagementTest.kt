@@ -36,12 +36,12 @@ class SettingsConnectionManagementTest {
                 ProviderId.ANTIGRAVITY,
                 ProviderId.CLAUDE,
                 ProviderId.CODEX,
+                ProviderId.GROK,
                 ProviderId.KIRO,
                 ProviderId.OPENCODE,
                 ProviderId.GLM,
                 ProviderId.GEMINI,
-                ProviderId.COPILOT,
-                ProviderId.GROK
+                ProviderId.COPILOT
             ),
             settingsConnectionProviderOrder(order)
         )
