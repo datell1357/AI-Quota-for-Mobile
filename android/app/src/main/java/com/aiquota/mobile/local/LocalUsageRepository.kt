@@ -365,24 +365,24 @@ internal fun pinPrimaryLinesFirst(
 }
 
 private fun primaryLineKeys(providerId: ProviderId): List<String> = when (providerId) {
-    ProviderId.GROK -> listOf("grok:weekly")
+    ProviderId.GROK -> listOf(GROK_WEEKLY_LINE_KEY)
     else -> emptyList()
 }
 
 /**
- * 더 이상 수집하지 않는 옛 키 스키마인지 판단한다.
+ * 더 이상 수집하지 않는 옛 키인지 판단한다.
  *
- * Grok은 2026-08-04까지 requestKind를 키에 넣었다(grok:DEFAULT:grok-4). 그런데 서버 응답이
- * requestKind와 무관하다는 것이 확인돼 grok:grok-4 형태로 바뀌었다. 이전 스냅샷에 남은 옛
- * 키를 걸러내지 않으면 같은 값이 중복 표시된 채 영원히 남는다.
+ * Grok 키는 grok:DEFAULT:grok-4 → grok:grok-4 → grok:weekly 로 두 번 바뀌었고, 지금은
+ * 주간 한도 한 줄만 수집한다. 이전 스냅샷의 옛 키를 걸러내지 않으면 2시간 한도 라인이
+ * 화면에 그대로 남는다.
  */
 internal fun isRetiredUsageLineKey(providerId: ProviderId, key: String): Boolean {
     if (providerId != ProviderId.GROK) return false
-    val parts = key.split(":")
-    if (parts.size < 3 || parts[0] != "grok") return false
-    val second = parts[1]
-    return second.isNotEmpty() && second.all { it.isUpperCase() || it == '_' }
+    // Grok은 주간 한도 한 줄만 수집한다. 그 외 키는 모두 과거 스키마의 잔여물이다.
+    return key != GROK_WEEKLY_LINE_KEY
 }
+
+private const val GROK_WEEKLY_LINE_KEY = "grok:weekly"
 
 private fun ProviderUsageLine.mergeKey(): String {
     return key.ifBlank { label }

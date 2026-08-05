@@ -24,10 +24,15 @@ class RetiredUsageLineKeyTest {
     }
 
     @Test
-    fun keepsCurrentGrokKeys() {
-        listOf("grok:grok-4", "grok:grok-3", "grok:grok-4:high", "grok:weekly").forEach { key ->
-            assertFalse("$key 는 현재 키다", isRetiredUsageLineKey(ProviderId.GROK, key))
+    fun retiresShortWindowKeysNowThatOnlyWeeklyIsCollected() {
+        listOf("grok:grok-4", "grok:grok-3", "grok:grok-4:high").forEach { key ->
+            assertTrue("$key 는 더 이상 수집하지 않는다", isRetiredUsageLineKey(ProviderId.GROK, key))
         }
+    }
+
+    @Test
+    fun keepsWeeklyKey() {
+        assertFalse(isRetiredUsageLineKey(ProviderId.GROK, "grok:weekly"))
     }
 
     @Test
@@ -41,17 +46,13 @@ class RetiredUsageLineKeyTest {
     @Test
     fun pinsWeeklyLineAboveShortWindowLines() {
         val lines = listOf(
-            ProviderUsageLine(key = "grok:grok-4", label = "grok-4 · 2h limit", remainingPercent = 1f),
-            ProviderUsageLine(key = "grok:grok-3", label = "grok-3 · 2h limit", remainingPercent = 1f),
+            ProviderUsageLine(key = "grok:other", label = "other", remainingPercent = 1f),
             ProviderUsageLine(key = "grok:weekly", label = "SuperGrok weekly", remainingPercent = 0.65f)
         )
 
         val ordered = pinPrimaryLinesFirst(ProviderId.GROK, lines)
 
-        assertEquals(
-            listOf("grok:weekly", "grok:grok-4", "grok:grok-3"),
-            ordered.map { it.key }
-        )
+        assertEquals(listOf("grok:weekly", "grok:other"), ordered.map { it.key })
     }
 
     @Test
