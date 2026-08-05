@@ -996,6 +996,17 @@ object ProviderUsageNormalizer {
 
     private fun JSONObject.toGrokLine(source: ProviderPayloadSource): ProviderUsageLine? {
         val key = optionalString("key") ?: return null
+        // 주간 한도는 소진율(%)로 오므로 잔여 개수가 없다. 퍼센트만 채워 별도로 만든다.
+        optionalNumber("remainingPercent")?.let { percent ->
+            return ProviderUsageLine(
+                key = key,
+                label = optionalString("label") ?: key,
+                remainingPercent = percent.toFloat().coerceIn(0f, 1f),
+                resetsAt = optionalString("resetsAt"),
+                sourceLabel = source.label,
+                confidence = source.confidence
+            )
+        }
         val remaining = optionalNumber("remainingQueries") ?: return null
         val limit = optionalNumber("totalQueries")?.takeIf { it > 0.0 }
         return ProviderUsageLine(
