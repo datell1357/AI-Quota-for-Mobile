@@ -189,4 +189,8 @@
     <string name="settings_bug_report_send">버그 리포트 발송</string>
     <string name="settings_bug_report_cancel">취소</string>
     <string name="settings_bug_report_no_email_app">메일 앱을 열 수 없습니다.</string>
+    <string name="dashboard_view_mode_list">목록형</string>
+    <string name="dashboard_view_mode_card">카드형</string>
+    <string name="dashboard_view_mode_switch_to_card">카드형으로 보기</string>
+    <string name="dashboard_view_mode_switch_to_list">목록형으로 보기</string>
 </resources>

@@ -1,0 +1,80 @@
+package com.aiquota.mobile.ui
+
+import com.aiquota.mobile.local.DASHBOARD_CARD_MODE_COLUMN_COUNT
+import com.aiquota.mobile.local.DASHBOARD_CARD_MODE_VISIBLE_COUNT
+import com.aiquota.mobile.local.DashboardViewMode
+import java.io.File
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/**
+ * 대시보드는 목록형(기존)과 카드형(2열 6개)을 오간다.
+ */
+class DashboardViewModeTest {
+    private val phone = appLayoutMetrics(screenWidthDp = 411, screenHeightDp = 800)
+    private val tablet = appLayoutMetrics(screenWidthDp = 800, screenHeightDp = 1280)
+
+    @Test
+    fun listModeKeepsExistingLayout() {
+        assertEquals(phone, phone.forDashboardViewMode(DashboardViewMode.LIST))
+        assertEquals(tablet, tablet.forDashboardViewMode(DashboardViewMode.LIST))
+        assertEquals(1, phone.dashboardGridColumnCount)
+    }
+
+    @Test
+    fun cardModeShowsSixProvidersInTwoColumns() {
+        listOf(phone, tablet).forEach { base ->
+            val card = base.forDashboardViewMode(DashboardViewMode.CARD)
+
+            assertEquals(DASHBOARD_CARD_MODE_COLUMN_COUNT, card.dashboardGridColumnCount)
+            assertEquals(DASHBOARD_CARD_MODE_VISIBLE_COUNT, card.dashboardVisibleProviderCount)
+            assertTrue(
+                "여섯 개가 한 화면에 들어가려면 카드가 더 낮아야 한다",
+                card.dashboardCardMinHeightDp < base.dashboardCardMinHeightDp
+            )
+        }
+    }
+
+    @Test
+    fun cardModeFitsSixCardsWhereListFitsThree() {
+        val viewport = 700
+        val listHeight = dashboardProviderCardHeightDp(
+            viewportHeightDp = viewport,
+            layoutMetrics = phone.forDashboardViewMode(DashboardViewMode.LIST)
+        )
+        val cardMetrics = phone.forDashboardViewMode(DashboardViewMode.CARD)
+        val cardHeight = dashboardProviderCardHeightDp(viewportHeightDp = viewport, layoutMetrics = cardMetrics)
+
+        // 목록형은 세로로 3장, 카드형은 3행 × 2열이라 같은 화면에 6장이 들어간다.
+        assertEquals(3, phone.dashboardVisibleProviderCount)
+        assertEquals(6, cardMetrics.dashboardVisibleProviderCount)
+        // 행 수가 같으므로 카드 높이는 비슷하되, 2열이라 한 화면에 담기는 개수가 두 배가 된다.
+        assertTrue("카드 높이가 목록형보다 크면 안 된다", cardHeight <= listHeight)
+    }
+
+    @Test
+    fun toggleFlipsBetweenTheTwoModes() {
+        assertEquals(DashboardViewMode.CARD, DashboardViewMode.LIST.toggled())
+        assertEquals(DashboardViewMode.LIST, DashboardViewMode.CARD.toggled())
+        assertEquals(DashboardViewMode.LIST, DashboardViewMode.DEFAULT)
+        assertEquals(DashboardViewMode.LIST, DashboardViewMode.fromStorageId("bogus"))
+        assertEquals(DashboardViewMode.CARD, DashboardViewMode.fromStorageId("CARD"))
+    }
+
+    @Test
+    fun settingsButtonSitsNextToTheTitleAndToggleFollowsAddWidget() {
+        val source = File("src/main/java/com/aiquota/mobile/ui/dashboard/UnifiedDashboardScreen.kt").readText()
+        val header = source.substringAfter("R.string.dashboard_title")
+            .substringBefore("if (visibleProviders.isEmpty())")
+
+        val settings = header.indexOf("R.string.nav_settings")
+        val spacer = header.indexOf("Spacer(modifier = Modifier.weight(1f))")
+        val addWidget = header.indexOf("R.string.dashboard_add_widget")
+        val toggle = header.indexOf("DashboardViewModeButton")
+
+        assertTrue("설정 버튼은 제목 바로 옆에 온다", settings in 0 until spacer)
+        assertTrue("위젯 추가는 오른쪽으로 밀린다", spacer < addWidget)
+        assertTrue("모드 전환 버튼은 위젯 추가 오른쪽에 온다", addWidget < toggle)
+    }
+}

@@ -1,6 +1,9 @@
 ﻿package com.aiquota.mobile.ui
 
 import androidx.compose.runtime.Composable
+import com.aiquota.mobile.local.DASHBOARD_CARD_MODE_COLUMN_COUNT
+import com.aiquota.mobile.local.DASHBOARD_CARD_MODE_VISIBLE_COUNT
+import com.aiquota.mobile.local.DashboardViewMode
 import androidx.compose.ui.platform.LocalConfiguration
 import kotlin.math.ceil
 import kotlin.math.roundToInt
@@ -31,7 +34,9 @@ data class AppLayoutMetrics(
     val dashboardVisibleProviderCount: Int,
     val dashboardGridColumnCount: Int,
     val dashboardTitleHeightDp: Int,
-    val dashboardCardMinHeightDp: Int
+    val dashboardCardMinHeightDp: Int,
+    /** 카드 폭이 좁아 여백·아이콘을 줄여야 하는지. 한 줄에 한 장이거나 카드형일 때 참이다. */
+    val dashboardCompactCard: Boolean
 )
 
 fun appLayoutMetrics(
@@ -101,7 +106,23 @@ fun appLayoutMetrics(
         dashboardVisibleProviderCount = dashboardVisibleProviderCount,
         dashboardGridColumnCount = dashboardGridColumnCount,
         dashboardTitleHeightDp = if (isTablet) scaled(38, 48) else scaled(36, 42),
-        dashboardCardMinHeightDp = if (isTablet) scaled(180, 220) else scaled(176, 220)
+        dashboardCardMinHeightDp = if (isTablet) scaled(180, 220) else scaled(176, 220),
+        dashboardCompactCard = dashboardGridColumnCount == 1
+    )
+}
+
+/**
+ * 카드형은 화면 크기와 무관하게 2열 6개로 고정한다. 목록형은 기존 지표를 그대로 쓴다.
+ * 한 화면에 여섯 개를 넣어야 해서 카드 최소 높이도 낮춘다.
+ */
+fun AppLayoutMetrics.forDashboardViewMode(mode: DashboardViewMode): AppLayoutMetrics {
+    if (mode != DashboardViewMode.CARD) return this
+    return copy(
+        dashboardGridColumnCount = DASHBOARD_CARD_MODE_COLUMN_COUNT,
+        dashboardVisibleProviderCount = DASHBOARD_CARD_MODE_VISIBLE_COUNT,
+        dashboardCardMinHeightDp = (dashboardCardMinHeightDp * 3) / 5,
+        // 2열이라 카드 폭이 절반이다. 넓은 카드용 여백을 쓰면 내용이 겹치거나 잘린다.
+        dashboardCompactCard = true
     )
 }
 

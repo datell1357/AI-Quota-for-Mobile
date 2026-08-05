@@ -143,6 +143,7 @@ fun AIQuotaAppShell(
     var providerOrder by remember { mutableStateOf(providerPreferencesRepository.providerOrder()) }
     var hiddenProviders by remember { mutableStateOf(providerPreferencesRepository.hiddenProviders()) }
     var providerGaugeColors by remember { mutableStateOf(providerPreferencesRepository.providerGaugeColors()) }
+    var dashboardViewMode by remember { mutableStateOf(providerPreferencesRepository.dashboardViewMode()) }
     var snapshots by remember { mutableStateOf(localUsageRepository.readSnapshots()) }
     var busyProvider by remember { mutableStateOf<ProviderId?>(null) }
     var canPostNotifications by remember {
@@ -737,6 +738,12 @@ fun AIQuotaAppShell(
                             onReorderProvider = ::reorderVisibleProvider,
                             onAddWidget = { showDashboardWidgetPicker = true },
                             onOpenSettings = { route = AppRoute.Settings },
+                            viewMode = dashboardViewMode,
+                            onToggleViewMode = {
+                                val next = dashboardViewMode.toggled()
+                                dashboardViewMode = next
+                                providerPreferencesRepository.setDashboardViewMode(next)
+                            },
                             modifier = Modifier.fillMaxSize()
                         )
                         is AppRoute.ProviderDetail -> {

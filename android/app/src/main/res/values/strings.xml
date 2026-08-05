@@ -189,4 +189,8 @@
     <string name="settings_bug_report_send">Send bug report</string>
     <string name="settings_bug_report_cancel">Cancel</string>
     <string name="settings_bug_report_no_email_app">Could not open a mail app.</string>
+    <string name="dashboard_view_mode_list">List view</string>
+    <string name="dashboard_view_mode_card">Card view</string>
+    <string name="dashboard_view_mode_switch_to_card">Switch to card view</string>
+    <string name="dashboard_view_mode_switch_to_list">Switch to list view</string>
 </resources>

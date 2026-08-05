@@ -81,7 +81,9 @@ import com.aiquota.mobile.ui.AIQuotaColors
 import com.aiquota.mobile.ui.AIQuotaTheme
 import com.aiquota.mobile.ui.AppLayoutMetrics
 import com.aiquota.mobile.ui.compactProviderLineBreakStyle
+import com.aiquota.mobile.local.DashboardViewMode
 import com.aiquota.mobile.ui.dashboardProviderCardHeightDp
+import com.aiquota.mobile.ui.forDashboardViewMode
 import com.aiquota.mobile.ui.rememberAppLayoutMetrics
 import com.aiquota.mobile.ui.provider.ProviderIconImage
 import kotlinx.coroutines.launch
@@ -160,9 +162,12 @@ fun UnifiedDashboardScreen(
     onReorderProvider: (ProviderId, Int) -> Unit,
     onAddWidget: () -> Unit,
     onOpenSettings: () -> Unit,
+    viewMode: DashboardViewMode = DashboardViewMode.DEFAULT,
+    onToggleViewMode: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val layoutMetrics = rememberAppLayoutMetrics()
+    // 카드형은 열 수·표시 개수·카드 높이가 달라 지표 자체를 바꿔 끼운다.
+    val layoutMetrics = rememberAppLayoutMetrics().forDashboardViewMode(viewMode)
     val colors = AIQuotaTheme.colors
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
@@ -236,13 +241,21 @@ fun UnifiedDashboardScreen(
             ) {
                 Text(
                     text = stringResource(R.string.dashboard_title),
-                    modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleLarge,
                     color = colors.textPrimary,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                // 종합 설정 진입점은 대시보드에만 둔다. 개별 provider 탭에서는 노출하지 않는다.
+                IconButton(onClick = onOpenSettings) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_settings),
+                        contentDescription = stringResource(R.string.nav_settings),
+                        tint = colors.textSecondary
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
                 OutlinedButton(
                     onClick = onAddWidget,
                     modifier = Modifier.widthIn(min = 104.dp)
@@ -253,14 +266,7 @@ fun UnifiedDashboardScreen(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                // 종합 설정 진입점은 대시보드에만 둔다. 개별 provider 탭에서는 노출하지 않는다.
-                IconButton(onClick = onOpenSettings) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_settings),
-                        contentDescription = stringResource(R.string.nav_settings),
-                        tint = colors.textSecondary
-                    )
-                }
+                DashboardViewModeButton(viewMode = viewMode, onToggle = onToggleViewMode)
             }
 
             if (visibleProviders.isEmpty()) {
@@ -389,6 +395,37 @@ fun UnifiedDashboardScreen(
     }
 }
 
+/**
+ * 목록형·카드형을 오가는 작은 버튼. 지금 모드가 아니라 "누르면 갈 모드"의 아이콘을 보여준다.
+ */
+@Composable
+private fun DashboardViewModeButton(
+    viewMode: DashboardViewMode,
+    onToggle: () -> Unit
+) {
+    val colors = AIQuotaTheme.colors
+    val goingToCard = viewMode == DashboardViewMode.LIST
+    IconButton(
+        onClick = onToggle,
+        modifier = Modifier.size(36.dp)
+    ) {
+        Icon(
+            painter = painterResource(
+                if (goingToCard) R.drawable.ic_view_grid else R.drawable.ic_view_list
+            ),
+            contentDescription = stringResource(
+                if (goingToCard) {
+                    R.string.dashboard_view_mode_switch_to_card
+                } else {
+                    R.string.dashboard_view_mode_switch_to_list
+                }
+            ),
+            modifier = Modifier.size(20.dp),
+            tint = colors.textSecondary
+        )
+    }
+}
+
 @Composable
 private fun EmptyDashboardState(layoutMetrics: AppLayoutMetrics) {
     val colors = AIQuotaTheme.colors
@@ -493,7 +530,7 @@ private fun ProviderUsageCard(
     onAutoScroll: (Float) -> Unit
 ) {
     val colors = AIQuotaTheme.colors
-    val isCompactDashboardCard = layoutMetrics.dashboardGridColumnCount == 1
+    val isCompactDashboardCard = layoutMetrics.dashboardCompactCard
     val titleBarHeight = when {
         colors.theme == com.aiquota.mobile.local.AppTheme.MACOS && isCompactDashboardCard -> 26.dp
         colors.theme == com.aiquota.mobile.local.AppTheme.MACOS -> 30.dp
@@ -751,8 +788,21 @@ private fun ProviderUsageCard(
                 ) {
                     // Content fills the whole card body so the provider icon and status stay
                     // vertically centred even when the connect button sits at the bottom.
+                    // 연결 버튼은 카드 우하단에 겹쳐 그려진다. 카드형처럼 폭이 좁으면 본문이
+                    // 버튼 자리까지 내려와 글자가 가려지므로 그만큼 아래 여백을 준다.
+                    val connectActionInset = if (
+                        snapshot.shouldShowDashboardConnectAction() &&
+                        layoutMetrics.dashboardGridColumnCount > 1 &&
+                        isCompactDashboardCard
+                    ) {
+                        44.dp
+                    } else {
+                        0.dp
+                    }
                     Row(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(bottom = connectActionInset),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {

@@ -121,9 +121,15 @@ class UnifiedDashboardDragReorderTest {
             "Dashboard content row should fill the card body and center provider usage vertically " +
                 "so the icon and status stay centered even when the connect button is shown.",
             dashboardSource.contains(
-                "modifier = Modifier.fillMaxSize(),\n" +
+                "                            .fillMaxSize()\n" +
+                    "                            .padding(bottom = connectActionInset),\n" +
                     "                        verticalAlignment = Alignment.CenterVertically"
             )
+        )
+        assertTrue(
+            "카드형처럼 폭이 좁을 때는 연결 버튼이 본문을 가리지 않도록 아래 여백을 준다.",
+            dashboardSource.contains("val connectActionInset = if (") &&
+                dashboardSource.contains("layoutMetrics.dashboardGridColumnCount > 1")
         )
         assertTrue(
             "Connect button should be pinned to the card's bottom end instead of taking layout height.",
