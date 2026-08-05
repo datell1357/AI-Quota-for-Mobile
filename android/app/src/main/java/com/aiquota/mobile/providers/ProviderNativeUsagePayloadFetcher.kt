@@ -102,8 +102,10 @@ object ProviderNativeUsagePayloadFetcher {
         return fetchCursorPayload(fetchJson).payload
     }
 
-    internal fun grokUsagePayloadForTest(fetchJson: GrokJsonFetcher): String? {
-        return fetchGrokPayload(fetchJson).payload
+    internal fun grokUsagePayloadForTest(
+        fetchWeekly: () -> GrokWeeklyCreditsFetcher.WeeklyUsage?
+    ): String? {
+        return fetchGrokPayload(fetchWeekly).payload
     }
 
     internal fun kimiUsagePayloadForTest(fetchJson: KimiJsonFetcher): String? {
@@ -512,20 +514,17 @@ object ProviderNativeUsagePayloadFetcher {
         }?.takeIf { it.isFinite() }
     }
 
+    /**
+     * Grok은 주간 SuperGrok 한도만 수집한다. /rest/rate-limits는 windowSizeSeconds=7200,
+     * 즉 2시간 롤링 한도라 사용자가 보는 지표가 아니었고, 응답이 modelName에만 좌우돼
+     * 실질적으로 중복 라인이었다.
+     */
     private fun fetchGrokPayload(
-        fetchJson: GrokJsonFetcher = GrokNativeUsageFetcher::fetchJson,
         fetchWeekly: () -> GrokWeeklyCreditsFetcher.WeeklyUsage? = GrokWeeklyCreditsFetcher::fetch
     ): NativePayloadResult {
         val statuses = mutableListOf<String>()
         val buckets = JSONArray()
-        // 사용자가 실제로 신경 쓰는 건 주간 한도라 맨 앞에 둔다.
         grokWeeklyBucket(fetchWeekly, statuses)?.let(buckets::put)
-        GROK_NATIVE_PROBES.forEach { probe ->
-            val response = fetchGrokWrapped(probe, statuses, fetchJson)
-            if (!response.optBoolean("ok", false)) return@forEach
-            val json = response.jsonValue() as? JSONObject ?: return@forEach
-            grokBuckets(probe, json).forEach(buckets::put)
-        }
         val payload = JSONObject()
             .put("provider", ProviderId.GROK.storageId)
             .put("buckets", buckets)
@@ -534,7 +533,7 @@ object ProviderNativeUsagePayloadFetcher {
 
     /**
      * 주간 SuperGrok 한도. gRPC-Web 응답이라 소진율(%)로 오므로 잔여 개수 대신
-     * remainingPercent를 직접 채운다. 실패해도 2시간 한도 수집은 그대로 진행한다.
+     * remainingPercent를 직접 채운다. 실패하면 라인이 비어 수집 실패로 처리된다.
      */
     private fun grokWeeklyBucket(
         fetchWeekly: () -> GrokWeeklyCreditsFetcher.WeeklyUsage?,
@@ -552,40 +551,6 @@ object ProviderNativeUsagePayloadFetcher {
             .put("label", "SuperGrok weekly")
             .put("remainingPercent", remainingPercent)
             .apply { weekly.resetsAt?.let { put("resetsAt", it) } }
-    }
-
-    private fun fetchGrokWrapped(
-        probe: GrokProbe,
-        statuses: MutableList<String>,
-        fetchJson: GrokJsonFetcher
-    ): JSONObject {
-        val wrapped = runCatching { JSONObject(fetchJson(GROK_RATE_LIMITS_URL, probe.body())) }
-            .getOrElse {
-                JSONObject().put("ok", false).put("url", GROK_RATE_LIMITS_URL).put("error", it.javaClass.simpleName)
-            }
-        statuses += "${urlStatusLabel(GROK_RATE_LIMITS_URL)}:${probe.label()}:" +
-            "${wrapped.optInt("status", -1)}:${wrapped.optString("error")}"
-        return wrapped
-    }
-
-    /** 한도 창 길이를 라벨에 드러내 2시간 한도임을 오해하지 않게 한다. */
-    private fun grokLabel(probe: GrokProbe, source: JSONObject, effort: String?): String {
-        val window = cursorNumber(source.opt("windowSizeSeconds"))?.toLong()
-        val windowLabel = when {
-            window == null || window <= 0L -> null
-            window % 3600L == 0L -> "${window / 3600L}h limit"
-            else -> "${window / 60L}m limit"
-        }
-        return listOfNotNull(probe.label(), effort?.let { "$it effort" }, windowLabel)
-            .joinToString(" · ")
-    }
-
-    private fun grokBuckets(probe: GrokProbe, json: JSONObject): List<JSONObject> {
-        return listOfNotNull(
-            grokBucket(json, probe, null),
-            grokBucket(json.optJSONObject("lowEffortRateLimits"), probe, "low"),
-            grokBucket(json.optJSONObject("highEffortRateLimits"), probe, "high")
-        )
     }
 
     private fun fetchKimiPayload(
@@ -708,19 +673,6 @@ object ProviderNativeUsagePayloadFetcher {
 
     private fun JSONObject.nonBlankString(field: String): String? {
         return optString(field).takeIf { it.isNotBlank() && it != "null" }
-    }
-
-    private fun grokBucket(source: JSONObject?, probe: GrokProbe, effort: String?): JSONObject? {
-        if (source == null) return null
-        val remaining = cursorNumber(source.opt("remainingQueries")) ?: return null
-        val bucket = JSONObject()
-            .put("key", listOfNotNull("grok", probe.modelName, effort).joinToString(":"))
-            .put("label", grokLabel(probe, source, effort))
-            .put("remainingQueries", remaining)
-        cursorNumber(source.opt("totalQueries"))?.let { bucket.put("totalQueries", it) }
-        cursorNumber(source.opt("waitTimeSeconds"))?.let { bucket.put("waitTimeSeconds", it) }
-        cursorNumber(source.opt("windowSizeSeconds"))?.let { bucket.put("windowSizeSeconds", it) }
-        return bucket
     }
 
     private fun fetchOpenCodeServerSubscriptionPayload(
@@ -1316,7 +1268,6 @@ object ProviderNativeUsagePayloadFetcher {
     private const val CODEX_SUBSCRIPTIONS_URL = "https://chatgpt.com/backend-api/subscriptions"
     private const val CODEX_WHAM_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage"
     private const val GEMINI_USAGE_PAGE_URL = "https://gemini.google.com/usage"
-    private const val GROK_RATE_LIMITS_URL = "https://grok.com/rest/rate-limits"
     private const val KIMI_SUBSCRIPTION_STATS_URL =
         "https://www.kimi.com/apiv2/kimi.gateway.membership.v2.MembershipService/GetSubscriptionStats"
 
@@ -1413,23 +1364,7 @@ object ProviderNativeUsagePayloadFetcher {
     )
     private data class CursorProbe(val url: String, val body: String? = null)
 
-    private data class GrokProbe(val requestKind: String, val modelName: String) {
-        fun body(): String = JSONObject()
-            .put("requestKind", requestKind)
-            .put("modelName", modelName)
-            .toString()
 
-        fun label(): String = modelName
-    }
-
-    // 2026-08-04 실계정 확인: /rest/rate-limits 응답을 가르는 건 modelName 뿐이고
-    // requestKind(DEFAULT/REASONING/DEEPSEARCH/BUILD/AGENT/…)는 값에 영향을 주지 않는다.
-    // 예전 목록은 같은 버킷을 세 번 표시하고 있었다. grok-4-1·grok-4-fast·grok-code는 404다.
-    // 이 응답은 windowSizeSeconds=7200, 즉 2시간 롤링 한도이며 주간 SuperGrok 한도와는 다르다.
-    private val GROK_NATIVE_PROBES = listOf(
-        GrokProbe("DEFAULT", "grok-4"),
-        GrokProbe("DEFAULT", "grok-3")
-    )
 
     private val CURSOR_NATIVE_PROBES = listOf(
         CursorProbe(CURSOR_CURRENT_PERIOD_USAGE_URL, "{}"),

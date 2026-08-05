@@ -958,47 +958,24 @@ class ProviderNativeUsagePayloadFetcherTest {
     }
 
     @Test
-    fun grokNativeUsagePayloadSplitsEffortBuckets() {
-        val requested = mutableListOf<String?>()
-        val payload = ProviderNativeUsagePayloadFetcher.grokUsagePayloadForTest { url, body ->
-            assertEquals("https://grok.com/rest/rate-limits", url)
-            requested += body
-            if (body?.contains("\"modelName\":\"grok-4\"") == true && body.contains("\"requestKind\":\"DEFAULT\"")) {
-                """
-                {
-                  "ok": true,
-                  "status": 200,
-                  "json": {
-                    "remainingQueries": 24,
-                    "totalQueries": 25,
-                    "windowSizeSeconds": 7200,
-                    "waitTimeSeconds": 1014,
-                    "highEffortRateLimits": {"remainingQueries": 3, "totalQueries": 10}
-                  }
-                }
-                """.trimIndent()
-            } else {
-                """{"ok":false,"status":404,"json":{}}"""
-            }
+    fun grokNativeUsagePayloadCollectsOnlyWeeklyLine() {
+        val payload = ProviderNativeUsagePayloadFetcher.grokUsagePayloadForTest {
+            GrokWeeklyCreditsFetcher.WeeklyUsage(usedPercent = 33f, resetsAt = "2026-08-08T09:40:25Z")
         }
 
         assertNotNull(payload)
         val buckets = JSONObject(payload!!).getJSONArray("buckets")
-        assertEquals(2, buckets.length())
-        assertEquals("grok:grok-4", buckets.getJSONObject(0).getString("key"))
-        assertEquals(24.0, buckets.getJSONObject(0).getDouble("remainingQueries"), 0.001)
-        // 라벨에 한도 창을 드러내 2시간 한도임을 오해하지 않게 한다.
-        assertEquals("grok-4 · 2h limit", buckets.getJSONObject(0).getString("label"))
-        assertEquals("grok:grok-4:high", buckets.getJSONObject(1).getString("key"))
-        // requestKind는 응답에 영향이 없어 modelName 두 개만 조회한다.
-        assertEquals(2, requested.size)
+        // 2시간 롤링 한도(/rest/rate-limits)는 더 이상 수집하지 않는다.
+        assertEquals(1, buckets.length())
+        assertEquals("grok:weekly", buckets.getJSONObject(0).getString("key"))
+        assertEquals("SuperGrok weekly", buckets.getJSONObject(0).getString("label"))
+        assertEquals(0.67, buckets.getJSONObject(0).getDouble("remainingPercent"), 0.001)
+        assertEquals("2026-08-08T09:40:25Z", buckets.getJSONObject(0).getString("resetsAt"))
     }
 
     @Test
-    fun grokNativeUsagePayloadIsNullWhenNoBucketReturnsQueries() {
-        val payload = ProviderNativeUsagePayloadFetcher.grokUsagePayloadForTest { _, _ ->
-            """{"ok":false,"status":403,"json":{}}"""
-        }
+    fun grokNativeUsagePayloadIsNullWhenWeeklyLimitIsUnavailable() {
+        val payload = ProviderNativeUsagePayloadFetcher.grokUsagePayloadForTest { null }
 
         assertNull(payload)
     }
