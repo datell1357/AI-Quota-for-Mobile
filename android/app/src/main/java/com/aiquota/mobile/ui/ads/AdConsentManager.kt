@@ -25,7 +25,7 @@ private const val TAG = "AIQuotaAds"
  * 그 범위로 요청한다. 동의 대상 지역이 아니면(대부분의 국내 사용자) 즉시 참이 된다.
  */
 object AdConsentManager {
-    private val requested = AtomicBoolean(false)
+    private val resolveStarted = AtomicBoolean(false)
 
     @Volatile
     private var consentInformation: ConsentInformation? = null
@@ -39,12 +39,16 @@ object AdConsentManager {
 
     /**
      * 동의 정보를 갱신하고 필요하면 동의 폼을 띄운다. 완료 후 [canRequestAds] 값을 돌려준다.
-     * 한 프로세스에서 여러 화면이 동시에 불러도 실제 갱신은 한 번만 일어난다.
+     *
+     * 폼을 반복해서 띄우지 않도록 갱신·표시는 프로세스당 한 번만 수행한다. 다만 "광고를
+     * 요청해도 되는가"는 UMP가 매번 다시 계산하는 값이므로 **항상 새로 조회한다**. 이렇게
+     * 하지 않으면 사용자가 폼을 닫았다가 나중에 동의해도 그 프로세스가 끝날 때까지 광고가
+     * 나가지 않는다.
      */
     suspend fun ensureConsent(activity: Activity): Boolean {
         val info = UserMessagingPlatform.getConsentInformation(activity)
         consentInformation = info
-        if (!requested.compareAndSet(false, true)) return info.canRequestAds()
+        if (!resolveStarted.compareAndSet(false, true)) return info.canRequestAds()
 
         // 동의 폼은 EEA·영국 트래픽에서만 뜬다. 국내에서 폼을 확인하려면 logcat에 찍히는
         // 테스트 기기 해시 ID를 ConsentDebugSettings에 넣고 DEBUG_GEOGRAPHY_EEA를 지정하면 된다.
@@ -59,7 +63,8 @@ object AdConsentManager {
                 },
                 { error ->
                     Log.w(TAG, "consentInfoUpdate ok=false code=${error.errorCode} message=${error.message}")
-                    requested.set(false)
+                    // 일시적 실패는 다음 화면에서 다시 시도할 수 있게 되돌린다.
+                    resolveStarted.set(false)
                     if (continuation.isActive) continuation.resume(false)
                 }
             )

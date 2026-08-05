@@ -46,6 +46,13 @@ class AdConsentTest {
     @Test
     fun consentUpdateIsRetriedAfterFailure() {
         // 실패 시 플래그를 되돌려 다음 화면에서 다시 시도한다. 한 번 실패로 광고가 영영 막히면 안 된다.
-        assertTrue(consent.contains("requested.set(false)"))
+        assertTrue(consent.contains("resolveStarted.set(false)"))
+    }
+
+    @Test
+    fun canRequestAdsIsReReadInsteadOfCached() {
+        // 폼을 닫았다가 나중에 동의해도 반영되도록, 게재 가능 여부는 매번 UMP에서 새로 읽는다.
+        val early = consent.indexOf("if (!resolveStarted.compareAndSet(false, true)) return info.canRequestAds()")
+        assertTrue("이미 진행한 경우에도 캐시가 아니라 canRequestAds()를 다시 조회해야 한다", early >= 0)
     }
 }

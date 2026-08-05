@@ -117,15 +117,14 @@ private fun TopBarAdBannerContent(availableWidthDp: Int) {
         }
     }
 
-    // 폭이 바뀌면(회전 등) 그 폭에 맞는 배너를 다시 받는다.
-    LaunchedEffect(widthDp) {
-        adView?.let { stale ->
+    // 폐기와 재생성을 한 효과 안에서 처리한다. 둘을 나누면 실행 순서가 보장되지 않아
+    // 재생성이 먼저 돌고("이미 있음"으로 건너뜀) 폐기가 뒤따라 배너가 사라질 수 있다.
+    LaunchedEffect(resumed, unitId, widthDp) {
+        val stale = adView
+        if (stale != null && stale.tag != widthDp) {
             stale.destroy()
             adView = null
         }
-    }
-
-    LaunchedEffect(resumed, unitId, widthDp) {
         if (!resumed || adView != null || widthDp <= 0) return@LaunchedEffect
         // 동의 절차가 끝나기 전에는 광고를 요청하지 않는다. Activity가 없으면 띄우지 않는다.
         val activity = context.findActivity() ?: return@LaunchedEffect
@@ -135,6 +134,8 @@ private fun TopBarAdBannerContent(availableWidthDp: Int) {
         }
         AdMobInitializer.ensureInitialized(context)
         adView = AdView(context).apply {
+            // 어떤 폭으로 만든 배너인지 표시해 두고, 폭이 바뀌면 그때만 다시 만든다.
+            tag = widthDp
             setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, widthDp))
             adUnitId = unitId
             runCatching { loadAd(AdRequest.Builder().build()) }
