@@ -1,6 +1,6 @@
 # AI Quota 개인정보 처리방침
 
-최종 업데이트: 2026년 6월 1일
+최종 업데이트: 2026년 8월 5일
 
 AI Quota는 Android 기기에서 AI provider의 남은 사용량과 reset 시간을 확인하기 위한 앱입니다.
 
@@ -59,6 +59,20 @@ AI Quota는 로컬 표시 데이터와 provider 연결 데이터를 다음 목�
 AI Quota는 사용자가 선택한 provider의 웹사이트 또는 API에 연결될 수 있습니다. 이 과정에서 provider는 자체 개인정보 처리방침에 따라 계정 식별 정보, 세션 쿠키, OAuth token 또는 이와 유사한 데이터를 처리할 수 있습니다.
 
 AI Quota는 지원 provider의 공식 앱이 아니며, 해당 provider와 제휴되어 있지 않습니다.
+
+## 광고
+
+AI Quota는 Google AdMob을 통해 앱 화면 상단에 배너 광고를 게재합니다.
+
+광고 게재를 위해 Google Mobile Ads SDK는 광고 ID(Android Advertising ID), 기기 및 네트워크 정보, 대략적인 위치, 광고 상호작용 기록 등을 수집·처리할 수 있습니다. 이 정보는 AI Quota 개발자 서버가 아니라 Google이 자체 개인정보 처리방침에 따라 처리합니다. 자세한 내용은 [Google 광고 정책](https://policies.google.com/technologies/ads)에서 확인할 수 있습니다.
+
+광고는 앱 화면이 표시되는 동안에만 요청됩니다. 위젯 갱신이나 백그라운드 사용량 수집으로 앱이 실행되는 동안에는 광고 SDK가 시작되지 않으며 광고 요청도 발생하지 않습니다.
+
+AI Quota는 provider 계정 정보, 사용량 snapshot, 세션 쿠키, OAuth token을 광고 목적으로 사용하거나 광고 네트워크에 제공하지 않습니다.
+
+유럽 경제 지역, 영국, 스위스 사용자에게는 Google User Messaging Platform을 통해 광고 개인 맞춤설정에 대한 동의를 요청하며, 동의 여부에 따라 개인 맞춤 광고 또는 비개인 맞춤 광고가 게재됩니다. 동의는 언제든지 철회할 수 있습니다.
+
+기기 설정에서 광고 ID를 재설정하거나 삭제할 수 있습니다. Android 설정 → 개인정보 보호 → 광고에서 변경할 수 있습니다.
 
 ## 데이터 보안
 
