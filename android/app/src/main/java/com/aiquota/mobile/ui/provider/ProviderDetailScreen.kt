@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -363,7 +364,12 @@ private fun ProviderSummaryBlock(
                 ClassicInfoLine(text = displaySnapshotUpdatedAtLine(updatedAt))
             }
         }
+        // 버튼 폭은 가장 긴 라벨에 맞춰 한 번만 정하고 모두 그 폭을 쓴다. 각자 내용에 맞추면
+        // 언어에 따라(영문 "Add widget" 등) 길이가 제각각이 된다.
         Column(
+            modifier = Modifier
+                .width(IntrinsicSize.Max)
+                .widthIn(min = 112.dp, max = 180.dp),
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -371,7 +377,7 @@ private fun ProviderSummaryBlock(
                 ProviderConnectionAction.CONNECT -> {
                     Button(
                         onClick = onConnect,
-                        modifier = Modifier.widthIn(min = 112.dp, max = 180.dp)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
                             text = stringResource(R.string.provider_connect),
@@ -383,7 +389,7 @@ private fun ProviderSummaryBlock(
                 ProviderConnectionAction.DISCONNECT -> {
                     Button(
                         onClick = onDisconnect,
-                        modifier = Modifier.widthIn(min = 112.dp, max = 180.dp)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
                             text = stringResource(R.string.provider_disconnect),
@@ -396,7 +402,7 @@ private fun ProviderSummaryBlock(
             }
             OutlinedButton(
                 onClick = onAddWidget,
-                modifier = Modifier.widthIn(min = 112.dp, max = 180.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = stringResource(R.string.provider_add_widget),
@@ -406,7 +412,7 @@ private fun ProviderSummaryBlock(
             }
             OutlinedButton(
                 onClick = { showPersonalSettings = true },
-                modifier = Modifier.widthIn(min = 112.dp, max = 180.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = stringResource(R.string.provider_personal_settings),
