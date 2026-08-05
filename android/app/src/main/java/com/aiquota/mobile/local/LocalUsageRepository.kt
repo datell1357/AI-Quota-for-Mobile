@@ -340,8 +340,33 @@ internal fun mergeFreshSnapshotWithPreviousLines(
         } + snapshot.lines.filter { it.mergeKey() !in previousKeys }
     }
 
-    if (mergedLines == snapshot.lines && planLabel == snapshot.planLabel) return snapshot
-    return snapshot.copy(lines = mergedLines, planLabel = planLabel)
+    val orderedLines = pinPrimaryLinesFirst(snapshot.providerId, mergedLines)
+    if (orderedLines == snapshot.lines && planLabel == snapshot.planLabel) return snapshot
+    return snapshot.copy(lines = orderedLines, planLabel = planLabel)
+}
+
+/**
+ * provider마다 "가장 먼저 보여야 하는" 라인을 앞으로 끌어올린다.
+ *
+ * 병합은 이전 순서를 유지한다. 부분 갱신 때 목록이 뒤바뀌지 않게 하려는 의도라 그대로 두되,
+ * 나중에 추가된 대표 지표가 목록 끝에 붙는 문제만 바로잡는다. Grok은 2시간 한도보다 주간
+ * SuperGrok 한도가 사용자가 실제로 신경 쓰는 값이다.
+ */
+internal fun pinPrimaryLinesFirst(
+    providerId: ProviderId,
+    lines: List<ProviderUsageLine>
+): List<ProviderUsageLine> {
+    val pinned = primaryLineKeys(providerId)
+    if (pinned.isEmpty()) return lines
+    // sortedBy는 안정 정렬이라 고정 대상 외의 상대 순서는 그대로 유지된다.
+    return lines.sortedBy { line ->
+        pinned.indexOf(line.key).takeIf { it >= 0 } ?: pinned.size
+    }
+}
+
+private fun primaryLineKeys(providerId: ProviderId): List<String> = when (providerId) {
+    ProviderId.GROK -> listOf("grok:weekly")
+    else -> emptyList()
 }
 
 /**
