@@ -1,5 +1,6 @@
 package com.aiquota.mobile.local
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -35,5 +36,31 @@ class RetiredUsageLineKeyTest {
             assertFalse(isRetiredUsageLineKey(providerId, "grok:DEFAULT:grok-4"))
             assertFalse(isRetiredUsageLineKey(providerId, "claude:session"))
         }
+    }
+
+    @Test
+    fun pinsWeeklyLineAboveShortWindowLines() {
+        val lines = listOf(
+            ProviderUsageLine(key = "grok:grok-4", label = "grok-4 · 2h limit", remainingPercent = 1f),
+            ProviderUsageLine(key = "grok:grok-3", label = "grok-3 · 2h limit", remainingPercent = 1f),
+            ProviderUsageLine(key = "grok:weekly", label = "SuperGrok weekly", remainingPercent = 0.65f)
+        )
+
+        val ordered = pinPrimaryLinesFirst(ProviderId.GROK, lines)
+
+        assertEquals(
+            listOf("grok:weekly", "grok:grok-4", "grok:grok-3"),
+            ordered.map { it.key }
+        )
+    }
+
+    @Test
+    fun keepsRelativeOrderOfEverythingElse() {
+        val lines = listOf(
+            ProviderUsageLine(key = "codex:session", label = "Codex Session", remainingPercent = 1f),
+            ProviderUsageLine(key = "codex:secondary_window", label = "Codex Weekly", remainingPercent = 1f)
+        )
+
+        assertEquals(lines, pinPrimaryLinesFirst(ProviderId.CODEX, lines))
     }
 }
