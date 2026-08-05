@@ -12,7 +12,6 @@ import org.json.JSONTokener
 internal typealias NativeJsonFetcher = (ProviderId, String, String, Map<String, String>) -> String
 internal typealias CursorJsonFetcher = (String, String?) -> String
 
-internal typealias GrokJsonFetcher = (String, String?) -> String
 
 internal typealias KimiJsonFetcher = (String, String?) -> String
 
