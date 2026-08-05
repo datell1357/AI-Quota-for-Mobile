@@ -1076,6 +1076,8 @@ private fun AppTopBar(
     // 겹치므로 광고를 띄우지 않는다.
     val showAd = !isSettingsRoute && adContent != null
 
+    // 위쪽은 상태 표시줄을 피해야 해서 고정 여백을 그대로 쓴다(실측 인셋은 이 기기에서 50dp라
+    // 오히려 배너가 더 내려간다). 대신 아래쪽은 배너가 이미 본문과 시각적으로 나뉘므로 최소만 남긴다.
     Surface(
         color = colors.appBackground,
         tonalElevation = 0.dp,
@@ -1086,9 +1088,14 @@ private fun AppTopBar(
                 start = layoutMetrics.topBarHorizontalPaddingDp.dp,
                 top = (layoutMetrics.topBarVerticalPaddingDp + layoutMetrics.topBarTopExtraPaddingDp).dp,
                 end = layoutMetrics.topBarHorizontalPaddingDp.dp,
-                bottom = (layoutMetrics.topBarVerticalPaddingDp - layoutMetrics.mainContentTopLiftDp)
-                    .coerceAtLeast(0)
-                    .dp
+                bottom = if (showAd) {
+                    // 본문 화면이 자체 상단 여백을 갖고 있어 배너 아래에 여백을 더 두면 띠가 겹친다.
+                    0.dp
+                } else {
+                    (layoutMetrics.topBarVerticalPaddingDp - layoutMetrics.mainContentTopLiftDp)
+                        .coerceAtLeast(0)
+                        .dp
+                }
             ),
             contentAlignment = Alignment.CenterEnd
         ) {
