@@ -368,6 +368,39 @@ class ProviderUsageNormalizerTest {
     }
 
     @Test
+    fun glmCreditLimitResponseNormalizesFiveHourAndWeeklyWindows() {
+        // z.ai 코딩 플랜(lite)이 2026-08-05부터 돌려주는 크레딧 기반 응답 실측 형태.
+        val snapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.GLM,
+            """
+            {
+              "code": 200,
+              "msg": "操作成功",
+              "success": true,
+              "data": {
+                "limits": [
+                  {"type": "CREDIT_LIMIT", "unit": 3, "number": 5, "usage": 2000, "currentValue": 500, "remaining": 1500, "percentage": 25},
+                  {"type": "CREDIT_LIMIT", "unit": 6, "number": 1, "usage": 10000, "currentValue": 0, "remaining": 10000, "percentage": 0, "nextResetTime": 1786541561993}
+                ],
+                "level": "lite"
+              }
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.PROVIDER_API
+        )!!
+
+        assertEquals(listOf("5시간 한도", "주간 한도"), snapshot.lines.map { it.label })
+        assertEquals(0.75f, snapshot.lines.single { it.key == "glm:tokens" }.remainingPercent ?: 0f, 0.001f)
+        assertEquals(1.0f, snapshot.lines.single { it.key == "glm:weekly_tokens" }.remainingPercent ?: 0f, 0.001f)
+        assertEquals(2_000.0, snapshot.lines.single { it.key == "glm:tokens" }.limitAmount ?: 0.0, 0.001)
+        assertEquals("credits", snapshot.lines.single { it.key == "glm:tokens" }.unit)
+        assertEquals(
+            "2026-08-12T13:32:41.993Z",
+            snapshot.lines.single { it.key == "glm:weekly_tokens" }.resetsAt
+        )
+    }
+
+    @Test
     fun glmQuotaLimitResponseKeepsPercentageOnlyTokenLimits() {
         val snapshot = ProviderUsageNormalizer.normalize(
             ProviderId.GLM,

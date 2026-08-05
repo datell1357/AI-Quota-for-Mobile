@@ -44,7 +44,11 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
  * 실제 ID는 local.properties의 aiquota.admobAppId / aiquota.admobBannerUnitId로 주입한다.
  */
 object AdConfig {
-    fun isBannerEnabled(): Boolean = BuildConfig.DEBUG || !BuildConfig.ADMOB_TEST_IDS
+    /** 스크린샷 촬영용 임시 스위치. 촬영이 끝나면 false로 되돌린다. */
+    private const val HIDE_BANNER_FOR_SCREENSHOTS = true
+
+    fun isBannerEnabled(): Boolean =
+        !HIDE_BANNER_FOR_SCREENSHOTS && (BuildConfig.DEBUG || !BuildConfig.ADMOB_TEST_IDS)
 
     fun bannerUnitId(): String = BuildConfig.ADMOB_BANNER_UNIT_ID
 }

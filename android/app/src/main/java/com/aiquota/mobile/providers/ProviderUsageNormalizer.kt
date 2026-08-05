@@ -117,7 +117,9 @@ object ProviderUsageNormalizer {
 
     private fun glmLimitIdentity(type: String, item: JSONObject): GlmLimitIdentity? {
         return when (type) {
-            "TOKENS_LIMIT" -> {
+            // z.ai 코딩 플랜은 토큰 한도에서 크레딧 한도로 바뀐 요금제가 있다. 창을 나누는
+            // 방식(unit/number)은 그대로라 같은 규칙으로 5시간/주간을 가른다.
+            "TOKENS_LIMIT", "CREDIT_LIMIT" -> {
                 val unit = item.optionalNumber("unit")?.toInt()
                 val number = item.optionalNumber("number")?.toInt()
                 val label = item.optionalString("label")?.lowercase(Locale.US).orEmpty()
@@ -155,7 +157,11 @@ object ProviderUsageNormalizer {
             usedAmount = used,
             limitAmount = limit,
             remainingAmount = if (limit != null && used != null) (limit - used).coerceAtLeast(0.0) else null,
-            unit = if (type == "TOKENS_LIMIT") "tokens" else "count",
+            unit = when (type) {
+                "TOKENS_LIMIT" -> "tokens"
+                "CREDIT_LIMIT" -> "credits"
+                else -> "count"
+            },
             resetsAt = glmResetAt(),
             sourceLabel = source.label,
             confidence = source.confidence
