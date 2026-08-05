@@ -89,7 +89,11 @@ class ProviderUsageDisplayTextTest {
         assertEquals("주간", compactUsageLabel("주간 세션"))
         assertEquals("5시간", compactUsageLabel("5시간 한도"))
         assertEquals("Spark 주간", compactUsageLabel("Spark 주간 세션"))
+        assertEquals("전체", compactUsageLabel("전체 사용량"))
+        assertEquals("자동", compactUsageLabel("자동 사용량"))
+        assertEquals("API", compactUsageLabel("API 사용량"))
         assertEquals("크레딧", compactUsageLabel("크레딧"))
+        assertEquals("사용량", compactUsageLabel("사용량"))
     }
 
     @Test

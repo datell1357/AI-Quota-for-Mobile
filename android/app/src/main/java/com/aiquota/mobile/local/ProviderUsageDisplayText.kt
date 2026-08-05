@@ -110,8 +110,12 @@ fun compactUsageLabel(label: String): String {
     val trimmed = label.trim()
     if (trimmed.isEmpty()) return label
 
-    // 한국어는 창 종류를 나타내는 꼬리말만 뗀다.
-    val withoutKoreanSuffix = trimmed.removeSuffix(" 세션").removeSuffix(" 한도").trim()
+    // 한국어는 창 종류를 나타내는 꼬리말만 뗀다. "사용량"도 카드 안에서는 군더더기다.
+    val withoutKoreanSuffix = trimmed
+        .removeSuffix(" 세션")
+        .removeSuffix(" 한도")
+        .removeSuffix(" 사용량")
+        .trim()
     if (withoutKoreanSuffix != trimmed) return withoutKoreanSuffix.ifBlank { trimmed }
 
     compactGeminiModelLabel(trimmed)?.let { return it }
