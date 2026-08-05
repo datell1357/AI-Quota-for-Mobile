@@ -553,10 +553,13 @@ object ProviderUsageNormalizer {
                 ?.withCodexResetFallback(primaryWindow)
             val sparkSecondaryWindow = limits.optObject("spark_secondary_window")
                 ?.withCodexResetFallback(secondaryWindow)
+            // Codex는 5시간 창을 없애고 주간 하나로 통합한 요금제가 있다. 창이 하나뿐이면 그게
+            // 주간 창이고, 둘 다 오면 예전처럼 5시간(primary) + 주간(secondary)이다.
+            val primaryWindowLabel = if (secondaryWindow != null) "Codex Session" else "Codex Weekly"
             listOfNotNull(
                 primaryWindow?.toLine(
                     "codex:primary_window",
-                    "Codex Session",
+                    primaryWindowLabel,
                     codexSource,
                     preferRemainingPercent = true,
                     preservePayloadLabel = preserveVisibleLabel

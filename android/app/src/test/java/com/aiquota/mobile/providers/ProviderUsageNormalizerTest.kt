@@ -917,7 +917,7 @@ class ProviderUsageNormalizerTest {
             ProviderPayloadSource.PROVIDER_API
         )!!
 
-        assertEquals(listOf("Codex Session"), snapshot.lines.map { it.label })
+        assertEquals(listOf("Codex Weekly"), snapshot.lines.map { it.label })
     }
 
     @Test
@@ -1069,8 +1069,34 @@ class ProviderUsageNormalizerTest {
             ProviderPayloadSource.PROVIDER_API
         )!!
 
-        assertEquals(listOf("Codex Session"), snapshot.lines.map { it.label })
+        assertEquals(listOf("Codex Weekly"), snapshot.lines.map { it.label })
         assertEquals(0.0f, snapshot.lines.single().remainingPercent ?: -1f, 0.001f)
+    }
+
+    @Test
+    fun codexSingleWindowIsLabelledWeeklyAndTwoWindowsKeepSessionAndWeekly() {
+        // 5시간 창을 없애고 주간으로 통합한 요금제는 창이 하나만 온다. 그 창이 곧 주간 창이다.
+        val singleWindow = ProviderUsageNormalizer.normalize(
+            ProviderId.CODEX,
+            """{"rate_limits": {"primary_window": {"used_percent": 30, "reset_after_seconds": 604800}}}""",
+            ProviderPayloadSource.PROVIDER_API
+        )!!
+        assertEquals(listOf("Codex Weekly"), singleWindow.lines.map { it.label })
+
+        // 두 창이 다 오는 요금제는 예전처럼 5시간 + 주간으로 나눠 보여준다.
+        val twoWindows = ProviderUsageNormalizer.normalize(
+            ProviderId.CODEX,
+            """
+            {
+              "rate_limits": {
+                "primary_window": {"used_percent": 30, "reset_after_seconds": 18000},
+                "secondary_window": {"used_percent": 10, "reset_after_seconds": 604800}
+              }
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.PROVIDER_API
+        )!!
+        assertEquals(listOf("Codex Session", "Codex Weekly"), twoWindows.lines.map { it.label })
     }
 
     @Test
