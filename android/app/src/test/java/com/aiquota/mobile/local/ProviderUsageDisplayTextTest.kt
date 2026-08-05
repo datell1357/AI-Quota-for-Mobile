@@ -84,6 +84,17 @@ class ProviderUsageDisplayTextTest {
     }
 
     @Test
+    fun koreanLabelTranslatesGrokWeeklySuperGrokLimit() {
+        val locale = Locale.KOREAN
+
+        assertEquals("주간 한도", displayUsageLabel("grok", "SuperGrok weekly", 0, locale))
+        // 카드형에서는 꼬리말까지 떼고 "주간"만 남는다.
+        assertEquals("주간", compactUsageLabel(displayUsageLabel("grok", "SuperGrok weekly", 0, locale)))
+        // 영문 UI는 원문 라벨을 그대로 쓴다.
+        assertEquals("SuperGrok weekly", displayUsageLabel("grok", "SuperGrok weekly", 0, Locale.US))
+    }
+
+    @Test
     fun compactLabelDropsKoreanWindowSuffix() {
         assertEquals("5시간", compactUsageLabel("5시간 세션"))
         assertEquals("주간", compactUsageLabel("주간 세션"))

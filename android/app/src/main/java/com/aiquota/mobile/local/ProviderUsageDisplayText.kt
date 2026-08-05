@@ -34,6 +34,14 @@ fun displayUsageLabel(
         return if (lineIndex == 0) "5시간 세션" else "주간 세션"
     }
 
+    if (providerId.equals(ProviderId.GROK.storageId, ignoreCase = true)) {
+        // Grok은 주간 SuperGrok 한도 한 줄만 수집한다. 원문 라벨이 그대로 나오면
+        // 알림 문구까지 "Grok SuperGrok weekly 5% 이하!"처럼 섞여 버린다.
+        when (normalized) {
+            "supergrok weekly", "supergrok week", "weekly limit", "weekly" -> return "주간 한도"
+        }
+    }
+
     if (providerId.equals(ProviderId.OPENCODE.storageId, ignoreCase = true)) {
         when (normalized) {
             "go 5 hour limit", "go 5h limit", "go rolling usage" -> return "5시간 한도"
