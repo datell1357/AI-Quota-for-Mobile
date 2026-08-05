@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -26,6 +28,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
@@ -130,6 +134,9 @@ internal fun dashboardGaugeHeightDp(
     cardHeightDp: Int,
     layoutMetrics: AppLayoutMetrics
 ): Float {
+    // 카드형은 카드 최소 높이를 낮춰 둬서 "남는 높이" 비율이 부풀려진다. 그대로 두면 게이지만
+    // 목록형의 두 배로 두꺼워져 작아진 글자와 어긋난다. 카드형은 기본 두께로 고정한다.
+    if (layoutMetrics.dashboardDenseText) return DashboardGaugeBaseHeightDp
     val heightRatio = dashboardExtraHeightRatio(cardHeightDp, layoutMetrics)
     return DashboardGaugeBaseHeightDp * (1f + ((DashboardGaugeMaxScale - 1f) * heightRatio))
 }
@@ -834,7 +841,7 @@ private fun ProviderUsageCard(
                         layoutMetrics.dashboardGridColumnCount > 1 &&
                         isCompactDashboardCard
                     ) {
-                        44.dp
+                        32.dp
                     } else {
                         0.dp
                     }
@@ -898,9 +905,29 @@ private fun ProviderUsageCard(
                     if (snapshot.shouldShowDashboardConnectAction()) {
                         Button(
                             onClick = { onConnectProvider(providerId) },
-                            modifier = Modifier.align(Alignment.BottomEnd)
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .then(
+                                    if (isDenseCardText) {
+                                        Modifier.defaultMinSize(minWidth = 64.dp, minHeight = 28.dp)
+                                    } else {
+                                        Modifier
+                                    }
+                                ),
+                            contentPadding = if (isDenseCardText) {
+                                PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                            } else {
+                                ButtonDefaults.ContentPadding
+                            }
                         ) {
-                            Text(stringResource(R.string.provider_connect))
+                            Text(
+                                text = stringResource(R.string.provider_connect),
+                                style = if (isDenseCardText) {
+                                    MaterialTheme.typography.labelSmall
+                                } else {
+                                    LocalTextStyle.current
+                                }
+                            )
                         }
                     }
                 }

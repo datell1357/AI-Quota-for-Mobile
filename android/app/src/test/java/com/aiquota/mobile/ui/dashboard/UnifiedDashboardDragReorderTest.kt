@@ -133,7 +133,7 @@ class UnifiedDashboardDragReorderTest {
         )
         assertTrue(
             "Connect button should be pinned to the card's bottom end instead of taking layout height.",
-            dashboardSource.contains("modifier = Modifier.align(Alignment.BottomEnd)")
+            dashboardSource.contains(".align(Alignment.BottomEnd)")
         )
     }
 
