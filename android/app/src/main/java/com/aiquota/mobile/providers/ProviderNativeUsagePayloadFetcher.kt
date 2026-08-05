@@ -513,10 +513,13 @@ object ProviderNativeUsagePayloadFetcher {
     }
 
     private fun fetchGrokPayload(
-        fetchJson: GrokJsonFetcher = GrokNativeUsageFetcher::fetchJson
+        fetchJson: GrokJsonFetcher = GrokNativeUsageFetcher::fetchJson,
+        fetchWeekly: () -> GrokWeeklyCreditsFetcher.WeeklyUsage? = GrokWeeklyCreditsFetcher::fetch
     ): NativePayloadResult {
         val statuses = mutableListOf<String>()
         val buckets = JSONArray()
+        // 사용자가 실제로 신경 쓰는 건 주간 한도라 맨 앞에 둔다.
+        grokWeeklyBucket(fetchWeekly, statuses)?.let(buckets::put)
         GROK_NATIVE_PROBES.forEach { probe ->
             val response = fetchGrokWrapped(probe, statuses, fetchJson)
             if (!response.optBoolean("ok", false)) return@forEach
@@ -527,6 +530,28 @@ object ProviderNativeUsagePayloadFetcher {
             .put("provider", ProviderId.GROK.storageId)
             .put("buckets", buckets)
         return verifiedPayload(ProviderId.GROK, payload, "grok_usage_unavailable", statuses)
+    }
+
+    /**
+     * 주간 SuperGrok 한도. gRPC-Web 응답이라 소진율(%)로 오므로 잔여 개수 대신
+     * remainingPercent를 직접 채운다. 실패해도 2시간 한도 수집은 그대로 진행한다.
+     */
+    private fun grokWeeklyBucket(
+        fetchWeekly: () -> GrokWeeklyCreditsFetcher.WeeklyUsage?,
+        statuses: MutableList<String>
+    ): JSONObject? {
+        val weekly = runCatching { fetchWeekly() }.getOrNull()
+        if (weekly == null) {
+            statuses += "grok.com/GetGrokCreditsConfig:weekly:unavailable:"
+            return null
+        }
+        statuses += "grok.com/GetGrokCreditsConfig:weekly:200:"
+        val remainingPercent = ((100f - weekly.usedPercent) / 100f).coerceIn(0f, 1f)
+        return JSONObject()
+            .put("key", "grok:weekly")
+            .put("label", "SuperGrok weekly")
+            .put("remainingPercent", remainingPercent)
+            .apply { weekly.resetsAt?.let { put("resetsAt", it) } }
     }
 
     private fun fetchGrokWrapped(
