@@ -46,10 +46,10 @@ class ProviderNavigationLayoutTest {
                 ProviderId.CODEX,
                 ProviderId.GEMINI,
                 ProviderId.COPILOT,
+                ProviderId.GROK,
                 ProviderId.KIRO,
                 ProviderId.OPENCODE,
-                ProviderId.GLM,
-                ProviderId.GROK
+                ProviderId.GLM
             ),
             navigationProviderOrder(order, emptySet())
         )
