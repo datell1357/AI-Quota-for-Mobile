@@ -739,10 +739,11 @@ fun AIQuotaAppShell(
                             onAddWidget = { showDashboardWidgetPicker = true },
                             onOpenSettings = { route = AppRoute.Settings },
                             viewMode = dashboardViewMode,
-                            onToggleViewMode = {
-                                val next = dashboardViewMode.toggled()
-                                dashboardViewMode = next
-                                providerPreferencesRepository.setDashboardViewMode(next)
+                            onSelectViewMode = { mode ->
+                                if (mode != dashboardViewMode) {
+                                    dashboardViewMode = mode
+                                    providerPreferencesRepository.setDashboardViewMode(mode)
+                                }
                             },
                             modifier = Modifier.fillMaxSize()
                         )

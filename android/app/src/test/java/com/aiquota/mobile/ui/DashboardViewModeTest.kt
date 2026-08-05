@@ -54,16 +54,14 @@ class DashboardViewModeTest {
     }
 
     @Test
-    fun toggleFlipsBetweenTheTwoModes() {
-        assertEquals(DashboardViewMode.CARD, DashboardViewMode.LIST.toggled())
-        assertEquals(DashboardViewMode.LIST, DashboardViewMode.CARD.toggled())
+    fun storageIdRoundTripFallsBackToList() {
         assertEquals(DashboardViewMode.LIST, DashboardViewMode.DEFAULT)
         assertEquals(DashboardViewMode.LIST, DashboardViewMode.fromStorageId("bogus"))
         assertEquals(DashboardViewMode.CARD, DashboardViewMode.fromStorageId("CARD"))
     }
 
     @Test
-    fun settingsButtonSitsNextToTheTitleAndToggleFollowsAddWidget() {
+    fun settingsButtonSitsNextToTheTitleAndModeButtonsFollowAddWidget() {
         val source = File("src/main/java/com/aiquota/mobile/ui/dashboard/UnifiedDashboardScreen.kt").readText()
         val header = source.substringAfter("R.string.dashboard_title")
             .substringBefore("if (visibleProviders.isEmpty())")
@@ -71,10 +69,39 @@ class DashboardViewModeTest {
         val settings = header.indexOf("R.string.nav_settings")
         val spacer = header.indexOf("Spacer(modifier = Modifier.weight(1f))")
         val addWidget = header.indexOf("R.string.dashboard_add_widget")
-        val toggle = header.indexOf("DashboardViewModeButton")
+        val modeButtons = header.indexOf("DashboardViewModeButtons")
 
         assertTrue("설정 버튼은 제목 바로 옆에 온다", settings in 0 until spacer)
         assertTrue("위젯 추가는 오른쪽으로 밀린다", spacer < addWidget)
-        assertTrue("모드 전환 버튼은 위젯 추가 오른쪽에 온다", addWidget < toggle)
+        assertTrue("모드 선택 버튼은 위젯 추가 오른쪽에 온다", addWidget < modeButtons)
+    }
+
+    @Test
+    fun bothModeButtonsAreSelectableRatherThanOneToggle() {
+        val source = File("src/main/java/com/aiquota/mobile/ui/dashboard/UnifiedDashboardScreen.kt").readText()
+        val buttons = source.substringAfter("private fun DashboardViewModeButtons")
+            .substringBefore("private fun DashboardViewModeButton(")
+
+        assertTrue(
+            "목록형 버튼이 목록형을 직접 선택한다",
+            buttons.contains("onSelectViewMode(DashboardViewMode.LIST)")
+        )
+        assertTrue(
+            "카드형 버튼이 카드형을 직접 선택한다",
+            buttons.contains("onSelectViewMode(DashboardViewMode.CARD)")
+        )
+        assertTrue("지금 모드를 강조한다", buttons.contains("selected = viewMode == DashboardViewMode.LIST"))
+    }
+
+    @Test
+    fun cardModeUsesSmallerTextAndShorterLabels() {
+        assertTrue("카드형만 글자를 줄인다", phone.forDashboardViewMode(DashboardViewMode.CARD).dashboardDenseText)
+        assertTrue("목록형은 그대로 둔다", !phone.forDashboardViewMode(DashboardViewMode.LIST).dashboardDenseText)
+
+        val source = File("src/main/java/com/aiquota/mobile/ui/dashboard/UnifiedDashboardScreen.kt").readText()
+        assertTrue(
+            "카드형에서는 사용량 라벨을 짧게 쓴다",
+            source.contains("if (dense) compactUsageLabel(it) else it")
+        )
     }
 }

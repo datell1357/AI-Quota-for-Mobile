@@ -84,6 +84,16 @@ class ProviderUsageDisplayTextTest {
     }
 
     @Test
+    fun compactLabelDropsWindowSuffixOnly() {
+        assertEquals("5시간", compactUsageLabel("5시간 세션"))
+        assertEquals("주간", compactUsageLabel("주간 세션"))
+        assertEquals("5시간", compactUsageLabel("5시간 한도"))
+        assertEquals("Spark 주간", compactUsageLabel("Spark 주간 세션"))
+        assertEquals("크레딧", compactUsageLabel("크레딧"))
+        assertEquals("Claude Design", compactUsageLabel("Claude Design"))
+    }
+
+    @Test
     fun koreanResetTextTranslatesCodexRelativeDurations() {
         val locale = Locale.KOREAN
 

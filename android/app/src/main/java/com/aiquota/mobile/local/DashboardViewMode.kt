@@ -10,8 +10,6 @@ enum class DashboardViewMode {
     LIST,
     CARD;
 
-    fun toggled(): DashboardViewMode = if (this == LIST) CARD else LIST
-
     companion object {
         val DEFAULT = LIST
 

@@ -36,7 +36,9 @@ data class AppLayoutMetrics(
     val dashboardTitleHeightDp: Int,
     val dashboardCardMinHeightDp: Int,
     /** 카드 폭이 좁아 여백·아이콘을 줄여야 하는지. 한 줄에 한 장이거나 카드형일 때 참이다. */
-    val dashboardCompactCard: Boolean
+    val dashboardCompactCard: Boolean,
+    /** 카드형 전용. 카드가 작아 글자까지 한 단계 줄이고 사용량 라벨도 짧게 쓴다. */
+    val dashboardDenseText: Boolean = false
 )
 
 fun appLayoutMetrics(
@@ -122,7 +124,8 @@ fun AppLayoutMetrics.forDashboardViewMode(mode: DashboardViewMode): AppLayoutMet
         dashboardVisibleProviderCount = DASHBOARD_CARD_MODE_VISIBLE_COUNT,
         dashboardCardMinHeightDp = (dashboardCardMinHeightDp * 3) / 5,
         // 2열이라 카드 폭이 절반이다. 넓은 카드용 여백을 쓰면 내용이 겹치거나 잘린다.
-        dashboardCompactCard = true
+        dashboardCompactCard = true,
+        dashboardDenseText = true
     )
 }
 

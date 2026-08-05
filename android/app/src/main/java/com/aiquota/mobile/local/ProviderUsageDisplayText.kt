@@ -99,6 +99,16 @@ fun displayUsageLabel(
     }
 }
 
+/**
+ * 카드형처럼 폭이 좁은 자리에서 쓰는 짧은 라벨. "5시간 세션" → "5시간", "주간 한도" → "주간".
+ * 창 종류를 나타내는 꼬리말만 떼고 나머지는 건드리지 않는다.
+ */
+fun compactUsageLabel(label: String): String {
+    val trimmed = label.trim()
+    val shortened = trimmed.removeSuffix(" 세션").removeSuffix(" 한도").trim()
+    return shortened.ifBlank { trimmed }
+}
+
 fun displayRemainingText(text: String, locale: Locale = Locale.getDefault()): String {
     if (!locale.isKoreanLanguage()) return text
     val value = text.trim()
