@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -96,6 +97,8 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 private val ExplorerAccentColor = AIQuotaColors.SurfaceRaised
+/** 대시보드 상단 행의 정사각형 버튼(설정·목록형·카드형) 한 변. */
+private val DashboardHeaderButtonSize = 40.dp
 private const val DashboardGaugeBaseHeightDp = 4f
 private const val DashboardGaugeMaxScale = 2f
 private const val DashboardGaugeFullExtraHeightDp = 80f
@@ -244,26 +247,37 @@ fun UnifiedDashboardScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(layoutMetrics.dashboardTitleHeightDp.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(R.string.dashboard_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = colors.textPrimary,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                // 종합 설정 진입점은 대시보드에만 둔다. 개별 provider 탭에서는 노출하지 않는다.
-                IconButton(onClick = onOpenSettings) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_settings),
-                        contentDescription = stringResource(R.string.nav_settings),
-                        tint = colors.textSecondary
+                // 제목과 설정 버튼이 남는 폭을 모두 차지한다. 폭이 모자라면 오른쪽 버튼들을
+                // 찌그러뜨리는 대신 제목이 줄어든다.
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.dashboard_title),
+                        modifier = Modifier.weight(1f, fill = false),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = colors.textPrimary,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
+                    // 종합 설정 진입점은 대시보드에만 둔다. 개별 provider 탭에서는 노출하지 않는다.
+                    IconButton(
+                        onClick = onOpenSettings,
+                        modifier = Modifier.size(DashboardHeaderButtonSize)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_settings),
+                            contentDescription = stringResource(R.string.nav_settings),
+                            tint = colors.textSecondary
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.weight(1f))
                 OutlinedButton(
                     onClick = onAddWidget,
                     modifier = Modifier.widthIn(min = 104.dp)
@@ -440,7 +454,9 @@ private fun DashboardViewModeButton(
     val colors = AIQuotaTheme.colors
     Surface(
         onClick = onClick,
-        modifier = Modifier.size(40.dp),
+        // requiredSize라야 상단 행이 좁아져도 두 버튼이 같은 정사각형으로 남는다.
+        // size만 쓰면 폭이 모자랄 때 마지막 버튼만 찌그러진다.
+        modifier = Modifier.requiredSize(DashboardHeaderButtonSize),
         shape = RoundedCornerShape(10.dp),
         color = if (selected) colors.primary.copy(alpha = 0.16f) else Color.Transparent,
         border = BorderStroke(1.dp, if (selected) colors.primary else colors.borderSoft)

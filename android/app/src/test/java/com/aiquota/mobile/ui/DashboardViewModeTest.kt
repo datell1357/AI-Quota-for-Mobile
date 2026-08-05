@@ -63,17 +63,31 @@ class DashboardViewModeTest {
     @Test
     fun settingsButtonSitsNextToTheTitleAndModeButtonsFollowAddWidget() {
         val source = File("src/main/java/com/aiquota/mobile/ui/dashboard/UnifiedDashboardScreen.kt").readText()
-        val header = source.substringAfter("R.string.dashboard_title")
+        val header = source.substringAfter("layoutMetrics.dashboardTitleHeightDp")
             .substringBefore("if (visibleProviders.isEmpty())")
 
         val settings = header.indexOf("R.string.nav_settings")
-        val spacer = header.indexOf("Spacer(modifier = Modifier.weight(1f))")
+        val titleGroupWeight = header.indexOf("modifier = Modifier.weight(1f)")
         val addWidget = header.indexOf("R.string.dashboard_add_widget")
         val modeButtons = header.indexOf("DashboardViewModeButtons")
 
-        assertTrue("설정 버튼은 제목 바로 옆에 온다", settings in 0 until spacer)
-        assertTrue("위젯 추가는 오른쪽으로 밀린다", spacer < addWidget)
+        assertTrue("제목과 설정 버튼이 남는 폭을 가져가 나머지를 오른쪽으로 민다", titleGroupWeight in 0 until settings)
+        assertTrue("설정 버튼은 제목 바로 옆, 위젯 추가보다 앞에 온다", settings in 0 until addWidget)
         assertTrue("모드 선택 버튼은 위젯 추가 오른쪽에 온다", addWidget < modeButtons)
+    }
+
+    @Test
+    fun bothModeButtonsStaySquareEvenWhenTheHeaderIsTight() {
+        val source = File("src/main/java/com/aiquota/mobile/ui/dashboard/UnifiedDashboardScreen.kt").readText()
+
+        assertTrue(
+            "폭이 모자랄 때 마지막 버튼만 찌그러지지 않도록 requiredSize로 고정한다",
+            source.contains("Modifier.requiredSize(DashboardHeaderButtonSize)")
+        )
+        assertTrue(
+            "제목이 대신 줄어들어야 버튼이 온전한 정사각형으로 남는다",
+            source.contains("Modifier.weight(1f, fill = false)")
+        )
     }
 
     @Test

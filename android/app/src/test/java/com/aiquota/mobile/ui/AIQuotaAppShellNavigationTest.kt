@@ -59,7 +59,7 @@ class AIQuotaAppShellNavigationTest {
         )
         assertTrue(
             "Dashboard gear must open the Settings route",
-            dashboardSource.contains("IconButton(onClick = onOpenSettings)")
+            dashboardSource.contains("onClick = onOpenSettings")
         )
         assertTrue(
             "App shell must wire the dashboard gear to the Settings route",
