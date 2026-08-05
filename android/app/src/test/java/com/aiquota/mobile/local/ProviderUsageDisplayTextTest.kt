@@ -84,13 +84,32 @@ class ProviderUsageDisplayTextTest {
     }
 
     @Test
-    fun compactLabelDropsWindowSuffixOnly() {
+    fun compactLabelDropsKoreanWindowSuffix() {
         assertEquals("5시간", compactUsageLabel("5시간 세션"))
         assertEquals("주간", compactUsageLabel("주간 세션"))
         assertEquals("5시간", compactUsageLabel("5시간 한도"))
         assertEquals("Spark 주간", compactUsageLabel("Spark 주간 세션"))
         assertEquals("크레딧", compactUsageLabel("크레딧"))
-        assertEquals("Claude Design", compactUsageLabel("Claude Design"))
+    }
+
+    @Test
+    fun compactLabelDropsProductNameAndFillerWords() {
+        assertEquals("Session", compactUsageLabel("Codex Session"))
+        assertEquals("Weekly", compactUsageLabel("Codex Weekly"))
+        assertEquals("Weekly", compactUsageLabel("SuperGrok weekly"))
+        assertEquals("Total", compactUsageLabel("Total Usage"))
+        assertEquals("Auto", compactUsageLabel("Auto Usage"))
+        assertEquals("Usage", compactUsageLabel("Usage"))
+    }
+
+    @Test
+    fun compactLabelShortensAntigravityModelNames() {
+        assertEquals("3.5 F(H)", compactUsageLabel("Gemini 3.5 Flash(High)"))
+        assertEquals("3.5 F(M)", compactUsageLabel("Gemini 3.5 Flash(Medium)"))
+        assertEquals("3.1 P(H)", compactUsageLabel("Gemini 3.1 Pro(High)"))
+        assertEquals("3 F", compactUsageLabel("Gemini 3 Flash"))
+        // Gemini 패턴이 아닌 모델은 벤더 이름만 떼고 나머지는 그대로 둔다.
+        assertEquals("Sonnet 4.6 Thinking", compactUsageLabel("Claude Sonnet 4.6 Thinking"))
     }
 
     @Test

@@ -100,14 +100,62 @@ fun displayUsageLabel(
 }
 
 /**
- * 카드형처럼 폭이 좁은 자리에서 쓰는 짧은 라벨. "5시간 세션" → "5시간", "주간 한도" → "주간".
- * 창 종류를 나타내는 꼬리말만 떼고 나머지는 건드리지 않는다.
+ * 카드형처럼 폭이 좁은 자리에서 쓰는 짧은 라벨. 카드 안에서는 provider가 이미 아이콘·제목으로
+ * 드러나 있으므로 제품 이름과 군더더기 낱말을 떼고 창 종류만 남긴다.
+ *
+ *   "5시간 세션" → "5시간", "Codex Weekly" → "Weekly", "SuperGrok weekly" → "Weekly",
+ *   "Total Usage" → "Total", "Gemini 3.5 Flash(High)" → "3.5 F(H)"
  */
 fun compactUsageLabel(label: String): String {
     val trimmed = label.trim()
-    val shortened = trimmed.removeSuffix(" 세션").removeSuffix(" 한도").trim()
-    return shortened.ifBlank { trimmed }
+    if (trimmed.isEmpty()) return label
+
+    // 한국어는 창 종류를 나타내는 꼬리말만 뗀다.
+    val withoutKoreanSuffix = trimmed.removeSuffix(" 세션").removeSuffix(" 한도").trim()
+    if (withoutKoreanSuffix != trimmed) return withoutKoreanSuffix.ifBlank { trimmed }
+
+    compactGeminiModelLabel(trimmed)?.let { return it }
+
+    val withoutUsage = Regex("""\s+usage$""", RegexOption.IGNORE_CASE).replace(withoutKoreanSuffix, "")
+    val withoutProduct = COMPACT_LABEL_PRODUCT_PREFIXES
+        .firstOrNull { withoutUsage.startsWith("$it ", ignoreCase = true) }
+        ?.let { withoutUsage.substring(it.length + 1) }
+        ?: withoutUsage
+
+    val shortened = withoutProduct.trim()
+    if (shortened.isBlank()) return trimmed
+    return shortened.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() }
 }
+
+/** "Gemini 3.5 Flash(High)" → "3.5 F(H)". 등급이 없으면 "3 Flash" → "3 F". */
+private fun compactGeminiModelLabel(label: String): String? {
+    Regex("""^Gemini\s+([0-9.]+)\s+([A-Za-z])[A-Za-z-]*\s*\(\s*([A-Za-z])[A-Za-z]*\s*\)$""", RegexOption.IGNORE_CASE)
+        .matchEntire(label)
+        ?.let { match ->
+            val (version, model, tier) = match.destructured
+            return "$version ${model.uppercase(Locale.US)}(${tier.uppercase(Locale.US)})"
+        }
+    Regex("""^Gemini\s+([0-9.]+)\s+([A-Za-z])[A-Za-z-]*$""", RegexOption.IGNORE_CASE)
+        .matchEntire(label)
+        ?.let { match ->
+            val (version, model) = match.destructured
+            return "$version ${model.uppercase(Locale.US)}"
+        }
+    return null
+}
+
+/** 카드 안에서는 이미 provider를 알 수 있으므로 라벨 앞의 제품 이름은 뗀다. */
+private val COMPACT_LABEL_PRODUCT_PREFIXES = listOf(
+    "SuperGrok",
+    "Codex",
+    "Claude",
+    "Cursor",
+    "Copilot",
+    "OpenCode",
+    "Grok",
+    "Kimi",
+    "Kiro"
+)
 
 fun displayRemainingText(text: String, locale: Locale = Locale.getDefault()): String {
     if (!locale.isKoreanLanguage()) return text
