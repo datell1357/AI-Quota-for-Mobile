@@ -32,6 +32,9 @@ internal object ProviderProbeCooldown {
         val until = blockedUntilMillis[url] ?: return false
         if (nowMillis >= until) {
             blockedUntilMillis.remove(url)
+            // 누적도 함께 비운다. 남겨 두면 만료 후 첫 거절이 곧바로 다시 30분을 채워
+            // "연속 2회" 보호가 첫 차단 이후로는 사라진다.
+            strikes.remove(url)
             return false
         }
         return true

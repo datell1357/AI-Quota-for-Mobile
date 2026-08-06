@@ -59,7 +59,15 @@ class GeminiRpcSessionCacheTest {
         val reset = service.substringAfter("private fun handleProviderSessionReset")
             .substringBefore("private fun startForegroundNotification")
 
-        assertTrue(reset.contains("GeminiUsagePageNativeFetcher.invalidateRpcSession()"))
-        assertTrue(reset.contains("copilotWarmUpPending = true"))
+        assertTrue(reset.contains("ProviderCollectionCaches.invalidate(providerId)"))
+
+        // 재로그인·계정 전환은 연결 해제를 거치지 않으므로 로그인 진입에서도 비워야 한다.
+        val shell = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
+        val connect = shell.substringAfter("fun connectProvider(providerId: ProviderId) {")
+            .substringBefore("fun disconnectProvider")
+        assertTrue(
+            "재로그인 시 캐시를 비우지 않으면 새 계정 화면에 옛 요금제·계정이 남는다",
+            connect.contains("ProviderCollectionCaches.invalidate(providerId)")
+        )
     }
 }

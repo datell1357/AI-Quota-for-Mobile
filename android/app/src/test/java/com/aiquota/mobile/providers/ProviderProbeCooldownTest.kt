@@ -66,18 +66,35 @@ class ProviderProbeCooldownTest {
     }
 
     @Test
+    fun expiredCooldownAlsoClearsAccumulatedStrikes() {
+        // 누적이 남으면 만료 후 첫 거절이 곧바로 다시 30분을 채워 "연속 2회" 보호가 사라진다.
+        repeat(ProviderProbeCooldown.STRIKES_BEFORE_COOLDOWN) {
+            ProviderProbeCooldown.record(url, 401, nowMillis = 1_000L)
+        }
+        val afterExpiry = 1_000L + ProviderProbeCooldown.COOLDOWN_MILLIS
+        assertFalse(ProviderProbeCooldown.shouldSkip(url, nowMillis = afterExpiry))
+
+        ProviderProbeCooldown.record(url, 401, nowMillis = afterExpiry)
+        assertFalse("만료 뒤 첫 거절은 다시 1회째여야 한다", ProviderProbeCooldown.shouldSkip(url, nowMillis = afterExpiry))
+    }
+
+    @Test
     fun userInitiatedRefreshAndSessionResetClearTheCooldown() {
         val service = File(
             "src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt"
         ).readText()
 
         assertTrue(
-            "수동 새로고침은 쉬게 해 둔 엔드포인트도 다시 시도해야 빠져나올 길이 생긴다",
-            service.contains("if (manualProviderId != null) ProviderProbeCooldown.reset()")
+            "provider를 지정하지 않는 전체 위젯 새로고침도 사용자 요청이다",
+            service.contains("if (userInitiated) ProviderProbeCooldown.reset()")
         )
         val reset = service.substringAfter("private fun handleProviderSessionReset")
             .substringBefore("private fun startForegroundNotification")
-        assertTrue("재로그인 뒤에는 쿨다운이 남아 있으면 안 된다", reset.contains("ProviderProbeCooldown.reset()"))
+        assertTrue("재로그인 뒤에는 쿨다운이 남아 있으면 안 된다", reset.contains("ProviderCollectionCaches.invalidate(providerId)"))
+
+        // 방송은 서비스가 살아 있을 때만 닿는다. 서비스가 없을 때의 연결 해제도 캐시를 비워야 한다.
+        val resetter = File("src/main/java/com/aiquota/mobile/providers/ProviderSessionResetter.kt").readText()
+        assertTrue(resetter.contains("ProviderCollectionCaches.invalidate(providerId)"))
     }
 
     @Test

@@ -74,9 +74,6 @@ class ProviderBackgroundRefreshService : Service() {
     private var pendingManualWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
     private var sessionResetReceiverRegistered = false
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
-    // 프로세스가 새로 뜨면 세션 상태를 알 수 없으므로 첫 주기에는 워밍업한다.
-    private var copilotWarmUpPending = true
-    private var copilotWarmUpAtMillis = 0L
     private val sessionResetReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action != ACTION_PROVIDER_SESSION_RESET) return
@@ -210,9 +207,7 @@ class ProviderBackgroundRefreshService : Service() {
     private fun handleProviderSessionReset(providerId: ProviderId) {
         Log.d(TAG, "sessionReset provider=${providerId.storageId}")
         // 연결 해제·재로그인 뒤에는 캐시해 둔 세션 토큰이 남의 것이 된다.
-        if (providerId == ProviderId.GEMINI) GeminiUsagePageNativeFetcher.invalidateRpcSession()
-        if (providerId == ProviderId.COPILOT) copilotWarmUpPending = true
-        ProviderProbeCooldown.reset()
+        ProviderCollectionCaches.invalidate(providerId)
         repository.removeProviderSnapshot(providerId)
         collectorInjectionKeys.removeAll { it.contains(":${providerId.storageId}:") }
         val active = activeWebJob?.takeIf { it.job.providerId == providerId }
@@ -241,9 +236,10 @@ class ProviderBackgroundRefreshService : Service() {
     }
 
     /**
-     * 네트워크가 돌아오면 다음 60초 틱을 기다리지 않고 바로 한 주기를 돌린다. 별도 플래그 없이
-     * 마지막 사이클 시각(하트비트)만 보고 판단하므로 프로세스가 재시작돼도 그대로 동작한다.
-     * Wi-Fi ↔ 셀룰러 전환처럼 콜백이 연달아 와도 하트비트 조건이 중복 실행을 막는다.
+     * 네트워크가 돌아오면 다음 60초 틱을 기다리지 않고 바로 한 주기를 돌린다. 판단 기준은
+     * 가장 최근 스냅샷 갱신 시각이다 — 하트비트는 건너뛴 주기에도 기록돼 기준이 되지 못한다.
+     * 별도 플래그가 없어 프로세스가 재시작돼도 그대로 동작하고, Wi-Fi ↔ 셀룰러 전환처럼
+     * 콜백이 연달아 와도 시각 조건이 중복 실행을 막는다.
      */
     private fun registerNetworkCallback() {
         if (networkCallback != null) return
@@ -323,13 +319,16 @@ class ProviderBackgroundRefreshService : Service() {
                 }
             }
             if (jobs.isEmpty()) {
+                // 잡 계산은 IO로 넘어가 있어 그 사이 수동 요청이 들어올 수 있다. 그대로 멈추면
+                // 그 요청은 처리되지 못하고 위젯 새로고침 표시만 남는다.
+                if (hasPendingManualRefresh()) return
                 running = false
                 stopSelf()
                 return
             }
             // 사용자가 직접 누른 새로고침은 "지금 다시 해봐"라는 뜻이다. 쉬게 해 둔 엔드포인트도
             // 다시 시도해, 쿨다운 때문에 값이 멈춰 보이는 상황에서 빠져나올 길을 남긴다.
-            if (manualProviderId != null) ProviderProbeCooldown.reset()
+            if (userInitiated) ProviderProbeCooldown.reset()
             Log.d(TAG, "cycleStart providers=${jobs.joinToString(",") { it.providerId.storageId }}")
             val meterStart = RefreshCycleMeter.sample()
             jobs.forEach { job ->
@@ -443,6 +442,8 @@ class ProviderBackgroundRefreshService : Service() {
                     )
                     repository.failKeepingPrevious(effectiveJob.providerId, "Background collector ran. No trusted usage payload found.")
                 }
+                // 페이로드가 와도 쓸 수 있는 사용량이 없으면 수집에 성공한 게 아니다.
+                if (snapshot == null) markCopilotWarmUpPending(effectiveJob.providerId, pending = true)
             }
             is ServiceRefreshOutcome.Failure -> {
                 Log.w(
@@ -761,6 +762,12 @@ class ProviderBackgroundRefreshService : Service() {
             suspendCancellableCoroutine { continuation ->
                 mainHandler.post {
                     val warmUpUrl = webSessionWarmUpUrl(job)
+                    // 워밍업을 실제로 시작하는 지점은 여기 한 곳뿐이다. 위 함수는 타임아웃
+                    // 예산 계산에서도 불리므로 거기서 시각을 갱신하면 두 번째 호출이 null을
+                    // 받아 30분 강제 워밍업이 영영 실행되지 않는다.
+                    if (warmUpUrl != null && job.providerId == ProviderId.COPILOT) {
+                        CopilotWarmUpState.markWarmUpStarted()
+                    }
                     if (warmUpUrl != null &&
                         ProviderSessionRevivePolicy.isReviveUrl(job.providerId, warmUpUrl)
                     ) {
@@ -1931,8 +1938,6 @@ class ProviderBackgroundRefreshService : Service() {
                 .putExtra(EXTRA_PROVIDER_ID, providerId.storageId)
         }
         private const val BRIDGE_NAME = "AIQuotaCollectorBridge"
-        /** Copilot 세션을 강제로 되살리는 주기. 60초 주기 기준 30번에 한 번이다. */
-        private const val COPILOT_WARM_UP_INTERVAL_MILLIS = 30 * 60_000L
         private const val INITIAL_AUTO_REFRESH_DELAY_MILLIS = 3_000L
         private const val WEB_SESSION_WARM_UP_TIMEOUT_MILLIS = 8_000L
         private const val SESSION_REVIVE_SETTLE_MILLIS = 4_000L
@@ -2021,30 +2026,15 @@ class ProviderBackgroundRefreshService : Service() {
         return when (job.providerId) {
             // github.com 홈은 한 번 로드에 90KB에 가깝다(실측). 쿠키가 살아 있는 동안에는
             // 다시 받을 이유가 없으므로 워밍업을 건너뛴다.
-            ProviderId.COPILOT -> "https://github.com/".takeIf { copilotNeedsWarmUp() }
-                ?.also { copilotWarmUpAtMillis = System.currentTimeMillis() }
+            ProviderId.COPILOT -> "https://github.com/".takeIf { CopilotWarmUpState.needsWarmUp() }
             else -> ProviderSessionReviveStore.pendingReviveUrl(job.providerId)
         }?.takeUnless { it == job.startUrl }
     }
 
-    /**
-     * 워밍업이 필요한지. 두 가지 조건 중 하나면 한다.
-     *
-     * 하나는 직전 수집 실패다. 다른 하나는 경과 시간인데, Copilot은 인증이 부분적으로 깨져도
-     * (`token=422`, `internal=401`) 요금제만 담긴 페이로드가 나와 "성공"으로 보이기 때문에
-     * 실패 판정만 믿으면 세션이 상해도 워밍업이 영영 켜지지 않는다. 그래서 [COPILOT_WARM_UP_INTERVAL_MILLIS]
-     * 마다 한 번은 무조건 세션을 되살린다. 30주기에 한 번이라 절감분은 대부분 유지된다.
-     */
-    private fun copilotNeedsWarmUp(): Boolean {
-        if (copilotWarmUpPending) return true
-        return System.currentTimeMillis() - copilotWarmUpAtMillis >= COPILOT_WARM_UP_INTERVAL_MILLIS
-    }
-
-    /** Copilot 워밍업은 실패했을 때만 다시 하도록 표시한다. */
+    /** Copilot 워밍업은 수집이 실패했을 때만 다시 하도록 표시한다. */
     private fun markCopilotWarmUpPending(providerId: ProviderId, pending: Boolean) {
         if (providerId != ProviderId.COPILOT) return
-        if (copilotWarmUpPending == pending) return
-        copilotWarmUpPending = pending
         Log.d(TAG, "copilotWarmUp pending=$pending")
+        if (pending) CopilotWarmUpState.requireWarmUp() else CopilotWarmUpState.markCollectionSucceeded()
     }
 }

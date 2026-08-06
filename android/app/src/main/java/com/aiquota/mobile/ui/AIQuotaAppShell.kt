@@ -78,6 +78,7 @@ import com.aiquota.mobile.local.snapshotUpdatedAtForStatusTransition
 import com.aiquota.mobile.notification.UsageLimitNotificationController
 import com.aiquota.mobile.providers.AntigravityLoopbackOAuthActivity
 import com.aiquota.mobile.providers.GlmApiKeyActivity
+import com.aiquota.mobile.providers.ProviderCollectionCaches
 import com.aiquota.mobile.providers.ProviderConnectorRegistry
 import com.aiquota.mobile.providers.ProviderHostAllowlist
 import com.aiquota.mobile.providers.ProviderBackgroundRefreshStateRepository
@@ -245,6 +246,9 @@ fun AIQuotaAppShell(
     }
 
     fun connectProvider(providerId: ProviderId) {
+        // 재로그인·계정 전환은 연결 해제를 거치지 않는다. 이전 세션에서 통했던 토큰과 판정을
+        // 그대로 두면 새 계정 화면에 옛 요금제·계정이 최대 15분 남는다.
+        ProviderCollectionCaches.invalidate(providerId)
         val connector = connectorRegistry.connectorFor(providerId)
         val now = Instant.now().toString()
         route = AppRoute.ProviderDetail(providerId)
