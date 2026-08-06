@@ -78,7 +78,6 @@ fun appLayoutMetrics(
         fluidChipWidth.coerceIn(48, 64)
     }
     val navChipHeight = if (isTablet) scaled(70, 80) else scaled(70, 76)
-    val navContentWidth = navChipWidth * routeCount + navGap * (routeCount - 1) + navHorizontalPadding * 2
     val dashboardGridColumnCount = if (isTablet) 2 else 1
     val dashboardVisibleProviderCount = if (isTablet) 4 else 3
 
@@ -96,7 +95,9 @@ fun appLayoutMetrics(
         navVerticalPaddingDp = navVerticalPadding,
         navGapDp = navGap,
         navBarMinHeightDp = navVerticalPadding * 2 + navChipHeight + navBottomExtraPadding,
-        navBarMaxWidthDp = if (isTablet) navContentWidth else compactWidth,
+        // 태블릿도 화면 폭을 그대로 쓴다. 칩 6개 폭으로 묶어 두면 큰 화면에서 가운데만
+        // 좁게 쓰고 나머지 provider는 스크롤해야 보인다.
+        navBarMaxWidthDp = compactWidth,
         navBottomExtraPaddingDp = navBottomExtraPadding,
         navChipWidthDp = navChipWidth,
         navChipHeightDp = navChipHeight,
