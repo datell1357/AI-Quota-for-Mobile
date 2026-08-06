@@ -128,7 +128,7 @@ fun compactUsageLabel(label: String): String {
 
     compactGeminiModelLabel(trimmed)?.let { return it }
 
-    val withoutUsage = Regex("""\s+usage$""", RegexOption.IGNORE_CASE).replace(withoutKoreanSuffix, "")
+    val withoutUsage = Regex("""\s+(usage|limit)$""", RegexOption.IGNORE_CASE).replace(withoutKoreanSuffix, "")
     val withoutProduct = COMPACT_LABEL_PRODUCT_PREFIXES
         .firstOrNull { withoutUsage.startsWith("$it ", ignoreCase = true) }
         ?.let { withoutUsage.substring(it.length + 1) }
@@ -221,6 +221,10 @@ private fun englishUsageLabel(
     if (providerId.equals(ProviderId.CLAUDE.storageId, ignoreCase = true) && normalized == "rate limit") {
         return if (lineIndex == 0) "Session" else "Weekly"
     }
+    // GLM처럼 정규화 단계에서 한국어 라벨을 만들어 두는 provider가 있다. 영문 UI에서
+    // 원문이 그대로 나오지 않도록 창 종류 라벨을 영어로 돌려준다.
+    KOREAN_WINDOW_LABELS[label.trim()]?.let { return it }
+
     return when (normalized) {
         "five hour", "five hour limit" -> "Claude 5-hour limit"
         "seven day", "seven day limit" -> "Claude weekly limit"
@@ -228,6 +232,14 @@ private fun englishUsageLabel(
         else -> label
     }
 }
+
+private val KOREAN_WINDOW_LABELS = mapOf(
+    "5시간 한도" to "5-hour limit",
+    "주간 한도" to "Weekly limit",
+    "월간 한도" to "Monthly limit",
+    "5시간 세션" to "Session",
+    "주간 세션" to "Weekly"
+)
 
 private fun codexSparkDisplayLabel(providerId: String, normalized: String, locale: Locale): String? {
     if (!providerId.equals(ProviderId.CODEX.storageId, ignoreCase = true)) return null

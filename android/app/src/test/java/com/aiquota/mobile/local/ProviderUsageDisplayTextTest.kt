@@ -95,6 +95,19 @@ class ProviderUsageDisplayTextTest {
     }
 
     @Test
+    fun englishLabelTranslatesKoreanWindowLabelsFromNormalizer() {
+        // GLM은 정규화 단계에서 한국어 라벨을 만든다. 영문 UI에 그대로 새면 안 된다.
+        assertEquals("5-hour limit", displayUsageLabel("glm", "5시간 한도", 0, Locale.US))
+        assertEquals("Weekly limit", displayUsageLabel("glm", "주간 한도", 1, Locale.US))
+        assertEquals("Monthly limit", displayUsageLabel("glm", "월간 한도", 2, Locale.US))
+        // 카드형에서는 꼬리말까지 떼고 짧게 쓴다.
+        assertEquals("5-hour", compactUsageLabel(displayUsageLabel("glm", "5시간 한도", 0, Locale.US)))
+        assertEquals("Weekly", compactUsageLabel(displayUsageLabel("glm", "주간 한도", 1, Locale.US)))
+        // 한국어 UI는 그대로 유지된다.
+        assertEquals("5시간 한도", displayUsageLabel("glm", "5시간 한도", 0, Locale.KOREAN))
+    }
+
+    @Test
     fun compactLabelDropsKoreanWindowSuffix() {
         assertEquals("5시간", compactUsageLabel("5시간 세션"))
         assertEquals("주간", compactUsageLabel("주간 세션"))
