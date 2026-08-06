@@ -74,6 +74,8 @@ class ProviderBackgroundRefreshService : Service() {
     private var pendingManualWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
     private var sessionResetReceiverRegistered = false
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    // 프로세스가 새로 뜨면 세션 상태를 알 수 없으므로 첫 주기에는 워밍업한다.
+    private var copilotWarmUpPending = true
     private val sessionResetReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action != ACTION_PROVIDER_SESSION_RESET) return
@@ -379,6 +381,7 @@ class ProviderBackgroundRefreshService : Service() {
                     nativeAuthContext = debugNativeAuthContextForSnapshot(effectiveJob.providerId)
                 )
                 repository.saveSnapshot(outcome.snapshot)
+                markCopilotWarmUpPending(effectiveJob.providerId, pending = false)
             }
             is ServiceRefreshOutcome.Payload -> {
                 val snapshot = withContext(Dispatchers.IO) {
@@ -403,6 +406,7 @@ class ProviderBackgroundRefreshService : Service() {
                         nativeAuthContext = debugNativeAuthContextForSnapshot(effectiveJob.providerId)
                     )
                     repository.saveSnapshot(snapshot)
+                    markCopilotWarmUpPending(effectiveJob.providerId, pending = false)
                 } else if (
                     ProviderRefreshFailureClassifier.requiresInteractiveAuth(
                         effectiveJob.providerId,
@@ -438,6 +442,7 @@ class ProviderBackgroundRefreshService : Service() {
                     "failure provider=${effectiveJob.providerId.storageId} kind=${outcome.failure.kind} message=${safeLogValue(outcome.failure.message)}"
                 )
                 refreshStateRepository.recordFailure(outcome.failure.kind.name)
+                markCopilotWarmUpPending(effectiveJob.providerId, pending = true)
                 val requiresInteractiveAuth = ProviderRefreshFailureClassifier.requiresInteractiveAuth(
                     effectiveJob.providerId,
                     outcome.failure.kind
@@ -2004,8 +2009,19 @@ class ProviderBackgroundRefreshService : Service() {
      */
     private fun webSessionWarmUpUrl(job: ProviderRefreshJob): String? {
         return when (job.providerId) {
-            ProviderId.COPILOT -> "https://github.com/"
+            // github.com 홈은 한 번 로드에 90KB에 가깝다(실측). 쿠키가 살아 있는 동안에는
+            // 다시 받을 이유가 없으므로, 직전 수집이 성공했으면 워밍업을 건너뛴다.
+            // 수집이 실패하면 다시 켜져 다음 주기에 세션을 되살린다.
+            ProviderId.COPILOT -> "https://github.com/".takeIf { copilotWarmUpPending }
             else -> ProviderSessionReviveStore.pendingReviveUrl(job.providerId)
         }?.takeUnless { it == job.startUrl }
+    }
+
+    /** Copilot 워밍업은 실패했을 때만 다시 하도록 표시한다. */
+    private fun markCopilotWarmUpPending(providerId: ProviderId, pending: Boolean) {
+        if (providerId != ProviderId.COPILOT) return
+        if (copilotWarmUpPending == pending) return
+        copilotWarmUpPending = pending
+        Log.d(TAG, "copilotWarmUp pending=$pending")
     }
 }
