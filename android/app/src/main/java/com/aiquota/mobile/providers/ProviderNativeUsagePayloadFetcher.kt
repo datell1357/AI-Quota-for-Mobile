@@ -374,6 +374,12 @@ object ProviderNativeUsagePayloadFetcher {
         val statuses = mutableListOf<String>()
         val payload = JSONObject().put("provider", ProviderId.CURSOR.storageId)
         CURSOR_NATIVE_PROBES.forEach { probe ->
+            // 계정 구성상 계속 거절당하는 엔드포인트는 잠시 건너뛴다. 오류 응답도 본문을
+            // 실어 오기 때문에 60초마다 반복하면 데이터만 축난다.
+            if (ProviderProbeCooldown.shouldSkip(probe.url)) {
+                statuses += "${urlStatusLabel(probe.url)}:skipped:cooldown"
+                return@forEach
+            }
             val response = fetchCursorWrapped(probe.url, probe.body, statuses, fetchJson)
             if (response.optBoolean("ok", false)) {
                 gatherCursorUsageData(response.jsonValue(), payload, 0)
@@ -392,7 +398,9 @@ object ProviderNativeUsagePayloadFetcher {
     ): JSONObject {
         val wrapped = runCatching { JSONObject(fetchJson(url, body)) }
             .getOrElse { JSONObject().put("ok", false).put("url", url).put("error", it.javaClass.simpleName) }
-        statuses += "${urlStatusLabel(url)}:${wrapped.optInt("status", -1)}:${wrapped.optString("error")}"
+        val status = wrapped.optInt("status", -1)
+        ProviderProbeCooldown.record(url, status)
+        statuses += "${urlStatusLabel(url)}:$status:${wrapped.optString("error")}"
         return wrapped
     }
 
