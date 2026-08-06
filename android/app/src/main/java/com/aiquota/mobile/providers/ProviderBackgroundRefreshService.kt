@@ -76,6 +76,7 @@ class ProviderBackgroundRefreshService : Service() {
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     // 프로세스가 새로 뜨면 세션 상태를 알 수 없으므로 첫 주기에는 워밍업한다.
     private var copilotWarmUpPending = true
+    private var copilotWarmUpAtMillis = 0L
     private val sessionResetReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action != ACTION_PROVIDER_SESSION_RESET) return
@@ -1923,6 +1924,8 @@ class ProviderBackgroundRefreshService : Service() {
                 .putExtra(EXTRA_PROVIDER_ID, providerId.storageId)
         }
         private const val BRIDGE_NAME = "AIQuotaCollectorBridge"
+        /** Copilot 세션을 강제로 되살리는 주기. 60초 주기 기준 30번에 한 번이다. */
+        private const val COPILOT_WARM_UP_INTERVAL_MILLIS = 30 * 60_000L
         private const val INITIAL_AUTO_REFRESH_DELAY_MILLIS = 3_000L
         private const val WEB_SESSION_WARM_UP_TIMEOUT_MILLIS = 8_000L
         private const val SESSION_REVIVE_SETTLE_MILLIS = 4_000L
@@ -2010,11 +2013,24 @@ class ProviderBackgroundRefreshService : Service() {
     private fun webSessionWarmUpUrl(job: ProviderRefreshJob): String? {
         return when (job.providerId) {
             // github.com 홈은 한 번 로드에 90KB에 가깝다(실측). 쿠키가 살아 있는 동안에는
-            // 다시 받을 이유가 없으므로, 직전 수집이 성공했으면 워밍업을 건너뛴다.
-            // 수집이 실패하면 다시 켜져 다음 주기에 세션을 되살린다.
-            ProviderId.COPILOT -> "https://github.com/".takeIf { copilotWarmUpPending }
+            // 다시 받을 이유가 없으므로 워밍업을 건너뛴다.
+            ProviderId.COPILOT -> "https://github.com/".takeIf { copilotNeedsWarmUp() }
+                ?.also { copilotWarmUpAtMillis = System.currentTimeMillis() }
             else -> ProviderSessionReviveStore.pendingReviveUrl(job.providerId)
         }?.takeUnless { it == job.startUrl }
+    }
+
+    /**
+     * 워밍업이 필요한지. 두 가지 조건 중 하나면 한다.
+     *
+     * 하나는 직전 수집 실패다. 다른 하나는 경과 시간인데, Copilot은 인증이 부분적으로 깨져도
+     * (`token=422`, `internal=401`) 요금제만 담긴 페이로드가 나와 "성공"으로 보이기 때문에
+     * 실패 판정만 믿으면 세션이 상해도 워밍업이 영영 켜지지 않는다. 그래서 [COPILOT_WARM_UP_INTERVAL_MILLIS]
+     * 마다 한 번은 무조건 세션을 되살린다. 30주기에 한 번이라 절감분은 대부분 유지된다.
+     */
+    private fun copilotNeedsWarmUp(): Boolean {
+        if (copilotWarmUpPending) return true
+        return System.currentTimeMillis() - copilotWarmUpAtMillis >= COPILOT_WARM_UP_INTERVAL_MILLIS
     }
 
     /** Copilot 워밍업은 실패했을 때만 다시 하도록 표시한다. */
