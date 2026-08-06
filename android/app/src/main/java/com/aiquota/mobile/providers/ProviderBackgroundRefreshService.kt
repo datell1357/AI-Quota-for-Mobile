@@ -209,6 +209,9 @@ class ProviderBackgroundRefreshService : Service() {
 
     private fun handleProviderSessionReset(providerId: ProviderId) {
         Log.d(TAG, "sessionReset provider=${providerId.storageId}")
+        // 연결 해제·재로그인 뒤에는 캐시해 둔 세션 토큰이 남의 것이 된다.
+        if (providerId == ProviderId.GEMINI) GeminiUsagePageNativeFetcher.invalidateRpcSession()
+        if (providerId == ProviderId.COPILOT) copilotWarmUpPending = true
         repository.removeProviderSnapshot(providerId)
         collectorInjectionKeys.removeAll { it.contains(":${providerId.storageId}:") }
         val active = activeWebJob?.takeIf { it.job.providerId == providerId }
