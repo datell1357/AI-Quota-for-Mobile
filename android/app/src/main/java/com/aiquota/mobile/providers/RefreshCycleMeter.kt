@@ -29,6 +29,20 @@ internal object RefreshCycleMeter {
         )
     }
 
+    /** provider 한 곳이 한 주기에 얼마나 쓰는지. 어디를 줄여야 할지 고르기 위한 계측이다. */
+    fun log(tag: String, start: Sample?, providerId: String) {
+        val begin = start ?: return
+        val end = sample() ?: return
+        val rx = (end.rxBytes - begin.rxBytes).coerceAtLeast(0)
+        val tx = (end.txBytes - begin.txBytes).coerceAtLeast(0)
+        Log.i(
+            tag,
+            "providerMetrics provider=$providerId " +
+                "elapsedMs=${end.elapsedRealtimeMillis - begin.elapsedRealtimeMillis} " +
+                "rxBytes=$rx txBytes=$tx"
+        )
+    }
+
     fun log(tag: String, start: Sample?, providerCount: Int) {
         val begin = start ?: return
         val end = sample() ?: return

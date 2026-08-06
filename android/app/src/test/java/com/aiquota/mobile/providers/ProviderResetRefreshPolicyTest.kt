@@ -80,7 +80,7 @@ class ProviderResetRefreshPolicyTest {
         assertTrue(plan.contains("val resetJobs = resetJobsFor(snapshots, now)"))
         assertTrue(plan.contains("ProviderResetRefreshPolicy.requests(snapshots, now)"))
         assertTrue(plan.contains(".map(::resetJobFor)"))
-        assertTrue(service.contains("ProviderRefreshPlan.automaticJobsFor(repository.readSnapshots())"))
+        assertTrue(service.contains("ProviderRefreshPlan.automaticJobsFor(snapshots)"))
         assertTrue(!appShell.contains("resetRefreshRequestKeys"))
         assertTrue(!appShell.contains("requestProviderRefreshJobs(resetRefreshJobs"))
     }

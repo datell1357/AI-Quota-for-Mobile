@@ -59,12 +59,12 @@ class RefreshNetworkGateTest {
             service.contains("unregisterNetworkCallback")
         )
         assertTrue(
-            "별도 플래그 대신 마지막 사이클 시각으로 판단한다",
-            service.contains("refreshStateRepository.heartbeatAtMillis()")
+            "별도 플래그 대신 스냅샷 갱신 시각으로 판단한다(하트비트는 건너뛴 주기에도 남아 기준이 못 된다)",
+            service.contains("latestSnapshotAgeMillis()")
         )
         assertTrue(
             "연속 콜백에도 중복 실행되지 않는다",
-            service.contains("if (heartbeatAgeMillis < ProviderRefreshPlan.AUTO_REFRESH_INTERVAL_MILLIS) return")
+            service.contains("if (snapshotAgeMillis < ProviderRefreshPlan.AUTO_REFRESH_INTERVAL_MILLIS) return")
         )
     }
 }

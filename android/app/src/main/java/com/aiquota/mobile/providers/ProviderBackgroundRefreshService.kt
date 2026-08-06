@@ -45,6 +45,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import java.time.Instant
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -258,10 +259,22 @@ class ProviderBackgroundRefreshService : Service() {
 
     private fun onNetworkRestored() {
         if (!running || refreshInProgress) return
-        val heartbeatAgeMillis = System.currentTimeMillis() - refreshStateRepository.heartbeatAtMillis()
-        if (heartbeatAgeMillis < ProviderRefreshPlan.AUTO_REFRESH_INTERVAL_MILLIS) return
-        Log.d(TAG, "networkRestored refreshNow heartbeatAgeMs=$heartbeatAgeMillis")
+        // 하트비트는 건너뛴 주기에도 남기므로 판단 기준이 될 수 없다. 스냅샷 갱신 시각을 본다.
+        // 오프라인으로 건너뛰는 동안에는 어떤 provider도 갱신되지 않으므로 이 값이 그대로 멈춘다.
+        val snapshotAgeMillis = latestSnapshotAgeMillis() ?: return
+        if (snapshotAgeMillis < ProviderRefreshPlan.AUTO_REFRESH_INTERVAL_MILLIS) return
+        Log.d(TAG, "networkRestored refreshNow snapshotAgeMs=$snapshotAgeMillis")
         scheduleNextTick(0L)
+    }
+
+    private fun latestSnapshotAgeMillis(): Long? {
+        val latest = repository.readSnapshots()
+            .mapNotNull { snapshot ->
+                runCatching { Instant.parse(snapshot.updatedAt) }.getOrNull()?.toEpochMilli()
+            }
+            .maxOrNull()
+            ?: return Long.MAX_VALUE
+        return (System.currentTimeMillis() - latest).coerceAtLeast(0L)
     }
 
     private fun scheduleNextTick(delayMillis: Long = ProviderRefreshPlan.AUTO_REFRESH_INTERVAL_MILLIS) {
@@ -293,10 +306,14 @@ class ProviderBackgroundRefreshService : Service() {
                 Log.d(TAG, "cycleSkipped reason=offline")
                 return
             }
-            val jobs = if (manualProviderId != null) {
-                ProviderRefreshPlan.manualCycleJobsFor(manualProviderId, repository.readSnapshots())
-            } else {
-                ProviderRefreshPlan.automaticJobsFor(repository.readSnapshots())
+            // 스냅샷 읽기는 SharedPreferences + JSON 파싱이라 메인 스레드에서 하면 안 된다.
+            val jobs = withContext(Dispatchers.IO) {
+                val snapshots = repository.readSnapshots()
+                if (manualProviderId != null) {
+                    ProviderRefreshPlan.manualCycleJobsFor(manualProviderId, snapshots)
+                } else {
+                    ProviderRefreshPlan.automaticJobsFor(snapshots)
+                }
             }
             if (jobs.isEmpty()) {
                 running = false
@@ -308,8 +325,10 @@ class ProviderBackgroundRefreshService : Service() {
             jobs.forEach { job ->
                 refreshProvider(job, automaticRefresh = manualProviderId == null)
             }
-            evaluateResetNotifications()
-            evaluateUsageThresholdNotifications()
+            withContext(Dispatchers.IO) {
+                evaluateResetNotifications()
+                evaluateUsageThresholdNotifications()
+            }
             RefreshCycleMeter.log(TAG, meterStart, jobs.size)
         } finally {
             if (manualWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
@@ -322,9 +341,13 @@ class ProviderBackgroundRefreshService : Service() {
 
     private suspend fun refreshProvider(job: ProviderRefreshJob, automaticRefresh: Boolean) {
         val effectiveJob = resolveRuntimeRefreshJob(job)
-        val startingSnapshot = repository.readSnapshots().firstOrNull { it.providerId == effectiveJob.providerId }
-        repository.markCollecting(effectiveJob.providerId)
-        UsageSurfaceRefresher.refresh(applicationContext, repository)
+        val startingSnapshot = withContext(Dispatchers.IO) {
+            val previous = repository.readSnapshots().firstOrNull { it.providerId == effectiveJob.providerId }
+            repository.markCollecting(effectiveJob.providerId)
+            UsageSurfaceRefresher.refresh(applicationContext, repository)
+            previous
+        }
+        val providerMeterStart = RefreshCycleMeter.sample()
         val outcome = when (effectiveJob.mode) {
             ProviderRefreshMode.NATIVE_API -> collectNativeProviderUsage(effectiveJob, automaticRefresh)
             ProviderRefreshMode.HIDDEN_WEB_COLLECTOR -> ProviderWebSessionMaintenanceGate.withMaintenanceLock(effectiveJob.providerId) {
@@ -332,7 +355,11 @@ class ProviderBackgroundRefreshService : Service() {
             }
         }
         Log.d(TAG, "outcome provider=${effectiveJob.providerId.storageId} type=${outcome::class.java.simpleName}")
-        if (repository.readSnapshots().none { it.providerId == effectiveJob.providerId }) {
+        RefreshCycleMeter.log(TAG, providerMeterStart, effectiveJob.providerId.storageId)
+        val providerStillTracked = withContext(Dispatchers.IO) {
+            repository.readSnapshots().any { it.providerId == effectiveJob.providerId }
+        }
+        if (!providerStillTracked) {
             destroyProviderWebView(effectiveJob.providerId)
             return
         }
@@ -354,11 +381,13 @@ class ProviderBackgroundRefreshService : Service() {
                 repository.saveSnapshot(outcome.snapshot)
             }
             is ServiceRefreshOutcome.Payload -> {
-                val snapshot = ProviderUsageNormalizer.normalize(
-                    effectiveJob.providerId,
-                    outcome.rawPayload,
-                    ProviderPayloadSource.STRUCTURED_SCRIPT
-                )
+                val snapshot = withContext(Dispatchers.IO) {
+                    ProviderUsageNormalizer.normalize(
+                        effectiveJob.providerId,
+                        outcome.rawPayload,
+                        ProviderPayloadSource.STRUCTURED_SCRIPT
+                    )
+                }
                 if (snapshot != null) {
                     Log.d(
                         TAG,
@@ -450,7 +479,7 @@ class ProviderBackgroundRefreshService : Service() {
                 startingSnapshot?.let(repository::saveSnapshot)
             }
         }
-        UsageSurfaceRefresher.refresh(applicationContext, repository)
+        withContext(Dispatchers.IO) { UsageSurfaceRefresher.refresh(applicationContext, repository) }
         if (effectiveJob.providerId == ProviderId.CLAUDE) {
             maybePrimeClaudeSession()
         }
