@@ -14,6 +14,8 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
+import android.net.ConnectivityManager
+import android.net.Network
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
@@ -25,6 +27,7 @@ import android.webkit.WebViewClient
 import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.R
 import com.aiquota.mobile.local.LocalUsageRepository
+import com.aiquota.mobile.sync.NetworkAvailability
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderPreferencesRepository
 import com.aiquota.mobile.local.ProviderUsageSnapshot
@@ -69,6 +72,7 @@ class ProviderBackgroundRefreshService : Service() {
     private var pendingManualProviderId: ProviderId? = null
     private var pendingManualWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
     private var sessionResetReceiverRegistered = false
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private val sessionResetReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action != ACTION_PROVIDER_SESSION_RESET) return
@@ -104,6 +108,7 @@ class ProviderBackgroundRefreshService : Service() {
         refreshStateRepository = ProviderBackgroundRefreshStateRepository(applicationContext)
         CookieManager.getInstance().setAcceptCookie(true)
         registerSessionResetReceiver()
+        registerNetworkCallback()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -124,6 +129,7 @@ class ProviderBackgroundRefreshService : Service() {
     }
 
     override fun onDestroy() {
+        unregisterNetworkCallback()
         unregisterSessionResetReceiver()
         stopRefreshLoop()
         serviceScope.cancel()
@@ -226,6 +232,38 @@ class ProviderBackgroundRefreshService : Service() {
         }.isSuccess
     }
 
+    /**
+     * 네트워크가 돌아오면 다음 60초 틱을 기다리지 않고 바로 한 주기를 돌린다. 별도 플래그 없이
+     * 마지막 사이클 시각(하트비트)만 보고 판단하므로 프로세스가 재시작돼도 그대로 동작한다.
+     * Wi-Fi ↔ 셀룰러 전환처럼 콜백이 연달아 와도 하트비트 조건이 중복 실행을 막는다.
+     */
+    private fun registerNetworkCallback() {
+        if (networkCallback != null) return
+        val manager = getSystemService(ConnectivityManager::class.java) ?: return
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                mainHandler.post { onNetworkRestored() }
+            }
+        }
+        val registered = runCatching { manager.registerDefaultNetworkCallback(callback) }.isSuccess
+        if (registered) networkCallback = callback
+    }
+
+    private fun unregisterNetworkCallback() {
+        val callback = networkCallback ?: return
+        networkCallback = null
+        val manager = getSystemService(ConnectivityManager::class.java) ?: return
+        runCatching { manager.unregisterNetworkCallback(callback) }
+    }
+
+    private fun onNetworkRestored() {
+        if (!running || refreshInProgress) return
+        val heartbeatAgeMillis = System.currentTimeMillis() - refreshStateRepository.heartbeatAtMillis()
+        if (heartbeatAgeMillis < ProviderRefreshPlan.AUTO_REFRESH_INTERVAL_MILLIS) return
+        Log.d(TAG, "networkRestored refreshNow heartbeatAgeMs=$heartbeatAgeMillis")
+        scheduleNextTick(0L)
+    }
+
     private fun scheduleNextTick(delayMillis: Long = ProviderRefreshPlan.AUTO_REFRESH_INTERVAL_MILLIS) {
         if (!running) return
         mainHandler.removeCallbacks(tickRunnable)
@@ -246,7 +284,15 @@ class ProviderBackgroundRefreshService : Service() {
         val manualWidgetId = pendingManualWidgetId
         pendingManualProviderId = null
         pendingManualWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+        val userInitiated = manualProviderId != null || manualWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID
         try {
+            // 네트워크가 아예 없으면 자동 주기는 통째로 건너뛴다. 그대로 두면 provider마다
+            // 재시도·타임아웃을 끝까지 소진하며 메인 스레드를 붙잡아 배터리만 태운다.
+            // 사용자가 직접 누른 새로고침은 오프라인이어도 시도해 결과를 보여준다.
+            if (!userInitiated && NetworkAvailability.isDefinitelyOffline(applicationContext)) {
+                Log.d(TAG, "cycleSkipped reason=offline")
+                return
+            }
             val jobs = if (manualProviderId != null) {
                 ProviderRefreshPlan.manualCycleJobsFor(manualProviderId, repository.readSnapshots())
             } else {
@@ -258,11 +304,13 @@ class ProviderBackgroundRefreshService : Service() {
                 return
             }
             Log.d(TAG, "cycleStart providers=${jobs.joinToString(",") { it.providerId.storageId }}")
+            val meterStart = RefreshCycleMeter.sample()
             jobs.forEach { job ->
                 refreshProvider(job, automaticRefresh = manualProviderId == null)
             }
             evaluateResetNotifications()
             evaluateUsageThresholdNotifications()
+            RefreshCycleMeter.log(TAG, meterStart, jobs.size)
         } finally {
             if (manualWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
                 WidgetRefreshFeedback.clearWidgetRefresh(applicationContext, manualWidgetId)
