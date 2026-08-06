@@ -19,7 +19,14 @@ internal object ProviderProbeCooldown {
     /** 재시도해도 결과가 달라지지 않는 응답들. 5xx나 네트워크 오류는 일시적이라 제외한다. */
     private val REJECTED_STATUSES = setOf(400, 401, 403, 404, 405)
 
+    /**
+     * 한 번 거절당했다고 바로 쉬게 하지는 않는다. 세션 쿠키가 잠깐 비어 있거나 WAF가 순간적으로
+     * 막는 경우가 있는데, 그때 한 번에 차단해 버리면 멀쩡한 엔드포인트까지 30분간 놓친다.
+     */
+    const val STRIKES_BEFORE_COOLDOWN = 2
+
     private val blockedUntilMillis = ConcurrentHashMap<String, Long>()
+    private val strikes = ConcurrentHashMap<String, Int>()
 
     fun shouldSkip(url: String, nowMillis: Long = System.currentTimeMillis()): Boolean {
         val until = blockedUntilMillis[url] ?: return false
@@ -32,12 +39,22 @@ internal object ProviderProbeCooldown {
 
     fun record(url: String, status: Int, nowMillis: Long = System.currentTimeMillis()) {
         when {
-            status in 200..299 -> blockedUntilMillis.remove(url)
-            status in REJECTED_STATUSES -> blockedUntilMillis[url] = nowMillis + COOLDOWN_MILLIS
+            status in 200..299 -> {
+                blockedUntilMillis.remove(url)
+                strikes.remove(url)
+            }
+            status in REJECTED_STATUSES -> {
+                val count = (strikes[url] ?: 0) + 1
+                strikes[url] = count
+                if (count >= STRIKES_BEFORE_COOLDOWN) {
+                    blockedUntilMillis[url] = nowMillis + COOLDOWN_MILLIS
+                }
+            }
         }
     }
 
     fun reset() {
         blockedUntilMillis.clear()
+        strikes.clear()
     }
 }

@@ -212,6 +212,7 @@ class ProviderBackgroundRefreshService : Service() {
         // 연결 해제·재로그인 뒤에는 캐시해 둔 세션 토큰이 남의 것이 된다.
         if (providerId == ProviderId.GEMINI) GeminiUsagePageNativeFetcher.invalidateRpcSession()
         if (providerId == ProviderId.COPILOT) copilotWarmUpPending = true
+        ProviderProbeCooldown.reset()
         repository.removeProviderSnapshot(providerId)
         collectorInjectionKeys.removeAll { it.contains(":${providerId.storageId}:") }
         val active = activeWebJob?.takeIf { it.job.providerId == providerId }
@@ -326,6 +327,9 @@ class ProviderBackgroundRefreshService : Service() {
                 stopSelf()
                 return
             }
+            // 사용자가 직접 누른 새로고침은 "지금 다시 해봐"라는 뜻이다. 쉬게 해 둔 엔드포인트도
+            // 다시 시도해, 쿨다운 때문에 값이 멈춰 보이는 상황에서 빠져나올 길을 남긴다.
+            if (manualProviderId != null) ProviderProbeCooldown.reset()
             Log.d(TAG, "cycleStart providers=${jobs.joinToString(",") { it.providerId.storageId }}")
             val meterStart = RefreshCycleMeter.sample()
             jobs.forEach { job ->

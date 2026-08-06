@@ -15,8 +15,19 @@ class ProviderProbeCooldownTest {
     }
 
     @Test
-    fun rejectedEndpointIsSkippedUntilCooldownExpires() {
+    fun singleRejectionDoesNotBlockTheEndpoint() {
+        // 세션 쿠키가 잠깐 비었거나 WAF가 순간적으로 막은 경우다. 한 번에 30분을 쉬면
+        // 재로그인 직후 같은 상황에서 수집이 통째로 멈춘다.
         ProviderProbeCooldown.record(url, 401, nowMillis = 1_000L)
+
+        assertFalse(ProviderProbeCooldown.shouldSkip(url, nowMillis = 1_000L))
+    }
+
+    @Test
+    fun rejectedEndpointIsSkippedUntilCooldownExpires() {
+        repeat(ProviderProbeCooldown.STRIKES_BEFORE_COOLDOWN) {
+            ProviderProbeCooldown.record(url, 401, nowMillis = 1_000L)
+        }
 
         assertTrue(ProviderProbeCooldown.shouldSkip(url, nowMillis = 1_000L))
         assertTrue(ProviderProbeCooldown.shouldSkip(url, nowMillis = 1_000L + ProviderProbeCooldown.COOLDOWN_MILLIS - 1))
@@ -25,8 +36,18 @@ class ProviderProbeCooldownTest {
     }
 
     @Test
+    fun successResetsAccumulatedStrikes() {
+        ProviderProbeCooldown.record(url, 401, nowMillis = 1_000L)
+        ProviderProbeCooldown.record(url, 200, nowMillis = 2_000L)
+        ProviderProbeCooldown.record(url, 401, nowMillis = 3_000L)
+
+        assertFalse("성공 이후의 첫 거절은 다시 1회째다", ProviderProbeCooldown.shouldSkip(url, nowMillis = 3_000L))
+    }
+
+    @Test
     fun transientFailuresAreNotCooledDown() {
         ProviderProbeCooldown.record(url, 500, nowMillis = 1_000L)
+        ProviderProbeCooldown.record(url, 500, nowMillis = 2_000L)
         assertFalse("5xx는 일시적이라 계속 시도한다", ProviderProbeCooldown.shouldSkip(url, nowMillis = 1_000L))
 
         ProviderProbeCooldown.record(url, -1, nowMillis = 1_000L)
@@ -35,11 +56,28 @@ class ProviderProbeCooldownTest {
 
     @Test
     fun successClearsCooldownImmediately() {
-        ProviderProbeCooldown.record(url, 404, nowMillis = 1_000L)
+        repeat(ProviderProbeCooldown.STRIKES_BEFORE_COOLDOWN) {
+            ProviderProbeCooldown.record(url, 404, nowMillis = 1_000L)
+        }
         assertTrue(ProviderProbeCooldown.shouldSkip(url, nowMillis = 1_000L))
 
         ProviderProbeCooldown.record(url, 200, nowMillis = 2_000L)
         assertFalse(ProviderProbeCooldown.shouldSkip(url, nowMillis = 2_000L))
+    }
+
+    @Test
+    fun userInitiatedRefreshAndSessionResetClearTheCooldown() {
+        val service = File(
+            "src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt"
+        ).readText()
+
+        assertTrue(
+            "수동 새로고침은 쉬게 해 둔 엔드포인트도 다시 시도해야 빠져나올 길이 생긴다",
+            service.contains("if (manualProviderId != null) ProviderProbeCooldown.reset()")
+        )
+        val reset = service.substringAfter("private fun handleProviderSessionReset")
+            .substringBefore("private fun startForegroundNotification")
+        assertTrue("재로그인 뒤에는 쿨다운이 남아 있으면 안 된다", reset.contains("ProviderProbeCooldown.reset()"))
     }
 
     @Test
