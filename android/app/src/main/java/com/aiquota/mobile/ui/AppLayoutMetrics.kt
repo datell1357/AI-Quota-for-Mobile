@@ -2,6 +2,7 @@
 
 import androidx.compose.runtime.Composable
 import com.aiquota.mobile.local.DASHBOARD_CARD_MODE_COLUMN_COUNT
+import com.aiquota.mobile.local.DASHBOARD_CARD_MODE_TABLET_COLUMN_COUNT
 import com.aiquota.mobile.local.DASHBOARD_CARD_MODE_VISIBLE_COUNT
 import com.aiquota.mobile.local.DashboardViewMode
 import androidx.compose.ui.platform.LocalConfiguration
@@ -38,7 +39,9 @@ data class AppLayoutMetrics(
     /** 카드 폭이 좁아 여백·아이콘을 줄여야 하는지. 한 줄에 한 장이거나 카드형일 때 참이다. */
     val dashboardCompactCard: Boolean,
     /** 카드형 전용. 카드가 작아 글자까지 한 단계 줄이고 사용량 라벨도 짧게 쓴다. */
-    val dashboardDenseText: Boolean = false
+    val dashboardDenseText: Boolean = false,
+    /** 태블릿 폭(600dp 이상)인지. 카드형 열 수처럼 폭에 따라 갈리는 판단에 쓴다. */
+    val isTablet: Boolean = false
 )
 
 fun appLayoutMetrics(
@@ -110,21 +113,28 @@ fun appLayoutMetrics(
         dashboardGridColumnCount = dashboardGridColumnCount,
         dashboardTitleHeightDp = if (isTablet) scaled(38, 48) else scaled(36, 42),
         dashboardCardMinHeightDp = if (isTablet) scaled(180, 220) else scaled(176, 220),
-        dashboardCompactCard = dashboardGridColumnCount == 1
+        dashboardCompactCard = dashboardGridColumnCount == 1,
+        isTablet = isTablet
     )
 }
 
 /**
- * 카드형은 화면 크기와 무관하게 2열 6개로 고정한다. 목록형은 기존 지표를 그대로 쓴다.
- * 한 화면에 여섯 개를 넣어야 해서 카드 최소 높이도 낮춘다.
+ * 카드형은 한 화면에 여섯 개를 담는다. 폰은 세로로 긴 화면이라 2열 3행, 태블릿은 가로로
+ * 넓은 화면이라 3열 2행이 화면 비율에 맞는다. 목록형은 기존 지표를 그대로 쓴다.
  */
 fun AppLayoutMetrics.forDashboardViewMode(mode: DashboardViewMode): AppLayoutMetrics {
     if (mode != DashboardViewMode.CARD) return this
+    val columnCount = if (isTablet) {
+        DASHBOARD_CARD_MODE_TABLET_COLUMN_COUNT
+    } else {
+        DASHBOARD_CARD_MODE_COLUMN_COUNT
+    }
     return copy(
-        dashboardGridColumnCount = DASHBOARD_CARD_MODE_COLUMN_COUNT,
+        dashboardGridColumnCount = columnCount,
         dashboardVisibleProviderCount = DASHBOARD_CARD_MODE_VISIBLE_COUNT,
-        dashboardCardMinHeightDp = (dashboardCardMinHeightDp * 3) / 5,
-        // 2열이라 카드 폭이 절반이다. 넓은 카드용 여백을 쓰면 내용이 겹치거나 잘린다.
+        // 폰은 3행이라 카드를 낮춰야 여섯 개가 들어간다. 태블릿은 2행이라 낮출 필요가 없다.
+        dashboardCardMinHeightDp = if (isTablet) dashboardCardMinHeightDp else (dashboardCardMinHeightDp * 3) / 5,
+        // 카드 폭이 좁아지므로 넓은 카드용 여백·글자 크기를 그대로 쓰면 내용이 겹치거나 잘린다.
         dashboardCompactCard = true,
         dashboardDenseText = true
     )

@@ -19,8 +19,11 @@ enum class DashboardViewMode {
     }
 }
 
-/** 카드형에서 한 화면에 보여줄 provider 수. 2열 × 3행이다. */
+/** 카드형에서 한 화면에 보여줄 provider 수. 폰은 2열 × 3행, 태블릿은 3열 × 2행이다. */
 const val DASHBOARD_CARD_MODE_VISIBLE_COUNT = 6
 
-/** 카드형 열 수. */
+/** 카드형 열 수. 폰은 세로로 길어 2열 3행이 맞는다. */
 const val DASHBOARD_CARD_MODE_COLUMN_COUNT = 2
+
+/** 태블릿 카드형 열 수. 가로로 넓어 3열 2행이 화면 비율에 맞는다. */
+const val DASHBOARD_CARD_MODE_TABLET_COLUMN_COUNT = 3

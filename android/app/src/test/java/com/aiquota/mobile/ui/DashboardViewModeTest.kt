@@ -1,6 +1,7 @@
 package com.aiquota.mobile.ui
 
 import com.aiquota.mobile.local.DASHBOARD_CARD_MODE_COLUMN_COUNT
+import com.aiquota.mobile.local.DASHBOARD_CARD_MODE_TABLET_COLUMN_COUNT
 import com.aiquota.mobile.local.DASHBOARD_CARD_MODE_VISIBLE_COUNT
 import com.aiquota.mobile.local.DashboardViewMode
 import java.io.File
@@ -23,17 +24,25 @@ class DashboardViewModeTest {
     }
 
     @Test
-    fun cardModeShowsSixProvidersInTwoColumns() {
-        listOf(phone, tablet).forEach { base ->
-            val card = base.forDashboardViewMode(DashboardViewMode.CARD)
+    fun cardModeShowsSixProvidersWithScreenShapedColumns() {
+        val phoneCard = phone.forDashboardViewMode(DashboardViewMode.CARD)
+        val tabletCard = tablet.forDashboardViewMode(DashboardViewMode.CARD)
 
-            assertEquals(DASHBOARD_CARD_MODE_COLUMN_COUNT, card.dashboardGridColumnCount)
+        listOf(phoneCard, tabletCard).forEach { card ->
             assertEquals(DASHBOARD_CARD_MODE_VISIBLE_COUNT, card.dashboardVisibleProviderCount)
-            assertTrue(
-                "여섯 개가 한 화면에 들어가려면 카드가 더 낮아야 한다",
-                card.dashboardCardMinHeightDp < base.dashboardCardMinHeightDp
-            )
         }
+        // 폰은 세로로 길어 2열 3행, 태블릿은 가로로 넓어 3열 2행.
+        assertEquals(DASHBOARD_CARD_MODE_COLUMN_COUNT, phoneCard.dashboardGridColumnCount)
+        assertEquals(DASHBOARD_CARD_MODE_TABLET_COLUMN_COUNT, tabletCard.dashboardGridColumnCount)
+        assertTrue(
+            "폰은 3행이라 여섯 개가 들어가려면 카드가 더 낮아야 한다",
+            phoneCard.dashboardCardMinHeightDp < phone.dashboardCardMinHeightDp
+        )
+        assertEquals(
+            "태블릿은 2행이라 카드를 낮출 필요가 없다",
+            tablet.dashboardCardMinHeightDp,
+            tabletCard.dashboardCardMinHeightDp
+        )
     }
 
     @Test
