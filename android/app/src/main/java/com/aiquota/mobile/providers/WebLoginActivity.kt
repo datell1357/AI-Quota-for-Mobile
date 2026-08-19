@@ -33,9 +33,12 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import android.view.Gravity
 import com.aiquota.mobile.ui.ads.ActivityTopBanner
@@ -485,8 +488,9 @@ open class WebLoginActivity : Activity() {
                 injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
                 return
             }
+            // 이 provider들은 about:blank로 옮겨가는 즉시 네이티브로 수집한다. 스크립트를 주입하면
+            // 같은 요청이 한 번 더 나갈 뿐이라 넣지 않는다.
             if (ABOUT_BLANK_NATIVE_LOGIN_PROVIDERS.contains(providerId) && effectiveUrl == "about:blank") {
-                injectCollectorIfReady(view, effectiveUrl, "", resourceTriggered = true)
                 return
             }
             view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
@@ -730,20 +734,7 @@ open class WebLoginActivity : Activity() {
             if (!isNativeFetchBridgePageAllowed(providerId)) {
                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
             }
-            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(
-                providerId = providerId,
-                userAgent = currentBridgeUserAgent,
-                bridgePageUrl = nativeUsageBridgePageUrl(),
-                geminiRpcIds = geminiUsageRpcIds.toList(),
-                cookieHeaderForUrl = { url -> cookieHeaderForNativeUsage(url) }
-            ) { url ->
-                when (providerId) {
-                    ProviderId.CODEX -> codexNativeFetchHeadersFor(url)
-                    ProviderId.CLAUDE -> claudeNativeFetchHeadersFor(url)
-                    ProviderId.GLM -> glmNativeFetchHeadersFor(url)
-                    else -> emptyMap()
-                }
-            }
+            return nativeUsagePayloadJson()
         }
 
         @JavascriptInterface
@@ -1212,7 +1203,68 @@ open class WebLoginActivity : Activity() {
         )
         view.stopLoading()
         view.loadUrl("about:blank")
+        finishFromNativeUsagePayload()
         return true
+    }
+
+    /**
+     * 이 provider들의 수집 스크립트는 브리지를 한 번 부르고 결과를 그대로 넘기는 통로일 뿐이라,
+     * 로그인 화면에서는 WebView를 왕복할 이유가 없다. 곧바로 네이티브로 수집해 화면을 닫는다.
+     *
+     * 스크립트를 기다리던 예전 방식은 주입한 JS가 한 번이라도 실행되지 않으면 payload도 error도
+     * 오지 않아 빈 화면에서 영영 멈췄다(2026-08-09 Grok 실측: 브리지 스레드는 유휴, 렌더러도
+     * 정상, 로그도 없음). 수집을 [NATIVE_USAGE_COLLECTION_TIMEOUT_MS]로 묶어 그 경로를 없앤다.
+     */
+    private fun finishFromNativeUsagePayload() {
+        loginScope.launch {
+            val bridgeJson = withContext(Dispatchers.IO) {
+                withTimeoutOrNull(NATIVE_USAGE_COLLECTION_TIMEOUT_MS) {
+                    runCatching { nativeUsagePayloadJson() }.getOrNull()
+                }
+            }
+            if (finished) return@launch
+            val payload = bridgeJson?.let(::trustedUsagePayloadOrNull)
+            if (payload != null) {
+                finishSuccessfulLogin(payload)
+                return@launch
+            }
+            Log.w("AIQuotaLogin", "provider=${providerId.storageId} nativeLoginCollection=unavailable")
+            finishConnectedWithoutUsage(
+                "Provider session reached, but trusted usage payload was not available yet.",
+                "${providerId.storageId}_native_usage_unavailable"
+            )
+        }
+    }
+
+    /** 브리지 응답 봉투에서 신뢰 가능한 payload만 꺼낸다. JS의 `c.post`와 같은 형태로 맞춘다. */
+    private fun trustedUsagePayloadOrNull(bridgeJson: String): String? {
+        val envelope = runCatching { JSONObject(bridgeJson) }.getOrNull() ?: return null
+        if (!envelope.optBoolean("ok", false)) return null
+        val payload = envelope.optJSONObject("payload") ?: return null
+        payload.put("provider", providerId.storageId)
+        if (payload.optString("collectorMode").isBlank()) {
+            payload.put("collectorMode", "native-bridge")
+        }
+        return payload.toString()
+    }
+
+    private fun nativeUsagePayloadJson(): String {
+        return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(
+            providerId = providerId,
+            userAgent = currentBridgeUserAgent,
+            bridgePageUrl = nativeUsageBridgePageUrl(),
+            geminiRpcIds = geminiUsageRpcIds.toList(),
+            cookieHeaderForUrl = { url -> cookieHeaderForNativeUsage(url) }
+        ) { url -> nativeUsageRequestHeadersFor(url) }
+    }
+
+    private fun nativeUsageRequestHeadersFor(url: String): Map<String, String> {
+        return when (providerId) {
+            ProviderId.CODEX -> codexNativeFetchHeadersFor(url)
+            ProviderId.CLAUDE -> claudeNativeFetchHeadersFor(url)
+            ProviderId.GLM -> glmNativeFetchHeadersFor(url)
+            else -> emptyMap()
+        }
     }
 
     private fun maybeStartCursorNativeCollection(view: WebView, url: String, reason: String): Boolean {        if (providerId != ProviderId.CURSOR || finished || cursorNativeCollectionStarted || url == "about:blank") return false
@@ -1390,6 +1442,9 @@ open class WebLoginActivity : Activity() {
         resourceTriggered: Boolean = false
     ) {
         if (finished) return
+        // 이 provider들은 about:blank로 옮겨가는 즉시 네이티브로 수집한다. 스크립트를 주입하면
+        // 같은 요청이 한 번 더 나갈 뿐이라 어느 경로에서 불려도 넣지 않는다.
+        if (ABOUT_BLANK_NATIVE_LOGIN_PROVIDERS.contains(providerId)) return
         if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && url != "about:blank") return
         noteBridgePageUrl(url)
         val cookies = collectorCookiesFor(providerId, url)
@@ -1894,6 +1949,7 @@ open class WebLoginActivity : Activity() {
         private const val EXTRA_START_URL = "startUrl"
         private const val BRIDGE_NAME = "AIQuotaCollectorBridge"
         private const val CURSOR_NATIVE_FETCH_TIMEOUT_MS = 20_000
+        private const val NATIVE_USAGE_COLLECTION_TIMEOUT_MS = 20_000L
         private val ABOUT_BLANK_NATIVE_LOGIN_PROVIDERS = setOf(
             ProviderId.GROK,
             ProviderId.KIMI,
