@@ -38,7 +38,16 @@ class TopBarAdBannerTest {
         assertTrue(banner.contains("Lifecycle.Event.ON_RESUME ->"))
         assertTrue(
             "resume 전에는 AdView를 만들지도, 광고를 요청하지도 않는다.",
-            banner.contains("if (!resumed || adView != null || widthDp <= 0) return@LaunchedEffect")
+            banner.contains("if (!resumed || adView != null || adSize == null) return@LaunchedEffect")
+        )
+    }
+
+    @Test
+    fun slotReservesTheSameHeightWhetherTheAdArrivesOrNot() {
+        assertTrue(
+            "예약 높이는 실제 어댑티브 배너 높이와 같아야 광고가 도착해도 화면이 밀리지 않는다.",
+            banner.contains("AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, widthDp)") &&
+                banner.contains(".height((adSize?.height ?: 0).dp)")
         )
     }
 

@@ -14,6 +14,8 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
+import android.net.ConnectivityManager
+import android.net.Network
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
@@ -25,6 +27,7 @@ import android.webkit.WebViewClient
 import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.R
 import com.aiquota.mobile.local.LocalUsageRepository
+import com.aiquota.mobile.sync.NetworkAvailability
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderPreferencesRepository
 import com.aiquota.mobile.local.ProviderUsageSnapshot
@@ -42,6 +45,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import java.time.Instant
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -69,6 +73,7 @@ class ProviderBackgroundRefreshService : Service() {
     private var pendingManualProviderId: ProviderId? = null
     private var pendingManualWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
     private var sessionResetReceiverRegistered = false
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private val sessionResetReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action != ACTION_PROVIDER_SESSION_RESET) return
@@ -104,6 +109,7 @@ class ProviderBackgroundRefreshService : Service() {
         refreshStateRepository = ProviderBackgroundRefreshStateRepository(applicationContext)
         CookieManager.getInstance().setAcceptCookie(true)
         registerSessionResetReceiver()
+        registerNetworkCallback()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -124,6 +130,7 @@ class ProviderBackgroundRefreshService : Service() {
     }
 
     override fun onDestroy() {
+        unregisterNetworkCallback()
         unregisterSessionResetReceiver()
         stopRefreshLoop()
         serviceScope.cancel()
@@ -199,6 +206,8 @@ class ProviderBackgroundRefreshService : Service() {
 
     private fun handleProviderSessionReset(providerId: ProviderId) {
         Log.d(TAG, "sessionReset provider=${providerId.storageId}")
+        // 연결 해제·재로그인 뒤에는 캐시해 둔 세션 토큰이 남의 것이 된다.
+        ProviderCollectionCaches.invalidate(providerId)
         repository.removeProviderSnapshot(providerId)
         collectorInjectionKeys.removeAll { it.contains(":${providerId.storageId}:") }
         val active = activeWebJob?.takeIf { it.job.providerId == providerId }
@@ -226,6 +235,51 @@ class ProviderBackgroundRefreshService : Service() {
         }.isSuccess
     }
 
+    /**
+     * 네트워크가 돌아오면 다음 60초 틱을 기다리지 않고 바로 한 주기를 돌린다. 판단 기준은
+     * 가장 최근 스냅샷 갱신 시각이다 — 하트비트는 건너뛴 주기에도 기록돼 기준이 되지 못한다.
+     * 별도 플래그가 없어 프로세스가 재시작돼도 그대로 동작하고, Wi-Fi ↔ 셀룰러 전환처럼
+     * 콜백이 연달아 와도 시각 조건이 중복 실행을 막는다.
+     */
+    private fun registerNetworkCallback() {
+        if (networkCallback != null) return
+        val manager = getSystemService(ConnectivityManager::class.java) ?: return
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                mainHandler.post { onNetworkRestored() }
+            }
+        }
+        val registered = runCatching { manager.registerDefaultNetworkCallback(callback) }.isSuccess
+        if (registered) networkCallback = callback
+    }
+
+    private fun unregisterNetworkCallback() {
+        val callback = networkCallback ?: return
+        networkCallback = null
+        val manager = getSystemService(ConnectivityManager::class.java) ?: return
+        runCatching { manager.unregisterNetworkCallback(callback) }
+    }
+
+    private fun onNetworkRestored() {
+        if (!running || refreshInProgress) return
+        // 하트비트는 건너뛴 주기에도 남기므로 판단 기준이 될 수 없다. 스냅샷 갱신 시각을 본다.
+        // 오프라인으로 건너뛰는 동안에는 어떤 provider도 갱신되지 않으므로 이 값이 그대로 멈춘다.
+        val snapshotAgeMillis = latestSnapshotAgeMillis() ?: return
+        if (snapshotAgeMillis < ProviderRefreshPlan.AUTO_REFRESH_INTERVAL_MILLIS) return
+        Log.d(TAG, "networkRestored refreshNow snapshotAgeMs=$snapshotAgeMillis")
+        scheduleNextTick(0L)
+    }
+
+    private fun latestSnapshotAgeMillis(): Long? {
+        val latest = repository.readSnapshots()
+            .mapNotNull { snapshot ->
+                runCatching { Instant.parse(snapshot.updatedAt) }.getOrNull()?.toEpochMilli()
+            }
+            .maxOrNull()
+            ?: return Long.MAX_VALUE
+        return (System.currentTimeMillis() - latest).coerceAtLeast(0L)
+    }
+
     private fun scheduleNextTick(delayMillis: Long = ProviderRefreshPlan.AUTO_REFRESH_INTERVAL_MILLIS) {
         if (!running) return
         mainHandler.removeCallbacks(tickRunnable)
@@ -246,23 +300,45 @@ class ProviderBackgroundRefreshService : Service() {
         val manualWidgetId = pendingManualWidgetId
         pendingManualProviderId = null
         pendingManualWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+        val userInitiated = manualProviderId != null || manualWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID
         try {
-            val jobs = if (manualProviderId != null) {
-                ProviderRefreshPlan.manualCycleJobsFor(manualProviderId, repository.readSnapshots())
-            } else {
-                ProviderRefreshPlan.automaticJobsFor(repository.readSnapshots())
+            // 네트워크가 아예 없으면 자동 주기는 통째로 건너뛴다. 그대로 두면 provider마다
+            // 재시도·타임아웃을 끝까지 소진하며 메인 스레드를 붙잡아 배터리만 태운다.
+            // 사용자가 직접 누른 새로고침은 오프라인이어도 시도해 결과를 보여준다.
+            if (!userInitiated && NetworkAvailability.isDefinitelyOffline(applicationContext)) {
+                Log.d(TAG, "cycleSkipped reason=offline")
+                return
+            }
+            // 스냅샷 읽기는 SharedPreferences + JSON 파싱이라 메인 스레드에서 하면 안 된다.
+            val jobs = withContext(Dispatchers.IO) {
+                val snapshots = repository.readSnapshots()
+                if (manualProviderId != null) {
+                    ProviderRefreshPlan.manualCycleJobsFor(manualProviderId, snapshots)
+                } else {
+                    ProviderRefreshPlan.automaticJobsFor(snapshots)
+                }
             }
             if (jobs.isEmpty()) {
+                // 잡 계산은 IO로 넘어가 있어 그 사이 수동 요청이 들어올 수 있다. 그대로 멈추면
+                // 그 요청은 처리되지 못하고 위젯 새로고침 표시만 남는다.
+                if (hasPendingManualRefresh()) return
                 running = false
                 stopSelf()
                 return
             }
+            // 사용자가 직접 누른 새로고침은 "지금 다시 해봐"라는 뜻이다. 쉬게 해 둔 엔드포인트도
+            // 다시 시도해, 쿨다운 때문에 값이 멈춰 보이는 상황에서 빠져나올 길을 남긴다.
+            if (userInitiated) ProviderProbeCooldown.reset()
             Log.d(TAG, "cycleStart providers=${jobs.joinToString(",") { it.providerId.storageId }}")
+            val meterStart = RefreshCycleMeter.sample()
             jobs.forEach { job ->
                 refreshProvider(job, automaticRefresh = manualProviderId == null)
             }
-            evaluateResetNotifications()
-            evaluateUsageThresholdNotifications()
+            withContext(Dispatchers.IO) {
+                evaluateResetNotifications()
+                evaluateUsageThresholdNotifications()
+            }
+            RefreshCycleMeter.log(TAG, meterStart, jobs.size)
         } finally {
             if (manualWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
                 WidgetRefreshFeedback.clearWidgetRefresh(applicationContext, manualWidgetId)
@@ -274,9 +350,13 @@ class ProviderBackgroundRefreshService : Service() {
 
     private suspend fun refreshProvider(job: ProviderRefreshJob, automaticRefresh: Boolean) {
         val effectiveJob = resolveRuntimeRefreshJob(job)
-        val startingSnapshot = repository.readSnapshots().firstOrNull { it.providerId == effectiveJob.providerId }
-        repository.markCollecting(effectiveJob.providerId)
-        UsageSurfaceRefresher.refresh(applicationContext, repository)
+        val startingSnapshot = withContext(Dispatchers.IO) {
+            val previous = repository.readSnapshots().firstOrNull { it.providerId == effectiveJob.providerId }
+            repository.markCollecting(effectiveJob.providerId)
+            UsageSurfaceRefresher.refresh(applicationContext, repository)
+            previous
+        }
+        val providerMeterStart = RefreshCycleMeter.sample()
         val outcome = when (effectiveJob.mode) {
             ProviderRefreshMode.NATIVE_API -> collectNativeProviderUsage(effectiveJob, automaticRefresh)
             ProviderRefreshMode.HIDDEN_WEB_COLLECTOR -> ProviderWebSessionMaintenanceGate.withMaintenanceLock(effectiveJob.providerId) {
@@ -284,7 +364,11 @@ class ProviderBackgroundRefreshService : Service() {
             }
         }
         Log.d(TAG, "outcome provider=${effectiveJob.providerId.storageId} type=${outcome::class.java.simpleName}")
-        if (repository.readSnapshots().none { it.providerId == effectiveJob.providerId }) {
+        RefreshCycleMeter.log(TAG, providerMeterStart, effectiveJob.providerId.storageId)
+        val providerStillTracked = withContext(Dispatchers.IO) {
+            repository.readSnapshots().any { it.providerId == effectiveJob.providerId }
+        }
+        if (!providerStillTracked) {
             destroyProviderWebView(effectiveJob.providerId)
             return
         }
@@ -304,13 +388,16 @@ class ProviderBackgroundRefreshService : Service() {
                     nativeAuthContext = debugNativeAuthContextForSnapshot(effectiveJob.providerId)
                 )
                 repository.saveSnapshot(outcome.snapshot)
+                markCopilotWarmUpPending(effectiveJob.providerId, pending = false)
             }
             is ServiceRefreshOutcome.Payload -> {
-                val snapshot = ProviderUsageNormalizer.normalize(
-                    effectiveJob.providerId,
-                    outcome.rawPayload,
-                    ProviderPayloadSource.STRUCTURED_SCRIPT
-                )
+                val snapshot = withContext(Dispatchers.IO) {
+                    ProviderUsageNormalizer.normalize(
+                        effectiveJob.providerId,
+                        outcome.rawPayload,
+                        ProviderPayloadSource.STRUCTURED_SCRIPT
+                    )
+                }
                 if (snapshot != null) {
                     Log.d(
                         TAG,
@@ -326,6 +413,7 @@ class ProviderBackgroundRefreshService : Service() {
                         nativeAuthContext = debugNativeAuthContextForSnapshot(effectiveJob.providerId)
                     )
                     repository.saveSnapshot(snapshot)
+                    markCopilotWarmUpPending(effectiveJob.providerId, pending = false)
                 } else if (
                     ProviderRefreshFailureClassifier.requiresInteractiveAuth(
                         effectiveJob.providerId,
@@ -354,6 +442,8 @@ class ProviderBackgroundRefreshService : Service() {
                     )
                     repository.failKeepingPrevious(effectiveJob.providerId, "Background collector ran. No trusted usage payload found.")
                 }
+                // 페이로드가 와도 쓸 수 있는 사용량이 없으면 수집에 성공한 게 아니다.
+                if (snapshot == null) markCopilotWarmUpPending(effectiveJob.providerId, pending = true)
             }
             is ServiceRefreshOutcome.Failure -> {
                 Log.w(
@@ -361,6 +451,7 @@ class ProviderBackgroundRefreshService : Service() {
                     "failure provider=${effectiveJob.providerId.storageId} kind=${outcome.failure.kind} message=${safeLogValue(outcome.failure.message)}"
                 )
                 refreshStateRepository.recordFailure(outcome.failure.kind.name)
+                markCopilotWarmUpPending(effectiveJob.providerId, pending = true)
                 val requiresInteractiveAuth = ProviderRefreshFailureClassifier.requiresInteractiveAuth(
                     effectiveJob.providerId,
                     outcome.failure.kind
@@ -402,7 +493,7 @@ class ProviderBackgroundRefreshService : Service() {
                 startingSnapshot?.let(repository::saveSnapshot)
             }
         }
-        UsageSurfaceRefresher.refresh(applicationContext, repository)
+        withContext(Dispatchers.IO) { UsageSurfaceRefresher.refresh(applicationContext, repository) }
         if (effectiveJob.providerId == ProviderId.CLAUDE) {
             maybePrimeClaudeSession()
         }
@@ -671,6 +762,12 @@ class ProviderBackgroundRefreshService : Service() {
             suspendCancellableCoroutine { continuation ->
                 mainHandler.post {
                     val warmUpUrl = webSessionWarmUpUrl(job)
+                    // 워밍업을 실제로 시작하는 지점은 여기 한 곳뿐이다. 위 함수는 타임아웃
+                    // 예산 계산에서도 불리므로 거기서 시각을 갱신하면 두 번째 호출이 null을
+                    // 받아 30분 강제 워밍업이 영영 실행되지 않는다.
+                    if (warmUpUrl != null && job.providerId == ProviderId.COPILOT) {
+                        CopilotWarmUpState.markWarmUpStarted()
+                    }
                     if (warmUpUrl != null &&
                         ProviderSessionRevivePolicy.isReviveUrl(job.providerId, warmUpUrl)
                     ) {
@@ -1927,8 +2024,17 @@ class ProviderBackgroundRefreshService : Service() {
      */
     private fun webSessionWarmUpUrl(job: ProviderRefreshJob): String? {
         return when (job.providerId) {
-            ProviderId.COPILOT -> "https://github.com/"
+            // github.com 홈은 한 번 로드에 90KB에 가깝다(실측). 쿠키가 살아 있는 동안에는
+            // 다시 받을 이유가 없으므로 워밍업을 건너뛴다.
+            ProviderId.COPILOT -> "https://github.com/".takeIf { CopilotWarmUpState.needsWarmUp() }
             else -> ProviderSessionReviveStore.pendingReviveUrl(job.providerId)
         }?.takeUnless { it == job.startUrl }
+    }
+
+    /** Copilot 워밍업은 수집이 실패했을 때만 다시 하도록 표시한다. */
+    private fun markCopilotWarmUpPending(providerId: ProviderId, pending: Boolean) {
+        if (providerId != ProviderId.COPILOT) return
+        Log.d(TAG, "copilotWarmUp pending=$pending")
+        if (pending) CopilotWarmUpState.requireWarmUp() else CopilotWarmUpState.markCollectionSucceeded()
     }
 }

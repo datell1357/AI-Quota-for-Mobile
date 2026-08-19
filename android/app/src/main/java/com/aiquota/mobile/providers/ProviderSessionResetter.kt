@@ -46,6 +46,8 @@ class ProviderSessionResetter(context: Context) {
     }
 
     private fun notifyProviderSessionReset(providerId: ProviderId) {
+        // 방송은 서비스가 살아 있을 때만 닿는다. 프로세스 안의 캐시는 직접 비운다.
+        ProviderCollectionCaches.invalidate(providerId)
         appContext.sendBroadcast(
             ProviderBackgroundRefreshService.createSessionResetIntent(appContext, providerId)
         )

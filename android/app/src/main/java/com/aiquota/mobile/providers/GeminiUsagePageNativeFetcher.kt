@@ -32,6 +32,32 @@ internal object GeminiUsagePageNativeFetcher {
             ?: CookieManager.getInstance().getCookie(GEMINI_ORIGIN)
             ?: return FetchResult(null, "gemini_usage_cookie_unavailable")
         val requestUserAgent = userAgent.takeIf { it.isNotBlank() } ?: ProviderWebViewUserAgent.loginUserAgent()
+
+        // 사용량 페이지 HTML은 한 번에 190KB에 가깝다(실측). 여기서 뽑는 건 batchexecute 호출에
+        // 필요한 토큰 몇 개와 요금제·계정 표시값뿐이고, 정작 사용량은 뒤따르는 RPC가 준다.
+        // 그래서 직전 주기에 통한 토큰을 잠시 재사용하고 HTML은 건너뛴다. 토큰이 만료되면
+        // RPC가 실패하므로 그때 캐시를 버리고 같은 호출 안에서 HTML을 다시 받는다.
+        cachedRpcSession()?.let { cached ->
+            val cachedResult = fetchBatchExecuteRpc(
+                params = cached.params,
+                cookieHeader = cookieHeader,
+                userAgent = requestUserAgent,
+                usagePageUrl = requestUsagePageUrl,
+                rpcId = cached.rpcId
+            )
+            val cachedPayload = cachedResult.payload
+            if (cachedPayload != null) {
+                mergeGeminiMetadata(cachedPayload, cached.metadata)
+                return FetchResult(
+                    cachedPayload.toString(),
+                    "ok",
+                    listOf("gemini_usage_page_html:cached", cachedResult.status)
+                )
+            }
+            Log.d(TAG, "geminiRpcSession cacheMiss reason=rpc_failed status=${cachedResult.status}")
+            invalidateRpcSession()
+        }
+
         val sessionResult = fetchUsagePageParams(cookieHeader, requestUserAgent, requestUsagePageUrl)
         val statuses = sessionResult.statuses.toMutableList()
         sessionResult.bootstrapPayload?.let { payload ->
@@ -56,6 +82,7 @@ internal object GeminiUsagePageNativeFetcher {
             statuses += result.status
             result.payload?.let {
                 mergeGeminiMetadata(it, sessionResult.bootstrapMetadata)
+                rememberRpcSession(params, rpcId, sessionResult.bootstrapMetadata)
                 return FetchResult(it.toString(), "ok", statuses)
             }
         }
@@ -69,9 +96,52 @@ internal object GeminiUsagePageNativeFetcher {
         statuses += legacyResult.status
         legacyResult.payload?.let {
             mergeGeminiMetadata(it, sessionResult.bootstrapMetadata)
+            rememberRpcSession(params, JSF9QC_RPC_ID, sessionResult.bootstrapMetadata)
             return FetchResult(it.toString(), "ok", statuses)
         }
         return FetchResult(null, "gemini_usage_page_rpc_unavailable", statuses)
+    }
+
+    /**
+     * 직전에 통한 batchexecute 세션. 프로세스 메모리에만 두고 [RPC_SESSION_TTL_MILLIS] 뒤 만료한다.
+     * 부트스트랩(HTML 안에 사용량이 들어오는 경로)으로 성공한 주기는 캐시하지 않는다. RPC를 쓰지
+     * 않은 계정에서 캐시를 태우면 매번 헛된 RPC 한 번을 더 쓰게 된다.
+     */
+    private data class CachedRpcSession(
+        val params: GeminiUsagePageRpcSession.Params,
+        val rpcId: String,
+        val metadata: JSONObject?,
+        val expiresAtMillis: Long
+    )
+
+    @Volatile
+    private var rpcSession: CachedRpcSession? = null
+
+    private fun cachedRpcSession(nowMillis: Long = System.currentTimeMillis()): CachedRpcSession? {
+        val cached = rpcSession ?: return null
+        if (nowMillis >= cached.expiresAtMillis) {
+            rpcSession = null
+            return null
+        }
+        return cached
+    }
+
+    private fun rememberRpcSession(
+        params: GeminiUsagePageRpcSession.Params,
+        rpcId: String,
+        metadata: JSONObject?,
+        nowMillis: Long = System.currentTimeMillis()
+    ) {
+        rpcSession = CachedRpcSession(
+            params = params,
+            rpcId = rpcId,
+            metadata = metadata,
+            expiresAtMillis = nowMillis + RPC_SESSION_TTL_MILLIS
+        )
+    }
+
+    internal fun invalidateRpcSession() {
+        rpcSession = null
     }
 
     private fun fetchBatchExecuteRpc(
@@ -939,6 +1009,8 @@ internal object GeminiUsagePageNativeFetcher {
     private const val GEMINI_ORIGIN = "https://gemini.google.com"
     private const val GEMINI_USAGE_PAGE_URL = "https://gemini.google.com/usage"
     private const val JSF9QC_RPC_ID = "jSf9Qc"
+    /** 캐시한 토큰을 재사용하는 기간. 15분이면 HTML 한 번에 열네 주기를 태운다. */
+    private const val RPC_SESSION_TTL_MILLIS = 15 * 60_000L
     private const val NETWORK_TIMEOUT_MS = 10_000
     private const val MAX_DISCOVERY_RPC_IDS = 12
     private const val MAX_PROBE_RPC_IDS = 6

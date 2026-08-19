@@ -84,6 +84,63 @@ class ProviderUsageDisplayTextTest {
     }
 
     @Test
+    fun koreanLabelTranslatesGrokWeeklySuperGrokLimit() {
+        val locale = Locale.KOREAN
+
+        assertEquals("주간 한도", displayUsageLabel("grok", "SuperGrok weekly", 0, locale))
+        // 카드형에서는 꼬리말까지 떼고 "주간"만 남는다.
+        assertEquals("주간", compactUsageLabel(displayUsageLabel("grok", "SuperGrok weekly", 0, locale)))
+        // 영문 UI는 원문 라벨을 그대로 쓴다.
+        assertEquals("SuperGrok weekly", displayUsageLabel("grok", "SuperGrok weekly", 0, Locale.US))
+    }
+
+    @Test
+    fun englishLabelTranslatesKoreanWindowLabelsFromNormalizer() {
+        // GLM은 정규화 단계에서 한국어 라벨을 만든다. 영문 UI에 그대로 새면 안 된다.
+        assertEquals("5-hour limit", displayUsageLabel("glm", "5시간 한도", 0, Locale.US))
+        assertEquals("Weekly limit", displayUsageLabel("glm", "주간 한도", 1, Locale.US))
+        assertEquals("Monthly limit", displayUsageLabel("glm", "월간 한도", 2, Locale.US))
+        // 카드형에서는 꼬리말까지 떼고 짧게 쓴다.
+        assertEquals("5-hour", compactUsageLabel(displayUsageLabel("glm", "5시간 한도", 0, Locale.US)))
+        assertEquals("Weekly", compactUsageLabel(displayUsageLabel("glm", "주간 한도", 1, Locale.US)))
+        // 한국어 UI는 그대로 유지된다.
+        assertEquals("5시간 한도", displayUsageLabel("glm", "5시간 한도", 0, Locale.KOREAN))
+    }
+
+    @Test
+    fun compactLabelDropsKoreanWindowSuffix() {
+        assertEquals("5시간", compactUsageLabel("5시간 세션"))
+        assertEquals("주간", compactUsageLabel("주간 세션"))
+        assertEquals("5시간", compactUsageLabel("5시간 한도"))
+        assertEquals("Spark 주간", compactUsageLabel("Spark 주간 세션"))
+        assertEquals("전체", compactUsageLabel("전체 사용량"))
+        assertEquals("자동", compactUsageLabel("자동 사용량"))
+        assertEquals("API", compactUsageLabel("API 사용량"))
+        assertEquals("크레딧", compactUsageLabel("크레딧"))
+        assertEquals("사용량", compactUsageLabel("사용량"))
+    }
+
+    @Test
+    fun compactLabelDropsProductNameAndFillerWords() {
+        assertEquals("Session", compactUsageLabel("Codex Session"))
+        assertEquals("Weekly", compactUsageLabel("Codex Weekly"))
+        assertEquals("Weekly", compactUsageLabel("SuperGrok weekly"))
+        assertEquals("Total", compactUsageLabel("Total Usage"))
+        assertEquals("Auto", compactUsageLabel("Auto Usage"))
+        assertEquals("Usage", compactUsageLabel("Usage"))
+    }
+
+    @Test
+    fun compactLabelShortensAntigravityModelNames() {
+        assertEquals("3.5 F(H)", compactUsageLabel("Gemini 3.5 Flash(High)"))
+        assertEquals("3.5 F(M)", compactUsageLabel("Gemini 3.5 Flash(Medium)"))
+        assertEquals("3.1 P(H)", compactUsageLabel("Gemini 3.1 Pro(High)"))
+        assertEquals("3 F", compactUsageLabel("Gemini 3 Flash"))
+        // Gemini 패턴이 아닌 모델은 벤더 이름만 떼고 나머지는 그대로 둔다.
+        assertEquals("Sonnet 4.6 Thinking", compactUsageLabel("Claude Sonnet 4.6 Thinking"))
+    }
+
+    @Test
     fun koreanResetTextTranslatesCodexRelativeDurations() {
         val locale = Locale.KOREAN
 

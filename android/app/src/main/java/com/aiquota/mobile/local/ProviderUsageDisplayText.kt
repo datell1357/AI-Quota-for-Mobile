@@ -34,6 +34,14 @@ fun displayUsageLabel(
         return if (lineIndex == 0) "5시간 세션" else "주간 세션"
     }
 
+    if (providerId.equals(ProviderId.GROK.storageId, ignoreCase = true)) {
+        // Grok은 주간 SuperGrok 한도 한 줄만 수집한다. 원문 라벨이 그대로 나오면
+        // 알림 문구까지 "Grok SuperGrok weekly 5% 이하!"처럼 섞여 버린다.
+        when (normalized) {
+            "supergrok weekly", "supergrok week", "weekly limit", "weekly" -> return "주간 한도"
+        }
+    }
+
     if (providerId.equals(ProviderId.OPENCODE.storageId, ignoreCase = true)) {
         when (normalized) {
             "go 5 hour limit", "go 5h limit", "go rolling usage" -> return "5시간 한도"
@@ -99,6 +107,68 @@ fun displayUsageLabel(
     }
 }
 
+/**
+ * 카드형처럼 폭이 좁은 자리에서 쓰는 짧은 라벨. 카드 안에서는 provider가 이미 아이콘·제목으로
+ * 드러나 있으므로 제품 이름과 군더더기 낱말을 떼고 창 종류만 남긴다.
+ *
+ *   "5시간 세션" → "5시간", "Codex Weekly" → "Weekly", "SuperGrok weekly" → "Weekly",
+ *   "Total Usage" → "Total", "Gemini 3.5 Flash(High)" → "3.5 F(H)"
+ */
+fun compactUsageLabel(label: String): String {
+    val trimmed = label.trim()
+    if (trimmed.isEmpty()) return label
+
+    // 한국어는 창 종류를 나타내는 꼬리말만 뗀다. "사용량"도 카드 안에서는 군더더기다.
+    val withoutKoreanSuffix = trimmed
+        .removeSuffix(" 세션")
+        .removeSuffix(" 한도")
+        .removeSuffix(" 사용량")
+        .trim()
+    if (withoutKoreanSuffix != trimmed) return withoutKoreanSuffix.ifBlank { trimmed }
+
+    compactGeminiModelLabel(trimmed)?.let { return it }
+
+    val withoutUsage = Regex("""\s+(usage|limit)$""", RegexOption.IGNORE_CASE).replace(withoutKoreanSuffix, "")
+    val withoutProduct = COMPACT_LABEL_PRODUCT_PREFIXES
+        .firstOrNull { withoutUsage.startsWith("$it ", ignoreCase = true) }
+        ?.let { withoutUsage.substring(it.length + 1) }
+        ?: withoutUsage
+
+    val shortened = withoutProduct.trim()
+    if (shortened.isBlank()) return trimmed
+    return shortened.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() }
+}
+
+/** "Gemini 3.5 Flash(High)" → "3.5 F(H)". 등급이 없으면 "3 Flash" → "3 F". */
+private fun compactGeminiModelLabel(label: String): String? {
+    Regex("""^Gemini\s+([0-9.]+)\s+([A-Za-z])[A-Za-z-]*\s*\(\s*([A-Za-z])[A-Za-z]*\s*\)$""", RegexOption.IGNORE_CASE)
+        .matchEntire(label)
+        ?.let { match ->
+            val (version, model, tier) = match.destructured
+            return "$version ${model.uppercase(Locale.US)}(${tier.uppercase(Locale.US)})"
+        }
+    Regex("""^Gemini\s+([0-9.]+)\s+([A-Za-z])[A-Za-z-]*$""", RegexOption.IGNORE_CASE)
+        .matchEntire(label)
+        ?.let { match ->
+            val (version, model) = match.destructured
+            return "$version ${model.uppercase(Locale.US)}"
+        }
+    return null
+}
+
+/** 카드 안에서는 이미 provider를 알 수 있으므로 라벨 앞의 제품 이름은 뗀다. */
+private val COMPACT_LABEL_PRODUCT_PREFIXES = listOf(
+    "SuperGrok",
+    "Codex",
+    "Claude",
+    "Cursor",
+    "Copilot",
+    "OpenCode",
+    "Grok",
+    "Kimi",
+    "Kiro"
+)
+
 fun displayRemainingText(text: String, locale: Locale = Locale.getDefault()): String {
     if (!locale.isKoreanLanguage()) return text
     val value = text.trim()
@@ -151,6 +221,10 @@ private fun englishUsageLabel(
     if (providerId.equals(ProviderId.CLAUDE.storageId, ignoreCase = true) && normalized == "rate limit") {
         return if (lineIndex == 0) "Session" else "Weekly"
     }
+    // GLM처럼 정규화 단계에서 한국어 라벨을 만들어 두는 provider가 있다. 영문 UI에서
+    // 원문이 그대로 나오지 않도록 창 종류 라벨을 영어로 돌려준다.
+    KOREAN_WINDOW_LABELS[label.trim()]?.let { return it }
+
     return when (normalized) {
         "five hour", "five hour limit" -> "Claude 5-hour limit"
         "seven day", "seven day limit" -> "Claude weekly limit"
@@ -158,6 +232,14 @@ private fun englishUsageLabel(
         else -> label
     }
 }
+
+private val KOREAN_WINDOW_LABELS = mapOf(
+    "5시간 한도" to "5-hour limit",
+    "주간 한도" to "Weekly limit",
+    "월간 한도" to "Monthly limit",
+    "5시간 세션" to "Session",
+    "주간 세션" to "Weekly"
+)
 
 private fun codexSparkDisplayLabel(providerId: String, normalized: String, locale: Locale): String? {
     if (!providerId.equals(ProviderId.CODEX.storageId, ignoreCase = true)) return null

@@ -43,7 +43,8 @@ class AppLayoutMetricsTest {
         assertTrue(phone.navChipWidthDp in 48..64)
         assertTrue(tablet.navChipWidthDp in 72..96)
         assertTrue(tablet.navChipWidthDp < phone.navChipWidthDp * 2)
-        assertTrue(tablet.navBarMaxWidthDp < 1024)
+        // 태블릿 하단 바는 화면 폭을 그대로 쓴다.
+        assertEquals(1024, tablet.navBarMaxWidthDp)
         assertTrue(phone.navChipHeightDp >= 70)
         assertTrue(phone.navChipVerticalPaddingDp <= 4)
         assertTrue(tablet.navChipHeightDp >= 64)

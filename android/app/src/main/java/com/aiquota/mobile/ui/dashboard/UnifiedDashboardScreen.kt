@@ -15,7 +15,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -26,6 +29,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
@@ -72,6 +77,7 @@ import com.aiquota.mobile.local.ProviderPreferencesCodec
 import com.aiquota.mobile.local.ProviderRefreshState
 import com.aiquota.mobile.local.ProviderUsageLine
 import com.aiquota.mobile.local.ProviderUsageSnapshot
+import com.aiquota.mobile.local.compactUsageLabel
 import com.aiquota.mobile.local.displayRemainingText
 import com.aiquota.mobile.local.displayResetTextForLocale
 import com.aiquota.mobile.local.displayUsageLabel
@@ -81,7 +87,9 @@ import com.aiquota.mobile.ui.AIQuotaColors
 import com.aiquota.mobile.ui.AIQuotaTheme
 import com.aiquota.mobile.ui.AppLayoutMetrics
 import com.aiquota.mobile.ui.compactProviderLineBreakStyle
+import com.aiquota.mobile.local.DashboardViewMode
 import com.aiquota.mobile.ui.dashboardProviderCardHeightDp
+import com.aiquota.mobile.ui.forDashboardViewMode
 import com.aiquota.mobile.ui.rememberAppLayoutMetrics
 import com.aiquota.mobile.ui.provider.ProviderIconImage
 import kotlinx.coroutines.launch
@@ -89,6 +97,8 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 private val ExplorerAccentColor = AIQuotaColors.SurfaceRaised
+/** 대시보드 상단 행의 정사각형 버튼(설정·목록형·카드형) 한 변. */
+private val DashboardHeaderButtonSize = 40.dp
 private const val DashboardGaugeBaseHeightDp = 4f
 private const val DashboardGaugeMaxScale = 2f
 private const val DashboardGaugeFullExtraHeightDp = 80f
@@ -127,6 +137,9 @@ internal fun dashboardGaugeHeightDp(
     cardHeightDp: Int,
     layoutMetrics: AppLayoutMetrics
 ): Float {
+    // 카드형은 카드 최소 높이를 낮춰 둬서 "남는 높이" 비율이 부풀려진다. 그대로 두면 게이지만
+    // 목록형의 두 배로 두꺼워져 작아진 글자와 어긋난다. 카드형은 기본 두께로 고정한다.
+    if (layoutMetrics.dashboardDenseText) return DashboardGaugeBaseHeightDp
     val heightRatio = dashboardExtraHeightRatio(cardHeightDp, layoutMetrics)
     return DashboardGaugeBaseHeightDp * (1f + ((DashboardGaugeMaxScale - 1f) * heightRatio))
 }
@@ -160,9 +173,12 @@ fun UnifiedDashboardScreen(
     onReorderProvider: (ProviderId, Int) -> Unit,
     onAddWidget: () -> Unit,
     onOpenSettings: () -> Unit,
+    viewMode: DashboardViewMode = DashboardViewMode.DEFAULT,
+    onSelectViewMode: (DashboardViewMode) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val layoutMetrics = rememberAppLayoutMetrics()
+    // 카드형은 열 수·표시 개수·카드 높이가 달라 지표 자체를 바꿔 끼운다.
+    val layoutMetrics = rememberAppLayoutMetrics().forDashboardViewMode(viewMode)
     val colors = AIQuotaTheme.colors
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
@@ -231,18 +247,37 @@ fun UnifiedDashboardScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(layoutMetrics.dashboardTitleHeightDp.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(R.string.dashboard_title),
+                // 제목과 설정 버튼이 남는 폭을 모두 차지한다. 폭이 모자라면 오른쪽 버튼들을
+                // 찌그러뜨리는 대신 제목이 줄어든다.
+                Row(
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = colors.textPrimary,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.dashboard_title),
+                        modifier = Modifier.weight(1f, fill = false),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = colors.textPrimary,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    // 종합 설정 진입점은 대시보드에만 둔다. 개별 provider 탭에서는 노출하지 않는다.
+                    IconButton(
+                        onClick = onOpenSettings,
+                        modifier = Modifier.size(DashboardHeaderButtonSize)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_settings),
+                            contentDescription = stringResource(R.string.nav_settings),
+                            tint = colors.textSecondary
+                        )
+                    }
+                }
                 OutlinedButton(
                     onClick = onAddWidget,
                     modifier = Modifier.widthIn(min = 104.dp)
@@ -253,14 +288,7 @@ fun UnifiedDashboardScreen(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                // 종합 설정 진입점은 대시보드에만 둔다. 개별 provider 탭에서는 노출하지 않는다.
-                IconButton(onClick = onOpenSettings) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_settings),
-                        contentDescription = stringResource(R.string.nav_settings),
-                        tint = colors.textSecondary
-                    )
-                }
+                DashboardViewModeButtons(viewMode = viewMode, onSelectViewMode = onSelectViewMode)
             }
 
             if (visibleProviders.isEmpty()) {
@@ -389,6 +417,61 @@ fun UnifiedDashboardScreen(
     }
 }
 
+/**
+ * 목록형·카드형 선택 버튼. 토글이 아니라 두 버튼을 나란히 두고 지금 모드를 강조한다.
+ */
+@Composable
+private fun DashboardViewModeButtons(
+    viewMode: DashboardViewMode,
+    onSelectViewMode: (DashboardViewMode) -> Unit
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        DashboardViewModeButton(
+            iconRes = R.drawable.ic_view_list,
+            descriptionRes = R.string.dashboard_view_mode_switch_to_list,
+            selected = viewMode == DashboardViewMode.LIST,
+            onClick = { onSelectViewMode(DashboardViewMode.LIST) }
+        )
+        DashboardViewModeButton(
+            iconRes = R.drawable.ic_view_grid,
+            descriptionRes = R.string.dashboard_view_mode_switch_to_card,
+            selected = viewMode == DashboardViewMode.CARD,
+            onClick = { onSelectViewMode(DashboardViewMode.CARD) }
+        )
+    }
+}
+
+@Composable
+private fun DashboardViewModeButton(
+    iconRes: Int,
+    descriptionRes: Int,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val colors = AIQuotaTheme.colors
+    Surface(
+        onClick = onClick,
+        // requiredSize라야 상단 행이 좁아져도 두 버튼이 같은 정사각형으로 남는다.
+        // size만 쓰면 폭이 모자랄 때 마지막 버튼만 찌그러진다.
+        modifier = Modifier.requiredSize(DashboardHeaderButtonSize),
+        shape = RoundedCornerShape(10.dp),
+        color = if (selected) colors.primary.copy(alpha = 0.16f) else Color.Transparent,
+        border = BorderStroke(1.dp, if (selected) colors.primary else colors.borderSoft)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = stringResource(descriptionRes),
+                modifier = Modifier.size(22.dp),
+                tint = if (selected) colors.primary else colors.textSecondary
+            )
+        }
+    }
+}
+
 @Composable
 private fun EmptyDashboardState(layoutMetrics: AppLayoutMetrics) {
     val colors = AIQuotaTheme.colors
@@ -493,7 +576,19 @@ private fun ProviderUsageCard(
     onAutoScroll: (Float) -> Unit
 ) {
     val colors = AIQuotaTheme.colors
-    val isCompactDashboardCard = layoutMetrics.dashboardGridColumnCount == 1
+    val isCompactDashboardCard = layoutMetrics.dashboardCompactCard
+    // 카드형은 카드가 작아 글자도 한 단계 줄인다. 목록형에서는 지금 크기를 유지한다.
+    val isDenseCardText = layoutMetrics.dashboardDenseText
+    val cardTitleStyle = if (isDenseCardText) {
+        MaterialTheme.typography.labelMedium.copy(fontSize = 10.sp, lineHeight = 13.sp)
+    } else {
+        MaterialTheme.typography.labelMedium
+    }
+    val cardMessageStyle = if (isDenseCardText) {
+        MaterialTheme.typography.bodyMedium.copy(fontSize = 11.sp, lineHeight = 14.sp)
+    } else {
+        MaterialTheme.typography.bodyMedium
+    }
     val titleBarHeight = when {
         colors.theme == com.aiquota.mobile.local.AppTheme.MACOS && isCompactDashboardCard -> 26.dp
         colors.theme == com.aiquota.mobile.local.AppTheme.MACOS -> 30.dp
@@ -681,7 +776,7 @@ private fun ProviderUsageCard(
                 Text(
                     text = windowTitle,
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.labelMedium,
+                    style = cardTitleStyle,
                     color = colors.titleText,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
@@ -727,7 +822,11 @@ private fun ProviderUsageCard(
                             "C:\\AI Quota\\$windowTitle"
                         },
                         modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = if (isDenseCardText) {
+                            MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, lineHeight = 12.sp)
+                        } else {
+                            MaterialTheme.typography.labelSmall
+                        },
                         color = if (colors.theme == com.aiquota.mobile.local.AppTheme.MACOS) colors.titleText else colors.textPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -751,8 +850,21 @@ private fun ProviderUsageCard(
                 ) {
                     // Content fills the whole card body so the provider icon and status stay
                     // vertically centred even when the connect button sits at the bottom.
+                    // 연결 버튼은 카드 우하단에 겹쳐 그려진다. 카드형처럼 폭이 좁으면 본문이
+                    // 버튼 자리까지 내려와 글자가 가려지므로 그만큼 아래 여백을 준다.
+                    val connectActionInset = if (
+                        snapshot.shouldShowDashboardConnectAction() &&
+                        layoutMetrics.dashboardGridColumnCount > 1 &&
+                        isCompactDashboardCard
+                    ) {
+                        32.dp
+                    } else {
+                        0.dp
+                    }
                     Row(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(bottom = connectActionInset),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -763,7 +875,7 @@ private fun ProviderUsageCard(
                             )
                             Text(
                                 text = dashboardProviderIdentityLabel(providerId),
-                                style = compactProviderLineBreakStyle(providerId, MaterialTheme.typography.labelMedium),
+                                style = compactProviderLineBreakStyle(providerId, cardTitleStyle),
                                 color = if (colors.theme == com.aiquota.mobile.local.AppTheme.MACOS) colors.titleText else colors.textPrimary,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
@@ -776,7 +888,7 @@ private fun ProviderUsageCard(
                         ) {
                             Text(
                                 text = snapshot.statusLabel(),
-                                style = MaterialTheme.typography.labelMedium,
+                                style = cardTitleStyle,
                                 color = if (colors.theme == com.aiquota.mobile.local.AppTheme.MACOS) colors.titleText else colors.textPrimary,
                                 maxLines = 1
                             )
@@ -785,7 +897,7 @@ private fun ProviderUsageCard(
                                     text = dashboardEmptyMessageResource(snapshot)?.let { stringResource(it) }
                                         ?: snapshot.message
                                         ?: stringResource(R.string.dashboard_no_lines),
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    style = cardMessageStyle,
                                     color = if (colors.theme == com.aiquota.mobile.local.AppTheme.MACOS) colors.textMuted else colors.textSecondary,
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
@@ -797,6 +909,7 @@ private fun ProviderUsageCard(
                                         providerId = providerId,
                                         lineIndex = index,
                                         compact = isCompactDashboardCard,
+                                        dense = isDenseCardText,
                                         gaugeHeight = dashboardGaugeHeight,
                                         gaugeColorHex = gaugeColorHex
                                     )
@@ -808,9 +921,29 @@ private fun ProviderUsageCard(
                     if (snapshot.shouldShowDashboardConnectAction()) {
                         Button(
                             onClick = { onConnectProvider(providerId) },
-                            modifier = Modifier.align(Alignment.BottomEnd)
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .then(
+                                    if (isDenseCardText) {
+                                        Modifier.defaultMinSize(minWidth = 64.dp, minHeight = 28.dp)
+                                    } else {
+                                        Modifier
+                                    }
+                                ),
+                            contentPadding = if (isDenseCardText) {
+                                PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                            } else {
+                                ButtonDefaults.ContentPadding
+                            }
                         ) {
-                            Text(stringResource(R.string.provider_connect))
+                            Text(
+                                text = stringResource(R.string.provider_connect),
+                                style = if (isDenseCardText) {
+                                    MaterialTheme.typography.labelSmall
+                                } else {
+                                    LocalTextStyle.current
+                                }
+                            )
                         }
                     }
                 }
@@ -1069,6 +1202,7 @@ private fun UsageLinePreview(
     providerId: ProviderId,
     lineIndex: Int,
     compact: Boolean,
+    dense: Boolean,
     gaugeHeight: Dp,
     gaugeColorHex: String?
 ) {
@@ -1077,15 +1211,15 @@ private fun UsageLinePreview(
     val gaugeColor = remember(gaugeColorHex, colors.progress) {
         ProviderGaugeColor.toArgbOrNull(gaugeColorHex)?.let(::Color) ?: colors.progress
     }
-    val labelStyle = if (compact) {
-        MaterialTheme.typography.bodySmall.copy(lineHeight = 14.sp)
-    } else {
-        MaterialTheme.typography.bodySmall
+    val labelStyle = when {
+        dense -> MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 13.sp)
+        compact -> MaterialTheme.typography.bodySmall.copy(lineHeight = 14.sp)
+        else -> MaterialTheme.typography.bodySmall
     }
-    val resetStyle = if (compact) {
-        MaterialTheme.typography.labelSmall.copy(lineHeight = 12.sp)
-    } else {
-        MaterialTheme.typography.labelSmall
+    val resetStyle = when {
+        dense -> MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, lineHeight = 11.sp)
+        compact -> MaterialTheme.typography.labelSmall.copy(lineHeight = 12.sp)
+        else -> MaterialTheme.typography.labelSmall
     }
     val resetText = displayResetTextForLocale(line.effectiveResetText(), locale)
         ?: if (line.remainingPercent != null) {
@@ -1104,7 +1238,8 @@ private fun UsageLinePreview(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = line.displayUsageLabel(providerId, lineIndex, locale),
+                text = line.displayUsageLabel(providerId, lineIndex, locale)
+                    .let { if (dense) compactUsageLabel(it) else it },
                 modifier = Modifier.weight(1f),
                 style = labelStyle,
                 fontWeight = FontWeight.Medium,

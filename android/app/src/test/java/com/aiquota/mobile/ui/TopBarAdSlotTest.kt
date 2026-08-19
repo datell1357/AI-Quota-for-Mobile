@@ -54,7 +54,7 @@ class TopBarAdSlotTest {
     fun settingsEntryStaysOnDashboardHeaderSoTheTopBarIsFreeForAds() {
         val dashboard = File("src/main/java/com/aiquota/mobile/ui/dashboard/UnifiedDashboardScreen.kt").readText()
 
-        assertTrue(dashboard.contains("IconButton(onClick = onOpenSettings)"))
+        assertTrue(dashboard.contains("onClick = onOpenSettings"))
         assertTrue(
             "종합 설정 톱니바퀴가 상단바로 돌아오면 광고 자리가 사라진다.",
             !topBar.contains("R.drawable.ic_settings")

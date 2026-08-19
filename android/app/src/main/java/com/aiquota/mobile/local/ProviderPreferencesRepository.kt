@@ -107,6 +107,16 @@ class ProviderPreferencesRepository(context: Context) {
             .apply()
     }
 
+    fun dashboardViewMode(): DashboardViewMode {
+        return DashboardViewMode.fromStorageId(preferences.getString(KEY_DASHBOARD_VIEW_MODE, null))
+    }
+
+    fun setDashboardViewMode(mode: DashboardViewMode) {
+        preferences.edit()
+            .putString(KEY_DASHBOARD_VIEW_MODE, mode.name)
+            .apply()
+    }
+
     fun isClaudeAutoResetPrimeEnabled(): Boolean {
         return preferences.getBoolean(KEY_CLAUDE_AUTO_RESET_PRIME, false)
     }
@@ -195,6 +205,7 @@ class ProviderPreferencesRepository(context: Context) {
         private const val KEY_DASHBOARD_WIDGET_HIDDEN_PROVIDERS_PREFIX = "dashboard_widget_hidden_providers_"
         private const val KEY_PROVIDER_GAUGE_COLOR_PREFIX = "provider_gauge_color_"
         private const val KEY_CLAUDE_AUTO_RESET_PRIME = "claude_auto_reset_prime_enabled"
+        private const val KEY_DASHBOARD_VIEW_MODE = "dashboard_view_mode"
         private const val KEY_RESET_NOTIFICATION_PREFIX = "reset_notification_enabled_"
         private const val KEY_USAGE_THRESHOLD_ENABLED_PREFIX = "usage_threshold_enabled_"
         private const val KEY_USAGE_THRESHOLD_PERCENT_PREFIX = "usage_threshold_percent_"

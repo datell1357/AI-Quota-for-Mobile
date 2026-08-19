@@ -78,6 +78,7 @@ import com.aiquota.mobile.local.snapshotUpdatedAtForStatusTransition
 import com.aiquota.mobile.notification.UsageLimitNotificationController
 import com.aiquota.mobile.providers.AntigravityLoopbackOAuthActivity
 import com.aiquota.mobile.providers.GlmApiKeyActivity
+import com.aiquota.mobile.providers.ProviderCollectionCaches
 import com.aiquota.mobile.providers.ProviderConnectorRegistry
 import com.aiquota.mobile.providers.ProviderHostAllowlist
 import com.aiquota.mobile.providers.ProviderBackgroundRefreshStateRepository
@@ -143,6 +144,7 @@ fun AIQuotaAppShell(
     var providerOrder by remember { mutableStateOf(providerPreferencesRepository.providerOrder()) }
     var hiddenProviders by remember { mutableStateOf(providerPreferencesRepository.hiddenProviders()) }
     var providerGaugeColors by remember { mutableStateOf(providerPreferencesRepository.providerGaugeColors()) }
+    var dashboardViewMode by remember { mutableStateOf(providerPreferencesRepository.dashboardViewMode()) }
     var snapshots by remember { mutableStateOf(localUsageRepository.readSnapshots()) }
     var busyProvider by remember { mutableStateOf<ProviderId?>(null) }
     var canPostNotifications by remember {
@@ -244,6 +246,9 @@ fun AIQuotaAppShell(
     }
 
     fun connectProvider(providerId: ProviderId) {
+        // 재로그인·계정 전환은 연결 해제를 거치지 않는다. 이전 세션에서 통했던 토큰과 판정을
+        // 그대로 두면 새 계정 화면에 옛 요금제·계정이 최대 15분 남는다.
+        ProviderCollectionCaches.invalidate(providerId)
         val connector = connectorRegistry.connectorFor(providerId)
         val now = Instant.now().toString()
         route = AppRoute.ProviderDetail(providerId)
@@ -737,6 +742,13 @@ fun AIQuotaAppShell(
                             onReorderProvider = ::reorderVisibleProvider,
                             onAddWidget = { showDashboardWidgetPicker = true },
                             onOpenSettings = { route = AppRoute.Settings },
+                            viewMode = dashboardViewMode,
+                            onSelectViewMode = { mode ->
+                                if (mode != dashboardViewMode) {
+                                    dashboardViewMode = mode
+                                    providerPreferencesRepository.setDashboardViewMode(mode)
+                                }
+                            },
                             modifier = Modifier.fillMaxSize()
                         )
                         is AppRoute.ProviderDetail -> {
@@ -1068,6 +1080,8 @@ private fun AppTopBar(
     // 겹치므로 광고를 띄우지 않는다.
     val showAd = !isSettingsRoute && adContent != null
 
+    // 위쪽은 상태 표시줄을 피해야 해서 고정 여백을 그대로 쓴다(실측 인셋은 이 기기에서 50dp라
+    // 오히려 배너가 더 내려간다). 대신 아래쪽은 배너가 이미 본문과 시각적으로 나뉘므로 최소만 남긴다.
     Surface(
         color = colors.appBackground,
         tonalElevation = 0.dp,
@@ -1078,9 +1092,14 @@ private fun AppTopBar(
                 start = layoutMetrics.topBarHorizontalPaddingDp.dp,
                 top = (layoutMetrics.topBarVerticalPaddingDp + layoutMetrics.topBarTopExtraPaddingDp).dp,
                 end = layoutMetrics.topBarHorizontalPaddingDp.dp,
-                bottom = (layoutMetrics.topBarVerticalPaddingDp - layoutMetrics.mainContentTopLiftDp)
-                    .coerceAtLeast(0)
-                    .dp
+                bottom = if (showAd) {
+                    // 본문 화면이 자체 상단 여백을 갖고 있어 배너 아래에 여백을 더 두면 띠가 겹친다.
+                    0.dp
+                } else {
+                    (layoutMetrics.topBarVerticalPaddingDp - layoutMetrics.mainContentTopLiftDp)
+                        .coerceAtLeast(0)
+                        .dp
+                }
             ),
             contentAlignment = Alignment.CenterEnd
         ) {

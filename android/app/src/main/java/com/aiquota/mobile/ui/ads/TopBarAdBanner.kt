@@ -4,8 +4,10 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.util.Log
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -16,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -92,6 +95,15 @@ private fun TopBarAdBannerContent(availableWidthDp: Int) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val widthDp = availableWidthDp
     val unitId = remember { AdConfig.bannerUnitId() }
+    // 슬롯 높이는 광고가 오기 전에 확정해 둔다. 예약 높이와 실제 배너 높이가 다르면 광고가
+    // 도착하는 순간 아래 화면이 그만큼 밀린다.
+    val adSize = remember(widthDp) {
+        if (widthDp <= 0) {
+            null
+        } else {
+            AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, widthDp)
+        }
+    }
     var resumed by remember { mutableStateOf(false) }
     var adView by remember { mutableStateOf<AdView?>(null) }
 
@@ -125,7 +137,7 @@ private fun TopBarAdBannerContent(availableWidthDp: Int) {
             stale.destroy()
             adView = null
         }
-        if (!resumed || adView != null || widthDp <= 0) return@LaunchedEffect
+        if (!resumed || adView != null || adSize == null) return@LaunchedEffect
         // 동의 절차가 끝나기 전에는 광고를 요청하지 않는다. Activity가 없으면 띄우지 않는다.
         val activity = context.findActivity() ?: return@LaunchedEffect
         if (!AdConsentManager.ensureConsent(activity)) {
@@ -136,17 +148,24 @@ private fun TopBarAdBannerContent(availableWidthDp: Int) {
         adView = AdView(context).apply {
             // 어떤 폭으로 만든 배너인지 표시해 두고, 폭이 바뀌면 그때만 다시 만든다.
             tag = widthDp
-            setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, widthDp))
+            setAdSize(adSize)
             adUnitId = unitId
             runCatching { loadAd(AdRequest.Builder().build()) }
                 .onFailure { error -> Log.w(TAG, "adLoad ok=false error=${error.javaClass.simpleName}") }
         }
     }
 
-    adView?.let { view ->
-        AndroidView(
-            factory = { view },
-            modifier = Modifier.fillMaxWidth()
-        )
+    // 광고가 아직 없어도 같은 높이를 잡아 둔다. 채워지든 비어 있든 레이아웃이 흔들리지 않는다.
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height((adSize?.height ?: 0).dp)
+    ) {
+        adView?.let { view ->
+            AndroidView(
+                factory = { view },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 }

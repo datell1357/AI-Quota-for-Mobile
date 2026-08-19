@@ -1,6 +1,10 @@
 ﻿package com.aiquota.mobile.ui
 
 import androidx.compose.runtime.Composable
+import com.aiquota.mobile.local.DASHBOARD_CARD_MODE_COLUMN_COUNT
+import com.aiquota.mobile.local.DASHBOARD_CARD_MODE_TABLET_COLUMN_COUNT
+import com.aiquota.mobile.local.DASHBOARD_CARD_MODE_VISIBLE_COUNT
+import com.aiquota.mobile.local.DashboardViewMode
 import androidx.compose.ui.platform.LocalConfiguration
 import kotlin.math.ceil
 import kotlin.math.roundToInt
@@ -31,7 +35,13 @@ data class AppLayoutMetrics(
     val dashboardVisibleProviderCount: Int,
     val dashboardGridColumnCount: Int,
     val dashboardTitleHeightDp: Int,
-    val dashboardCardMinHeightDp: Int
+    val dashboardCardMinHeightDp: Int,
+    /** 카드 폭이 좁아 여백·아이콘을 줄여야 하는지. 한 줄에 한 장이거나 카드형일 때 참이다. */
+    val dashboardCompactCard: Boolean,
+    /** 카드형 전용. 카드가 작아 글자까지 한 단계 줄이고 사용량 라벨도 짧게 쓴다. */
+    val dashboardDenseText: Boolean = false,
+    /** 태블릿 폭(600dp 이상)인지. 카드형 열 수처럼 폭에 따라 갈리는 판단에 쓴다. */
+    val isTablet: Boolean = false
 )
 
 fun appLayoutMetrics(
@@ -71,7 +81,6 @@ fun appLayoutMetrics(
         fluidChipWidth.coerceIn(48, 64)
     }
     val navChipHeight = if (isTablet) scaled(70, 80) else scaled(70, 76)
-    val navContentWidth = navChipWidth * routeCount + navGap * (routeCount - 1) + navHorizontalPadding * 2
     val dashboardGridColumnCount = if (isTablet) 2 else 1
     val dashboardVisibleProviderCount = if (isTablet) 4 else 3
 
@@ -89,7 +98,9 @@ fun appLayoutMetrics(
         navVerticalPaddingDp = navVerticalPadding,
         navGapDp = navGap,
         navBarMinHeightDp = navVerticalPadding * 2 + navChipHeight + navBottomExtraPadding,
-        navBarMaxWidthDp = if (isTablet) navContentWidth else compactWidth,
+        // 태블릿도 화면 폭을 그대로 쓴다. 칩 6개 폭으로 묶어 두면 큰 화면에서 가운데만
+        // 좁게 쓰고 나머지 provider는 스크롤해야 보인다.
+        navBarMaxWidthDp = compactWidth,
         navBottomExtraPaddingDp = navBottomExtraPadding,
         navChipWidthDp = navChipWidth,
         navChipHeightDp = navChipHeight,
@@ -101,7 +112,31 @@ fun appLayoutMetrics(
         dashboardVisibleProviderCount = dashboardVisibleProviderCount,
         dashboardGridColumnCount = dashboardGridColumnCount,
         dashboardTitleHeightDp = if (isTablet) scaled(38, 48) else scaled(36, 42),
-        dashboardCardMinHeightDp = if (isTablet) scaled(180, 220) else scaled(176, 220)
+        dashboardCardMinHeightDp = if (isTablet) scaled(180, 220) else scaled(176, 220),
+        dashboardCompactCard = dashboardGridColumnCount == 1,
+        isTablet = isTablet
+    )
+}
+
+/**
+ * 카드형은 한 화면에 여섯 개를 담는다. 폰은 세로로 긴 화면이라 2열 3행, 태블릿은 가로로
+ * 넓은 화면이라 3열 2행이 화면 비율에 맞는다. 목록형은 기존 지표를 그대로 쓴다.
+ */
+fun AppLayoutMetrics.forDashboardViewMode(mode: DashboardViewMode): AppLayoutMetrics {
+    if (mode != DashboardViewMode.CARD) return this
+    val columnCount = if (isTablet) {
+        DASHBOARD_CARD_MODE_TABLET_COLUMN_COUNT
+    } else {
+        DASHBOARD_CARD_MODE_COLUMN_COUNT
+    }
+    return copy(
+        dashboardGridColumnCount = columnCount,
+        dashboardVisibleProviderCount = DASHBOARD_CARD_MODE_VISIBLE_COUNT,
+        // 폰은 3행이라 카드를 낮춰야 여섯 개가 들어간다. 태블릿은 2행이라 낮출 필요가 없다.
+        dashboardCardMinHeightDp = if (isTablet) dashboardCardMinHeightDp else (dashboardCardMinHeightDp * 3) / 5,
+        // 카드 폭이 좁아지므로 넓은 카드용 여백·글자 크기를 그대로 쓰면 내용이 겹치거나 잘린다.
+        dashboardCompactCard = true,
+        dashboardDenseText = true
     )
 }
 

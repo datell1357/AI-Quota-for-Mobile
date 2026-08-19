@@ -117,7 +117,9 @@ object ProviderUsageNormalizer {
 
     private fun glmLimitIdentity(type: String, item: JSONObject): GlmLimitIdentity? {
         return when (type) {
-            "TOKENS_LIMIT" -> {
+            // z.ai 코딩 플랜은 토큰 한도에서 크레딧 한도로 바뀐 요금제가 있다. 창을 나누는
+            // 방식(unit/number)은 그대로라 같은 규칙으로 5시간/주간을 가른다.
+            "TOKENS_LIMIT", "CREDIT_LIMIT" -> {
                 val unit = item.optionalNumber("unit")?.toInt()
                 val number = item.optionalNumber("number")?.toInt()
                 val label = item.optionalString("label")?.lowercase(Locale.US).orEmpty()
@@ -155,7 +157,11 @@ object ProviderUsageNormalizer {
             usedAmount = used,
             limitAmount = limit,
             remainingAmount = if (limit != null && used != null) (limit - used).coerceAtLeast(0.0) else null,
-            unit = if (type == "TOKENS_LIMIT") "tokens" else "count",
+            unit = when (type) {
+                "TOKENS_LIMIT" -> "tokens"
+                "CREDIT_LIMIT" -> "credits"
+                else -> "count"
+            },
             resetsAt = glmResetAt(),
             sourceLabel = source.label,
             confidence = source.confidence
@@ -553,10 +559,13 @@ object ProviderUsageNormalizer {
                 ?.withCodexResetFallback(primaryWindow)
             val sparkSecondaryWindow = limits.optObject("spark_secondary_window")
                 ?.withCodexResetFallback(secondaryWindow)
+            // Codex는 5시간 창을 없애고 주간 하나로 통합한 요금제가 있다. 창이 하나뿐이면 그게
+            // 주간 창이고, 둘 다 오면 예전처럼 5시간(primary) + 주간(secondary)이다.
+            val primaryWindowLabel = if (secondaryWindow != null) "Codex Session" else "Codex Weekly"
             listOfNotNull(
                 primaryWindow?.toLine(
                     "codex:primary_window",
-                    "Codex Session",
+                    primaryWindowLabel,
                     codexSource,
                     preferRemainingPercent = true,
                     preservePayloadLabel = preserveVisibleLabel
