@@ -10,6 +10,9 @@ import org.junit.Test
  * 상단바 광고 자리 계약. 톱니바퀴가 대시보드 헤더로 빠지면서 비워진 자리를 광고에 내준다.
  * 광고를 넘기지 않은 상태에서 빈 높이가 잡히면 안 되고, 설정 화면의 뒤로가기와 겹쳐도 안 된다.
  * 설정 화면에서도 광고는 뜬다 — 겹침은 세로로 쌓아서 푼다.
+ *
+ * provider 상세 화면만 예외다. 10개 provider가 아이콘·이름만 다를 뿐 레이아웃이 동일해
+ * AdMob이 "복제된 콘텐츠가 있는 화면에 게재된 광고"로 지적했다(2026-08-19).
  */
 class TopBarAdSlotTest {
     private val topBar = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt")
@@ -67,6 +70,16 @@ class TopBarAdSlotTest {
             !topBar.contains("!isSettingsRoute && adContent != null")
         )
         assertTrue("뒤로가기는 설정 화면에서만 그린다", topBar.contains("if (isSettingsRoute)"))
+    }
+
+    @Test
+    fun providerDetailScreensNeverShowTheAd() {
+        // 10개 provider 상세 화면이 아이콘·이름만 다를 뿐 레이아웃이 동일해 AdMob이 복제된
+        // 콘텐츠로 지적했다. 구조가 유일한 대시보드·설정 화면에만 광고를 남긴다.
+        assertTrue(
+            "provider 상세 화면은 showAd 계산에서 제외해야 한다",
+            topBar.contains("val showAd = adContent != null && route !is AppRoute.ProviderDetail")
+        )
     }
 
     @Test

@@ -12,18 +12,19 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * 화면 전체를 덮는 Activity(로그인·OAuth) 상단에 대시보드와 같은 배너를 얹는다.
+ * 화면 전체를 덮는 Activity(로그인·OAuth) 상단에 배너를 얹던 자리다. 지금은 항상 꺼져 있다.
  *
- * 이 앱은 연결 과정에서 여러 Activity가 전면을 가린다. 그때마다 배너가 사라지지 않도록
- * 같은 자리에 같은 배너를 둔다. 대시보드 배너와 동일하게 포그라운드에서만 살아 있다 —
- * 초기화는 화면이 뜬 뒤에만 하고, [resume]/[pause]/[destroy]를 Activity 수명주기에 건다.
- *
- * [heightPx]는 뷰를 배치하기 전에 확정된다. 본문은 이 높이만큼 내려야 배너에 가리지 않는다.
+ * WebLoginActivity·GlmApiKeyActivity·AntigravityLoopbackOAuthActivity가 이 클래스를 쓰는데,
+ * provider마다 "Sign in to X" 제목과 그 provider의 실제 웹사이트를 담은 WebView만 다를 뿐
+ * 레이아웃이 반복되는 화면들이다. AdMob이 "복제된 콘텐츠가 있는 화면에 게재된 광고"로
+ * 지적했고(2026-08-19), 남의 웹사이트를 그대로 띄운 화면 위에 광고를 얹는 구조라 더 직접적인
+ * 위반 소지가 있다. [heightPx]가 0이면 [attachTo]가 아무 것도 하지 않고, 이 높이를 여백으로
+ * 쓰던 본문·제목도 그만큼 줄어들어 빈 자리가 남지 않는다.
  */
 class ActivityTopBanner(private val activity: Activity) {
     private var adView: AdView? = null
 
-    val heightPx: Int = if (AdConfig.isBannerEnabled()) adSize().getHeightInPixels(activity) else 0
+    val heightPx: Int = 0
 
     val enabled: Boolean get() = heightPx > 0
 
