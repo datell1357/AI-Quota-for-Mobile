@@ -59,6 +59,18 @@ class EdgeToEdgeInsetsTest {
     }
 
     @Test
+    fun systemBarIconsFollowTheAppBackgroundNotTheSystemTheme() {
+        // enableEdgeToEdge()의 자동 판정은 시스템 다크모드만 본다. 이 앱은 자체 테마로 배경을
+        // 정하므로 판정이 어긋나 흰 배경에 흰 아이콘이 되는 기기가 있다(태블릿 API 35 실측).
+        assertTrue(
+            "배경 밝기로 직접 정해야 기기·버전에 관계없이 아이콘이 보인다",
+            shell.contains("themeColors.appBackground.luminance() > 0.5f") &&
+                shell.contains("isAppearanceLightStatusBars = lightSystemBars") &&
+                shell.contains("isAppearanceLightNavigationBars = lightSystemBars")
+        )
+    }
+
+    @Test
     fun loginScreenPadsForSystemBarsAndCutout() {
         val insets = login.substringAfter("private fun applyLoginWindowInsets")
             .substringBefore("/**")
