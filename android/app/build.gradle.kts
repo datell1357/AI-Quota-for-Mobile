@@ -135,7 +135,7 @@ android {
                 debugSymbolLevel = "SYMBOL_TABLE"
             }
             isMinifyEnabled = true
-            isShrinkResources = false
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android.txt"),
                 "proguard-rules.pro"

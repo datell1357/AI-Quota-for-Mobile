@@ -4,7 +4,8 @@
 # runtime entry points that Android, WorkManager, and WebView JavaScript bridges
 # resolve by name.
 
--dontshrink
+# 축소(shrinking)는 켠다. Play Console 권장 조치이자 앱 크기·메모리 이득이 있다.
+# 최적화(-dontoptimize)는 아직 유지한다 — v15에서 왜 껐는지 기록이 없어 별도 릴리스에서 검증한다.
 -dontoptimize
 
 # Flatten every obfuscated class into a single unnamed package so the release bundle no longer
