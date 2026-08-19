@@ -65,11 +65,18 @@ object GrokWeeklyCreditsFetcher {
             response.size
         )
         val root = firstLengthDelimited(message, FIELD_CONFIG) ?: return null
-        val used = floatField(root, FIELD_USED_PERCENT) ?: return null
+        val used = floatField(root, FIELD_USED_PERCENT)
         val resetsAt = firstLengthDelimited(root, FIELD_PERIOD_END)
             ?.let { varintField(it, FIELD_TIMESTAMP_SECONDS) }
             ?.let { seconds -> runCatching { Instant.ofEpochSecond(seconds).toString() }.getOrNull() }
-        return WeeklyUsage(usedPercent = used, resetsAt = resetsAt)
+        // proto3는 기본값을 직렬화하지 않는다. 소진율이 정확히 0%면 f1.f1이 통째로 빠진 채 온다.
+        // 이걸 실패로 보면 주간 한도가 리셋된 직후부터 사용량이 붙을 때까지 "사용할 수 없음"이
+        // 된다(2026-08-17 실측: 8/15 리셋 후 필드 없음, 8/4에는 32%로 존재).
+        //
+        // 다만 아무 정보도 없는 응답까지 0%로 읽으면 구독이 없는 계정을 0% 사용 중으로 잘못
+        // 표시한다. 그래서 주기 종료 시각이 함께 있을 때만 0%로 인정한다.
+        if (used == null && resetsAt == null) return null
+        return WeeklyUsage(usedPercent = used ?: 0f, resetsAt = resetsAt)
     }
 
     private fun firstLengthDelimited(buffer: ByteArray, fieldNumber: Int): ByteArray? {
