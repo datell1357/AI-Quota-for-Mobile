@@ -74,6 +74,22 @@ internal object AdMobInitializer {
 }
 
 /**
+ * 첫 배너가 뜨기까지의 지연을 줄이려고 동의 확인과 SDK 초기화를 미리 시작한다.
+ *
+ * 배너 컴포저블은 화면에 올라와 ON_RESUME이 되고 슬롯 폭이 측정된 뒤에야 이 둘을 시작하는데,
+ * 신규 설치에서는 그 뒤로 네트워크 왕복이 줄줄이 이어져 배너가 한참 뒤에 뜬다. 화면이 열리는
+ * 시점에 미리 걸어두면 첫 컴포지션·레이아웃과 겹쳐 돌아간다.
+ *
+ * 화면을 여는 Activity에서만 부른다. 위젯 갱신이나 백그라운드 수집으로 프로세스가 살아날 때는
+ * 호출되지 않으므로 "보여주지도 않을 광고 SDK를 띄우지 않는다"는 원칙은 그대로다.
+ */
+suspend fun warmUpAds(activity: Activity) {
+    if (!AdConfig.isBannerEnabled()) return
+    if (!AdConsentManager.ensureConsent(activity)) return
+    AdMobInitializer.ensureInitialized(activity)
+}
+
+/**
  * 상단바 앵커드 어댑티브 배너.
  *
  * 포그라운드에서만 살아 있다. ON_RESUME에 만들어 로드하고, ON_PAUSE에 멈추고, 화면을 벗어나면
