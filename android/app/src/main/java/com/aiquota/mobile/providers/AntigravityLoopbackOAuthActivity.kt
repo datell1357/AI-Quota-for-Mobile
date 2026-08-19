@@ -24,6 +24,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.aiquota.mobile.ui.applyEdgeToEdgeInsets
 import com.aiquota.mobile.ui.ads.ActivityTopBanner
 
 class AntigravityLoopbackOAuthActivity : Activity() {
@@ -60,6 +61,9 @@ class AntigravityLoopbackOAuthActivity : Activity() {
         }
         topBanner.attachTo(root, activityScope)
         setContentView(root)
+        // targetSdk 35+에서는 시스템 표시줄이 화면을 덮는다. 순수 Activity라 인셋을 직접 반영한다
+        // (2026-08-19 Play Console 재지적: WebLoginActivity만 고치고 이 화면을 빠뜨렸었다).
+        applyEdgeToEdgeInsets(root)
         startFirebaseOAuth()
     }
 
