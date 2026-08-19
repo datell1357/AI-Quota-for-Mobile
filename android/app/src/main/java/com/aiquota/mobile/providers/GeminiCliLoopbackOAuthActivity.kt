@@ -18,6 +18,7 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.local.ProviderId
+import com.aiquota.mobile.ui.applyEdgeToEdgeInsets
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -44,24 +45,26 @@ class GeminiCliLoopbackOAuthActivity : Activity() {
             textSize = 16f
             visibility = View.VISIBLE
         }
-        setContentView(
-            FrameLayout(this).apply {
-                addView(
-                    webView,
-                    FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
+        val root = FrameLayout(this).apply {
+            addView(
+                webView,
+                FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
                 )
-                addView(
-                    statusView,
-                    FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
+            )
+            addView(
+                statusView,
+                FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
                 )
-            }
-        )
+            )
+        }
+        setContentView(root)
+        // targetSdk 35+에서는 시스템 표시줄이 화면을 덮는다. 순수 Activity라 인셋을 직접 반영한다
+        // (2026-08-19 Play Console 재지적: WebLoginActivity만 고치고 이 화면을 빠뜨렸었다).
+        applyEdgeToEdgeInsets(root)
         startFirebaseOAuth()
     }
 

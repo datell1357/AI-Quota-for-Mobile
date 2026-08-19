@@ -25,10 +25,6 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.TextView
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.local.ProviderId
 import java.net.HttpURLConnection
@@ -47,6 +43,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import android.view.Gravity
+import com.aiquota.mobile.ui.applyEdgeToEdgeInsets
 import com.aiquota.mobile.ui.ads.ActivityTopBanner
 
 open class WebLoginActivity : Activity() {
@@ -245,20 +242,9 @@ open class WebLoginActivity : Activity() {
     private fun applyLoginWindowInsets() {
         // 이 화면은 Activity라 enableEdgeToEdge()를 쓸 수 없다. 같은 일을 직접 해서 Android 15
         // 미만에서도 인셋 전달 방식이 같아지게 만든다(안 그러면 구버전에서 이중 여백이 생긴다).
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        // 시스템 표시줄 뒤에는 언제나 밝은 창 배경이 깔린다(본문은 인셋만큼 안쪽으로 들어간다).
-        // 아이콘을 어둡게 지정하지 않으면 흰 배경에 흰 아이콘이 되어 시계조차 보이지 않는다.
-        WindowInsetsControllerCompat(window, rootContainer).apply {
-            isAppearanceLightStatusBars = true
-            isAppearanceLightNavigationBars = true
-        }
-        ViewCompat.setOnApplyWindowInsetsListener(rootContainer) { view, windowInsets ->
-            val bars = windowInsets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-            )
-            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
-            windowInsets
-        }
+        // AntigravityLoopbackOAuthActivity·GeminiCliLoopbackOAuthActivity도 같은 구조라
+        // 공용 헬퍼로 뽑아 둔다(providers/../ui/ActivityEdgeToEdge.kt).
+        applyEdgeToEdgeInsets(rootContainer)
     }
 
     /**
