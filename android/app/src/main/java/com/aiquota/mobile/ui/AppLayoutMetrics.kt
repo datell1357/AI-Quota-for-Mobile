@@ -14,7 +14,6 @@ data class AppLayoutMetrics(
     val contentVerticalPaddingDp: Int,
     val topBarHorizontalPaddingDp: Int,
     val topBarVerticalPaddingDp: Int,
-    val topBarTopExtraPaddingDp: Int,
     val topBarSettingsYOffsetDp: Int,
     /** 상단바 광고 자리의 최소 높이. 광고를 넣지 않으면 이 높이는 잡히지 않는다. */
     val topBarAdMinHeightDp: Int,
@@ -24,7 +23,6 @@ data class AppLayoutMetrics(
     val navGapDp: Int,
     val navBarMinHeightDp: Int,
     val navBarMaxWidthDp: Int,
-    val navBottomExtraPaddingDp: Int,
     val navChipWidthDp: Int,
     val navChipHeightDp: Int,
     val navChipHorizontalPaddingDp: Int,
@@ -71,7 +69,6 @@ fun appLayoutMetrics(
         narrowPhone -> 3
         else -> scaled(5, 6)
     }
-    val navBottomExtraPadding = 30
     val routeCount = 6
     val availableNavWidth = compactWidth - (navHorizontalPadding * 2) - (navGap * (routeCount - 1))
     val fluidChipWidth = (availableNavWidth / routeCount.toFloat()).toInt()
@@ -89,7 +86,6 @@ fun appLayoutMetrics(
         contentVerticalPaddingDp = if (isTablet) scaled(18, 28) else scaled(12, 18),
         topBarHorizontalPaddingDp = if (isTablet) scaled(22, 36) else scaled(16, 22),
         topBarVerticalPaddingDp = if (isTablet) scaled(18, 26) else scaled(14, 18),
-        topBarTopExtraPaddingDp = if (isTablet) 0 else 13,
         topBarSettingsYOffsetDp = if (isTablet) 5 else 4,
         // AdMob 앵커드 어댑티브 배너 기준 높이. 폰은 50dp, 태블릿은 리더보드(728x90)에 맞춘다.
         topBarAdMinHeightDp = if (isTablet) 90 else 50,
@@ -97,11 +93,12 @@ fun appLayoutMetrics(
         navHorizontalPaddingDp = navHorizontalPadding,
         navVerticalPaddingDp = navVerticalPadding,
         navGapDp = navGap,
-        navBarMinHeightDp = navVerticalPadding * 2 + navChipHeight + navBottomExtraPadding,
+        // 제스처 바 자리는 windowInsetsPadding(navigationBars)이 실측으로 잡는다.
+        // 여기에 고정 여백을 더하면 두 번 밀려 하단이 비어 보인다.
+        navBarMinHeightDp = navVerticalPadding * 2 + navChipHeight,
         // 태블릿도 화면 폭을 그대로 쓴다. 칩 6개 폭으로 묶어 두면 큰 화면에서 가운데만
         // 좁게 쓰고 나머지 provider는 스크롤해야 보인다.
         navBarMaxWidthDp = compactWidth,
-        navBottomExtraPaddingDp = navBottomExtraPadding,
         navChipWidthDp = navChipWidth,
         navChipHeightDp = navChipHeight,
         navChipHorizontalPaddingDp = if (isTablet) scaled(8, 12) else scaled(6, 8),

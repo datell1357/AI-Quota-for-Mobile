@@ -24,6 +24,10 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.TextView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.local.ProviderId
 import java.net.HttpURLConnection
@@ -153,6 +157,7 @@ open class WebLoginActivity : Activity() {
             )
         }
         attachLoginAdBanner()
+        applyLoginWindowInsets()
         setContentView(rootContainer)
         val requestedStartUrl = intent.getStringExtra(EXTRA_START_URL) ?: definition.loginStartUrl
         noteBridgePageUrl(requestedStartUrl)
@@ -224,6 +229,30 @@ open class WebLoginActivity : Activity() {
     private fun loginWebViewLayoutParams(): FrameLayout.LayoutParams {
         return FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT).apply {
             topMargin = loginAdHeight + loginTitleHeight()
+        }
+    }
+
+    /**
+     * targetSdk 35+에서는 시스템 표시줄이 화면을 덮는다. 이 화면은 Compose가 아니라
+     * FrameLayout에 픽셀 오프셋으로 배치하므로 인셋을 직접 패딩으로 반영해야 배너와 제목이
+     * 상태 표시줄에, WebView 하단이 제스처 바에 가려지지 않는다.
+     */
+    private fun applyLoginWindowInsets() {
+        // 이 화면은 Activity라 enableEdgeToEdge()를 쓸 수 없다. 같은 일을 직접 해서 Android 15
+        // 미만에서도 인셋 전달 방식이 같아지게 만든다(안 그러면 구버전에서 이중 여백이 생긴다).
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        // 시스템 표시줄 뒤에는 언제나 밝은 창 배경이 깔린다(본문은 인셋만큼 안쪽으로 들어간다).
+        // 아이콘을 어둡게 지정하지 않으면 흰 배경에 흰 아이콘이 되어 시계조차 보이지 않는다.
+        WindowInsetsControllerCompat(window, rootContainer).apply {
+            isAppearanceLightStatusBars = true
+            isAppearanceLightNavigationBars = true
+        }
+        ViewCompat.setOnApplyWindowInsetsListener(rootContainer) { view, windowInsets ->
+            val bars = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            windowInsets
         }
     }
 
@@ -1949,7 +1978,6 @@ open class WebLoginActivity : Activity() {
         private const val EXTRA_START_URL = "startUrl"
         private const val BRIDGE_NAME = "AIQuotaCollectorBridge"
         private const val CURSOR_NATIVE_FETCH_TIMEOUT_MS = 20_000
-        private const val NATIVE_USAGE_COLLECTION_TIMEOUT_MS = 20_000L
         private val ABOUT_BLANK_NATIVE_LOGIN_PROVIDERS = setOf(
             ProviderId.GROK,
             ProviderId.KIMI,
@@ -1967,6 +1995,7 @@ open class WebLoginActivity : Activity() {
         private const val CLAUDE_NATIVE_HEADER_WILDCARD_KEY = "claude:*"
         private const val CLAUDE_ABOUT_BLANK_BASE_URL = "https://claude.ai/"
         private const val CLAUDE_ABOUT_BLANK_HTML = "<!doctype html><html><head><meta charset=\"utf-8\"></head><body></body></html>"
+        private const val NATIVE_USAGE_COLLECTION_TIMEOUT_MS = 20_000L
         private const val PAGE_CAPTURE_SCRIPT =
             "(function(){return (document.documentElement.innerText||document.title||'').slice(0,12000);})()"
 

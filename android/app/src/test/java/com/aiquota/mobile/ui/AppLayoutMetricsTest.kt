@@ -13,11 +13,8 @@ class AppLayoutMetricsTest {
         assertTrue(tablet.contentVerticalPaddingDp > phone.contentVerticalPaddingDp)
         assertTrue(tablet.navVerticalPaddingDp > phone.navVerticalPaddingDp)
         assertTrue(tablet.navBarMinHeightDp > phone.navBarMinHeightDp)
-        assertEquals(13, phone.topBarTopExtraPaddingDp)
         assertEquals(8, phone.mainContentTopLiftDp)
         assertEquals(4, phone.topBarSettingsYOffsetDp)
-        assertTrue(phone.navBottomExtraPaddingDp >= 30)
-        assertTrue(tablet.navBottomExtraPaddingDp >= 30)
     }
 
     @Test
