@@ -52,6 +52,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.rememberScrollState
@@ -59,8 +60,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -700,6 +704,19 @@ fun AIQuotaAppShell(
     LaunchedEffect(route) {
         if (route is AppRoute.Settings) {
             refreshNotificationState()
+        }
+    }
+
+    // enableEdgeToEdge()의 자동 판정은 시스템 다크모드만 보기 때문에, 앱이 자체 테마로
+    // 배경을 정하는 이 앱에서는 흰 배경에 흰 아이콘이 되는 기기가 있다(2026-08-11 태블릿
+    // API 35 실측: LIGHT_STATUS_BARS 미설정). 실제 배경 밝기로 직접 정한다.
+    val decorView = LocalView.current
+    val lightSystemBars = themeColors.appBackground.luminance() > 0.5f
+    SideEffect {
+        val window = (decorView.context as? Activity)?.window ?: return@SideEffect
+        WindowInsetsControllerCompat(window, decorView).apply {
+            isAppearanceLightStatusBars = lightSystemBars
+            isAppearanceLightNavigationBars = lightSystemBars
         }
     }
 
