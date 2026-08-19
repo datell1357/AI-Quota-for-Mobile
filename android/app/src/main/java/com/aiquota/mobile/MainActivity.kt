@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,6 +38,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // targetSdk 35+에서는 시스템이 edge-to-edge를 강제한다. 명시적으로 켜야 이전 버전에서도
+        // 같은 배치가 되고, 상단바·하단바가 인셋을 직접 처리한다.
+        enableEdgeToEdge()
         FirebaseGatewayBootstrap.install()
         appUpdateCoordinator = AppUpdateCoordinator(this)
         routeRequest = routeFromIntent(intent)

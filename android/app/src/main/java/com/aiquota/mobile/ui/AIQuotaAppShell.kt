@@ -19,6 +19,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -1080,17 +1084,19 @@ private fun AppTopBar(
     // 겹치므로 광고를 띄우지 않는다.
     val showAd = !isSettingsRoute && adContent != null
 
-    // 위쪽은 상태 표시줄을 피해야 해서 고정 여백을 그대로 쓴다(실측 인셋은 이 기기에서 50dp라
-    // 오히려 배너가 더 내려간다). 대신 아래쪽은 배너가 이미 본문과 시각적으로 나뉘므로 최소만 남긴다.
+    // 배경은 상태 표시줄 뒤까지 칠하고, 내용만 인셋만큼 내린다. 고정 여백으로 어림잡으면
+    // 기기마다 상태 표시줄 높이가 달라 배너가 가려진다(2026-08-11 API 37 실측).
     Surface(
         color = colors.appBackground,
         tonalElevation = 0.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
         Box(
-            modifier = Modifier.padding(
+            modifier = Modifier
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(
                 start = layoutMetrics.topBarHorizontalPaddingDp.dp,
-                top = (layoutMetrics.topBarVerticalPaddingDp + layoutMetrics.topBarTopExtraPaddingDp).dp,
+                top = layoutMetrics.topBarVerticalPaddingDp.dp,
                 end = layoutMetrics.topBarHorizontalPaddingDp.dp,
                 bottom = if (showAd) {
                     // 본문 화면이 자체 상단 여백을 갖고 있어 배너 아래에 여백을 더 두면 띠가 겹친다.
@@ -1153,6 +1159,8 @@ private fun AppNavigationBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    // 제스처 바 아래까지 배경을 칠하되 버튼은 그 위로 올린다.
+                    .windowInsetsPadding(WindowInsets.navigationBars)
                     .horizontalScroll(rememberScrollState())
                     .heightIn(min = layoutMetrics.navBarMinHeightDp.dp)
                     .padding(
@@ -1160,7 +1168,7 @@ private fun AppNavigationBar(
                             start = layoutMetrics.navHorizontalPaddingDp.dp,
                             top = layoutMetrics.navVerticalPaddingDp.dp,
                             end = layoutMetrics.navHorizontalPaddingDp.dp,
-                            bottom = (layoutMetrics.navVerticalPaddingDp + layoutMetrics.navBottomExtraPaddingDp).dp
+                            bottom = layoutMetrics.navVerticalPaddingDp.dp
                         )
                     ),
                 horizontalArrangement = Arrangement.spacedBy(layoutMetrics.navGapDp.dp, Alignment.CenterHorizontally),
