@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.Message
 import android.os.SystemClock
 import android.util.Log
+import android.view.View
 import android.view.ViewGroup
 import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
@@ -37,6 +38,7 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
@@ -54,6 +56,7 @@ open class WebLoginActivity : Activity() {
     private lateinit var titleView: TextView
     private lateinit var topBanner: ActivityTopBanner
     private val loginAdHeight: Int get() = if (::topBanner.isInitialized) topBanner.heightPx else 0
+    private var loginTitleHeightPx = 0
     private var mainWebViewDestroyed = false
     @Volatile
     private var finished = false
@@ -131,8 +134,10 @@ open class WebLoginActivity : Activity() {
             textSize = 18f
             setTextColor(Color.WHITE)
             setBackgroundColor(Color.rgb(15, 23, 42))
-            setPadding(32, 24, 32, 24)
+            // 여백을 raw 픽셀로 주면 밀도가 낮은 기기에서는 과하고 높은 기기에서는 모자란다.
+            setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8))
         }
+        loginTitleHeightPx = measureLoginTitleHeight()
         // 배너 높이를 먼저 확정해야 제목·WebView·팝업의 상단 오프셋을 한 번에 맞출 수 있다.
         topBanner = ActivityTopBanner(this)
         val cookieManager = CookieManager.getInstance()
@@ -264,7 +269,24 @@ open class WebLoginActivity : Activity() {
         topBanner.attachTo(rootContainer, loginScope)
     }
 
-    private fun loginTitleHeight(): Int = 96
+    private fun loginTitleHeight(): Int = loginTitleHeightPx
+
+    /**
+     * 제목 높이는 실제 글자 크기에서 구한다.
+     *
+     * 예전에는 96px로 고정돼 있었는데 글자 크기는 sp라 화면 밀도와 사용자 글꼴 설정에 따라
+     * 커진다. 그래서 밀도가 높은 기기에서는 제목 아랫부분(g·y 같은 내림자)이 잘렸다
+     * (2026-08-12 실측). WebView와 팝업의 상단 오프셋도 이 값을 쓰므로 한 곳에서만 정한다.
+     */
+    private fun measureLoginTitleHeight(): Int {
+        titleView.measure(
+            View.MeasureSpec.makeMeasureSpec(resources.displayMetrics.widthPixels, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        return titleView.measuredHeight
+    }
+
+    private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).roundToInt()
 
     private fun loginTitleText(): String {
         return "Sign in to ${providerId.displayName}"
@@ -1983,6 +2005,7 @@ open class WebLoginActivity : Activity() {
             ProviderId.KIMI,
             ProviderId.KIRO
         )
+        private const val NATIVE_USAGE_COLLECTION_TIMEOUT_MS = 20_000L
         private const val GEMINI_USAGE_REDIRECT_MIN_INTERVAL_MS = 1_500L
         private const val GEMINI_USAGE_REDIRECT_MAX_ATTEMPTS = 2
         private const val GEMINI_SIGN_IN_CLICK_MAX_ATTEMPTS = 2
@@ -1995,7 +2018,6 @@ open class WebLoginActivity : Activity() {
         private const val CLAUDE_NATIVE_HEADER_WILDCARD_KEY = "claude:*"
         private const val CLAUDE_ABOUT_BLANK_BASE_URL = "https://claude.ai/"
         private const val CLAUDE_ABOUT_BLANK_HTML = "<!doctype html><html><head><meta charset=\"utf-8\"></head><body></body></html>"
-        private const val NATIVE_USAGE_COLLECTION_TIMEOUT_MS = 20_000L
         private const val PAGE_CAPTURE_SCRIPT =
             "(function(){return (document.documentElement.innerText||document.title||'').slice(0,12000);})()"
 
