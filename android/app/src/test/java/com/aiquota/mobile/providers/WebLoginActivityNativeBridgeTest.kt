@@ -126,8 +126,9 @@ class WebLoginActivityNativeBridgeTest {
             .substringBefore("private fun claudeNativeFetchHeadersFor")
         val startBlock = source.substringAfter("private fun maybeStartClaudeNativeCollection")
             .substringBefore("private fun maybeStartGeminiNativeCollection")
-        val bridgeBlock = source.substringAfter("fun fetchProviderUsagePayload()")
-            .substringBefore("fun parseCodexFetchedPayload")
+        // 헤더 선택은 브리지와 네이티브 폴백이 함께 쓰는 헬퍼로 모여 있다.
+        val bridgeBlock = source.substringAfter("private fun nativeUsageRequestHeadersFor")
+            .substringBefore("private fun maybeStartCursorNativeCollection")
 
         assertTrue(interceptBlock.contains("captureClaudeNativeFetchHeaders(request)"))
         assertTrue(interceptBlock.contains("hasClaudeNativeFetchHeaders(url)"))
