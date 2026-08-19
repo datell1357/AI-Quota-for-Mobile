@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
@@ -31,6 +30,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -1117,8 +1117,7 @@ private fun AppTopBar(
                 .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(
                 start = layoutMetrics.topBarHorizontalPaddingDp.dp,
-                // 설정 화면은 뒤로가기를 상태 표시줄 바로 아래에 붙여 배너 자리를 넓힌다.
-                top = if (isSettingsRoute) 0.dp else layoutMetrics.topBarVerticalPaddingDp.dp,
+                top = layoutMetrics.topBarVerticalPaddingDp.dp,
                 end = layoutMetrics.topBarHorizontalPaddingDp.dp,
                 bottom = if (showAd) {
                     // 본문 화면이 자체 상단 여백을 갖고 있어 배너 아래에 여백을 더 두면 띠가 겹친다.
@@ -1131,16 +1130,27 @@ private fun AppTopBar(
             ),
             contentAlignment = Alignment.CenterEnd
         ) {
-            // 뒤로가기와 광고를 세로로 쌓는다. 한 Box에 겹쳐 놓으면 배너가 버튼을 덮고,
-            // 광고를 가리는 것은 AdMob 정책에도 걸린다. 뒤로가기를 위로 붙여 배너 자리를 남긴다.
+            // 광고와 뒤로가기를 세로로 쌓는다. 한 Box에 겹쳐 놓으면 배너가 버튼을 덮고,
+            // 광고를 가리는 것은 AdMob 정책에도 걸린다. 배너를 최상단에 두어 다른 화면과
+            // 같은 자리에 오게 하고, 뒤로가기는 그 아래 본문 카드 바로 위에 붙인다.
             Column(modifier = Modifier.fillMaxWidth()) {
+                if (showAd) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = layoutMetrics.topBarAdMinHeightDp.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        adContent?.invoke()
+                    }
+                }
                 if (isSettingsRoute) {
                     Box(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.CenterEnd
                     ) {
                         IconButton(
-                            // 터치 영역은 48dp를 지키되 아이콘만 작게 그려 높이를 아낀다.
+                            // 터치 영역은 지키되 아이콘만 작게 그려 본문과의 간격을 줄인다.
                             modifier = Modifier.requiredSize(SettingsBackButtonSize),
                             onClick = onHomeClick
                         ) {
@@ -1151,16 +1161,6 @@ private fun AppTopBar(
                                 tint = colors.textSecondary
                             )
                         }
-                    }
-                }
-                if (showAd) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = layoutMetrics.topBarAdMinHeightDp.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        adContent?.invoke()
                     }
                 }
             }
