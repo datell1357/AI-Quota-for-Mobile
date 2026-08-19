@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
@@ -1086,6 +1087,9 @@ private fun LiveRefreshPermissionDialog(
     }
 }
 
+private val SettingsBackButtonSize = 40.dp
+private val SettingsBackIconSize = 22.dp
+
 @Composable
 private fun AppTopBar(
     route: AppRoute,
@@ -1097,9 +1101,9 @@ private fun AppTopBar(
     // 종합 설정 진입점은 대시보드 헤더로 옮겼다. 상단바는 설정 화면에서 돌아가는 역할만 한다.
     val isSettingsRoute = route is AppRoute.Settings
     // 톱니바퀴가 빠지면서 비워진 상단바 자리를 광고 슬롯으로 쓴다. adContent가 null이면
-    // 아무 높이도 잡지 않아 지금 레이아웃과 동일하다. 설정 화면에서는 뒤로가기와 자리가
-    // 겹치므로 광고를 띄우지 않는다.
-    val showAd = !isSettingsRoute && adContent != null
+    // 아무 높이도 잡지 않아 지금 레이아웃과 동일하다. 설정 화면도 광고를 띄운다 —
+    // 예전에는 뒤로가기와 같은 자리에 겹쳐서 뺐지만, 지금은 세로로 쌓아 둘 다 들어간다.
+    val showAd = adContent != null
 
     // 배경은 상태 표시줄 뒤까지 칠하고, 내용만 인셋만큼 내린다. 고정 여백으로 어림잡으면
     // 기기마다 상태 표시줄 높이가 달라 배너가 가려진다(2026-08-11 API 37 실측).
@@ -1113,7 +1117,8 @@ private fun AppTopBar(
                 .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(
                 start = layoutMetrics.topBarHorizontalPaddingDp.dp,
-                top = layoutMetrics.topBarVerticalPaddingDp.dp,
+                // 설정 화면은 뒤로가기를 상태 표시줄 바로 아래에 붙여 배너 자리를 넓힌다.
+                top = if (isSettingsRoute) 0.dp else layoutMetrics.topBarVerticalPaddingDp.dp,
                 end = layoutMetrics.topBarHorizontalPaddingDp.dp,
                 bottom = if (showAd) {
                     // 본문 화면이 자체 상단 여백을 갖고 있어 배너 아래에 여백을 더 두면 띠가 겹친다.
@@ -1126,26 +1131,37 @@ private fun AppTopBar(
             ),
             contentAlignment = Alignment.CenterEnd
         ) {
-            if (isSettingsRoute) {
-                IconButton(
-                    modifier = Modifier.offset(y = layoutMetrics.topBarSettingsYOffsetDp.dp),
-                    onClick = onHomeClick
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_arrow_back),
-                        contentDescription = stringResource(R.string.nav_home),
-                        tint = colors.textSecondary
-                    )
+            // 뒤로가기와 광고를 세로로 쌓는다. 한 Box에 겹쳐 놓으면 배너가 버튼을 덮고,
+            // 광고를 가리는 것은 AdMob 정책에도 걸린다. 뒤로가기를 위로 붙여 배너 자리를 남긴다.
+            Column(modifier = Modifier.fillMaxWidth()) {
+                if (isSettingsRoute) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        IconButton(
+                            // 터치 영역은 48dp를 지키되 아이콘만 작게 그려 높이를 아낀다.
+                            modifier = Modifier.requiredSize(SettingsBackButtonSize),
+                            onClick = onHomeClick
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(SettingsBackIconSize),
+                                painter = painterResource(R.drawable.ic_arrow_back),
+                                contentDescription = stringResource(R.string.nav_home),
+                                tint = colors.textSecondary
+                            )
+                        }
+                    }
                 }
-            }
-            if (showAd) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = layoutMetrics.topBarAdMinHeightDp.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    adContent?.invoke()
+                if (showAd) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = layoutMetrics.topBarAdMinHeightDp.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        adContent?.invoke()
+                    }
                 }
             }
         }
