@@ -1,55 +1,55 @@
 package com.aiquota.mobile.ui.ads
 
 import java.io.File
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * provider 로그인 화면에서도 상단 배너가 보여야 한다. 다만 로그인 WebView가 화면 전체를
- * 차지하므로 본문이 배너 높이만큼 밀려야 하고, 대시보드 배너와 같은 포그라운드 전용 규칙을
- * 지켜야 한다.
+ * provider 연결 화면(로그인 WebView, GLM 선택 화면, Antigravity OAuth)에는 배너를 띄우지 않는다.
+ *
+ * 예전에는 여기도 배너를 띄웠다. 그런데 이 화면들은 "Sign in to X" 제목과 그 provider의 실제
+ * 웹사이트를 담은 WebView만 다를 뿐 레이아웃이 반복되고, 남의 웹사이트를 그대로 띄운 화면 위에
+ * 광고를 얹는 구조라 AdMob이 "복제된 콘텐츠가 있는 화면에 게재된 광고"로 지적했다(2026-08-19).
+ *
+ * ActivityTopBanner.heightPx를 0으로 고정해 껐다. 이 클래스를 쓰는 화면은 셋뿐이라
+ * (WebLoginActivity·GlmApiKeyActivity·AntigravityLoopbackOAuthActivity) 한 곳만 고치면
+ * 셋 다 함께 꺼진다. 본문이 배너 높이만큼 내려가는 배치 코드는 그대로 두는데, 높이가 0이니
+ * 실질적으로 아무것도 밀리지 않는다 — 나중에 다시 켤 일이 생겨도 배치를 처음부터 다시 짤
+ * 필요가 없다.
  */
 class ConnectScreenAdTest {
     private val activity = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
     private val banner = File("src/main/java/com/aiquota/mobile/ui/ads/ActivityTopBanner.kt").readText()
     private val antigravity =
         File("src/main/java/com/aiquota/mobile/providers/AntigravityLoopbackOAuthActivity.kt").readText()
+    private val glmChooser = File("src/main/java/com/aiquota/mobile/providers/GlmApiKeyActivity.kt").readText()
 
     @Test
-    fun loginScreenReservesRoomAboveTheWebViewForTheBanner() {
+    fun bannerHeightIsPermanentlyZero() {
         assertTrue(
-            "WebView와 팝업 모두 배너 높이만큼 내려와야 제목과 겹치지 않는다.",
+            "높이를 0으로 고정해야 attachTo가 아무 것도 하지 않고, 배너 자리로 예약해 두던" +
+                " 여백도 함께 사라진다.",
+            banner.contains("val heightPx: Int = 0")
+        )
+    }
+
+    @Test
+    fun everyConnectFlowStillWiresTheHeightIntoItsLayout() {
+        // 배치 코드는 남겨 둔다. heightPx가 0이라 실질적으로 아무것도 밀지 않지만, 코드를
+        // 지우면 나중에 다시 켤 때 배치를 처음부터 다시 짜야 한다.
+        assertTrue(
+            "WebView와 팝업 모두 이 값을 여백으로 쓴다.",
             activity.contains("topMargin = loginAdHeight + loginTitleHeight()")
         )
-        assertTrue(
-            "제목 바도 배너 아래로 내려간다.",
-            activity.contains("topMargin = loginAdHeight")
-        )
-    }
-
-    @Test
-    fun loginBannerHeightIsResolvedBeforeAnyViewIsLaidOut() {
-        val onCreate = activity.substringAfter("override fun onCreate(savedInstanceState: Bundle?)")
-            .substringBefore("override fun onResume()")
-
-        assertTrue(onCreate.contains("topBanner = ActivityTopBanner(this)"))
-        assertTrue(
-            "높이 확정이 rootContainer 구성보다 앞서야 한다.",
-            onCreate.indexOf("topBanner = ActivityTopBanner(this)") < onCreate.indexOf("rootContainer = FrameLayout(this)")
-        )
-    }
-
-    @Test
-    fun loginBannerFollowsActivityForegroundLifecycle() {
-        assertTrue(activity.contains("topBanner.resume()"))
-        assertTrue(activity.contains("topBanner.pause()"))
-        assertTrue(activity.contains("topBanner.destroy()"))
+        assertTrue(activity.contains("topMargin = loginAdHeight"))
+        assertTrue(glmChooser.contains("topMargin = topBanner.heightPx"))
+        assertTrue(antigravity.contains("topMargin = topBanner.heightPx"))
     }
 
     @Test
     fun dashboardBannerIsSizedToTheSlotNotTheWholeScreen() {
         // 상단바는 좌우 패딩을 갖는다. 화면 폭으로 배너를 요청하면 그만큼 오른쪽이 잘린다.
+        // 이 규칙은 대시보드·설정 화면에 남은 배너(TopBarAdBanner)에는 여전히 적용된다.
         val compose = File("src/main/java/com/aiquota/mobile/ui/ads/TopBarAdBanner.kt").readText()
 
         assertTrue(compose.contains("BoxWithConstraints"))
@@ -58,56 +58,5 @@ class ConnectScreenAdTest {
             "화면 폭(screenWidthDp)으로 배너 크기를 잡으면 안 된다.",
             !compose.contains("LocalConfiguration.current.screenWidthDp")
         )
-    }
-
-    @Test
-    fun glmConnectionMethodChooserKeepsTheBanner() {
-        // GLM은 연결 버튼을 누르면 웹 로그인 전에 선택 화면이 먼저 전면을 덮는다.
-        val chooser = File("src/main/java/com/aiquota/mobile/providers/GlmApiKeyActivity.kt").readText()
-
-        assertTrue(chooser.contains("topBanner = ActivityTopBanner(this)"))
-        assertTrue(chooser.contains("topBanner.attachTo(this, activityScope)"))
-        assertTrue(chooser.contains("topMargin = topBanner.heightPx"))
-        assertTrue(chooser.contains("topBanner.resume()"))
-        assertTrue(chooser.contains("topBanner.pause()"))
-        assertTrue(chooser.contains("topBanner.destroy()"))
-    }
-
-    @Test
-    fun everyFullScreenConnectFlowKeepsTheBanner() {
-        // GLM Web Login은 WebLoginActivity를 상속하므로 같은 배너를 받는다.
-        assertTrue(
-            File("src/main/java/com/aiquota/mobile/providers/GlmWebLoginActivity.kt").readText()
-                .contains("class GlmWebLoginActivity : WebLoginActivity()")
-        )
-        // Antigravity OAuth 화면도 전면을 덮으므로 배너를 유지한다.
-        assertTrue(antigravity.contains("topBanner = ActivityTopBanner(this)"))
-        assertTrue(antigravity.contains("topBanner.attachTo(root, activityScope)"))
-        assertTrue(
-            "본문이 배너 높이만큼 내려가야 가리지 않는다.",
-            antigravity.contains("topMargin = topBanner.heightPx")
-        )
-        assertTrue(antigravity.contains("topBanner.resume()"))
-        assertTrue(antigravity.contains("topBanner.pause()"))
-        assertTrue(antigravity.contains("topBanner.destroy()"))
-    }
-
-    @Test
-    fun loginBannerIsSkippedEntirelyWhenAdsAreOff() {
-        assertTrue(banner.contains("AdConfig.isBannerEnabled()"))
-        assertTrue(
-            "광고가 꺼져 있으면 높이가 0이라 기존 레이아웃과 동일해야 한다.",
-            banner.contains("if (AdConfig.isBannerEnabled()) adSize().getHeightInPixels(activity) else 0") &&
-                banner.contains("if (!enabled) return")
-        )
-    }
-
-    @Test
-    fun loginBannerDoesNotInitializeAdsBeforeTheScreenExists() {
-        assertFalse(
-            "Application 기동 경로에서 광고 SDK가 뜨면 안 된다.",
-            File("src/main/java/com/aiquota/mobile/AIQuotaApplication.kt").readText().contains("MobileAds")
-        )
-        assertTrue(banner.contains("AdMobInitializer.ensureInitialized(activity)"))
     }
 }
