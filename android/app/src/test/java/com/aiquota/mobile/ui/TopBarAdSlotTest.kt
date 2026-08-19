@@ -9,6 +9,7 @@ import org.junit.Test
 /**
  * 상단바 광고 자리 계약. 톱니바퀴가 대시보드 헤더로 빠지면서 비워진 자리를 광고에 내준다.
  * 광고를 넘기지 않은 상태에서 빈 높이가 잡히면 안 되고, 설정 화면의 뒤로가기와 겹쳐도 안 된다.
+ * 설정 화면도 광고를 띄운다 — 겹침은 세로로 쌓아서 푼다.
  */
 class TopBarAdSlotTest {
     private val topBar = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt")
@@ -29,16 +30,20 @@ class TopBarAdSlotTest {
     fun adSlotTakesNoSpaceUntilAnAdIsProvided() {
         assertTrue(
             "adContent가 null이면 슬롯 자체를 그리지 않아 기존 레이아웃이 그대로 유지돼야 한다.",
-            topBar.contains("val showAd = !isSettingsRoute && adContent != null")
+            topBar.contains("val showAd = adContent != null")
         )
         assertTrue(topBar.contains("if (showAd)"))
     }
 
     @Test
     fun adSlotAndSettingsBackButtonNeverShareTheRow() {
-        // 뒤로가기는 설정 화면에서만, 광고는 설정 화면이 아닐 때만 그려 서로 겹치지 않는다.
-        assertTrue(topBar.contains("if (isSettingsRoute)"))
-        assertTrue(topBar.contains("!isSettingsRoute"))
+        // 한 Box에 겹쳐 놓으면 배너가 뒤로가기를 덮는다. 세로로 쌓아 둘 다 보이게 한다.
+        val stack = topBar.substringAfter("Column(modifier = Modifier.fillMaxWidth())")
+        val adIdx = stack.indexOf("adContent?.invoke()")
+        val backIdx = stack.indexOf("R.drawable.ic_arrow_back")
+
+        assertTrue("광고와 뒤로가기를 한 Column에 쌓는다", adIdx >= 0 && backIdx >= 0)
+        assertTrue("뒤로가기가 위, 광고가 아래", backIdx < adIdx)
     }
 
     @Test
