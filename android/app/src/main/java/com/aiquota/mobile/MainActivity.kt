@@ -24,6 +24,7 @@ import com.aiquota.mobile.notification.UsageLimitNotificationController
 import com.aiquota.mobile.sync.ForegroundRefreshController
 import com.aiquota.mobile.ui.AIQuotaAppShell
 import com.aiquota.mobile.ui.AppRoute
+import com.aiquota.mobile.ui.ads.warmUpAds
 import com.aiquota.mobile.update.AppUpdateCoordinator
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -43,6 +44,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         FirebaseGatewayBootstrap.install()
         appUpdateCoordinator = AppUpdateCoordinator(this)
+        // 배너는 화면에 올라온 뒤에야 동의·초기화를 시작해 첫 노출이 늦다. 여기서 미리 건다.
+        lifecycleScope.launch { warmUpAds(this@MainActivity) }
         routeRequest = routeFromIntent(intent)
         postCachedNotificationWhenAllowed()
         setContent {
