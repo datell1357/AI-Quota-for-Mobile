@@ -92,8 +92,8 @@ android {
         applicationId = "com.aiquota.mobile"
         minSdk = 26
         targetSdk = 36
-        versionCode = 38
-        versionName = "1.1.3"
+        versionCode = 39
+        versionName = "1.1.4"
         buildConfigField("String", "GOOGLE_ANDROID_OAUTH_CLIENT_ID", "\"$googleAndroidOAuthClientId\"")
         buildConfigField("String", "GOOGLE_ANDROID_OAUTH_REDIRECT_SCHEME", "\"$googleAndroidOAuthRedirectScheme\"")
         manifestPlaceholders["appAuthRedirectScheme"] = googleAndroidOAuthRedirectScheme
