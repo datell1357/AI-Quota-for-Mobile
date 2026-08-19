@@ -7,6 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.json.JSONObject
 
@@ -36,6 +37,35 @@ class ProviderUsageNormalizerTest {
         assertEquals(0.60f, snapshot.lines[1].remainingPercent ?: 0f, 0.001f)
         assertEquals(0.90f, snapshot.lines[2].remainingPercent ?: 0f, 0.001f)
         assertEquals("2026-05-19T12:00:00Z", snapshot.lines[0].resetsAt)
+    }
+
+    @Test
+    fun claudeSkipsUnusedInternalCodenameBucketsButKeepsRealOnes() {
+        // 2026-08-11 실측: usage 응답에 아직 쓰이지 않는 내부 코드네임 슬롯이 섞여 온다.
+        // 값이 전부 빈 껍데기는 보여줄 내용이 없으므로 라인을 만들지 않는다.
+        val snapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.CLAUDE,
+            """
+            {
+              "usage": {
+                "five_hour": {"utilization": 0.0, "resets_at": null},
+                "seven_day": {"utilization": 31.0, "resets_at": "2026-08-13T11:59:59Z"},
+                "tangelo": null,
+                "nimbus_quill": {"utilization": 0.0, "resets_at": null, "limit_dollars": null, "used_dollars": null},
+                "cinder_cove": {"utilization": 0.0, "resets_at": "2026-08-20T00:00:00Z"},
+                "amber_ladder": {"utilization": 7.0}
+              }
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.PROVIDER_API
+        )!!
+
+        val labels = snapshot.lines.map { it.label }
+        assertTrue("빈 코드네임 슬롯은 표시하지 않는다", "Nimbus Quill" !in labels)
+        assertTrue("리셋 시각이 붙었으면 실제로 쓰이는 한도로 본다", "Cinder Cove" in labels)
+        assertTrue("소진율이 있으면 실제로 쓰이는 한도로 본다", "Amber Ladder" in labels)
+        assertTrue("고정 라인은 0%여도 그대로 남는다", "Claude Session" in labels)
+        assertTrue("Claude Weekly" in labels)
     }
 
     @Test
