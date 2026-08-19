@@ -415,6 +415,7 @@ object ProviderUsageNormalizer {
     ): List<ProviderUsageLine> {
         val lines = mutableListOf<ProviderUsageLine>()
         fun addLine(rawKey: String?, value: JSONObject) {
+            if (value.isEmptyClaudeUsageBucket()) return
             val label = claudeAdditionalUsageLabel(rawKey, value) ?: return
             val lineKey = "claude:${claudeAdditionalUsageKey(rawKey ?: label)}"
             if (lineKey in existingKeys) return
@@ -459,6 +460,33 @@ object ProviderUsageNormalizer {
             existingKeys.add(line.key)
             lines.add(line)
         }
+    }
+
+    /**
+     * claude.ai 사용량 응답에는 아직 쓰이지 않는 내부 코드네임 슬롯이 섞여 온다
+     * (2026-08-11 실측: tangelo·iguana_necktie·cinder_cove·amber_ladder는 null,
+     * nimbus_quill만 값이 전부 빈 객체로 내려왔다).
+     *
+     * 미지의 키를 자동으로 라인으로 만드는 규칙은 Anthropic이 새 한도를 추가할 때 앱 수정 없이
+     * 따라가려는 것이므로 유지한다. 다만 소진율 0에 리셋 시각도 한도도 없는 껍데기는 사용자에게
+     * 보여줄 내용이 없으므로 거른다. 나중에 실제로 쓰이기 시작하면 그때 다시 나타난다.
+     */
+    private fun JSONObject.isEmptyClaudeUsageBucket(): Boolean {
+        val used = firstOptionalNumber(
+            "utilization", "u", "used_percent", "usedPercent", "usedPercentage",
+            "used_percentage", "percent_used", "percent", "totalPercentUsed", "total_percent_used"
+        )
+        if (used != null && used > 0.0) return false
+        if (hasAny("resets_at", "resetsAt", "resetAt", "reset_time", "resetTime", "reset_text", "resetText")) return false
+        if (hasAny(
+                "limit_dollars", "limitDollars", "used_dollars", "usedDollars",
+                "remaining_dollars", "remainingDollars", "limit", "used", "remaining",
+                "used_credits", "usedCredits", "monthly_limit", "monthlyLimit"
+            )
+        ) {
+            return false
+        }
+        return true
     }
 
     private fun claudeAdditionalUsageLabel(rawKey: String?, json: JSONObject): String? {
