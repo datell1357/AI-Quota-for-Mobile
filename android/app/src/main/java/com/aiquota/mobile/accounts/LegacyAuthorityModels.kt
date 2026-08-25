@@ -4,13 +4,11 @@ import com.aiquota.mobile.local.ProviderUsageSnapshot
 
 internal data class LegacyAuthorityImportSeed(
     val seed: AuthorityAccountSeed,
-    val mirrorReceiptSha256: String,
-    val preferenceReceiptSha256: String
+    val mirrorCopyData: String,
+    val preferenceCopyData: String
 ) {
-    init {
-        require(mirrorReceiptSha256.matches(SHA256_PATTERN))
-        require(preferenceReceiptSha256.matches(SHA256_PATTERN))
-    }
+    val mirrorReceiptSha256: String = LegacyMigrationCodec.sha256(mirrorCopyData)
+    val preferenceReceiptSha256: String = LegacyMigrationCodec.sha256(preferenceCopyData)
 }
 
 internal data class LegacyAuthorityState(
@@ -22,7 +20,9 @@ internal data class LegacyAuthorityState(
     val lastNonce: String?,
     val publishedNonceCount: Int,
     val mirrorReceiptSha256: String,
-    val preferenceReceiptSha256: String
+    val mirrorCopyData: String,
+    val preferenceReceiptSha256: String,
+    val preferenceCopyData: String
 )
 
 internal data class LegacyProjectionAuthorityState(

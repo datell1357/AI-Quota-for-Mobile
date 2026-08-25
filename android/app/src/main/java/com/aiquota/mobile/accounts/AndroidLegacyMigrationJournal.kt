@@ -44,6 +44,17 @@ internal class AndroidLegacyMigrationJournal(context: Context) : LegacyMigration
     override fun commitTargetCheckpoint(targets: List<LegacyMigrationTarget>): Boolean =
         commitTargets(targets, LegacyMigrationStage.TARGET_VERIFY)
 
+    override fun readProjectionIntent(): LegacyProjectionIntent? =
+        preferences.getString(KEY_PROJECTION_INTENT, null)?.let(LegacyMigrationCodec::decodeProjectionIntent)
+
+    override fun commitProjectionIntent(intent: LegacyProjectionIntent): Boolean {
+        val prior = readProjectionIntent()
+        if (prior != null) return prior == intent
+        val encoded = LegacyMigrationCodec.encodeProjectionIntent(intent)
+        return preferences.edit().putString(KEY_PROJECTION_INTENT, encoded).commit() &&
+            preferences.getString(KEY_PROJECTION_INTENT, null) == encoded
+    }
+
     override fun readManifest(): LegacyMigrationManifest? =
         preferences.getString(KEY_MANIFEST, null)?.let(LegacyMigrationCodec::decodeManifest)
 
@@ -95,6 +106,7 @@ internal class AndroidLegacyMigrationJournal(context: Context) : LegacyMigration
         const val KEY_STAGE = "stage"
         const val KEY_SOURCE_RECEIPT = "source_receipt"
         const val KEY_VERIFIED_TARGETS = "verified_targets"
+        const val KEY_PROJECTION_INTENT = "projection_intent"
         const val KEY_MANIFEST = "complete_manifest"
         const val KEY_BLOCKED_STAGE = "blocked_stage"
         const val KEY_BLOCKED_FAILURE = "blocked_failure"

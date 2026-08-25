@@ -9,6 +9,7 @@ import com.aiquota.mobile.local.ProviderUsageLine
 import com.aiquota.mobile.local.ProviderUsageSnapshot
 import com.aiquota.mobile.local.UsageSeverity
 import java.io.StringReader
+import kotlin.math.abs
 
 internal object LegacySnapshotStrictParser {
     fun parse(raw: String): List<ProviderUsageSnapshot>? {
@@ -156,6 +157,10 @@ internal object LegacySnapshotStrictParser {
         }
         reader.endObject()
         require(usedPercent == null || remainingPercent != null)
+        if (usedPercent != null && remainingPercent != null) {
+            val impliedUsedPercent = (1.0 - remainingPercent.toDouble()) * 100.0
+            require(abs(usedPercent - impliedUsedPercent) <= PERCENT_COHERENCE_TOLERANCE_POINTS)
+        }
         val resolvedLabel = label?.takeIf { it.isNotBlank() } ?: "Usage"
         return ProviderUsageLine(
             key = key?.takeIf { it.isNotBlank() } ?: resolvedLabel.lowercase().replace(Regex("[^a-z0-9]+"), "_").trim('_'),
@@ -211,9 +216,11 @@ internal object LegacySnapshotStrictParser {
         nullableString(reader)?.let { enumValue<T>(it) }
 
     private const val MAX_RAW_BYTES = 2_097_152
-    private const val MAX_PROVIDERS = 32
+    private val MAX_PROVIDERS = ProviderId.entries.size
     private const val MAX_LINES = 256
     private const val MAX_NAME = 64
     private const val MAX_STRING = 16_384
+    // Legacy producers round percentages to the nearest whole percentage point.
+    private const val PERCENT_COHERENCE_TOLERANCE_POINTS = 0.5 + 1.0e-5
     private const val MAX_AMOUNT = 1.0e15
 }

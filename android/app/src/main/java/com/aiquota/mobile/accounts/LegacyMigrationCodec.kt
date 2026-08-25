@@ -95,6 +95,22 @@ internal object LegacyMigrationCodec {
         LegacyMigrationTargetCodec.decodeList(root.getJSONArray("targets"))
     }.getOrNull()
 
+    fun encodeProjectionIntent(intent: LegacyProjectionIntent): String = JSONObject()
+        .put("sourceAggregate", encodeBlob(intent.sourceAggregate))
+        .put("projectedAggregate", encodeBlob(intent.projectedAggregate))
+        .put("desiredRevision", intent.desiredRevision)
+        .toString()
+
+    fun decodeProjectionIntent(raw: String): LegacyProjectionIntent? = runCatching {
+        val root = JSONObject(raw)
+        require(root.keys().asSequence().toSet() == PROJECTION_INTENT_KEYS)
+        LegacyProjectionIntent(
+            decodeBlob(root.getJSONObject("sourceAggregate")),
+            decodeBlob(root.getJSONObject("projectedAggregate")),
+            root.getLong("desiredRevision")
+        )
+    }.getOrNull()
+
     fun sha256(raw: String): String = sha256(raw.toByteArray(Charsets.UTF_8))
 
     fun sha256(raw: ByteArray): String = MessageDigest.getInstance("SHA-256")
@@ -142,4 +158,5 @@ internal object LegacyMigrationCodec {
     private val CONTEXT_KEYS = setOf("providerId", "encryptedSource")
     private val BLOB_KEYS = setOf("formatVersion", "byteLength", "sha256")
     private val PROJECTION_KEYS = setOf("desiredRevision", "appliedRevision", "aggregate", "mirrors", "cache")
+    private val PROJECTION_INTENT_KEYS = setOf("sourceAggregate", "projectedAggregate", "desiredRevision")
 }

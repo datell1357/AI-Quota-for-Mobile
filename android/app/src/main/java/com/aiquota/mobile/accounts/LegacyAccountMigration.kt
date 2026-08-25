@@ -10,84 +10,81 @@ internal class LegacyAccountMigration(
     private val journal: LegacyMigrationJournal,
     private val authority: MainProcessAccountAuthority,
     private val vault: AccountCredentialVault,
+    private val projectionStore: LegacyProjectionStore,
     private val faultInjector: LegacyMigrationFaultInjector = LegacyMigrationFaultInjector.NONE
 ) {
-    fun run(): LegacyMigrationResult = processLock.withLock {
+    fun run(): LegacyMigrationResult {
+        val result = processLock.withLock { runLocked() }
+        if (result is LegacyMigrationResult.Completed) {
+            emit(LegacyMigrationFaultPoint.M13_AFTER_GATE_RELEASE, LegacyMigrationOperation.GATE_RELEASED)
+        }
+        return result
+    }
+
+    private fun runLocked(): LegacyMigrationResult {
         emit(LegacyMigrationFaultPoint.M00_AFTER_GATE, LegacyMigrationOperation.GATE_ACQUIRED)
         val live = source.capture()
         val sourceReceipt = journal.readSourceReceipt() ?: run {
-            if (!journal.commitSourceReceipt(live.receipt)) return@withLock blocked(LegacyMigrationStage.SOURCE_CAPTURE, LegacyMigrationFailure.SOURCE_CAPTURE_WRITE_FAILED)
+            if (!journal.commitSourceReceipt(live.receipt)) return blocked(LegacyMigrationStage.SOURCE_CAPTURE, LegacyMigrationFailure.SOURCE_CAPTURE_WRITE_FAILED)
             emit(LegacyMigrationFaultPoint.M01_AFTER_SOURCE_CAPTURE, LegacyMigrationOperation.SOURCE_RECEIPT_COMMITTED)
             live.receipt
         }
         val prior = journal.readManifest()
-        if (prior != null) {
-            if (prior.sourceReceipt != sourceReceipt) {
-                journal.clearManifest()
-                return@withLock blocked(LegacyMigrationStage.MANIFEST_VALIDATE, LegacyMigrationFailure.MANIFEST_INVALID)
-            }
-            if (live.receipt.contexts != prior.sourceReceipt.contexts) {
-                journal.clearManifest()
-                return@withLock blocked(LegacyMigrationStage.SOURCE_CAPTURE, LegacyMigrationFailure.SOURCE_CHANGED_DURING_COPY)
-            }
-            if (validateTargets(prior.targets, allowAdvanced = true)) {
-                val projector = LegacyMigrationProjection(source, authority, faultInjector)
-                val projection = if (projector.isCurrent(prior.projection)) prior.projection else projector.repair()
-                    ?: return@withLock blocked(LegacyMigrationStage.PROJECTION_WRITE, LegacyMigrationFailure.PROJECTION_WRITE_FAILED)
-                val repaired = LegacyMigrationCodec.completeManifest(prior.sourceReceipt, prior.targets, projection)
-                if (repaired != prior && !commitComplete(repaired)) return@withLock blocked(LegacyMigrationStage.MANIFEST_WRITE, LegacyMigrationFailure.MANIFEST_INVALID)
-                emit(LegacyMigrationFaultPoint.M13_AFTER_GATE_RELEASE, LegacyMigrationOperation.GATE_RELEASED)
-                return@withLock LegacyMigrationResult.Completed(repaired, resumed = true)
-            }
+        if (prior != null) return resumeComplete(prior, sourceReceipt, live)
+        if (journal.hasManifestBytes()) {
             journal.clearManifest()
-        } else if (journal.hasManifestBytes() && !journal.clearManifest()) {
-            return@withLock blocked(LegacyMigrationStage.MANIFEST_VALIDATE, LegacyMigrationFailure.MANIFEST_INVALID)
+            return blocked(LegacyMigrationStage.MANIFEST_VALIDATE, LegacyMigrationFailure.MANIFEST_INVALID)
         }
 
         var targets = journal.readVerifiedTargets()
         if (!journal.isTargetCheckpointComplete()) {
-            if (live.receipt != sourceReceipt) {
-                return@withLock blockSourceChanged()
-            }
+            if (live.receipt != sourceReceipt) return blockSourceChanged()
             val snapshots = LegacyMigrationCodec.strictSnapshots(live) ?: run {
                 journal.commitBlocked(LegacyMigrationStage.SOURCE_PARSE, LegacyMigrationFailure.MALFORMED_NONBLANK_SOURCE)
-                return@withLock blocked(LegacyMigrationStage.SOURCE_PARSE, LegacyMigrationFailure.MALFORMED_NONBLANK_SOURCE)
+                return blocked(LegacyMigrationStage.SOURCE_PARSE, LegacyMigrationFailure.MALFORMED_NONBLANK_SOURCE)
             }
             emit(LegacyMigrationFaultPoint.M02_AFTER_PARSE, LegacyMigrationOperation.SOURCE_PARSED)
+            if (source.capture().receipt != sourceReceipt) return blockSourceChanged()
             val expected = targetSnapshots(snapshots, sourceReceipt.contexts.map { it.providerId }.toSet())
             val seeds = expected.map { (provider, snapshot) ->
-                val id = ProviderAccountId(provider, AccountKey.reservedDefault())
                 LegacyAuthorityImportSeed(
-                    AuthorityAccountSeed(migratedAccount(id), snapshot),
-                    source.mirrorSeedReceipt(provider),
-                    source.preferenceSeedReceipt(provider)
+                    AuthorityAccountSeed(migratedAccount(ProviderAccountId(provider, AccountKey.reservedDefault())), snapshot),
+                    source.mirrorSeedData(provider),
+                    source.preferenceSeedData(provider)
                 )
             }
+            val guardedFaults = LegacyMigrationFaultInjector { event ->
+                faultInjector.after(event)
+                if (source.capture().receipt != sourceReceipt) throw SourceChangedDuringCopyException
+            }
             val states = try {
-                authority.importLegacyDefaults(seeds, faultInjector)
+                authority.importLegacyDefaults(seeds, guardedFaults)
             } catch (interrupted: LegacyMigrationInterruptedException) {
                 throw interrupted
+            } catch (_: SourceChangedDuringCopyException) {
+                return blockSourceChanged()
             } catch (_: RuntimeException) {
-                return@withLock blocked(LegacyMigrationStage.AUTHORITY_WRITE, LegacyMigrationFailure.AUTHORITY_WRITE_FAILED)
+                return blocked(LegacyMigrationStage.AUTHORITY_WRITE, LegacyMigrationFailure.AUTHORITY_WRITE_FAILED)
             }
+            if (source.capture().receipt != sourceReceipt) return blockSourceChanged()
             val existingTargets = targets.associateBy { it.accountId }.toMutableMap()
             val contextReceipts = sourceReceipt.contexts.associateBy { it.providerId }
             val contextStates = states.filter { it.record.account.id.providerId in contextReceipts }
             contextStates.forEachIndexed { index, state ->
-                if (source.capture().receipt != sourceReceipt) return@withLock blockSourceChanged()
+                if (source.capture().receipt != sourceReceipt) return blockSourceChanged()
                 val contextReceipt = requireNotNull(contextReceipts[state.record.account.id.providerId])
                 val context = source.readContext(contextReceipt)
                 if (context !is LegacyContextCapture.Present) {
                     journal.commitBlocked(LegacyMigrationStage.SECRET_READ, LegacyMigrationFailure.MALFORMED_CONTEXT)
-                    return@withLock blocked(LegacyMigrationStage.SECRET_READ, LegacyMigrationFailure.MALFORMED_CONTEXT)
+                    return blocked(LegacyMigrationStage.SECRET_READ, LegacyMigrationFailure.MALFORMED_CONTEXT)
                 }
                 emit(LegacyMigrationFaultPoint.M07_AFTER_OLD_DECRYPT, LegacyMigrationOperation.OLD_CONTEXT_DECRYPTED, state.record.account.id.providerId, index, contextStates.size)
-                if (source.capture().receipt != sourceReceipt) return@withLock blockSourceChanged()
+                if (source.capture().receipt != sourceReceipt) return blockSourceChanged()
                 val secret = stageSecret(state, context, index, contextStates.size)
-                    ?: return@withLock blocked(LegacyMigrationStage.SECRET_VERIFY, LegacyMigrationFailure.VAULT_READBACK_FAILED)
-                if (source.capture().receipt != sourceReceipt) return@withLock blockSourceChanged()
+                    ?: return blocked(LegacyMigrationStage.SECRET_VERIFY, LegacyMigrationFailure.VAULT_READBACK_FAILED)
+                if (source.capture().receipt != sourceReceipt) return blockSourceChanged()
                 if (!journal.commitVerifiedTarget(secret) || journal.readVerifiedTargets().none { it == secret }) {
-                    return@withLock blocked(LegacyMigrationStage.SECRET_VERIFY, LegacyMigrationFailure.MANIFEST_WRITE_FAILED)
+                    return blocked(LegacyMigrationStage.SECRET_VERIFY, LegacyMigrationFailure.MANIFEST_WRITE_FAILED)
                 }
                 emit(LegacyMigrationFaultPoint.M09_AFTER_SECRET_VERIFY, LegacyMigrationOperation.AFTER_SECRET_VERIFY, state.record.account.id.providerId, index, contextStates.size)
                 existingTargets[secret.accountId] = secret
@@ -96,27 +93,68 @@ internal class LegacyAccountMigration(
                 existingTargets[state.record.account.id] = targetFrom(state, null, null, null)
             }
             targets = existingTargets.values.sortedBy { it.accountId.providerId.ordinal }
-            if (!validateTargets(targets, allowAdvanced = false)) {
-                return@withLock blocked(LegacyMigrationStage.TARGET_VERIFY, LegacyMigrationFailure.TARGET_VALIDATION_FAILED)
+            if (!validateTargets(targets, allowAdvanced = false, requireCheckpointMatch = false)) {
+                return blocked(LegacyMigrationStage.TARGET_VERIFY, LegacyMigrationFailure.TARGET_VALIDATION_FAILED)
             }
-            if (source.capture().receipt != sourceReceipt) return@withLock blockSourceChanged()
+            if (source.capture().receipt != sourceReceipt) return blockSourceChanged()
             if (!journal.commitTargetCheckpoint(targets) || journal.readVerifiedTargets() != targets) {
-                return@withLock blocked(LegacyMigrationStage.TARGET_VERIFY, LegacyMigrationFailure.MANIFEST_WRITE_FAILED)
+                return blocked(LegacyMigrationStage.TARGET_VERIFY, LegacyMigrationFailure.MANIFEST_WRITE_FAILED)
             }
             emit(LegacyMigrationFaultPoint.M10_AFTER_FULL_VERIFY, LegacyMigrationOperation.TARGET_CHECKPOINT_COMMITTED)
-        } else {
-            if (source.capture().receipt.contexts != sourceReceipt.contexts || !validateTargets(targets, allowAdvanced = false)) {
-                return@withLock blocked(LegacyMigrationStage.TARGET_VERIFY, LegacyMigrationFailure.TARGET_VALIDATION_FAILED)
-            }
+        } else if (!sourceIsExpected(sourceReceipt) ||
+            !validateTargets(targets, allowAdvanced = false, requireCheckpointMatch = true)
+        ) {
+            return blockSourceChanged()
         }
 
-        val projection = LegacyMigrationProjection(source, authority, faultInjector).repair()
-            ?: return@withLock blocked(LegacyMigrationStage.PROJECTION_WRITE, LegacyMigrationFailure.PROJECTION_WRITE_FAILED)
+        if (!sourceIsExpected(sourceReceipt)) return blockSourceChanged()
+        val projection = projector(sourceReceipt, faultInjector).repair()
+            ?: return blocked(LegacyMigrationStage.PROJECTION_WRITE, LegacyMigrationFailure.PROJECTION_WRITE_FAILED)
         val manifest = LegacyMigrationCodec.completeManifest(sourceReceipt, targets, projection)
-        if (!commitComplete(manifest)) return@withLock blocked(LegacyMigrationStage.MANIFEST_WRITE, LegacyMigrationFailure.MANIFEST_INVALID)
-        emit(LegacyMigrationFaultPoint.M13_AFTER_GATE_RELEASE, LegacyMigrationOperation.GATE_RELEASED)
-        LegacyMigrationResult.Completed(manifest, resumed = false)
+        if (!commitComplete(manifest)) return blocked(LegacyMigrationStage.MANIFEST_WRITE, LegacyMigrationFailure.MANIFEST_INVALID)
+        return LegacyMigrationResult.Completed(manifest, resumed = false)
     }
+
+    private fun resumeComplete(
+        prior: LegacyMigrationManifest,
+        sourceReceipt: LegacySourceReceipt,
+        live: LegacySourceCapture
+    ): LegacyMigrationResult {
+        if (prior.sourceReceipt != sourceReceipt || live.receipt.contexts != prior.sourceReceipt.contexts) {
+            journal.clearManifest()
+            return blocked(LegacyMigrationStage.MANIFEST_VALIDATE, LegacyMigrationFailure.MANIFEST_INVALID)
+        }
+        authority.repairLegacyCopyPayloads(prior.targets.associate { target ->
+            target.accountId to (
+                source.mirrorSeedData(target.accountId.providerId) to
+                    source.preferenceSeedData(target.accountId.providerId)
+                )
+        })
+        if (!validateTargets(prior.targets, allowAdvanced = true, requireCheckpointMatch = true)) {
+            journal.clearManifest()
+            return blocked(LegacyMigrationStage.MANIFEST_VALIDATE, LegacyMigrationFailure.MANIFEST_INVALID)
+        }
+        val projector = projector(null, faultInjector)
+        val projection = if (projector.isCurrent(prior.projection)) prior.projection else projector.repair()
+            ?: return blocked(LegacyMigrationStage.PROJECTION_WRITE, LegacyMigrationFailure.PROJECTION_WRITE_FAILED)
+        val repaired = LegacyMigrationCodec.completeManifest(prior.sourceReceipt, prior.targets, projection)
+        if (repaired != prior && !commitComplete(repaired, enforceOriginalSource = false)) {
+            return blocked(LegacyMigrationStage.MANIFEST_WRITE, LegacyMigrationFailure.MANIFEST_INVALID)
+        }
+        return LegacyMigrationResult.Completed(repaired, resumed = true)
+    }
+
+    private fun sourceIsExpected(receipt: LegacySourceReceipt): Boolean {
+        val current = source.capture().receipt
+        if (current == receipt) return true
+        val intent = journal.readProjectionIntent() ?: return false
+        return current.contexts == receipt.contexts &&
+            intent.sourceAggregate == receipt.aggregate &&
+            current.aggregate == intent.projectedAggregate
+    }
+
+    private fun projector(sourceReceipt: LegacySourceReceipt?, faults: LegacyMigrationFaultInjector) =
+        LegacyMigrationProjection(projectionStore, authority, journal, sourceReceipt, faults)
 
     private fun stageSecret(
         state: LegacyAuthorityState,
@@ -133,8 +171,7 @@ internal class LegacyAccountMigration(
             SecretRevision.of(1)
         )
         val existing = vault.lookup(binding.accountId)
-        val existingValid = existing?.let { vault.decrypt(binding, it)?.contentEquals(context.bundle) } == true
-        if (!existingValid) {
+        if (existing?.let { vault.decrypt(binding, it)?.contentEquals(context.bundle) } != true) {
             if (!vault.put(binding, context.bundle)) return null
             emit(LegacyMigrationFaultPoint.M08_AFTER_SECRET_ENVELOPE, LegacyMigrationOperation.AFTER_NEW_ENCRYPT, id.providerId, index, total)
         }
@@ -151,47 +188,44 @@ internal class LegacyAccountMigration(
     ): LegacyMigrationTarget {
         val account = state.record.account
         return LegacyMigrationTarget(
-            accountId = account.id,
-            sourceSnapshotSha256 = LegacyMigrationCodec.snapshotSha256(state.record.snapshot),
-            accountState = account.state,
-            authState = account.authState,
-            deletionState = account.deletionState,
-            generation = account.generation,
-            sessionRevision = account.sessionRevision,
-            authorityVersion = state.record.version,
-            demandMask = state.demandMask,
-            attemptGeneration = state.attemptGeneration,
-            attemptSessionRevision = state.attemptSessionRevision,
-            activeNonce = state.activeNonce,
-            lastNonce = state.lastNonce,
-            publishedNonceCount = state.publishedNonceCount,
-            mirrorReceiptSha256 = state.mirrorReceiptSha256,
-            preferenceReceiptSha256 = state.preferenceReceiptSha256,
-            contextSourceReceipt = contextReceipt,
-            vaultBinding = binding,
-            vaultEnvelopeSha256 = envelopeHash
+            account.id, LegacyMigrationCodec.snapshotSha256(state.record.snapshot), account.state, account.authState,
+            account.deletionState, account.generation, account.sessionRevision, state.record.version,
+            state.demandMask, state.attemptGeneration, state.attemptSessionRevision, state.activeNonce,
+            state.lastNonce, state.publishedNonceCount, state.mirrorReceiptSha256,
+            state.preferenceReceiptSha256, contextReceipt, binding, envelopeHash
         )
     }
 
-    private fun validateTargets(targets: List<LegacyMigrationTarget>, allowAdvanced: Boolean): Boolean = runCatching {
+    private fun validateTargets(
+        targets: List<LegacyMigrationTarget>,
+        allowAdvanced: Boolean,
+        requireCheckpointMatch: Boolean
+    ): Boolean = runCatching {
+        if (requireCheckpointMatch && journal.readVerifiedTargets() != targets) return@runCatching false
         val contexts = journal.readSourceReceipt()?.contexts?.associateBy { it.providerId }.orEmpty()
         targets.all { target ->
-            if (target.contextSourceReceipt != contexts[target.accountId.providerId]) return@all false
-            val state = authority.legacyImportState(target.accountId) ?: return@all false
-            LegacyMigrationTargetValidator(vault).validate(target, state, allowAdvanced)
+            target.contextSourceReceipt == contexts[target.accountId.providerId] &&
+                authority.legacyImportState(target.accountId)?.let {
+                    LegacyMigrationTargetValidator(vault).validate(target, it, allowAdvanced)
+                } == true
         }
     }.getOrDefault(false)
 
-    private fun commitComplete(manifest: LegacyMigrationManifest): Boolean {
+    private fun commitComplete(
+        manifest: LegacyMigrationManifest,
+        enforceOriginalSource: Boolean = true
+    ): Boolean {
         if (journal.readSourceReceipt() != manifest.sourceReceipt) return false
-        if (source.capture().receipt.contexts != manifest.sourceReceipt.contexts) return false
-        if (!LegacyMigrationProjection(source, authority, LegacyMigrationFaultInjector.NONE).isCurrent(manifest.projection)) return false
+        if (enforceOriginalSource && !sourceIsExpected(manifest.sourceReceipt)) return false
+        if (!enforceOriginalSource && source.capture().receipt.contexts != manifest.sourceReceipt.contexts) return false
+        if (!projector(null, LegacyMigrationFaultInjector.NONE).isCurrent(manifest.projection)) return false
         if (!journal.commitManifest(manifest)) return false
         val committed = journal.readManifest()
         if (committed != manifest ||
-            source.capture().receipt.contexts != manifest.sourceReceipt.contexts ||
-            !validateTargets(manifest.targets, allowAdvanced = true) ||
-            !LegacyMigrationProjection(source, authority, LegacyMigrationFaultInjector.NONE).isCurrent(manifest.projection)
+            enforceOriginalSource && !sourceIsExpected(manifest.sourceReceipt) ||
+            !enforceOriginalSource && source.capture().receipt.contexts != manifest.sourceReceipt.contexts ||
+            !validateTargets(manifest.targets, allowAdvanced = true, requireCheckpointMatch = true) ||
+            !projector(null, LegacyMigrationFaultInjector.NONE).isCurrent(manifest.projection)
         ) {
             journal.clearManifest()
             return false
@@ -220,6 +254,8 @@ internal class LegacyAccountMigration(
 
     private fun emit(point: LegacyMigrationFaultPoint, operation: LegacyMigrationOperation, provider: ProviderId? = null, index: Int = 0, total: Int = 1) =
         faultInjector.after(LegacyMigrationFaultEvent(point, operation, provider, index, total))
+
+    private data object SourceChangedDuringCopyException : RuntimeException()
 
     private companion object {
         val TARGETS = listOf(ProviderId.CLAUDE, ProviderId.CODEX)

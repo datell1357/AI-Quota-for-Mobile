@@ -36,47 +36,62 @@ class MainProcessAccountAuthority private constructor(
     internal fun importLegacyDefaults(
         seeds: List<LegacyAuthorityImportSeed>,
         migrationFaultInjector: LegacyMigrationFaultInjector
-    ): List<LegacyAuthorityState> = transaction { db ->
+    ): List<LegacyAuthorityState> {
         val ordered = seeds.sortedBy { it.seed.account.id.providerId.ordinal }
-        var version = readVersion(db)
-        ordered.forEachIndexed { index, item ->
-            val id = item.seed.account.id
-            require(id.accountKey == AccountKey.reservedDefault())
-            val existing = readAccount(db, id)
-            if (existing == null) {
-                version = version.next()
-                insertAccount(db, item.seed.account.copy(modifiedVersion = version))
-            } else {
-                require(existing.state == AccountState.ACTIVE)
-                require(existing.authState == AccountAuthState.REAUTH_REQUIRED)
-                require(existing.deletionState == AccountDeletionState.NONE)
+        transaction { db ->
+            var version = readVersion(db)
+            ordered.forEachIndexed { index, item ->
+                val id = item.seed.account.id
+                require(id.accountKey == AccountKey.reservedDefault())
+                val existing = readAccount(db, id)
+                if (existing == null) {
+                    version = version.next()
+                    insertAccount(db, item.seed.account.copy(modifiedVersion = version))
+                } else {
+                    require(existing.state == AccountState.ACTIVE)
+                    require(existing.authState == AccountAuthState.REAUTH_REQUIRED)
+                    require(existing.deletionState == AccountDeletionState.NONE)
+                }
+                migrationFaultInjector.after(importEvent(LegacyMigrationFaultPoint.M03_AFTER_REGISTRY_COPY, LegacyMigrationOperation.REGISTRY_UPSERTED, id, index, ordered.size))
             }
-            migrationFaultInjector.after(importEvent(LegacyMigrationFaultPoint.M03_AFTER_REGISTRY_COPY, LegacyMigrationOperation.REGISTRY_UPSERTED, id, index, ordered.size))
-        }
-        ordered.forEachIndexed { index, item ->
-            val id = item.seed.account.id
-            val account = requireNotNull(readAccount(db, id))
-            val existing = readLegacyImportRecord(db, id)
-            if (existing == null) {
-                writeSnapshot(db, id, item.seed.snapshot, account.modifiedVersion)
-                writeDemand(db, id, AccountDemandSet.NONE)
-                writeAttempt(db, id, account.generation, account.sessionRevision, null)
-                writeNonceHead(db, id, null)
-            } else {
-                require(existing.snapshot == item.seed.snapshot)
+            ordered.forEachIndexed { index, item ->
+                val id = item.seed.account.id
+                val account = requireNotNull(readAccount(db, id))
+                val existing = readLegacyImportRecord(db, id)
+                if (existing == null) {
+                    writeSnapshot(db, id, item.seed.snapshot, account.modifiedVersion)
+                    writeDemand(db, id, AccountDemandSet.NONE)
+                    writeAttempt(db, id, account.generation, account.sessionRevision, null)
+                    writeNonceHead(db, id, null)
+                } else {
+                    require(existing.snapshot == item.seed.snapshot)
+                }
+                migrationFaultInjector.after(importEvent(LegacyMigrationFaultPoint.M04_AFTER_SNAPSHOT_COPY, LegacyMigrationOperation.SNAPSHOT_STATE_UPSERTED, id, index, ordered.size))
             }
-            migrationFaultInjector.after(importEvent(LegacyMigrationFaultPoint.M04_AFTER_SNAPSHOT_COPY, LegacyMigrationOperation.SNAPSHOT_STATE_UPSERTED, id, index, ordered.size))
+            writeVersion(db, version)
         }
         ordered.forEachIndexed { index, item ->
-            writeMigrationReceipt(db, "migration_mirrors", item.seed.account.id, item.mirrorReceiptSha256)
-            migrationFaultInjector.after(importEvent(LegacyMigrationFaultPoint.M05_AFTER_MIRROR_COPY, LegacyMigrationOperation.MIRROR_RECEIPT_UPSERTED, item.seed.account.id, index, ordered.size))
+            transaction { db ->
+                writeMigrationCopy(db, "migration_mirrors", item.seed.account.id, item.mirrorCopyData)
+                require(readMigrationCopy(db, "migration_mirrors", item.seed.account.id)?.second == item.mirrorCopyData)
+            }
+            migrationFaultInjector.after(importEvent(LegacyMigrationFaultPoint.M05_AFTER_MIRROR_COPY, LegacyMigrationOperation.MIRROR_DATA_COPIED, item.seed.account.id, index, ordered.size))
         }
         ordered.forEachIndexed { index, item ->
-            writeMigrationReceipt(db, "migration_preferences", item.seed.account.id, item.preferenceReceiptSha256)
-            migrationFaultInjector.after(importEvent(LegacyMigrationFaultPoint.M06_AFTER_PREF_COPY, LegacyMigrationOperation.PREFERENCE_RECEIPT_UPSERTED, item.seed.account.id, index, ordered.size))
+            transaction { db ->
+                writeMigrationCopy(db, "migration_preferences", item.seed.account.id, item.preferenceCopyData)
+                require(readMigrationCopy(db, "migration_preferences", item.seed.account.id)?.second == item.preferenceCopyData)
+            }
+            migrationFaultInjector.after(importEvent(LegacyMigrationFaultPoint.M06_AFTER_PREF_COPY, LegacyMigrationOperation.PREFERENCE_DATA_COPIED, item.seed.account.id, index, ordered.size))
         }
-        writeVersion(db, version)
-        ordered.map { requireNotNull(readLegacyAuthorityState(db, it.seed.account.id)) }
+        return ordered.map { requireNotNull(readLegacyAuthorityState(database.readableDatabase, it.seed.account.id)) }
+    }
+
+    internal fun repairLegacyCopyPayloads(payloads: Map<ProviderAccountId, Pair<String, String>>) = transaction { db ->
+        payloads.forEach { (id, data) ->
+            repairLegacyMigrationCopy(db, "migration_mirrors", id, data.first)
+            repairLegacyMigrationCopy(db, "migration_preferences", id, data.second)
+        }
     }
 
     internal fun legacyImportRecord(id: ProviderAccountId): VersionedDisplayRecord? =

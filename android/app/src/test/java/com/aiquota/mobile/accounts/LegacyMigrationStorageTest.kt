@@ -41,7 +41,8 @@ class LegacyMigrationStorageTest {
             val before = LegacyMigrationCodec.sha256(authority.canonicalDumpForTest())
             val result = LegacyAccountMigration(
                 source, journal, authority,
-                AccountCredentialVault(InMemoryCredentialEnvelopeStore(), FakeCredentialVaultCrypto())
+                AccountCredentialVault(InMemoryCredentialEnvelopeStore(), FakeCredentialVaultCrypto()),
+                AndroidLegacyMigrationSource(context)
             ).run() as LegacyMigrationResult.Completed
 
             val projected = LegacySnapshotStrictParser.parse(
@@ -140,7 +141,10 @@ class LegacyMigrationStorageTest {
         listOf(
             "legacy_account_migration_v1", "ai_quota_local_usage", "usage_data_claude",
             "usage_data_codex", "account_data_claude", "account_data_codex", "script_data_claude",
-            "script_data_codex", "ai_quota_widget_cache"
+            "script_data_codex", "ai_quota_widget_cache", "ai_quota_provider_preferences",
+            "ai_quota_reset_notifications", "ai_quota_usage_threshold_notifications",
+            "ai_quota_claude_prime_state", "claude_native_request_context",
+            "codex_native_auth_context", "account_credential_vault_v1"
         ).forEach { context.getSharedPreferences(it, Context.MODE_PRIVATE).edit().clear().commit() }
     }
 

@@ -21,7 +21,7 @@ internal enum class LegacyMigrationFaultPoint {
 
 internal enum class LegacyMigrationOperation {
     GATE_ACQUIRED, SOURCE_RECEIPT_COMMITTED, SOURCE_PARSED, REGISTRY_UPSERTED,
-    SNAPSHOT_STATE_UPSERTED, MIRROR_RECEIPT_UPSERTED, PREFERENCE_RECEIPT_UPSERTED,
+    SNAPSHOT_STATE_UPSERTED, MIRROR_DATA_COPIED, PREFERENCE_DATA_COPIED,
     OLD_CONTEXT_DECRYPTED, AFTER_NEW_ENCRYPT, AFTER_SECRET_VERIFY,
     TARGET_CHECKPOINT_COMMITTED, PROJECTION_DERIVED, AGGREGATE_COMMITTED,
     LEGACY_MIRROR_COMMITTED, COMPATIBILITY_CACHE_COMMITTED, PROJECTION_ACKED,
@@ -178,11 +178,23 @@ internal data class LegacyProjection(
     val desiredRevision: Long
 )
 
+internal data class LegacyProjectionIntent(
+    val sourceAggregate: LegacyBlobReceipt,
+    val projectedAggregate: LegacyBlobReceipt,
+    val desiredRevision: Long
+) {
+    init { require(desiredRevision >= 0) }
+}
+
 internal interface LegacyMigrationSource {
     fun capture(): LegacySourceCapture
     fun readContext(receipt: LegacyContextSourceReceipt): LegacyContextCapture
-    fun mirrorSeedReceipt(providerId: ProviderId): String
-    fun preferenceSeedReceipt(providerId: ProviderId): String
+    fun mirrorSeedData(providerId: ProviderId): String
+    fun preferenceSeedData(providerId: ProviderId): String
+}
+
+internal interface LegacyProjectionStore {
+    fun captureAggregate(): LegacySourceCapture
     fun writeAggregate(raw: String): Boolean
     fun writeMirror(providerId: ProviderId, snapshot: ProviderUsageSnapshot?): Boolean
     fun writeCompatibilityCache(snapshots: List<ProviderUsageSnapshot>): Boolean
@@ -196,6 +208,8 @@ internal interface LegacyMigrationJournal {
     fun isTargetCheckpointComplete(): Boolean
     fun commitVerifiedTarget(target: LegacyMigrationTarget): Boolean
     fun commitTargetCheckpoint(targets: List<LegacyMigrationTarget>): Boolean
+    fun readProjectionIntent(): LegacyProjectionIntent?
+    fun commitProjectionIntent(intent: LegacyProjectionIntent): Boolean
     fun readManifest(): LegacyMigrationManifest?
     fun hasManifestBytes(): Boolean
     fun commitManifest(manifest: LegacyMigrationManifest): Boolean

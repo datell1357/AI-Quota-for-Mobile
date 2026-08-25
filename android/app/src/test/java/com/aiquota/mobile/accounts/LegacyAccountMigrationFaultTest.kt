@@ -59,8 +59,8 @@ class LegacyAccountMigrationFaultTest {
         val expectedOperations = mapOf(
             LegacyMigrationFaultPoint.M03_AFTER_REGISTRY_COPY to LegacyMigrationOperation.REGISTRY_UPSERTED,
             LegacyMigrationFaultPoint.M04_AFTER_SNAPSHOT_COPY to LegacyMigrationOperation.SNAPSHOT_STATE_UPSERTED,
-            LegacyMigrationFaultPoint.M05_AFTER_MIRROR_COPY to LegacyMigrationOperation.MIRROR_RECEIPT_UPSERTED,
-            LegacyMigrationFaultPoint.M06_AFTER_PREF_COPY to LegacyMigrationOperation.PREFERENCE_RECEIPT_UPSERTED,
+            LegacyMigrationFaultPoint.M05_AFTER_MIRROR_COPY to LegacyMigrationOperation.MIRROR_DATA_COPIED,
+            LegacyMigrationFaultPoint.M06_AFTER_PREF_COPY to LegacyMigrationOperation.PREFERENCE_DATA_COPIED,
             LegacyMigrationFaultPoint.M07_AFTER_OLD_DECRYPT to LegacyMigrationOperation.OLD_CONTEXT_DECRYPTED,
             LegacyMigrationFaultPoint.M08_AFTER_SECRET_ENVELOPE to LegacyMigrationOperation.AFTER_NEW_ENCRYPT,
             LegacyMigrationFaultPoint.M09_AFTER_SECRET_VERIFY to LegacyMigrationOperation.AFTER_SECRET_VERIFY,
@@ -89,7 +89,13 @@ class LegacyAccountMigrationFaultTest {
                             if (event.point == point && event.index == index) throw LegacyMigrationInterruptedException(event)
                         })
                     }
-                    assertArrayEquals("${point.name}[$index]", before, environment.authority.canonicalDumpForTest())
+                    if (point == LegacyMigrationFaultPoint.M03_AFTER_REGISTRY_COPY ||
+                        point == LegacyMigrationFaultPoint.M04_AFTER_SNAPSHOT_COPY
+                    ) {
+                        assertArrayEquals("${point.name}[$index]", before, environment.authority.canonicalDumpForTest())
+                    } else {
+                        assertFalse("${point.name}[$index]", before.contentEquals(environment.authority.canonicalDumpForTest()))
+                    }
                 }
             }
         }
@@ -195,6 +201,7 @@ class LegacyAccountMigrationFaultTest {
         MigrationTestEnvironment(fullSource()).use { environment ->
             val original = (environment.run() as LegacyMigrationResult.Completed).manifest
             environment.journal.manifestBytes = "{corrupt"
+            assertTrue(environment.restart() is LegacyMigrationResult.Blocked)
             assertTrue(environment.restart() is LegacyMigrationResult.Completed)
             val target = original.targets.first()
             val stale = LegacyMigrationCodec.completeManifest(
@@ -203,6 +210,7 @@ class LegacyAccountMigrationFaultTest {
                 original.projection
             )
             environment.journal.manifestBytes = LegacyMigrationCodec.encodeManifest(stale)
+            assertTrue(environment.restart() is LegacyMigrationResult.Blocked)
             assertTrue(environment.restart() is LegacyMigrationResult.Completed)
             val binding = requireNotNull(target.vaultBinding)
             val aadMismatch = LegacyMigrationCodec.completeManifest(
@@ -211,6 +219,7 @@ class LegacyAccountMigrationFaultTest {
                 original.projection
             )
             environment.journal.manifestBytes = LegacyMigrationCodec.encodeManifest(aadMismatch)
+            assertTrue(environment.restart() is LegacyMigrationResult.Blocked)
             assertTrue(environment.restart() is LegacyMigrationResult.Completed)
             assertFalse(environment.journal.readManifest() == aadMismatch)
             println("QA_FIX1_COMPLETE_REPAIRS=3")

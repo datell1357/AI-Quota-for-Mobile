@@ -43,6 +43,14 @@ internal class DurableTestJournal(private val root: File) : TestMigrationJournal
         return commitTargets(values.values.toList(), LegacyMigrationStage.SECRET_VERIFY)
     }
     override fun commitTargetCheckpoint(targets: List<LegacyMigrationTarget>): Boolean = commitTargets(targets, LegacyMigrationStage.TARGET_VERIFY)
+    override fun readProjectionIntent(): LegacyProjectionIntent? = state().optString("projectionIntent").takeIf(String::isNotBlank)
+        ?.let(LegacyMigrationCodec::decodeProjectionIntent)
+    override fun commitProjectionIntent(intent: LegacyProjectionIntent): Boolean {
+        val prior = readProjectionIntent()
+        if (prior != null) return prior == intent
+        update { it.put("projectionIntent", LegacyMigrationCodec.encodeProjectionIntent(intent)) }
+        return readProjectionIntent() == intent
+    }
     override fun readManifest(): LegacyMigrationManifest? = manifestBytes?.let(LegacyMigrationCodec::decodeManifest)
     override fun hasManifestBytes(): Boolean = manifestBytes != null
     override fun commitManifest(manifest: LegacyMigrationManifest): Boolean {
@@ -75,6 +83,7 @@ internal class MemoryMigrationJournal : TestMigrationJournal {
     override var blocked: Pair<LegacyMigrationStage, LegacyMigrationFailure>? = null
     private var targets = emptyList<LegacyMigrationTarget>()
     private var checkpoint = false
+    private var projectionIntent: LegacyProjectionIntent? = null
     override fun readSourceReceipt() = captured
     override fun commitSourceReceipt(source: LegacySourceReceipt): Boolean {
         if (!captureWriteSucceeds) return false
@@ -87,6 +96,13 @@ internal class MemoryMigrationJournal : TestMigrationJournal {
         targets = (targets.filterNot { it.accountId == target.accountId } + target).sortedBy { it.accountId.providerId.ordinal }; return true
     }
     override fun commitTargetCheckpoint(targets: List<LegacyMigrationTarget>): Boolean { this.targets = targets; checkpoint = true; return true }
+    override fun readProjectionIntent() = projectionIntent
+    override fun commitProjectionIntent(intent: LegacyProjectionIntent): Boolean {
+        val prior = projectionIntent
+        if (prior != null) return prior == intent
+        projectionIntent = intent
+        return true
+    }
     override fun readManifest() = manifestBytes?.let(LegacyMigrationCodec::decodeManifest)
     override fun hasManifestBytes() = manifestBytes != null
     override fun commitManifest(manifest: LegacyMigrationManifest): Boolean {

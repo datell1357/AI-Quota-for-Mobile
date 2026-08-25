@@ -100,19 +100,24 @@ internal class AccountAuthorityDatabase(
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        if (oldVersion == 1 && newVersion == 2) {
-            createMigrationTables(db)
-            return
+        when {
+            oldVersion == 1 && newVersion == 3 -> createMigrationTables(db)
+            oldVersion == 2 && newVersion == 3 -> {
+                db.execSQL("ALTER TABLE migration_mirrors ADD COLUMN copied_json TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE migration_mirrors ADD COLUMN copied_sha256 TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE migration_preferences ADD COLUMN copied_json TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE migration_preferences ADD COLUMN copied_sha256 TEXT NOT NULL DEFAULT ''")
+            }
+            else -> error("Unsupported account authority schema upgrade $oldVersion to $newVersion")
         }
-        error("Unsupported account authority schema upgrade $oldVersion to $newVersion")
     }
 
     private fun createMigrationTables(db: SQLiteDatabase) {
         db.execSQL(
-            "CREATE TABLE migration_mirrors (provider_id TEXT NOT NULL, account_key TEXT NOT NULL, receipt_sha256 TEXT NOT NULL, PRIMARY KEY(provider_id, account_key), FOREIGN KEY(provider_id, account_key) REFERENCES accounts(provider_id, account_key) ON DELETE CASCADE)"
+            "CREATE TABLE migration_mirrors (provider_id TEXT NOT NULL, account_key TEXT NOT NULL, receipt_sha256 TEXT NOT NULL, copied_json TEXT NOT NULL, copied_sha256 TEXT NOT NULL, PRIMARY KEY(provider_id, account_key), FOREIGN KEY(provider_id, account_key) REFERENCES accounts(provider_id, account_key) ON DELETE CASCADE)"
         )
         db.execSQL(
-            "CREATE TABLE migration_preferences (provider_id TEXT NOT NULL, account_key TEXT NOT NULL, receipt_sha256 TEXT NOT NULL, PRIMARY KEY(provider_id, account_key), FOREIGN KEY(provider_id, account_key) REFERENCES accounts(provider_id, account_key) ON DELETE CASCADE)"
+            "CREATE TABLE migration_preferences (provider_id TEXT NOT NULL, account_key TEXT NOT NULL, receipt_sha256 TEXT NOT NULL, copied_json TEXT NOT NULL, copied_sha256 TEXT NOT NULL, PRIMARY KEY(provider_id, account_key), FOREIGN KEY(provider_id, account_key) REFERENCES accounts(provider_id, account_key) ON DELETE CASCADE)"
         )
         db.execSQL(
             "CREATE TABLE projection_state (singleton_id INTEGER PRIMARY KEY CHECK(singleton_id = 1), desired_revision INTEGER NOT NULL CHECK(desired_revision >= 0), applied_revision INTEGER NOT NULL CHECK(applied_revision >= 0), aggregate_sha256 TEXT NOT NULL, mirrors_sha256 TEXT NOT NULL, cache_sha256 TEXT NOT NULL)"
@@ -138,8 +143,8 @@ internal class AccountAuthorityDatabase(
             appendTable(db, "attempts", listOf("provider_id", "account_key", "generation", "session_revision", "active_nonce"), "provider_id, account_key")
             appendTable(db, "nonce_heads", listOf("provider_id", "account_key", "last_nonce"), "provider_id, account_key")
             appendTable(db, "published_nonces", listOf("provider_id", "account_key", "nonce"), "provider_id, account_key, nonce")
-            appendTable(db, "migration_mirrors", listOf("provider_id", "account_key", "receipt_sha256"), "provider_id, account_key")
-            appendTable(db, "migration_preferences", listOf("provider_id", "account_key", "receipt_sha256"), "provider_id, account_key")
+            appendTable(db, "migration_mirrors", listOf("provider_id", "account_key", "receipt_sha256", "copied_json", "copied_sha256"), "provider_id, account_key")
+            appendTable(db, "migration_preferences", listOf("provider_id", "account_key", "receipt_sha256", "copied_json", "copied_sha256"), "provider_id, account_key")
             appendTable(db, "projection_state", listOf("singleton_id", "desired_revision", "applied_revision", "aggregate_sha256", "mirrors_sha256", "cache_sha256"), "singleton_id")
         }
         return dump.toByteArray(StandardCharsets.UTF_8)
@@ -171,6 +176,6 @@ internal class AccountAuthorityDatabase(
     }
 
     private companion object {
-        const val SCHEMA_VERSION = 2
+        const val SCHEMA_VERSION = 3
     }
 }

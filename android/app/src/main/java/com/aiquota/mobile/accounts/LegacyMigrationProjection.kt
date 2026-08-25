@@ -1,32 +1,34 @@
 package com.aiquota.mobile.accounts
 
 import com.aiquota.mobile.local.ProviderId
-import com.aiquota.mobile.providers.ProviderSnapshotCodec
 
 internal class LegacyMigrationProjection(
-    private val source: LegacyMigrationSource,
+    private val store: LegacyProjectionStore,
     private val authority: MainProcessAccountAuthority,
+    private val journal: LegacyMigrationJournal,
+    private val migrationSource: LegacySourceReceipt?,
     private val faultInjector: LegacyMigrationFaultInjector
 ) {
     fun repair(): LegacyProjectionReceipt? {
         val authorityProjection = authority.legacyProjectionAuthority()
-        val current = source.capture()
-        val currentSnapshots = LegacySnapshotStrictParser.parse(current.rawAggregate) ?: return null
-        val nonTargets = currentSnapshots.filterNot { it.providerId in TARGETS }.associateBy { it.providerId }
-        val merged = ProviderId.defaultOrder().mapNotNull { provider ->
-            authorityProjection.snapshots[provider] ?: nonTargets[provider]
-        }
-        val projection = LegacyProjection(
-            rawAggregate = ProviderSnapshotCodec.encode(merged),
-            snapshots = merged,
-            targetSnapshots = authorityProjection.snapshots,
-            desiredRevision = authorityProjection.revision
-        )
+        val current = store.captureAggregate()
+        if (!acceptedMigrationAggregate(current.receipt.aggregate, authorityProjection.revision)) return null
+        val raw = LegacyRawProjectionCodec.replaceTargets(current.rawAggregate, authorityProjection.snapshots) ?: return null
+        val snapshots = LegacySnapshotStrictParser.parse(raw) ?: return null
+        val projection = LegacyProjection(raw, snapshots, authorityProjection.snapshots, authorityProjection.revision)
         emit(LegacyMigrationFaultPoint.P01_AFTER_DERIVE, LegacyMigrationOperation.PROJECTION_DERIVED)
-        if (!source.writeAggregate(projection.rawAggregate)) return null
+        if (migrationSource != null) {
+            val intent = LegacyProjectionIntent(
+                migrationSource.aggregate,
+                LegacyMigrationCodec.blobReceipt(raw),
+                authorityProjection.revision
+            )
+            if (!journal.commitProjectionIntent(intent) || journal.readProjectionIntent() != intent) return null
+        }
+        if (!store.writeAggregate(raw)) return null
         emit(LegacyMigrationFaultPoint.P02_AFTER_V1_AGGREGATE, LegacyMigrationOperation.AGGREGATE_COMMITTED)
         TARGETS.forEachIndexed { index, provider ->
-            if (!source.writeMirror(provider, projection.targetSnapshots[provider])) return null
+            if (!store.writeMirror(provider, projection.targetSnapshots[provider])) return null
             emit(
                 LegacyMigrationFaultPoint.P03_AFTER_V1_MIRRORS,
                 LegacyMigrationOperation.LEGACY_MIRROR_COMMITTED,
@@ -35,18 +37,11 @@ internal class LegacyMigrationProjection(
                 TARGETS.size
             )
         }
-        if (!source.writeCompatibilityCache(merged)) return null
+        if (!store.writeCompatibilityCache(snapshots)) return null
         emit(LegacyMigrationFaultPoint.P04_AFTER_CACHE, LegacyMigrationOperation.COMPATIBILITY_CACHE_COMMITTED)
-        val receipt = source.readProjectionReceipt(projection) ?: return null
+        val receipt = store.readProjectionReceipt(projection) ?: return null
         authority.acknowledgeLegacyProjection(receipt)
-        if (authority.legacyProjectionState() != LegacyProjectionAuthorityState(
-                receipt.desiredRevision,
-                receipt.appliedRevision,
-                receipt.aggregateSha256,
-                receipt.mirrorsSha256,
-                receipt.cacheSha256
-            )
-        ) return null
+        if (authority.legacyProjectionState() != receipt.toAuthorityState()) return null
         emit(LegacyMigrationFaultPoint.M11_AFTER_PROJECTION_WRITE, LegacyMigrationOperation.PROJECTION_ACKED)
         return receipt
     }
@@ -54,23 +49,30 @@ internal class LegacyMigrationProjection(
     fun isCurrent(receipt: LegacyProjectionReceipt): Boolean {
         val authorityProjection = authority.legacyProjectionAuthority()
         if (authorityProjection.revision != receipt.appliedRevision) return false
-        val current = source.capture()
+        val current = store.captureAggregate()
         val snapshots = LegacySnapshotStrictParser.parse(current.rawAggregate) ?: return false
         val projection = LegacyProjection(
-            rawAggregate = current.rawAggregate,
-            snapshots = snapshots,
-            targetSnapshots = authorityProjection.snapshots,
-            desiredRevision = receipt.desiredRevision
+            current.rawAggregate,
+            snapshots,
+            authorityProjection.snapshots,
+            receipt.desiredRevision
         )
-        return source.readProjectionReceipt(projection) == receipt &&
-            authority.legacyProjectionState() == LegacyProjectionAuthorityState(
-                receipt.desiredRevision,
-                receipt.appliedRevision,
-                receipt.aggregateSha256,
-                receipt.mirrorsSha256,
-                receipt.cacheSha256
-            )
+        return store.readProjectionReceipt(projection) == receipt &&
+            authority.legacyProjectionState() == receipt.toAuthorityState()
     }
+
+    private fun acceptedMigrationAggregate(current: LegacyBlobReceipt, revision: Long): Boolean {
+        val source = migrationSource ?: return true
+        if (current == source.aggregate) return true
+        val intent = journal.readProjectionIntent() ?: return false
+        return intent.sourceAggregate == source.aggregate &&
+            intent.projectedAggregate == current &&
+            intent.desiredRevision == revision
+    }
+
+    private fun LegacyProjectionReceipt.toAuthorityState() = LegacyProjectionAuthorityState(
+        desiredRevision, appliedRevision, aggregateSha256, mirrorsSha256, cacheSha256
+    )
 
     private fun emit(
         point: LegacyMigrationFaultPoint,

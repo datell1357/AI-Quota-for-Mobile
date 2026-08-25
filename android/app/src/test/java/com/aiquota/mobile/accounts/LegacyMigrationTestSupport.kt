@@ -24,9 +24,10 @@ internal class MigrationTestEnvironment(
     var crypto: CredentialVaultCrypto = crypto ?: DurableCredentialCrypto(source.root)
     var authority = MainProcessAccountAuthority.open(context, databaseName, authorityFaultInjector)
     var vault = AccountCredentialVault(this.envelopeStore, this.crypto)
+    var projectionStore: LegacyProjectionStore = source.reopen()
 
     fun run(fault: LegacyMigrationFaultInjector = LegacyMigrationFaultInjector.NONE): LegacyMigrationResult =
-        LegacyAccountMigration(source, journal, authority, vault, fault).run()
+        LegacyAccountMigration(source, journal, authority, vault, projectionStore, fault).run()
 
     fun restart(fault: LegacyMigrationFaultInjector = LegacyMigrationFaultInjector.NONE): LegacyMigrationResult {
         authority.close()
@@ -35,6 +36,7 @@ internal class MigrationTestEnvironment(
         envelopeStore = (envelopeStore as? DurableEnvelopeStore)?.reopen() ?: envelopeStore
         crypto = (crypto as? DurableCredentialCrypto)?.reopen() ?: crypto
         vault = AccountCredentialVault(envelopeStore, crypto)
+        projectionStore = source.reopen()
         authority = MainProcessAccountAuthority.open(context, databaseName)
         return run(fault)
     }

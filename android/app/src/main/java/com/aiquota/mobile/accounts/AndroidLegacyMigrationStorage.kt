@@ -10,8 +10,10 @@ import com.aiquota.mobile.providers.CodexNativeAuthContextStore
 import com.aiquota.mobile.providers.ProviderScriptProviders
 import com.aiquota.mobile.providers.ProviderSnapshotCodec
 import com.aiquota.mobile.providers.SecureStringStore
+import org.json.JSONArray
+import org.json.JSONObject
 
-internal class AndroidLegacyMigrationSource(context: Context) : LegacyMigrationSource {
+internal class AndroidLegacyMigrationSource(context: Context) : LegacyMigrationSource, LegacyProjectionStore {
     private val appContext = context.applicationContext
 
     override fun capture(): LegacySourceCapture {
@@ -47,17 +49,19 @@ internal class AndroidLegacyMigrationSource(context: Context) : LegacyMigrationS
         return LegacyContextCapture.Present(CredentialBundle.fromBytes(canonical.toByteArray()), receipt)
     }
 
-    override fun mirrorSeedReceipt(providerId: ProviderId): String =
-        canonicalStoresHash(providerId)
+    override fun mirrorSeedData(providerId: ProviderId): String = canonicalStores(providerId)
 
-    override fun preferenceSeedReceipt(providerId: ProviderId): String = LegacyMigrationCodec.sha256(
+    override fun preferenceSeedData(providerId: ProviderId): String = copiedStores(
         listOf(
             "ai_quota_provider_preferences",
             "ai_quota_reset_notifications",
             "ai_quota_usage_threshold_notifications",
             "ai_quota_claude_prime_state"
-        ).joinToString("|") { name -> canonicalPreferences(name, providerId.storageId) }
+        ),
+        providerId.storageId
     )
+
+    override fun captureAggregate(): LegacySourceCapture = capture()
 
     override fun writeAggregate(raw: String): Boolean {
         val preferences = appContext.getSharedPreferences(LOCAL_USAGE, Context.MODE_PRIVATE)
@@ -134,18 +138,28 @@ internal class AndroidLegacyMigrationSource(context: Context) : LegacyMigrationS
         TARGETS.joinToString("|") { "${it.storageId}:${canonicalStoresHash(it)}" }
     )
 
-    private fun canonicalStoresHash(providerId: ProviderId): String {
+    private fun canonicalStoresHash(providerId: ProviderId): String =
+        LegacyMigrationCodec.sha256(canonicalStores(providerId))
+
+    private fun canonicalStores(providerId: ProviderId): String {
         val stores = ProviderScriptProviders.storeNamesFor(providerId)
-        return LegacyMigrationCodec.sha256(
-            listOf(stores.accountData, stores.usageData, stores.scriptData)
-                .joinToString("|") { canonicalPreferences(it, null) }
-        )
+        return copiedStores(listOf(stores.accountData, stores.usageData, stores.scriptData), null)
     }
 
-    private fun canonicalPreferences(name: String, keyFilter: String?): String {
-        val values = appContext.getSharedPreferences(name, Context.MODE_PRIVATE).all.toSortedMap()
-        return values.entries.filter { keyFilter == null || it.key.contains(keyFilter) }
-            .joinToString("|") { (key, value) -> "$key=${LegacyMigrationCodec.sha256(value.toString())}" }
+    private fun copiedStores(names: List<String>, keyFilter: String?): String = JSONObject().also { root ->
+        names.sorted().forEach { name -> root.put(name, copiedPreferences(name, keyFilter)) }
+    }.toString()
+
+    private fun copiedPreferences(name: String, keyFilter: String?): JSONObject = JSONObject().also { copied ->
+        appContext.getSharedPreferences(name, Context.MODE_PRIVATE).all.toSortedMap()
+            .filterKeys { keyFilter == null || it.contains(keyFilter) }
+            .forEach { (key, value) ->
+                copied.put(key, when (value) {
+                    is String, is Boolean, is Int, is Long, is Float -> value
+                    is Set<*> -> JSONArray(value.filterIsInstance<String>().sorted())
+                    else -> error("Unsupported legacy preference value")
+                })
+            }
     }
 
     private fun contextStoreName(providerId: ProviderId): String = when (providerId) {

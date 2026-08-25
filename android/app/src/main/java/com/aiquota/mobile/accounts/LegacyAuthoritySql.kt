@@ -3,18 +3,39 @@ package com.aiquota.mobile.accounts
 import android.database.sqlite.SQLiteDatabase
 import com.aiquota.mobile.local.ProviderId
 
-internal fun writeMigrationReceipt(
+internal fun writeMigrationCopy(
     db: SQLiteDatabase,
     table: String,
     id: ProviderAccountId,
-    receipt: String
+    copiedData: String
 ) {
     require(table == "migration_mirrors" || table == "migration_preferences")
-    db.compileStatement("INSERT OR REPLACE INTO $table(provider_id, account_key, receipt_sha256) VALUES(?, ?, ?)").use {
+    val receipt = LegacyMigrationCodec.sha256(copiedData)
+    db.compileStatement("INSERT OR REPLACE INTO $table(provider_id, account_key, receipt_sha256, copied_json, copied_sha256) VALUES(?, ?, ?, ?, ?)").use {
         it.bindString(1, id.providerId.storageId)
         it.bindString(2, id.accountKey.storageValue())
         it.bindString(3, receipt)
+        it.bindString(4, copiedData)
+        it.bindString(5, receipt)
         check(it.executeInsert() != -1L)
+    }
+}
+
+internal fun repairLegacyMigrationCopy(
+    db: SQLiteDatabase,
+    table: String,
+    id: ProviderAccountId,
+    copiedData: String
+) {
+    require(table == "migration_mirrors" || table == "migration_preferences")
+    db.compileStatement(
+        "UPDATE $table SET copied_json = ?, copied_sha256 = ? WHERE provider_id = ? AND account_key = ? AND copied_sha256 = ''"
+    ).use {
+        it.bindString(1, copiedData)
+        it.bindString(2, LegacyMigrationCodec.sha256(copiedData))
+        it.bindString(3, id.providerId.storageId)
+        it.bindString(4, id.accountKey.storageValue())
+        it.executeUpdateDelete()
     }
 }
 
@@ -47,8 +68,10 @@ internal fun readLegacyAuthorityState(db: SQLiteDatabase, id: ProviderAccountId)
         activeNonce = attempt.third,
         lastNonce = lastNonce,
         publishedNonceCount = published,
-        mirrorReceiptSha256 = readMigrationReceipt(db, "migration_mirrors", id) ?: return null,
-        preferenceReceiptSha256 = readMigrationReceipt(db, "migration_preferences", id) ?: return null
+        mirrorReceiptSha256 = readMigrationCopy(db, "migration_mirrors", id)?.first ?: return null,
+        mirrorCopyData = readMigrationCopy(db, "migration_mirrors", id)?.second ?: return null,
+        preferenceReceiptSha256 = readMigrationCopy(db, "migration_preferences", id)?.first ?: return null,
+        preferenceCopyData = readMigrationCopy(db, "migration_preferences", id)?.second ?: return null
     )
 }
 
@@ -86,7 +109,13 @@ internal fun writeProjectionAuthorityState(db: SQLiteDatabase, receipt: LegacyPr
     }
 }
 
-private fun readMigrationReceipt(db: SQLiteDatabase, table: String, id: ProviderAccountId): String? = db.rawQuery(
-    "SELECT receipt_sha256 FROM $table WHERE provider_id = ? AND account_key = ?",
+internal fun readMigrationCopy(db: SQLiteDatabase, table: String, id: ProviderAccountId): Pair<String, String>? = db.rawQuery(
+    "SELECT receipt_sha256, copied_json, copied_sha256 FROM $table WHERE provider_id = ? AND account_key = ?",
     arrayOf(id.providerId.storageId, id.accountKey.storageValue())
-).use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+).use { cursor ->
+    if (!cursor.moveToFirst()) return null
+    val receipt = cursor.getString(0)
+    val copiedData = cursor.getString(1)
+    if (LegacyMigrationCodec.sha256(copiedData) != cursor.getString(2)) return null
+    receipt to copiedData
+}

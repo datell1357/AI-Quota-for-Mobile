@@ -17,7 +17,8 @@ internal object LegacyAccountMigrationRunner {
                 source = AndroidLegacyMigrationSource(context.applicationContext),
                 journal = AndroidLegacyMigrationJournal(context.applicationContext),
                 authority = authority,
-                vault = createAndroidAccountCredentialVault(context.applicationContext)
+                vault = createAndroidAccountCredentialVault(context.applicationContext),
+                projectionStore = AndroidLegacyMigrationSource(context.applicationContext)
             ).run()
         }
     }.getOrNull()

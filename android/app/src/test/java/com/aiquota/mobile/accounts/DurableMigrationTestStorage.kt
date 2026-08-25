@@ -13,10 +13,16 @@ import javax.crypto.spec.SecretKeySpec
 import org.json.JSONArray
 import org.json.JSONObject
 
-internal class DurableFakeMigrationSource private constructor(val root: File) : LegacyMigrationSource {
-    var aggregateWriteSucceeds = true
-    var mirrorWriteSucceeds = true
-    var cacheWriteSucceeds = true
+internal class DurableFakeMigrationSource private constructor(val root: File) : LegacyMigrationSource, LegacyProjectionStore {
+    var aggregateWriteSucceeds: Boolean
+        get() = state().optBoolean("aggregateWriteSucceeds", true)
+        set(value) = updateState { it.put("aggregateWriteSucceeds", value) }
+    var mirrorWriteSucceeds: Boolean
+        get() = state().optBoolean("mirrorWriteSucceeds", true)
+        set(value) = updateState { it.put("mirrorWriteSucceeds", value) }
+    var cacheWriteSucceeds: Boolean
+        get() = state().optBoolean("cacheWriteSucceeds", true)
+        set(value) = updateState { it.put("cacheWriteSucceeds", value) }
 
     var present: Boolean
         get() = state().getBoolean("present")
@@ -55,8 +61,12 @@ internal class DurableFakeMigrationSource private constructor(val root: File) : 
         return LegacyContextCapture.Present(CredentialBundle.fromBytes(bytes), receipt)
     }
 
-    override fun mirrorSeedReceipt(providerId: ProviderId): String = LegacyMigrationCodec.sha256("seed-mirror:${providerId.storageId}")
-    override fun preferenceSeedReceipt(providerId: ProviderId): String = LegacyMigrationCodec.sha256("seed-preference:${providerId.storageId}")
+    override fun mirrorSeedData(providerId: ProviderId): String =
+        JSONObject().put("providerId", providerId.storageId).put("surface", "mirror").toString()
+    override fun preferenceSeedData(providerId: ProviderId): String =
+        JSONObject().put("providerId", providerId.storageId).put("surface", "preferences").toString()
+
+    override fun captureAggregate(): LegacySourceCapture = capture()
 
     override fun writeAggregate(raw: String): Boolean {
         if (!aggregateWriteSucceeds) return false
