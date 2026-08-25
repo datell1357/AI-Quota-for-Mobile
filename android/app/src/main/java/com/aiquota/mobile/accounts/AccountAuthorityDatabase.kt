@@ -3,6 +3,7 @@ package com.aiquota.mobile.accounts
 import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteException
 import android.database.sqlite.SQLiteOpenHelper
 import com.aiquota.mobile.local.ProviderId
 import java.nio.charset.StandardCharsets
@@ -115,13 +116,13 @@ internal class AccountAuthorityDatabase(
     }
 
     private fun backfillParentPrimarySelections(db: SQLiteDatabase) {
+        if (!hasCompleteParentProjectionAuthority(db)) return
         db.compileStatement(
             """
             INSERT INTO account_usage_primary(provider_id, account_key)
             SELECT targets.provider_id, ?
             FROM account_usage_projection_targets AS targets
-            WHERE targets.provider_id IN (?, ?)
-              AND targets.target_sha256 = ?
+            WHERE targets.target_sha256 = ?
               AND NOT EXISTS (
                   SELECT 1 FROM account_usage_primary AS primary_selection
                   WHERE primary_selection.provider_id = targets.provider_id
@@ -130,12 +131,75 @@ internal class AccountAuthorityDatabase(
             """.trimIndent()
         ).use { statement ->
             statement.bindString(1, ACCOUNT_USAGE_PRIMARY_NONE)
-            statement.bindString(2, ProviderId.CLAUDE.storageId)
-            statement.bindString(3, ProviderId.CODEX.storageId)
-            statement.bindString(4, ACCOUNT_USAGE_ABSENT_SHA256)
+            statement.bindString(2, ACCOUNT_USAGE_ABSENT_SHA256)
             statement.executeInsert()
         }
     }
+
+    private fun hasCompleteParentProjectionAuthority(db: SQLiteDatabase): Boolean {
+        db.rawQuery(
+            "SELECT singleton_id, authority_version, claude_sha256, codex_sha256 " +
+                "FROM account_usage_projection_intent",
+            null
+        ).use { cursor ->
+            if (cursor.moveToFirst()) incoherentParentProjectionAuthority()
+        }
+        val targets = buildList {
+            db.rawQuery(
+                "SELECT provider_id, target_sha256, authority_version " +
+                    "FROM account_usage_projection_targets",
+                null
+            ).use { cursor ->
+                while (cursor.moveToNext()) {
+                    if (cursor.getType(0) != Cursor.FIELD_TYPE_STRING ||
+                        cursor.getType(1) != Cursor.FIELD_TYPE_STRING ||
+                        cursor.getType(2) != Cursor.FIELD_TYPE_INTEGER
+                    ) {
+                        incoherentParentProjectionAuthority()
+                    }
+                    val provider = cursor.getString(0)
+                    val target = cursor.getString(1)
+                    val version = cursor.getLong(2)
+                    if (provider !in ACCOUNT_USAGE_TARGET_PROVIDER_IDS ||
+                        !SHA256_PATTERN.matches(target) ||
+                        version < 0
+                    ) {
+                        incoherentParentProjectionAuthority()
+                    }
+                    add(RawAccountUsageProjectionTarget(provider, target, version))
+                }
+            }
+        }
+        if (targets.isEmpty()) return false
+        if (targets.size != ACCOUNT_USAGE_TARGET_PROVIDER_IDS.size ||
+            targets.map { it.providerId }.toSet() != ACCOUNT_USAGE_TARGET_PROVIDER_IDS ||
+            targets.map { it.authorityVersion }.distinct().size != 1
+        ) {
+            incoherentParentProjectionAuthority()
+        }
+        val currentVersion = db.rawQuery(
+            "SELECT display_version FROM authority_metadata WHERE singleton_id = 1",
+            null
+        ).use { cursor ->
+            if (!cursor.moveToFirst() || cursor.getType(0) != Cursor.FIELD_TYPE_INTEGER) {
+                incoherentParentProjectionAuthority()
+            }
+            cursor.getLong(0)
+        }
+        if (currentVersion < 0 || targets.first().authorityVersion > currentVersion) {
+            incoherentParentProjectionAuthority()
+        }
+        return true
+    }
+
+    private fun incoherentParentProjectionAuthority(): Nothing =
+        throw SQLiteException("Incoherent account usage projection authority")
+
+    private data class RawAccountUsageProjectionTarget(
+        val providerId: String,
+        val targetSha256: String,
+        val authorityVersion: Long
+    )
 
     private fun upgradeReceiptOnlyMigrationTables(db: SQLiteDatabase) {
         listOf("migration_mirrors", "migration_preferences").forEach { table ->
@@ -288,6 +352,10 @@ internal class AccountAuthorityDatabase(
     }
 
     private companion object {
+        val ACCOUNT_USAGE_TARGET_PROVIDER_IDS = setOf(
+            ProviderId.CLAUDE.storageId,
+            ProviderId.CODEX.storageId
+        )
         const val SCHEMA_VERSION = 5
     }
 }
