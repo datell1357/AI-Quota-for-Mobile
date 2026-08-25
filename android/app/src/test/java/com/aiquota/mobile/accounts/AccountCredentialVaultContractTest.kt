@@ -50,6 +50,27 @@ class AccountCredentialVaultContractTest {
     }
 
     @Test
+    fun schemaProviderAndAccountAreAuthenticatedUnderTheSameCryptoKey() {
+        val store = InMemoryCredentialEnvelopeStore()
+        val sameKeyCrypto = SingleKeyCredentialVaultCrypto()
+        val sameKeyVault = AccountCredentialVault(store, sameKeyCrypto)
+        val binding = vaultBinding()
+        val bundle = vaultBundle("same-key-aad")
+        assertTrue(sameKeyVault.put(binding, bundle))
+        val envelope = requireNotNull(sameKeyVault.lookup(binding.accountId))
+
+        val sameKeyMutations = listOf(
+            binding.copy(schema = CredentialVaultSchema.of(2)),
+            vaultBinding(providerId = ProviderId.CODEX),
+            vaultBinding(accountToken = ACCOUNT_B),
+        )
+
+        sameKeyMutations.forEach { assertNull(sameKeyVault.decrypt(it, envelope)) }
+        assertEquals(3, sameKeyCrypto.decryptAttemptCount)
+        assertTrue(bundle.contentEquals(requireNotNull(sameKeyVault.decrypt(binding, envelope))))
+    }
+
+    @Test
     fun canonicalAadEncodingIsDeterministicAndUnambiguous() {
         val binding = vaultBinding()
         val first = CredentialVaultAad.encode(binding)

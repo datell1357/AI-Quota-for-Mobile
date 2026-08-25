@@ -14,37 +14,55 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class AccountCredentialVaultKeystoreTest {
     @Test
-    fun realKeystoreBindsAccountsAndDeletesOnlyExactAlias() {
+    fun realKeystorePersistsReopensAndRejectsDeletedEnvelopeAfterRecreate() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val vault = createAndroidAccountCredentialVault(context)
         val bindings = fixtureBindings()
-        bindings.forEach { vault.delete(it.accountId) }
+        createAndroidAccountCredentialVault(context).also { cleanup ->
+            bindings.forEach { cleanup.delete(it.accountId) }
+        }
 
         try {
+            val vault1 = createAndroidAccountCredentialVault(context)
             bindings.forEachIndexed { index, binding ->
-                assertTrue(vault.put(binding, fixtureBundle(index)))
-                assertTrue(fixtureBundle(index).contentEquals(requireNotNull(vault.decrypt(binding))))
+                assertTrue(vault1.put(binding, fixtureBundle(index)))
             }
             Log.i(TAG, "VAULT_QA_ROUND_TRIP_COUNT=4")
 
+            val vault2 = createAndroidAccountCredentialVault(context)
+            bindings.forEachIndexed { index, binding ->
+                assertTrue(fixtureBundle(index).contentEquals(requireNotNull(vault2.decrypt(binding))))
+            }
+            Log.i(TAG, "VAULT_QA_FRESH_INSTANCE_READ_COUNT=4")
+
             val first = bindings.first()
             val sibling = bindings[1]
-            val firstEnvelope = requireNotNull(vault.lookup(first.accountId))
-            assertNull(vault.decrypt(sibling, firstEnvelope))
+            val oldEnvelope = requireNotNull(vault2.lookup(first.accountId))
+            assertNull(vault2.decrypt(sibling, oldEnvelope))
             Log.i(TAG, "VAULT_QA_AAD_MISMATCH_COUNT=1")
 
-            val siblingBytes = requireNotNull(vault.lookup(sibling.accountId)).encodedBytes()
-            assertTrue(vault.delete(first.accountId))
-            assertNull(vault.lookup(first.accountId))
-            assertNull(vault.decrypt(first, firstEnvelope))
-            assertTrue(vault.isAbsent(first.accountId))
-            assertArrayEquals(siblingBytes, requireNotNull(vault.lookup(sibling.accountId)).encodedBytes())
-            assertTrue(fixtureBundle(1).contentEquals(requireNotNull(vault.decrypt(sibling))))
+            val siblingBytes = requireNotNull(vault2.lookup(sibling.accountId)).encodedBytes()
+            assertTrue(vault2.delete(first.accountId))
+            assertNull(vault2.lookup(first.accountId))
+            assertNull(vault2.decrypt(first, oldEnvelope))
+            assertTrue(vault2.isAbsent(first.accountId))
             Log.i(TAG, "VAULT_QA_DELETE_ABSENT_COUNT=1")
+
+            val recreatedBundle = fixtureBundle(RECREATED_BUNDLE_INDEX)
+            assertTrue(vault2.put(first, recreatedBundle))
+            assertNull(vault2.decrypt(first, oldEnvelope))
+            Log.i(TAG, "VAULT_QA_DELETE_RECREATE_STALE_COUNT=1")
+
+            val vault3 = createAndroidAccountCredentialVault(context)
+            assertTrue(recreatedBundle.contentEquals(requireNotNull(vault3.decrypt(first))))
+            assertNull(vault3.decrypt(first, oldEnvelope))
+            assertArrayEquals(siblingBytes, requireNotNull(vault3.lookup(sibling.accountId)).encodedBytes())
+            assertTrue(fixtureBundle(1).contentEquals(requireNotNull(vault3.decrypt(sibling))))
+            Log.i(TAG, "VAULT_QA_FRESH_INSTANCE_RECREATE_COUNT=1")
             Log.i(TAG, "VAULT_QA_SIBLING_PRESERVED_COUNT=1")
         } finally {
-            bindings.forEach { vault.delete(it.accountId) }
-            assertTrue(bindings.all { vault.isAbsent(it.accountId) })
+            val cleanup = createAndroidAccountCredentialVault(context)
+            bindings.forEach { cleanup.delete(it.accountId) }
+            assertTrue(bindings.all { cleanup.isAbsent(it.accountId) })
             Log.i(TAG, "VAULT_QA_TEST_ALIAS_RESIDUE=0")
         }
     }
@@ -72,6 +90,7 @@ class AccountCredentialVaultKeystoreTest {
 
     private companion object {
         const val TAG = "AccountVaultKeystore"
+        const val RECREATED_BUNDLE_INDEX = 4
         const val ACCOUNT_A = "acct_00000000000000000000000000000001"
         const val ACCOUNT_B = "acct_00000000000000000000000000000002"
         const val ACCOUNT_C = "acct_00000000000000000000000000000003"
