@@ -38,19 +38,35 @@ internal interface CredentialVaultOperationLock {
     fun <T> serialized(block: () -> T): T
 }
 
-internal class ReentrantCredentialVaultOperationLock : CredentialVaultOperationLock {
-    private val lock = ReentrantLock()
+internal fun interface CredentialVaultLockAttemptObserver {
+    fun onAttempt(contended: Boolean)
+}
 
-    override fun <T> serialized(block: () -> T): T = lock.withLock(block)
+private val noOpCredentialVaultLockAttemptObserver = CredentialVaultLockAttemptObserver { }
+
+internal class ReentrantCredentialVaultOperationLock(
+    private val rawLock: ReentrantLock = ReentrantLock(),
+    private val attemptObserver: CredentialVaultLockAttemptObserver = noOpCredentialVaultLockAttemptObserver,
+) : CredentialVaultOperationLock {
+    override fun <T> serialized(block: () -> T): T {
+        val contended = rawLock.isLocked && !rawLock.isHeldByCurrentThread
+        attemptObserver.onAttempt(contended)
+        return rawLock.withLock(block)
+    }
 }
 
 internal object ProcessAccountCredentialVaultFactory {
-    private val operationLock = ReentrantCredentialVaultOperationLock()
+    private val rawLock = ReentrantLock()
 
     fun create(
         envelopeStore: CredentialEnvelopeStore,
         crypto: CredentialVaultCrypto,
-    ): AccountCredentialVault = AccountCredentialVault(envelopeStore, crypto, operationLock)
+        attemptObserver: CredentialVaultLockAttemptObserver = noOpCredentialVaultLockAttemptObserver,
+    ): AccountCredentialVault = AccountCredentialVault(
+        envelopeStore,
+        crypto,
+        ReentrantCredentialVaultOperationLock(rawLock, attemptObserver),
+    )
 }
 
 internal class AccountCredentialVault(
