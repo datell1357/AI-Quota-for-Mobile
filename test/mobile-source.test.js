@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -352,4 +352,52 @@ test("iOS main UI exposes pre-production mobile flow up to snapshot display", ()
   assert.match(content, /Save sample snapshot/);
   assert.match(store, /Codex/);
   assert.match(store, /Claude/);
+});
+
+function extractGradleBlock(text, name) {
+  const match = text.match(new RegExp(`\\b${name}\\s*\\{`));
+  assert.ok(match, `Gradle block ${name} should exist`);
+  let depth = 1;
+  for (let index = match.index + match[0].length; index < text.length; index += 1) {
+    if (text[index] === "{") depth += 1;
+    if (text[index] === "}") depth -= 1;
+    if (depth === 0) return text.slice(match.index, index + 1);
+  }
+  assert.fail(`Gradle block ${name} should be balanced`);
+}
+
+function filesUnder(relativePath) {
+  const absolutePath = join(root, relativePath);
+  if (!existsSync(absolutePath)) return [];
+  return readdirSync(absolutePath, { withFileTypes: true }).flatMap((entry) => {
+    const child = join(relativePath, entry.name);
+    return entry.isDirectory() ? filesUnder(child) : [child];
+  });
+}
+
+test("Android multi-account WebKit and release gate are source-verified", () => {
+  const gradle = source("android/app/build.gradle.kts");
+  const buildTypes = extractGradleBlock(gradle, "buildTypes");
+  const debug = extractGradleBlock(buildTypes, "debug");
+  const release = extractGradleBlock(buildTypes, "release");
+  const parseFlag = (block, buildType) => {
+    const match = block.match(/buildConfigField\(\s*[\"']boolean[\"']\s*,\s*[\"']MULTI_ACCOUNT_ENABLED[\"']\s*,\s*[\"'](true|false)[\"']\s*\)/);
+    assert.ok(match, `${buildType} should assign MULTI_ACCOUNT_ENABLED as a boolean`);
+    return match[1];
+  };
+
+  assert.equal(parseFlag(debug, "debug"), "true");
+  assert.equal(parseFlag(release, "release"), "false");
+
+  const webkitPins = gradle.match(/implementation\(\s*[\"']androidx\.webkit:webkit:[^\"']+[\"']\s*\)/g) ?? [];
+  assert.deepEqual(webkitPins, ['implementation("androidx.webkit:webkit:1.17.0")']);
+
+  const releaseManifest = source("android/app/src/main/AndroidManifest.xml");
+  assert.doesNotMatch(releaseManifest, /MultiAccount.*Receiver/);
+  for (const path of filesUnder("android/app/src").filter((candidate) => candidate.endsWith(".kt"))) {
+    const content = source(path);
+    if (/class\s+\w*(?:MultiAccount|AccountFixture)\w*Receiver\s*:\s*BroadcastReceiver/.test(content)) {
+      assert.match(path, /^android\/app\/src\/debug\//, `${path} fixture receiver must be debug-only`);
+    }
+  }
 });
