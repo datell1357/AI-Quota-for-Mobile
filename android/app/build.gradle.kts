@@ -94,6 +94,7 @@ android {
         targetSdk = 36
         versionCode = 43
         versionName = "1.1.6"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GOOGLE_ANDROID_OAUTH_CLIENT_ID", "\"$googleAndroidOAuthClientId\"")
         buildConfigField("String", "GOOGLE_ANDROID_OAUTH_REDIRECT_SCHEME", "\"$googleAndroidOAuthRedirectScheme\"")
         manifestPlaceholders["appAuthRedirectScheme"] = googleAndroidOAuthRedirectScheme
@@ -194,4 +195,7 @@ dependencies {
     implementation("net.openid:appauth:0.11.1")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
+    androidTestImplementation("androidx.test:core-ktx:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
 }
