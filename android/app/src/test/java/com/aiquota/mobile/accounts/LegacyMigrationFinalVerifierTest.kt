@@ -7,11 +7,13 @@ import com.aiquota.mobile.providers.ClaudeNativeRequestContextStore
 import com.aiquota.mobile.providers.CodexNativeAuthContextStore
 import com.aiquota.mobile.providers.ProviderSnapshotCodec
 import java.nio.file.Files
+import java.util.Base64
 import java.util.concurrent.atomic.AtomicInteger
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -68,9 +70,9 @@ class LegacyMigrationFinalVerifierTest {
                 assertEquals(details, 0, branchAStageCount)
                 assertFalse(details, phantomVisible)
                 assertTrue(details, branchB is LegacyMigrationResult.Completed)
-                assertTrue(details, branchBStageCount > 0)
+                assertExactlyOneM03Replay(branchBEvents, details)
                 println(
-                    "QA_FIX3_PAIRED_SNAPSHOT=$snapshotA;WRITE=$bufferedReceipt;EVENT=${bufferedEvent.point};" +
+                    "QA_FIX4_PAIRED_SNAPSHOT=$snapshotA;WRITE=$bufferedReceipt;EVENT=${bufferedEvent.point};" +
                         "A_STAGE=$branchAStageCount;B_STAGE=$branchBStageCount;A=COMPLETED;B=COMPLETED_REPLAY"
                 )
             } finally {
@@ -84,9 +86,26 @@ class LegacyMigrationFinalVerifierTest {
     }
 
     @Test
+    fun v605DuplicateM03ReplayMutationIsRejected() {
+        val event = LegacyMigrationFaultEvent(
+            LegacyMigrationFaultPoint.M03_AFTER_REGISTRY_COPY,
+            LegacyMigrationOperation.REGISTRY_UPSERTED,
+            ProviderId.CLAUDE
+        )
+        assertThrows(AssertionError::class.java) {
+            assertExactlyOneM03Replay(listOf(event, event), "duplicate-control")
+        }
+        println("QA_FIX4_DUPLICATE_M03_COUNT=2;REJECTED=1")
+    }
+
+    @Test
     fun v610ThreeFreshProductionAdaptersHaveEqualCanonicalLogicalDumps() {
         synchronized(PRODUCTION_FIXTURE_LOCK) {
             val runs = (0 until 3).map(::runProductionFixture)
+            val missingSecurityFields = runs.flatMapIndexed { index, run ->
+                REQUIRED_SECURITY_FIELDS.filterNot(run.fields::containsKey).map { "run$index:$it" }
+            }
+            assertTrue("missing=${missingSecurityFields.joinToString(",")}", missingSecurityFields.isEmpty())
             val expected = runs.map { run ->
                 run.fields.toMutableMap().apply {
                     this[CACHE_RECEIPT_FIELD] = "S${run.canonicalCacheSha256}"
@@ -101,8 +120,13 @@ class LegacyMigrationFinalVerifierTest {
             assertEquals(runs.map(ProductionRun::fields).toString(), 1, runs.map(ProductionRun::fields).distinct().size)
             val hashes = runs.map { canonicalHash(it.fields) }
             assertEquals(hashes.toString(), 1, hashes.distinct().size)
-            println("QA_FIX3_PRODUCTION_RUNS=3;CANONICAL_HASH=${hashes.first()};FIELDS=${runs.first().fields.size}")
+            println("QA_FIX4_PRODUCTION_RUNS=3;CANONICAL_HASH=${hashes.first()};FIELDS=${runs.first().fields.size}")
         }
+    }
+
+    private fun assertExactlyOneM03Replay(events: List<LegacyMigrationFaultEvent>, details: String) {
+        val count = events.count { it.point == LegacyMigrationFaultPoint.M03_AFTER_REGISTRY_COPY }
+        assertEquals("$details M03=$count", 1, count)
     }
 
     private fun assertThrowsAtM10(environment: MigrationTestEnvironment) {
@@ -145,11 +169,15 @@ class LegacyMigrationFinalVerifierTest {
                     source, journal, authority, vault, AndroidLegacyMigrationSource(context)
                 ).run() as LegacyMigrationResult.Completed
                 assertEquals(result.manifest, journal.readManifest())
-                result.manifest.targets.forEach { target ->
+                val exactVaultFields = linkedMapOf<String, String>()
+                result.manifest.targets.forEachIndexed { index, target ->
                     target.vaultBinding?.let { binding ->
                         val envelope = requireNotNull(vault.lookup(binding.accountId))
-                        assertEquals(target.vaultEnvelopeSha256, LegacyMigrationCodec.sha256(envelope.encodedBytes()))
+                        val encoded = envelope.encodedBytes()
+                        assertEquals(target.vaultEnvelopeSha256, LegacyMigrationCodec.sha256(encoded))
                         assertTrue(vault.decrypt(binding, envelope) != null)
+                        exactVaultFields["vault.targets[$index].encodedEnvelope"] =
+                            Base64.getEncoder().encodeToString(encoded)
                     }
                 }
                 val cache = context.getSharedPreferences("ai_quota_widget_cache", Context.MODE_PRIVATE)
@@ -164,6 +192,7 @@ class LegacyMigrationFinalVerifierTest {
                     }
                     .toMutableMap()
                 appendObjectFields(fields, "manifest", logicalManifest(result.manifest))
+                fields.putAll(exactVaultFields)
                 appendObjectFields(
                     fields,
                     "journal.source",
@@ -207,13 +236,8 @@ class LegacyMigrationFinalVerifierTest {
         }
     }
 
-    private fun logicalManifest(manifest: LegacyMigrationManifest): JSONObject {
-        val root = JSONObject(LegacyMigrationCodec.encodeManifest(manifest))
-        root.remove("checksum")
-        val targets = root.getJSONArray("targets")
-        for (index in 0 until targets.length()) targets.getJSONObject(index).remove("vaultEnvelope")
-        return root
-    }
+    private fun logicalManifest(manifest: LegacyMigrationManifest): JSONObject =
+        JSONObject(LegacyMigrationCodec.encodeManifest(manifest))
 
     private fun appendObjectFields(output: MutableMap<String, String>, prefix: String, value: JSONObject) {
         value.keys().asSequence().toList().sorted().forEach { key ->
@@ -302,6 +326,13 @@ class LegacyMigrationFinalVerifierTest {
         private val counter = AtomicInteger()
         private val PRODUCTION_FIXTURE_LOCK = Object()
         private const val CACHE_RECEIPT_FIELD = "projection_state[0].cache_sha256"
+        private val REQUIRED_SECURITY_FIELDS = setOf(
+            "manifest.targets[0].vaultEnvelope",
+            "manifest.targets[1].vaultEnvelope",
+            "manifest.checksum",
+            "vault.targets[0].encodedEnvelope",
+            "vault.targets[1].encodedEnvelope"
+        )
         private val PRODUCTION_PREFERENCES = listOf(
             "legacy_account_migration_v1", "ai_quota_local_usage", "usage_data_claude",
             "usage_data_codex", "account_data_claude", "account_data_codex", "script_data_claude",
