@@ -97,19 +97,22 @@ internal class AccountAuthorityDatabase(
         )
         db.execSQL("INSERT INTO authority_metadata(singleton_id, display_version) VALUES(1, 0)")
         createMigrationTables(db)
+        createAccountUsageTables(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        when {
-            oldVersion == 1 && newVersion == 3 -> createMigrationTables(db)
-            oldVersion == 2 && newVersion == 3 -> {
-                db.execSQL("ALTER TABLE migration_mirrors ADD COLUMN copied_json TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE migration_mirrors ADD COLUMN copied_sha256 TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE migration_preferences ADD COLUMN copied_json TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE migration_preferences ADD COLUMN copied_sha256 TEXT NOT NULL DEFAULT ''")
-            }
-            else -> error("Unsupported account authority schema upgrade $oldVersion to $newVersion")
+        if (newVersion != SCHEMA_VERSION || oldVersion !in 1 until SCHEMA_VERSION) {
+            error("Unsupported account authority schema upgrade $oldVersion to $newVersion")
         }
+        if (oldVersion == 1) {
+            createMigrationTables(db)
+        } else if (oldVersion == 2) {
+            db.execSQL("ALTER TABLE migration_mirrors ADD COLUMN copied_json TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE migration_mirrors ADD COLUMN copied_sha256 TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE migration_preferences ADD COLUMN copied_json TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE migration_preferences ADD COLUMN copied_sha256 TEXT NOT NULL DEFAULT ''")
+        }
+        createAccountUsageTables(db)
     }
 
     private fun createMigrationTables(db: SQLiteDatabase) {
@@ -123,6 +126,21 @@ internal class AccountAuthorityDatabase(
             "CREATE TABLE projection_state (singleton_id INTEGER PRIMARY KEY CHECK(singleton_id = 1), desired_revision INTEGER NOT NULL CHECK(desired_revision >= 0), applied_revision INTEGER NOT NULL CHECK(applied_revision >= 0), aggregate_sha256 TEXT NOT NULL, mirrors_sha256 TEXT NOT NULL, cache_sha256 TEXT NOT NULL)"
         )
         db.execSQL("INSERT INTO projection_state(singleton_id, desired_revision, applied_revision, aggregate_sha256, mirrors_sha256, cache_sha256) VALUES(1, 0, 0, '${"0".repeat(64)}', '${"0".repeat(64)}', '${"0".repeat(64)}')")
+    }
+
+    private fun createAccountUsageTables(db: SQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS account_usage_primary (provider_id TEXT PRIMARY KEY, account_key TEXT NOT NULL)"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS account_usage_projection_targets (provider_id TEXT PRIMARY KEY, target_sha256 TEXT NOT NULL, authority_version INTEGER NOT NULL CHECK(authority_version >= 0))"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS account_usage_projection_intent (singleton_id INTEGER PRIMARY KEY CHECK(singleton_id = 1), authority_version INTEGER NOT NULL CHECK(authority_version >= 0), claude_sha256 TEXT NOT NULL, codex_sha256 TEXT NOT NULL)"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS legacy_usage_conflicts (receipt_sha256 TEXT PRIMARY KEY, provider_id TEXT NOT NULL, observed_sha256 TEXT NOT NULL, expected_sha256 TEXT NOT NULL, authority_version INTEGER NOT NULL CHECK(authority_version >= 0))"
+        )
     }
 
     fun canonicalDump(): ByteArray {
@@ -146,6 +164,10 @@ internal class AccountAuthorityDatabase(
             appendTable(db, "migration_mirrors", listOf("provider_id", "account_key", "receipt_sha256", "copied_json", "copied_sha256"), "provider_id, account_key")
             appendTable(db, "migration_preferences", listOf("provider_id", "account_key", "receipt_sha256", "copied_json", "copied_sha256"), "provider_id, account_key")
             appendTable(db, "projection_state", listOf("singleton_id", "desired_revision", "applied_revision", "aggregate_sha256", "mirrors_sha256", "cache_sha256"), "singleton_id")
+            appendTable(db, "account_usage_primary", listOf("provider_id", "account_key"), "provider_id")
+            appendTable(db, "account_usage_projection_targets", listOf("provider_id", "target_sha256", "authority_version"), "provider_id")
+            appendTable(db, "account_usage_projection_intent", listOf("singleton_id", "authority_version", "claude_sha256", "codex_sha256"), "singleton_id")
+            appendTable(db, "legacy_usage_conflicts", listOf("receipt_sha256", "provider_id", "observed_sha256", "expected_sha256", "authority_version"), "provider_id, receipt_sha256")
         }
         return dump.toByteArray(StandardCharsets.UTF_8)
     }
@@ -170,6 +192,10 @@ internal class AccountAuthorityDatabase(
         appendFields(db, fields, "migration_mirrors", listOf("provider_id", "account_key", "receipt_sha256", "copied_json", "copied_sha256"), "provider_id, account_key")
         appendFields(db, fields, "migration_preferences", listOf("provider_id", "account_key", "receipt_sha256", "copied_json", "copied_sha256"), "provider_id, account_key")
         appendFields(db, fields, "projection_state", listOf("singleton_id", "desired_revision", "applied_revision", "aggregate_sha256", "mirrors_sha256", "cache_sha256"), "singleton_id")
+        appendFields(db, fields, "account_usage_primary", listOf("provider_id", "account_key"), "provider_id")
+        appendFields(db, fields, "account_usage_projection_targets", listOf("provider_id", "target_sha256", "authority_version"), "provider_id")
+        appendFields(db, fields, "account_usage_projection_intent", listOf("singleton_id", "authority_version", "claude_sha256", "codex_sha256"), "singleton_id")
+        appendFields(db, fields, "legacy_usage_conflicts", listOf("receipt_sha256", "provider_id", "observed_sha256", "expected_sha256", "authority_version"), "provider_id, receipt_sha256")
         return fields
     }
 
@@ -222,6 +248,6 @@ internal class AccountAuthorityDatabase(
     }
 
     private companion object {
-        const val SCHEMA_VERSION = 3
+        const val SCHEMA_VERSION = 4
     }
 }

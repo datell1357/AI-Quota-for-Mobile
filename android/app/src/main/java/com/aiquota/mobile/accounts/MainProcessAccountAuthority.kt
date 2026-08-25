@@ -231,6 +231,111 @@ class MainProcessAccountAuthority private constructor(
 
     fun displayVersion(): DisplayVersion = readVersion(database.readableDatabase)
 
+    internal fun accountUsageRecord(accountId: ProviderAccountId): VersionedDisplayRecord? =
+        readLegacyImportRecord(database.readableDatabase, accountId)
+
+    internal fun writeAccountUsage(write: AccountUsageWrite): AccountUsageWriteResult = transaction { db ->
+        val account = readAccount(db, write.accountId)
+            ?: return@transaction AccountUsageWriteResult.Rejected(AccountUsageWriteRejection.ACCOUNT_MISSING)
+        if (account.state != AccountState.ACTIVE || account.deletionState != AccountDeletionState.NONE) {
+            return@transaction AccountUsageWriteResult.Rejected(AccountUsageWriteRejection.ACCOUNT_INACTIVE)
+        }
+        if (account.modifiedVersion != write.expectedVersion) {
+            return@transaction AccountUsageWriteResult.Rejected(AccountUsageWriteRejection.VERSION_MISMATCH)
+        }
+        if (account.generation != write.expectedGeneration) {
+            return@transaction AccountUsageWriteResult.Rejected(AccountUsageWriteRejection.GENERATION_MISMATCH)
+        }
+        if (account.sessionRevision != write.expectedSessionRevision) {
+            return@transaction AccountUsageWriteResult.Rejected(AccountUsageWriteRejection.SESSION_MISMATCH)
+        }
+        val version = readVersion(db).next()
+        updateAccountVersion(db, write.accountId, version)
+        writeSnapshot(db, write.accountId, write.snapshot, version)
+        writeVersion(db, version)
+        val updated = requireNotNull(readAccount(db, write.accountId))
+        AccountUsageWriteResult.Committed(
+            VersionedDisplayRecord(updated, write.snapshot, version),
+            AccountUsageProjectionResult.MigrationIncomplete
+        )
+    }
+
+    internal fun assignAccountUsagePrimary(
+        accountId: ProviderAccountId,
+        expectedVersion: DisplayVersion
+    ): PrimaryAssignmentResult = transaction { db ->
+        if (accountId.providerId !in ACCOUNT_USAGE_TARGET_PROVIDERS) {
+            return@transaction PrimaryAssignmentResult.Rejected(PrimaryAssignmentRejection.UNSUPPORTED_PROVIDER)
+        }
+        val account = readAccount(db, accountId)
+            ?: return@transaction PrimaryAssignmentResult.Rejected(PrimaryAssignmentRejection.ACCOUNT_MISSING)
+        if (account.state != AccountState.ACTIVE || account.deletionState != AccountDeletionState.NONE) {
+            return@transaction PrimaryAssignmentResult.Rejected(PrimaryAssignmentRejection.ACCOUNT_INACTIVE)
+        }
+        if (account.modifiedVersion != expectedVersion) {
+            return@transaction PrimaryAssignmentResult.Rejected(PrimaryAssignmentRejection.VERSION_MISMATCH)
+        }
+        writeAccountUsagePrimary(db, accountId)
+        writeVersion(db, readVersion(db).next())
+        PrimaryAssignmentResult.Assigned(accountId, AccountUsageProjectionResult.MigrationIncomplete)
+    }
+
+    internal fun clearAccountUsagePrimary(providerId: ProviderId): Boolean = transaction { db ->
+        require(providerId in ACCOUNT_USAGE_TARGET_PROVIDERS) { "Unsupported primary provider" }
+        val changed = clearAccountUsagePrimary(db, providerId)
+        if (changed) writeVersion(db, readVersion(db).next())
+        changed
+    }
+
+    internal fun accountUsagePrimary(providerId: ProviderId): ProviderAccountId? =
+        readAccountUsagePrimary(database.readableDatabase, providerId)
+
+    internal fun accountUsageProjectionIntent(): AccountUsageProjectionIntent? =
+        readAccountUsageProjectionIntent(database.readableDatabase)
+
+    internal fun prepareAccountUsageProjection(
+        currentTargets: Map<ProviderId, String>,
+        desiredTargets: Map<ProviderId, String>
+    ): AccountUsageProjectionIntent = transaction { db ->
+        require(ACCOUNT_USAGE_TARGET_PROVIDERS.all { it in currentTargets && it in desiredTargets })
+        val version = readVersion(db)
+        val baseline = readAccountUsageProjectionTargets(db)
+        val priorIntent = readAccountUsageProjectionIntent(db)
+        val migrationProjection = readProjectionAuthorityState(db)
+        val migrationTargets = if (migrationProjection.appliedRevision > 0) {
+            readLegacyProjectionAuthority(db).snapshots
+        } else {
+            emptyMap()
+        }
+        ACCOUNT_USAGE_TARGET_PROVIDERS.forEach { provider ->
+            val observed = requireNotNull(currentTargets[provider])
+            val expected = baseline[provider]?.targetSha256
+                ?: migrationTargets[provider]?.let(LegacyMigrationCodec::snapshotSha256)
+                ?: ACCOUNT_USAGE_ABSENT_SHA256
+            val isOwnInterruptedProjection = priorIntent?.targetSha256?.get(provider) == observed
+            if (observed != expected && !isOwnInterruptedProjection) {
+                insertLegacyUsageConflict(db, provider, observed, expected, version)
+            }
+        }
+        val intent = AccountUsageProjectionIntent(version, desiredTargets)
+        writeAccountUsageProjectionIntent(db, intent)
+        intent
+    }
+
+    internal fun finishAccountUsageProjection(
+        intent: AccountUsageProjectionIntent,
+        receipt: LegacyProjectionReceipt
+    ) = transaction { db ->
+        require(readVersion(db) == intent.authorityVersion) { "Account usage projection became stale" }
+        finishAccountUsageProjection(db, intent, receipt)
+    }
+
+    internal fun legacyUsageConflicts(offset: Int, limit: Int): LegacyUsageConflictPage {
+        require(offset >= 0) { "Conflict offset must be non-negative" }
+        require(limit in 1..MAX_PAGE_SIZE) { "Conflict page size must be between 1 and $MAX_PAGE_SIZE" }
+        return readLegacyUsageConflicts(database.readableDatabase, offset, limit)
+    }
+
     internal fun canonicalDumpForTest(): ByteArray = database.canonicalDump()
 
     internal fun canonicalLogicalFieldsForTest(): Map<String, String> = database.canonicalLogicalFields()

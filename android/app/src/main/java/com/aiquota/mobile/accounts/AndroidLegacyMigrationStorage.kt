@@ -99,24 +99,7 @@ internal class AndroidLegacyMigrationSource(context: Context) : LegacyMigrationS
     }
 
     override fun writeCompatibilityCache(snapshots: List<ProviderUsageSnapshot>): Boolean {
-        val current = snapshots.associateBy { it.providerId }
-        val complete = ProviderId.defaultOrder().map { provider ->
-            current[provider] ?: ProviderUsageSnapshot(
-                providerId = provider,
-                connectionState = ProviderConnectionState.DISCONNECTED,
-                updatedAt = "",
-                statusUpdatedAt = "",
-                message = "Sign in required"
-            )
-        }
-        val display = LegacyCanonicalJson.encode(
-            WidgetCacheSanitizer.toDisplayOnlyJson(
-                snapshots = complete,
-                order = ProviderId.defaultOrder(),
-                hidden = emptySet(),
-                updatedAt = ""
-            )
-        )
+        val display = compatibilityCache(snapshots)
         val preferences = appContext.getSharedPreferences(WIDGET_CACHE, Context.MODE_PRIVATE)
         return preferences.edit()
             .putString(LOCAL_DISPLAY_SNAPSHOT, display)
@@ -128,15 +111,45 @@ internal class AndroidLegacyMigrationSource(context: Context) : LegacyMigrationS
         val aggregate = appContext.getSharedPreferences(LOCAL_USAGE, Context.MODE_PRIVATE)
             .getString(SNAPSHOT_KEY, null) ?: return null
         if (aggregate != projection.rawAggregate) return null
+        TARGETS.forEach { provider ->
+            val stores = ProviderScriptProviders.storeNamesFor(provider)
+            val rawMirror = appContext.getSharedPreferences(stores.usageData, Context.MODE_PRIVATE)
+                .getString("snapshot", "")
+                .orEmpty()
+            val actual = ProviderSnapshotCodec.decode(rawMirror).singleOrNull { it.providerId == provider }
+            if (actual != projection.targetSnapshots[provider]) return null
+        }
         val mirrorHash = combinedMirrorHash()
         val cache = appContext.getSharedPreferences(WIDGET_CACHE, Context.MODE_PRIVATE)
             .getString(LOCAL_DISPLAY_SNAPSHOT, null) ?: return null
+        if (cache != compatibilityCache(projection.snapshots)) return null
         return LegacyProjectionReceipt(
             desiredRevision = projection.desiredRevision,
             appliedRevision = projection.desiredRevision,
             aggregateSha256 = LegacyMigrationCodec.sha256(aggregate),
             mirrorsSha256 = mirrorHash,
             cacheSha256 = LegacyMigrationCodec.sha256(cache)
+        )
+    }
+
+    private fun compatibilityCache(snapshots: List<ProviderUsageSnapshot>): String {
+        val current = snapshots.associateBy { it.providerId }
+        val complete = ProviderId.defaultOrder().map { provider ->
+            current[provider] ?: ProviderUsageSnapshot(
+                providerId = provider,
+                connectionState = ProviderConnectionState.DISCONNECTED,
+                updatedAt = "",
+                statusUpdatedAt = "",
+                message = "Sign in required"
+            )
+        }
+        return LegacyCanonicalJson.encode(
+            WidgetCacheSanitizer.toDisplayOnlyJson(
+                snapshots = complete,
+                order = ProviderId.defaultOrder(),
+                hidden = emptySet(),
+                updatedAt = ""
+            )
         )
     }
 

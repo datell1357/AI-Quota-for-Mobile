@@ -47,6 +47,47 @@ internal object LegacyRawProjectionCodec {
         return output.toString()
     }
 
+    fun replaceManagedTargets(
+        raw: String,
+        managedProviders: Set<ProviderId>,
+        targets: Map<ProviderId, ProviderUsageSnapshot>
+    ): String? {
+        require(targets.keys.all { it in managedProviders })
+        if (raw.isBlank()) {
+            return ProviderSnapshotCodec.encode(
+                targets.values.sortedBy { ProviderId.defaultOrder().indexOf(it.providerId) }
+            )
+        }
+        if (LegacySnapshotStrictParser.parse(raw) == null) return null
+        val array = providersArray(raw) ?: return null
+        val spans = objectSpans(raw, array.first, array.last) ?: return null
+        val emitted = mutableSetOf<ProviderId>()
+        val objects = buildList {
+            spans.forEach { span ->
+                val objectRaw = raw.substring(span.first, span.last + 1)
+                val snapshot = LegacySnapshotStrictParser.parse("{\"providers\":[$objectRaw]}")?.singleOrNull()
+                    ?: return null
+                if (snapshot.providerId in managedProviders) {
+                    targets[snapshot.providerId]?.let {
+                        add(encodedObject(it))
+                        emitted += snapshot.providerId
+                    }
+                } else {
+                    add(objectRaw)
+                }
+            }
+            targets.entries
+                .filterNot { it.key in emitted }
+                .sortedBy { ProviderId.defaultOrder().indexOf(it.key) }
+                .forEach { add(encodedObject(it.value)) }
+        }
+        return buildString(raw.length) {
+            append(raw, 0, array.first + 1)
+            append(objects.joinToString(","))
+            append(raw, array.last, raw.length)
+        }
+    }
+
     private fun encodedObject(snapshot: ProviderUsageSnapshot): String =
         ProviderSnapshotCodec.encode(listOf(snapshot)).removePrefix("{\"providers\":[").removeSuffix("]}")
 
