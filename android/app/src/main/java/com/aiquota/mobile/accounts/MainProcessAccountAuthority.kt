@@ -233,6 +233,8 @@ class MainProcessAccountAuthority private constructor(
 
     internal fun canonicalDumpForTest(): ByteArray = database.canonicalDump()
 
+    internal fun canonicalLogicalFieldsForTest(): Map<String, String> = database.canonicalLogicalFields()
+
     override fun close() = database.close()
 
     private inline fun <T> transaction(block: (SQLiteDatabase) -> T): T {

@@ -150,6 +150,52 @@ internal class AccountAuthorityDatabase(
         return dump.toByteArray(StandardCharsets.UTF_8)
     }
 
+    fun canonicalLogicalFields(): Map<String, String> {
+        val db = readableDatabase
+        val fields = linkedMapOf<String, String>()
+        appendFields(db, fields, "authority_metadata", listOf("singleton_id", "display_version"), "singleton_id")
+        appendFields(
+            db, fields, "accounts",
+            listOf(
+                "provider_id", "account_key", "provider_rank", "state", "auth_state", "deletion_state",
+                "generation", "session_revision", "alias", "organization", "remote_identity", "modified_version"
+            ),
+            "provider_rank, account_key"
+        )
+        appendFields(db, fields, "snapshots", listOf("provider_id", "account_key", "snapshot_json", "display_version"), "provider_id, account_key")
+        appendFields(db, fields, "demands", listOf("provider_id", "account_key", "demand_mask"), "provider_id, account_key")
+        appendFields(db, fields, "attempts", listOf("provider_id", "account_key", "generation", "session_revision", "active_nonce"), "provider_id, account_key")
+        appendFields(db, fields, "nonce_heads", listOf("provider_id", "account_key", "last_nonce"), "provider_id, account_key")
+        appendFields(db, fields, "published_nonces", listOf("provider_id", "account_key", "nonce"), "provider_id, account_key, nonce")
+        appendFields(db, fields, "migration_mirrors", listOf("provider_id", "account_key", "receipt_sha256", "copied_json", "copied_sha256"), "provider_id, account_key")
+        appendFields(db, fields, "migration_preferences", listOf("provider_id", "account_key", "receipt_sha256", "copied_json", "copied_sha256"), "provider_id, account_key")
+        appendFields(db, fields, "projection_state", listOf("singleton_id", "desired_revision", "applied_revision", "aggregate_sha256", "mirrors_sha256", "cache_sha256"), "singleton_id")
+        return fields
+    }
+
+    private fun appendFields(
+        db: SQLiteDatabase,
+        output: MutableMap<String, String>,
+        table: String,
+        columns: List<String>,
+        orderBy: String
+    ) {
+        db.query(table, columns.toTypedArray(), null, null, null, null, orderBy).use { cursor ->
+            var row = 0
+            while (cursor.moveToNext()) {
+                columns.forEachIndexed { index, column ->
+                    output["$table[$row].$column"] = when (cursor.getType(index)) {
+                        Cursor.FIELD_TYPE_NULL -> "N"
+                        Cursor.FIELD_TYPE_INTEGER -> "I${cursor.getLong(index)}"
+                        Cursor.FIELD_TYPE_STRING -> "S${cursor.getString(index)}"
+                        else -> error("Unexpected SQLite type in canonical authority fields")
+                    }
+                }
+                row++
+            }
+        }
+    }
+
     private fun StringBuilder.appendTable(
         db: SQLiteDatabase,
         table: String,

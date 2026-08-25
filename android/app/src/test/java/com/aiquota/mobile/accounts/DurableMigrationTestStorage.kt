@@ -115,6 +115,8 @@ internal class DurableFakeMigrationSource private constructor(val root: File) : 
             File(root, "legacy-source.json").writeText(JSONObject().put("present", present).put("raw", raw).toString())
             return DurableFakeMigrationSource(root).also { source -> contexts.forEach { (provider, bundle) -> source.setContext(provider, bundle) } }
         }
+
+        fun openCommittedClone(root: File): DurableFakeMigrationSource = DurableFakeMigrationSource(root)
     }
 }
 

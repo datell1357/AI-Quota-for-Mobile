@@ -12,10 +12,15 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 internal fun createAndroidAccountCredentialVault(context: Context): AccountCredentialVault =
-    ProcessAccountCredentialVaultFactory.create(
-        envelopeStore = SharedPreferencesCredentialEnvelopeStore(context.applicationContext),
-        crypto = createAndroidKeystoreCredentialVaultCrypto(),
-    )
+    createAndroidAccountCredentialVault(context, createAndroidKeystoreCredentialVaultCrypto())
+
+internal fun createAndroidAccountCredentialVault(
+    context: Context,
+    crypto: CredentialVaultCrypto,
+): AccountCredentialVault = ProcessAccountCredentialVaultFactory.create(
+    envelopeStore = SharedPreferencesCredentialEnvelopeStore(context.applicationContext),
+    crypto = crypto,
+)
 
 internal fun createAndroidKeystoreCredentialVaultCrypto(): CredentialVaultCrypto =
     AndroidKeystoreCredentialVaultCrypto()

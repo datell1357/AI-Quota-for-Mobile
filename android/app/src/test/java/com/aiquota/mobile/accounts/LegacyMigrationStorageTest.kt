@@ -57,7 +57,9 @@ class LegacyMigrationStorageTest {
             assertTrue(context.getSharedPreferences("usage_data_claude", Context.MODE_PRIVATE).contains("snapshot"))
             assertTrue(context.getSharedPreferences("ai_quota_widget_cache", Context.MODE_PRIVATE).contains("local_display_snapshot"))
             val after = LegacyMigrationCodec.sha256(authority.canonicalDumpForTest())
+            val fieldHashes = authority.canonicalLogicalFieldsForTest().mapValues { LegacyMigrationCodec.sha256(it.value) }
             println("QA_FIX1_SQLITE_BEFORE=$before;AFTER=$after;GEMINI_UNCHANGED=1")
+            println("QA_FIX3_PRODUCTION_FIELDS=${fieldHashes.entries.joinToString(",") { "${it.key}:${it.value}" }}")
         }
         context.deleteDatabase(databaseName)
         clear(context)

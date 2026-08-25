@@ -2,6 +2,7 @@ package com.aiquota.mobile.accounts
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.aiquota.mobile.local.ProviderConnectionState
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderUsageSnapshot
 import com.aiquota.mobile.local.WidgetCacheSanitizer
@@ -98,11 +99,23 @@ internal class AndroidLegacyMigrationSource(context: Context) : LegacyMigrationS
     }
 
     override fun writeCompatibilityCache(snapshots: List<ProviderUsageSnapshot>): Boolean {
-        val display = WidgetCacheSanitizer.toDisplayOnlyJson(
-            snapshots = snapshots,
-            order = ProviderId.defaultOrder(),
-            hidden = emptySet(),
-            updatedAt = ""
+        val current = snapshots.associateBy { it.providerId }
+        val complete = ProviderId.defaultOrder().map { provider ->
+            current[provider] ?: ProviderUsageSnapshot(
+                providerId = provider,
+                connectionState = ProviderConnectionState.DISCONNECTED,
+                updatedAt = "",
+                statusUpdatedAt = "",
+                message = "Sign in required"
+            )
+        }
+        val display = LegacyCanonicalJson.encode(
+            WidgetCacheSanitizer.toDisplayOnlyJson(
+                snapshots = complete,
+                order = ProviderId.defaultOrder(),
+                hidden = emptySet(),
+                updatedAt = ""
+            )
         )
         val preferences = appContext.getSharedPreferences(WIDGET_CACHE, Context.MODE_PRIVATE)
         return preferences.edit()
