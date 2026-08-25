@@ -73,16 +73,18 @@ internal class AndroidLegacyMigrationSource(context: Context) : LegacyMigrationS
     override fun writeMirror(providerId: ProviderId, snapshot: ProviderUsageSnapshot?): Boolean {
         val stores = ProviderScriptProviders.storeNamesFor(providerId)
         if (snapshot == null) {
-            return listOf(stores.usageData, stores.accountData).all {
+            return listOf(stores.usageData, stores.accountData, stores.scriptData).all {
                 appContext.getSharedPreferences(it, Context.MODE_PRIVATE).edit().clear().commit()
             }
         }
         val usage = appContext.getSharedPreferences(stores.usageData, Context.MODE_PRIVATE).edit()
+            .clear()
             .putString("provider_id", providerId.storageId)
             .putString("snapshot", ProviderSnapshotCodec.encode(listOf(snapshot)))
             .putString("updated_at", snapshot.updatedAt)
             .commit()
         val accountEditor = appContext.getSharedPreferences(stores.accountData, Context.MODE_PRIVATE).edit()
+            .clear()
             .putString("provider_id", providerId.storageId)
             .putString("connection_state", snapshot.connectionState.name)
             .putString("updated_at", snapshot.updatedAt)
@@ -91,6 +93,7 @@ internal class AndroidLegacyMigrationSource(context: Context) : LegacyMigrationS
         val account = accountEditor.commit()
         val metadata = ProviderScriptProviders.metadataFor(providerId)
         val script = appContext.getSharedPreferences(stores.scriptData, Context.MODE_PRIVATE).edit()
+            .clear()
             .putString("provider_id", providerId.storageId)
             .putString("script_version", metadata.version)
             .putString("updated_at", snapshot.updatedAt)
@@ -112,12 +115,9 @@ internal class AndroidLegacyMigrationSource(context: Context) : LegacyMigrationS
             .getString(SNAPSHOT_KEY, null) ?: return null
         if (aggregate != projection.rawAggregate) return null
         TARGETS.forEach { provider ->
-            val stores = ProviderScriptProviders.storeNamesFor(provider)
-            val rawMirror = appContext.getSharedPreferences(stores.usageData, Context.MODE_PRIVATE)
-                .getString("snapshot", "")
-                .orEmpty()
-            val actual = ProviderSnapshotCodec.decode(rawMirror).singleOrNull { it.providerId == provider }
-            if (actual != projection.targetSnapshots[provider]) return null
+            if (canonicalStores(provider) != expectedCanonicalStores(provider, projection.targetSnapshots[provider])) {
+                return null
+            }
         }
         val mirrorHash = combinedMirrorHash()
         val cache = appContext.getSharedPreferences(WIDGET_CACHE, Context.MODE_PRIVATE)
@@ -166,6 +166,41 @@ internal class AndroidLegacyMigrationSource(context: Context) : LegacyMigrationS
 
     private fun canonicalStoresHash(providerId: ProviderId): String =
         LegacyMigrationCodec.sha256(canonicalStores(providerId))
+
+    private fun expectedCanonicalStores(providerId: ProviderId, snapshot: ProviderUsageSnapshot?): String {
+        val stores = ProviderScriptProviders.storeNamesFor(providerId)
+        val expected = if (snapshot == null) {
+            mapOf(stores.usageData to emptyMap(), stores.accountData to emptyMap(), stores.scriptData to emptyMap())
+        } else {
+            val account = buildMap {
+                put("provider_id", providerId.storageId)
+                put("connection_state", snapshot.connectionState.name)
+                put("updated_at", snapshot.updatedAt)
+                snapshot.account?.takeIf(String::isNotBlank)?.let { put("account", it) }
+                snapshot.planLabel?.takeIf(String::isNotBlank)?.let { put("plan", it) }
+            }
+            mapOf(
+                stores.usageData to mapOf(
+                    "provider_id" to providerId.storageId,
+                    "snapshot" to ProviderSnapshotCodec.encode(listOf(snapshot)),
+                    "updated_at" to snapshot.updatedAt
+                ),
+                stores.accountData to account,
+                stores.scriptData to mapOf(
+                    "provider_id" to providerId.storageId,
+                    "script_version" to ProviderScriptProviders.metadataFor(providerId).version,
+                    "updated_at" to snapshot.updatedAt
+                )
+            )
+        }
+        return JSONObject().also { root ->
+            expected.toSortedMap().forEach { (name, values) ->
+                root.put(name, JSONObject().also { copied ->
+                    values.toSortedMap().forEach { (key, value) -> copied.put(key, value) }
+                })
+            }
+        }.toString()
+    }
 
     private fun canonicalStores(providerId: ProviderId): String {
         val stores = ProviderScriptProviders.storeNamesFor(providerId)

@@ -24,8 +24,9 @@ class LocalUsageRepositoryTest {
         val method = source.substringAfter("fun saveSnapshots(")
             .substringBefore("fun markConnecting")
 
+        assertEquals(true, method.contains("LegacyUsageMutationCoordinator.withLock"))
         assertEquals(true, method.contains("val encoded = ProviderSnapshotCodec.encode(ordered)"))
-        assertEquals(true, method.contains("if (preferences.getString(KEY_SNAPSHOTS, \"\") == encoded) return"))
+        assertEquals(true, method.contains("if (preferences.getString(KEY_SNAPSHOTS, \"\") != encoded)"))
         assertEquals(true, method.contains(".putString(KEY_SNAPSHOTS, encoded)"))
     }
 

@@ -13,7 +13,7 @@ class LocalUsageRepository(context: Context) {
     private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
     private val scopedStateRepository = ProviderScopedStateRepository(appContext)
 
-    fun readSnapshots(): List<ProviderUsageSnapshot> {
+    fun readSnapshots(): List<ProviderUsageSnapshot> = LegacyUsageMutationCoordinator.withLock {
         val stored = ProviderSnapshotCodec.decode(preferences.getString(KEY_SNAPSHOTS, "").orEmpty())
         val cleaned = stored
             .map(::normalizeGoogleUsagePendingMessage)
@@ -33,7 +33,7 @@ class LocalUsageRepository(context: Context) {
         } else {
             scopedStateRepository.saveSnapshots(cleaned)
         }
-        return cleaned
+        cleaned
     }
 
     private fun clearStaleRefreshing(snapshot: ProviderUsageSnapshot): ProviderUsageSnapshot {
@@ -70,7 +70,7 @@ class LocalUsageRepository(context: Context) {
         return ProviderVolatileUsagePolicy.removeExpiredLines(snapshot, Instant.now())
     }
 
-    fun saveSnapshot(snapshot: ProviderUsageSnapshot) {
+    fun saveSnapshot(snapshot: ProviderUsageSnapshot) = LegacyUsageMutationCoordinator.withLock {
         val current = readSnapshots()
         val previous = current.firstOrNull { it.providerId == snapshot.providerId }
         val snapshotToSave = mergeFreshSnapshotWithPreviousLines(snapshot, previous)
@@ -78,17 +78,18 @@ class LocalUsageRepository(context: Context) {
         saveSnapshots(next)
     }
 
-    fun saveSnapshots(snapshots: List<ProviderUsageSnapshot>) {
+    fun saveSnapshots(snapshots: List<ProviderUsageSnapshot>) = LegacyUsageMutationCoordinator.withLock {
         val sanitized = snapshots.map(::normalizeClaudePersistedPlanLabel)
         val ordered = ProviderId.defaultOrder().mapNotNull { provider ->
             sanitized.lastOrNull { it.providerId == provider }
         }
         scopedStateRepository.saveSnapshots(ordered)
         val encoded = ProviderSnapshotCodec.encode(ordered)
-        if (preferences.getString(KEY_SNAPSHOTS, "") == encoded) return
-        preferences.edit()
-            .putString(KEY_SNAPSHOTS, encoded)
-            .apply()
+        if (preferences.getString(KEY_SNAPSHOTS, "") != encoded) {
+            preferences.edit()
+                .putString(KEY_SNAPSHOTS, encoded)
+                .apply()
+        }
     }
 
     fun markConnecting(providerId: ProviderId) {

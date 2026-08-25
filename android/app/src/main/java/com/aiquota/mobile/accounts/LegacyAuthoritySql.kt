@@ -77,7 +77,7 @@ internal fun readLegacyAuthorityState(db: SQLiteDatabase, id: ProviderAccountId)
 
 internal fun readLegacyProjectionAuthority(db: SQLiteDatabase): LegacyProjectionAuthority {
     val snapshots = listOf(ProviderId.CLAUDE, ProviderId.CODEX).mapNotNull { provider ->
-        val id = ProviderAccountId(provider, AccountKey.reservedDefault())
+        val id = resolveAccountUsagePrimary(db, provider) ?: return@mapNotNull null
         readLegacyImportRecord(db, id)?.takeIf {
             it.account.state == AccountState.ACTIVE && it.account.deletionState == AccountDeletionState.NONE
         }?.let { provider to it.snapshot }

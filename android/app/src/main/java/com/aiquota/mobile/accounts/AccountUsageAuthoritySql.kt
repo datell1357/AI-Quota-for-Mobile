@@ -3,16 +3,33 @@ package com.aiquota.mobile.accounts
 import android.database.sqlite.SQLiteDatabase
 import com.aiquota.mobile.local.ProviderId
 
-internal fun readAccountUsagePrimary(db: SQLiteDatabase, providerId: ProviderId): ProviderAccountId? {
-    if (providerId !in ACCOUNT_USAGE_TARGET_PROVIDERS) return null
+internal fun readAccountUsagePrimarySelection(
+    db: SQLiteDatabase,
+    providerId: ProviderId
+): AccountUsagePrimarySelection {
+    if (providerId !in ACCOUNT_USAGE_TARGET_PROVIDERS) return AccountUsagePrimarySelection.ExplicitNone
     val token = db.rawQuery(
         "SELECT account_key FROM account_usage_primary WHERE provider_id = ?",
         arrayOf(providerId.storageId)
-    ).use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else return null }
-    val key = runCatching { AccountKey.fromStorage(token) }.getOrNull() ?: return null
-    val id = ProviderAccountId(providerId, key)
-    val account = readAccount(db, id) ?: return null
-    return id.takeIf {
+    ).use { cursor ->
+        if (!cursor.moveToFirst()) return AccountUsagePrimarySelection.InitialMigrationDefault
+        cursor.getString(0)
+    }
+    if (token == ACCOUNT_USAGE_PRIMARY_NONE) return AccountUsagePrimarySelection.ExplicitNone
+    val key = runCatching { AccountKey.fromStorage(token) }.getOrNull()
+        ?: return AccountUsagePrimarySelection.ExplicitNone
+    return AccountUsagePrimarySelection.ExplicitAccount(ProviderAccountId(providerId, key))
+}
+
+internal fun resolveAccountUsagePrimary(db: SQLiteDatabase, providerId: ProviderId): ProviderAccountId? {
+    val selected = when (val selection = readAccountUsagePrimarySelection(db, providerId)) {
+        AccountUsagePrimarySelection.InitialMigrationDefault ->
+            ProviderAccountId(providerId, AccountKey.reservedDefault())
+        AccountUsagePrimarySelection.ExplicitNone -> return null
+        is AccountUsagePrimarySelection.ExplicitAccount -> selection.accountId
+    }
+    val account = readAccount(db, selected) ?: return null
+    return selected.takeIf {
         account.state == AccountState.ACTIVE && account.deletionState == AccountDeletionState.NONE
     }
 }
@@ -27,8 +44,17 @@ internal fun writeAccountUsagePrimary(db: SQLiteDatabase, id: ProviderAccountId)
     }
 }
 
-internal fun clearAccountUsagePrimary(db: SQLiteDatabase, providerId: ProviderId): Boolean =
-    db.delete("account_usage_primary", "provider_id = ?", arrayOf(providerId.storageId)) == 1
+internal fun clearAccountUsagePrimary(db: SQLiteDatabase, providerId: ProviderId): Boolean {
+    val alreadyNone = readAccountUsagePrimarySelection(db, providerId) == AccountUsagePrimarySelection.ExplicitNone
+    db.compileStatement(
+        "INSERT OR REPLACE INTO account_usage_primary(provider_id, account_key) VALUES(?, ?)"
+    ).use { statement ->
+        statement.bindString(1, providerId.storageId)
+        statement.bindString(2, ACCOUNT_USAGE_PRIMARY_NONE)
+        check(statement.executeInsert() != -1L)
+    }
+    return !alreadyNone
+}
 
 internal fun readAccountUsageProjectionTargets(db: SQLiteDatabase): Map<ProviderId, AccountUsageProjectionTargetState> =
     buildMap {

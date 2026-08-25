@@ -99,6 +99,12 @@ data class LegacyUsageConflictPage(
     val nextOffset: Int?
 )
 
+internal sealed interface AccountUsagePrimarySelection {
+    data object InitialMigrationDefault : AccountUsagePrimarySelection
+    data object ExplicitNone : AccountUsagePrimarySelection
+    data class ExplicitAccount(val accountId: ProviderAccountId) : AccountUsagePrimarySelection
+}
+
 internal data class AccountUsageProjectionTargetState(
     val providerId: ProviderId,
     val targetSha256: String,
@@ -111,4 +117,5 @@ internal data class AccountUsageProjectionIntent(
 )
 
 internal val ACCOUNT_USAGE_TARGET_PROVIDERS = setOf(ProviderId.CLAUDE, ProviderId.CODEX)
+internal const val ACCOUNT_USAGE_PRIMARY_NONE = "none"
 internal const val ACCOUNT_USAGE_ABSENT_SHA256 = "0000000000000000000000000000000000000000000000000000000000000000"

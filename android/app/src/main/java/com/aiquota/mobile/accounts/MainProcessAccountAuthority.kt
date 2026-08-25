@@ -288,7 +288,7 @@ class MainProcessAccountAuthority private constructor(
     }
 
     internal fun accountUsagePrimary(providerId: ProviderId): ProviderAccountId? =
-        readAccountUsagePrimary(database.readableDatabase, providerId)
+        resolveAccountUsagePrimary(database.readableDatabase, providerId)
 
     internal fun accountUsageProjectionIntent(): AccountUsageProjectionIntent? =
         readAccountUsageProjectionIntent(database.readableDatabase)

@@ -13,7 +13,11 @@ internal class LegacyMigrationProjection(
         val authorityProjection = authority.legacyProjectionAuthority()
         val current = store.captureAggregate()
         if (!acceptedMigrationAggregate(current.receipt.aggregate, authorityProjection.revision)) return null
-        val raw = LegacyRawProjectionCodec.replaceTargets(current.rawAggregate, authorityProjection.snapshots) ?: return null
+        val raw = LegacyRawProjectionCodec.replaceManagedTargets(
+            current.rawAggregate,
+            TARGETS.toSet(),
+            authorityProjection.snapshots
+        ) ?: return null
         val snapshots = LegacySnapshotStrictParser.parse(raw) ?: return null
         val projection = LegacyProjection(raw, snapshots, authorityProjection.snapshots, authorityProjection.revision)
         emit(LegacyMigrationFaultPoint.P01_AFTER_DERIVE, LegacyMigrationOperation.PROJECTION_DERIVED)
