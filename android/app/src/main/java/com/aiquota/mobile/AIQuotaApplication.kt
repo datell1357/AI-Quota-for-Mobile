@@ -10,7 +10,9 @@ class AIQuotaApplication : Application() {
         val glmIsolatedProcess = GlmIsolatedWebViewProfile.configureIfNeeded(this)
         super.onCreate()
         if (glmIsolatedProcess) return
-        LegacyAccountMigrationRunner.run(this)
+        if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
+            LegacyAccountMigrationRunner.runIfEnabled(this, enabled = BuildConfig.MULTI_ACCOUNT_ENABLED)
+        }
         FirebaseGatewayBootstrap.install()
         AppUpdateCheckScheduler.schedule(this)
     }

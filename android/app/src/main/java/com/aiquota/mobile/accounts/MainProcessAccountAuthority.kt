@@ -34,46 +34,68 @@ class MainProcessAccountAuthority private constructor(
     }
 
     internal fun importLegacyDefaults(
-        snapshots: Map<ProviderId, ProviderUsageSnapshot>
-    ): List<VersionedDisplayRecord> = transaction { db ->
-        snapshots.entries.sortedBy { it.key.ordinal }.map { (providerId, snapshot) ->
-            require(providerId == ProviderId.CLAUDE || providerId == ProviderId.CODEX)
-            val id = ProviderAccountId(providerId, AccountKey.reservedDefault())
-            readLegacyImportRecord(db, id)?.also { existing ->
-                require(existing.account.state == AccountState.ACTIVE)
-                require(existing.account.authState == AccountAuthState.REAUTH_REQUIRED)
-                require(existing.account.deletionState == AccountDeletionState.NONE)
-                require(existing.snapshot == snapshot)
-            } ?: run {
-                val version = readVersion(db).next()
-                val account = AccountRecord(
-                    id = id,
-                    state = AccountState.ACTIVE,
-                    authState = AccountAuthState.REAUTH_REQUIRED,
-                    deletionState = AccountDeletionState.NONE,
-                    generation = AccountGeneration.of(1),
-                    sessionRevision = SessionRevision.of(1),
-                    modifiedVersion = version
-                )
-                insertAccount(db, account)
-                faultInjector.after(AccountAuthorityFaultPoint.CATALOG)
-                writeSnapshot(db, id, snapshot, version)
-                faultInjector.after(AccountAuthorityFaultPoint.SNAPSHOT)
-                writeDemand(db, id, AccountDemandSet.NONE)
-                faultInjector.after(AccountAuthorityFaultPoint.DEMAND)
-                writeAttempt(db, id, account.generation, account.sessionRevision, null)
-                faultInjector.after(AccountAuthorityFaultPoint.ATTEMPT)
-                writeNonceHead(db, id, null)
-                faultInjector.after(AccountAuthorityFaultPoint.NONCE)
-                writeVersion(db, version)
-                faultInjector.after(AccountAuthorityFaultPoint.VERSION)
-                VersionedDisplayRecord(account, snapshot, version)
+        seeds: List<LegacyAuthorityImportSeed>,
+        migrationFaultInjector: LegacyMigrationFaultInjector
+    ): List<LegacyAuthorityState> = transaction { db ->
+        val ordered = seeds.sortedBy { it.seed.account.id.providerId.ordinal }
+        var version = readVersion(db)
+        ordered.forEachIndexed { index, item ->
+            val id = item.seed.account.id
+            require(id.accountKey == AccountKey.reservedDefault())
+            val existing = readAccount(db, id)
+            if (existing == null) {
+                version = version.next()
+                insertAccount(db, item.seed.account.copy(modifiedVersion = version))
+            } else {
+                require(existing.state == AccountState.ACTIVE)
+                require(existing.authState == AccountAuthState.REAUTH_REQUIRED)
+                require(existing.deletionState == AccountDeletionState.NONE)
             }
+            migrationFaultInjector.after(importEvent(LegacyMigrationFaultPoint.M03_AFTER_REGISTRY_COPY, LegacyMigrationOperation.REGISTRY_UPSERTED, id, index, ordered.size))
         }
+        ordered.forEachIndexed { index, item ->
+            val id = item.seed.account.id
+            val account = requireNotNull(readAccount(db, id))
+            val existing = readLegacyImportRecord(db, id)
+            if (existing == null) {
+                writeSnapshot(db, id, item.seed.snapshot, account.modifiedVersion)
+                writeDemand(db, id, AccountDemandSet.NONE)
+                writeAttempt(db, id, account.generation, account.sessionRevision, null)
+                writeNonceHead(db, id, null)
+            } else {
+                require(existing.snapshot == item.seed.snapshot)
+            }
+            migrationFaultInjector.after(importEvent(LegacyMigrationFaultPoint.M04_AFTER_SNAPSHOT_COPY, LegacyMigrationOperation.SNAPSHOT_STATE_UPSERTED, id, index, ordered.size))
+        }
+        ordered.forEachIndexed { index, item ->
+            writeMigrationReceipt(db, "migration_mirrors", item.seed.account.id, item.mirrorReceiptSha256)
+            migrationFaultInjector.after(importEvent(LegacyMigrationFaultPoint.M05_AFTER_MIRROR_COPY, LegacyMigrationOperation.MIRROR_RECEIPT_UPSERTED, item.seed.account.id, index, ordered.size))
+        }
+        ordered.forEachIndexed { index, item ->
+            writeMigrationReceipt(db, "migration_preferences", item.seed.account.id, item.preferenceReceiptSha256)
+            migrationFaultInjector.after(importEvent(LegacyMigrationFaultPoint.M06_AFTER_PREF_COPY, LegacyMigrationOperation.PREFERENCE_RECEIPT_UPSERTED, item.seed.account.id, index, ordered.size))
+        }
+        writeVersion(db, version)
+        ordered.map { requireNotNull(readLegacyAuthorityState(db, it.seed.account.id)) }
     }
 
     internal fun legacyImportRecord(id: ProviderAccountId): VersionedDisplayRecord? =
         readLegacyImportRecord(database.readableDatabase, id)
+
+    internal fun legacyImportState(id: ProviderAccountId): LegacyAuthorityState? =
+        readLegacyAuthorityState(database.readableDatabase, id)
+
+    internal fun legacyProjectionAuthority(): LegacyProjectionAuthority =
+        readLegacyProjectionAuthority(database.readableDatabase)
+
+    internal fun legacyProjectionState(): LegacyProjectionAuthorityState =
+        readProjectionAuthorityState(database.readableDatabase)
+
+    internal fun acknowledgeLegacyProjection(receipt: LegacyProjectionReceipt) = transaction { db ->
+        require(receipt.desiredRevision == readVersion(db).value)
+        require(receipt.appliedRevision == receipt.desiredRevision)
+        writeProjectionAuthorityState(db, receipt)
+    }
 
     fun beginAttempt(
         accountId: ProviderAccountId,
@@ -244,3 +266,11 @@ class MainProcessAccountAuthority private constructor(
         }
     }
 }
+
+private fun importEvent(
+    point: LegacyMigrationFaultPoint,
+    operation: LegacyMigrationOperation,
+    id: ProviderAccountId,
+    index: Int,
+    total: Int
+) = LegacyMigrationFaultEvent(point, operation, id.providerId, index, total)

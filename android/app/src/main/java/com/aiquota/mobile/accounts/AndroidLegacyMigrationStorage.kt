@@ -1,199 +1,170 @@
 package com.aiquota.mobile.accounts
 
 import android.content.Context
+import android.content.SharedPreferences
 import com.aiquota.mobile.local.ProviderId
+import com.aiquota.mobile.local.ProviderUsageSnapshot
+import com.aiquota.mobile.local.WidgetCacheSanitizer
 import com.aiquota.mobile.providers.ClaudeNativeRequestContextStore
 import com.aiquota.mobile.providers.CodexNativeAuthContextStore
+import com.aiquota.mobile.providers.ProviderScriptProviders
+import com.aiquota.mobile.providers.ProviderSnapshotCodec
 import com.aiquota.mobile.providers.SecureStringStore
-import java.io.File
-import java.nio.charset.StandardCharsets
-import java.util.Base64
-import org.json.JSONObject
 
 internal class AndroidLegacyMigrationSource(context: Context) : LegacyMigrationSource {
     private val appContext = context.applicationContext
-    private val preservedPreferences = capturePreservedPreferences()
 
-    override fun currentAggregate(): Pair<Boolean, String> {
-        val preferences = appContext.getSharedPreferences(LOCAL_USAGE_PREFERENCES, Context.MODE_PRIVATE)
-        return preferences.contains(SNAPSHOT_KEY) to preferences.getString(SNAPSHOT_KEY, "").orEmpty()
+    override fun capture(): LegacySourceCapture {
+        val preferences = appContext.getSharedPreferences(LOCAL_USAGE, Context.MODE_PRIVATE)
+        val present = preferences.contains(SNAPSHOT_KEY)
+        val raw = preferences.getString(SNAPSHOT_KEY, "").orEmpty()
+        val contexts = TARGETS.mapNotNull(::contextSourceReceipt)
+        return LegacySourceCapture(
+            LegacySourceReceipt(present, LegacyMigrationCodec.blobReceipt(raw), contexts),
+            raw
+        )
     }
 
-    override fun hasContext(providerId: ProviderId): Boolean {
-        val store = contextStoreName(providerId) ?: return false
-        return appContext.getSharedPreferences(store, Context.MODE_PRIVATE).contains(CONTEXT_KEY)
-    }
-
-    override fun readContext(providerId: ProviderId): LegacyContextCapture {
-        val storeName = contextStoreName(providerId) ?: return LegacyContextCapture.Absent
-        if (!hasContext(providerId)) return LegacyContextCapture.Absent
-        val payload = SecureStringStore(appContext, storeName).getString(CONTEXT_KEY)
+    override fun readContext(receipt: LegacyContextSourceReceipt): LegacyContextCapture {
+        if (receipt.encryptedSource.byteLength > MAX_ENCRYPTED_CONTEXT_BYTES) return LegacyContextCapture.Malformed
+        val currentReceipt = contextSourceReceipt(receipt.providerId) ?: return LegacyContextCapture.Malformed
+        if (currentReceipt != receipt) return LegacyContextCapture.Malformed
+        val store = contextStoreName(receipt.providerId)
+        val payload = SecureStringStore(appContext, store).getString(CONTEXT_KEY)
             ?: return LegacyContextCapture.Malformed
-        val restored = strictContext(payload) ?: return LegacyContextCapture.Malformed
-        val canonical = when (providerId) {
+        val restored = LegacyContextStrictParser.parse(payload) ?: return LegacyContextCapture.Malformed
+        val canonical = when (receipt.providerId) {
             ProviderId.CLAUDE -> ClaudeNativeRequestContextStore.encodeForTest(restored)
             ProviderId.CODEX -> CodexNativeAuthContextStore.encodeForTest(restored)
-            else -> return LegacyContextCapture.Absent
+            else -> return LegacyContextCapture.Malformed
         }
-        val roundTrip = when (providerId) {
+        val roundTrip = when (receipt.providerId) {
             ProviderId.CLAUDE -> ClaudeNativeRequestContextStore.decodeForTest(canonical)
             ProviderId.CODEX -> CodexNativeAuthContextStore.decodeForTest(canonical)
             else -> emptyMap()
         }
         if (roundTrip != restored) return LegacyContextCapture.Malformed
-        return runCatching {
-            LegacyContextCapture.Present(CredentialBundle.fromBytes(canonical.toByteArray(StandardCharsets.UTF_8)))
-        }.getOrDefault(LegacyContextCapture.Malformed)
+        return LegacyContextCapture.Present(CredentialBundle.fromBytes(canonical.toByteArray()), receipt)
     }
 
-    override fun writeAggregate(capture: LegacySourceCapture): Boolean {
-        val preferences = appContext.getSharedPreferences(LOCAL_USAGE_PREFERENCES, Context.MODE_PRIVATE)
-        val editor = preferences.edit()
-        if (capture.present) editor.putString(SNAPSHOT_KEY, capture.rawAggregate) else editor.remove(SNAPSHOT_KEY)
-        return editor.commit() && currentAggregate() == (capture.present to capture.rawAggregate)
+    override fun mirrorSeedReceipt(providerId: ProviderId): String =
+        canonicalStoresHash(providerId)
+
+    override fun preferenceSeedReceipt(providerId: ProviderId): String = LegacyMigrationCodec.sha256(
+        listOf(
+            "ai_quota_provider_preferences",
+            "ai_quota_reset_notifications",
+            "ai_quota_usage_threshold_notifications",
+            "ai_quota_claude_prime_state"
+        ).joinToString("|") { name -> canonicalPreferences(name, providerId.storageId) }
+    )
+
+    override fun writeAggregate(raw: String): Boolean {
+        val preferences = appContext.getSharedPreferences(LOCAL_USAGE, Context.MODE_PRIVATE)
+        return preferences.edit().putString(SNAPSHOT_KEY, raw).commit() &&
+            preferences.getString(SNAPSHOT_KEY, null) == raw
     }
 
-    override fun verifyMirrorsUnchanged(): Boolean = verifyPreservedPreferences()
-
-    override fun verifyDerivedCachesUnchanged(): Boolean = verifyPreservedPreferences()
-
-    private fun strictContext(payload: String): Map<String, Map<String, String>>? = runCatching {
-        val root = JSONObject(payload)
-        val restored = linkedMapOf<String, Map<String, String>>()
-        val keys = root.keys()
-        while (keys.hasNext()) {
-            val key = keys.next()
-            require(key.isNotBlank())
-            val headers = root.getJSONObject(key)
-            val restoredHeaders = linkedMapOf<String, String>()
-            val names = headers.keys()
-            while (names.hasNext()) {
-                val name = names.next()
-                require(name.isNotBlank())
-                val value = headers.get(name)
-                require(value is String && value.isNotBlank())
-                restoredHeaders[name] = value
+    override fun writeMirror(providerId: ProviderId, snapshot: ProviderUsageSnapshot?): Boolean {
+        val stores = ProviderScriptProviders.storeNamesFor(providerId)
+        if (snapshot == null) {
+            return listOf(stores.usageData, stores.accountData).all {
+                appContext.getSharedPreferences(it, Context.MODE_PRIVATE).edit().clear().commit()
             }
-            require(restoredHeaders.isNotEmpty())
-            restored[key] = restoredHeaders
         }
-        require(restored.isNotEmpty())
-        restored
-    }.getOrNull()
-
-    private fun capturePreservedPreferences(): Map<String, String> = preferencesFiles()
-        .filterNot { it.nameWithoutExtension in MUTABLE_MIGRATION_STORES }
-        .associate { it.nameWithoutExtension to canonicalPreferences(it.nameWithoutExtension) }
-
-    private fun verifyPreservedPreferences(): Boolean = preservedPreferences.all { (name, hash) ->
-        canonicalPreferences(name) == hash
+        val usage = appContext.getSharedPreferences(stores.usageData, Context.MODE_PRIVATE).edit()
+            .putString("provider_id", providerId.storageId)
+            .putString("snapshot", ProviderSnapshotCodec.encode(listOf(snapshot)))
+            .putString("updated_at", snapshot.updatedAt)
+            .commit()
+        val accountEditor = appContext.getSharedPreferences(stores.accountData, Context.MODE_PRIVATE).edit()
+            .putString("provider_id", providerId.storageId)
+            .putString("connection_state", snapshot.connectionState.name)
+            .putString("updated_at", snapshot.updatedAt)
+            .putOptional("account", snapshot.account)
+            .putOptional("plan", snapshot.planLabel)
+        val account = accountEditor.commit()
+        val metadata = ProviderScriptProviders.metadataFor(providerId)
+        val script = appContext.getSharedPreferences(stores.scriptData, Context.MODE_PRIVATE).edit()
+            .putString("provider_id", providerId.storageId)
+            .putString("script_version", metadata.version)
+            .putString("updated_at", snapshot.updatedAt)
+            .commit()
+        return usage && account && script
     }
 
-    private fun canonicalPreferences(name: String): String {
-        val all = appContext.getSharedPreferences(name, Context.MODE_PRIVATE).all
-        val canonical = all.toSortedMap().entries.joinToString("\n") { (key, value) ->
-            val rendered = when (value) {
-                is Set<*> -> value.filterIsInstance<String>().sorted().joinToString(",")
-                else -> value?.toString().orEmpty()
-            }
-            "$key=${LegacyMigrationCodec.sha256(rendered)}"
-        }
-        return LegacyMigrationCodec.sha256(canonical)
+    override fun writeCompatibilityCache(snapshots: List<ProviderUsageSnapshot>): Boolean {
+        val display = WidgetCacheSanitizer.toDisplayOnlyJson(
+            snapshots = snapshots,
+            order = ProviderId.defaultOrder(),
+            hidden = emptySet(),
+            updatedAt = ""
+        )
+        val preferences = appContext.getSharedPreferences(WIDGET_CACHE, Context.MODE_PRIVATE)
+        return preferences.edit()
+            .putString(LOCAL_DISPLAY_SNAPSHOT, display)
+            .putString(LOCAL_DISPLAY_UPDATED_AT, "")
+            .commit() && preferences.getString(LOCAL_DISPLAY_SNAPSHOT, null) == display
     }
 
-    private fun preferencesFiles(): List<File> = File(appContext.applicationInfo.dataDir, "shared_prefs")
-        .listFiles { file -> file.extension == "xml" }
-        ?.toList()
-        .orEmpty()
-
-    private fun contextStoreName(providerId: ProviderId): String? = when (providerId) {
-        ProviderId.CLAUDE -> CLAUDE_CONTEXT_PREFERENCES
-        ProviderId.CODEX -> CODEX_CONTEXT_PREFERENCES
-        else -> null
-    }
-
-    private companion object {
-        const val LOCAL_USAGE_PREFERENCES = "ai_quota_local_usage"
-        const val SNAPSHOT_KEY = "provider_snapshots"
-        const val CONTEXT_KEY = "context"
-        const val CLAUDE_CONTEXT_PREFERENCES = "claude_native_request_context"
-        const val CODEX_CONTEXT_PREFERENCES = "codex_native_auth_context"
-        val MUTABLE_MIGRATION_STORES = setOf(
-            LOCAL_USAGE_PREFERENCES,
-            "legacy_account_migration_v1",
-            "account_credential_vault_v1"
+    override fun readProjectionReceipt(projection: LegacyProjection): LegacyProjectionReceipt? {
+        val aggregate = appContext.getSharedPreferences(LOCAL_USAGE, Context.MODE_PRIVATE)
+            .getString(SNAPSHOT_KEY, null) ?: return null
+        if (aggregate != projection.rawAggregate) return null
+        val mirrorHash = combinedMirrorHash()
+        val cache = appContext.getSharedPreferences(WIDGET_CACHE, Context.MODE_PRIVATE)
+            .getString(LOCAL_DISPLAY_SNAPSHOT, null) ?: return null
+        return LegacyProjectionReceipt(
+            desiredRevision = projection.desiredRevision,
+            appliedRevision = projection.desiredRevision,
+            aggregateSha256 = LegacyMigrationCodec.sha256(aggregate),
+            mirrorsSha256 = mirrorHash,
+            cacheSha256 = LegacyMigrationCodec.sha256(cache)
         )
     }
-}
 
-internal class AndroidLegacyMigrationJournal(context: Context) : LegacyMigrationJournal {
-    private val preferences = context.applicationContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
-
-    override fun readCapturedSource(): LegacySourceCapture? = runCatching {
-        if (!preferences.contains(KEY_SOURCE)) return null
-        val raw = String(Base64.getDecoder().decode(preferences.getString(KEY_SOURCE, null)), StandardCharsets.UTF_8)
-        val present = preferences.getBoolean(KEY_SOURCE_PRESENT, false)
-        val hash = preferences.getString(KEY_SOURCE_HASH, null) ?: return null
-        val contextProviders = preferences.getStringSet(KEY_CONTEXT_PROVIDERS, emptySet()).orEmpty().mapTo(mutableSetOf()) {
-            requireNotNull(ProviderId.fromStorageId(it))
-        }
-        require(LegacyMigrationCodec.sha256(raw) == hash)
-        LegacySourceCapture(present, raw, hash, contextProviders)
-    }.getOrNull()
-
-    override fun commitCapturedSource(source: LegacySourceCapture): Boolean {
-        val existing = readCapturedSource()
-        if (existing != null) return existing == source
-        if (preferences.contains(KEY_SOURCE)) return false
-        return preferences.edit()
-            .putInt(KEY_SCHEMA, LegacyMigrationManifest.SCHEMA_VERSION)
-            .putString(KEY_PHASE, LegacyMigrationPhase.COPYING.name)
-            .putBoolean(KEY_SOURCE_PRESENT, source.present)
-            .putString(KEY_SOURCE, Base64.getEncoder().encodeToString(source.rawAggregate.toByteArray(StandardCharsets.UTF_8)))
-            .putString(KEY_SOURCE_HASH, source.sha256)
-            .putStringSet(KEY_CONTEXT_PROVIDERS, source.contextProviders.mapTo(mutableSetOf()) { it.storageId })
-            .commit() && readCapturedSource() == source
+    private fun contextSourceReceipt(providerId: ProviderId): LegacyContextSourceReceipt? {
+        val raw = appContext.getSharedPreferences(contextStoreName(providerId), Context.MODE_PRIVATE)
+            .getString(CONTEXT_KEY, null) ?: return null
+        val version = if (raw.startsWith("v1:")) 1 else 2
+        return LegacyContextSourceReceipt(providerId, LegacyMigrationCodec.blobReceipt(raw, version))
     }
 
-    override fun readManifest(): LegacyMigrationManifest? =
-        preferences.getString(KEY_MANIFEST, null)?.let(LegacyMigrationCodec::decodeManifest)
+    private fun combinedMirrorHash(): String = LegacyMigrationCodec.sha256(
+        TARGETS.joinToString("|") { "${it.storageId}:${canonicalStoresHash(it)}" }
+    )
 
-    override fun hasManifestBytes(): Boolean = preferences.contains(KEY_MANIFEST)
-
-    override fun commitManifest(manifest: LegacyMigrationManifest): Boolean {
-        val encoded = LegacyMigrationCodec.encodeManifest(manifest)
-        return preferences.edit()
-            .putString(KEY_PHASE, LegacyMigrationPhase.COMPLETE.name)
-            .putString(KEY_MANIFEST, encoded)
-            .remove(KEY_BLOCKED_STAGE)
-            .remove(KEY_BLOCKED_FAILURE)
-            .commit() && preferences.getString(KEY_MANIFEST, null) == encoded
+    private fun canonicalStoresHash(providerId: ProviderId): String {
+        val stores = ProviderScriptProviders.storeNamesFor(providerId)
+        return LegacyMigrationCodec.sha256(
+            listOf(stores.accountData, stores.usageData, stores.scriptData)
+                .joinToString("|") { canonicalPreferences(it, null) }
+        )
     }
 
-    override fun clearManifest(): Boolean = preferences.edit()
-        .putString(KEY_PHASE, LegacyMigrationPhase.COPYING.name)
-        .remove(KEY_MANIFEST)
-        .remove(KEY_BLOCKED_STAGE)
-        .remove(KEY_BLOCKED_FAILURE)
-        .commit() && !preferences.contains(KEY_MANIFEST)
+    private fun canonicalPreferences(name: String, keyFilter: String?): String {
+        val values = appContext.getSharedPreferences(name, Context.MODE_PRIVATE).all.toSortedMap()
+        return values.entries.filter { keyFilter == null || it.key.contains(keyFilter) }
+            .joinToString("|") { (key, value) -> "$key=${LegacyMigrationCodec.sha256(value.toString())}" }
+    }
 
-    override fun commitBlocked(stage: LegacyMigrationStage, failure: LegacyMigrationFailure): Boolean =
-        preferences.edit()
-            .putString(KEY_PHASE, LegacyMigrationPhase.BLOCKED_CORRUPT_SOURCE.name)
-            .putString(KEY_BLOCKED_STAGE, stage.name)
-            .putString(KEY_BLOCKED_FAILURE, failure.name)
-            .commit()
+    private fun contextStoreName(providerId: ProviderId): String = when (providerId) {
+        ProviderId.CLAUDE -> "claude_native_request_context"
+        ProviderId.CODEX -> "codex_native_auth_context"
+        else -> error("Unsupported context provider")
+    }
+
+    private fun SharedPreferences.Editor.putOptional(key: String, value: String?): SharedPreferences.Editor =
+        if (value.isNullOrBlank()) remove(key) else putString(key, value)
 
     private companion object {
-        const val PREFERENCES = "legacy_account_migration_v1"
-        const val KEY_SCHEMA = "schema"
-        const val KEY_PHASE = "phase"
-        const val KEY_SOURCE_PRESENT = "source_present"
-        const val KEY_SOURCE = "source_capture"
-        const val KEY_SOURCE_HASH = "source_sha256"
-        const val KEY_CONTEXT_PROVIDERS = "context_providers"
-        const val KEY_MANIFEST = "complete_manifest"
-        const val KEY_BLOCKED_STAGE = "blocked_stage"
-        const val KEY_BLOCKED_FAILURE = "blocked_failure"
+        val TARGETS = listOf(ProviderId.CLAUDE, ProviderId.CODEX)
+        const val LOCAL_USAGE = "ai_quota_local_usage"
+        const val SNAPSHOT_KEY = "provider_snapshots"
+        const val CONTEXT_KEY = "context"
+        const val WIDGET_CACHE = "ai_quota_widget_cache"
+        const val LOCAL_DISPLAY_SNAPSHOT = "local_display_snapshot"
+        const val LOCAL_DISPLAY_UPDATED_AT = "local_display_updated_at"
+        const val MAX_ENCRYPTED_CONTEXT_BYTES = 2_097_152
     }
 }

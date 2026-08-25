@@ -143,14 +143,14 @@ class LegacyAccountMigrationContractTest {
     @Test
     fun absentAndPresentEmptySourcesRemainDistinctValidCapturesWithoutTargetRows() {
         val absent = MigrationTestEnvironment(migrationSource(present = false))
-        val empty = MigrationTestEnvironment(FakeLegacyMigrationSource(true, ""))
+        val empty = MigrationTestEnvironment(DurableFakeMigrationSource.create(true, "", emptyMap()))
         absent.use { absentEnvironment ->
             empty.use { emptyEnvironment ->
                 val absentResult = absentEnvironment.run() as LegacyMigrationResult.Completed
                 val emptyResult = emptyEnvironment.run() as LegacyMigrationResult.Completed
 
-                assertFalse(absentResult.manifest.sourcePresent)
-                assertTrue(emptyResult.manifest.sourcePresent)
+                assertFalse(absentResult.manifest.sourceReceipt.aggregatePresent)
+                assertTrue(emptyResult.manifest.sourceReceipt.aggregatePresent)
                 assertTrue(absentResult.manifest.targets.isEmpty())
                 assertTrue(emptyResult.manifest.targets.isEmpty())
                 assertNotEquals(absentResult.manifest.checksum, emptyResult.manifest.checksum)
@@ -158,7 +158,8 @@ class LegacyAccountMigrationContractTest {
                 absentEnvironment.source.raw = ""
                 val repairedAbsent = absentEnvironment.restart() as LegacyMigrationResult.Completed
                 assertTrue(repairedAbsent.resumed)
-                assertFalse(absentEnvironment.source.present)
+                assertFalse(repairedAbsent.manifest.sourceReceipt.aggregatePresent)
+                assertTrue(absentEnvironment.source.present)
             }
         }
     }

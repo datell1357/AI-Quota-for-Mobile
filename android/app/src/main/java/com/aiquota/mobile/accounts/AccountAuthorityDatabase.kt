@@ -96,10 +96,28 @@ internal class AccountAuthorityDatabase(
             "CREATE TABLE authority_metadata (singleton_id INTEGER PRIMARY KEY CHECK(singleton_id = 1), display_version INTEGER NOT NULL CHECK(display_version >= 0))"
         )
         db.execSQL("INSERT INTO authority_metadata(singleton_id, display_version) VALUES(1, 0)")
+        createMigrationTables(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        if (oldVersion == 1 && newVersion == 2) {
+            createMigrationTables(db)
+            return
+        }
         error("Unsupported account authority schema upgrade $oldVersion to $newVersion")
+    }
+
+    private fun createMigrationTables(db: SQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE migration_mirrors (provider_id TEXT NOT NULL, account_key TEXT NOT NULL, receipt_sha256 TEXT NOT NULL, PRIMARY KEY(provider_id, account_key), FOREIGN KEY(provider_id, account_key) REFERENCES accounts(provider_id, account_key) ON DELETE CASCADE)"
+        )
+        db.execSQL(
+            "CREATE TABLE migration_preferences (provider_id TEXT NOT NULL, account_key TEXT NOT NULL, receipt_sha256 TEXT NOT NULL, PRIMARY KEY(provider_id, account_key), FOREIGN KEY(provider_id, account_key) REFERENCES accounts(provider_id, account_key) ON DELETE CASCADE)"
+        )
+        db.execSQL(
+            "CREATE TABLE projection_state (singleton_id INTEGER PRIMARY KEY CHECK(singleton_id = 1), desired_revision INTEGER NOT NULL CHECK(desired_revision >= 0), applied_revision INTEGER NOT NULL CHECK(applied_revision >= 0), aggregate_sha256 TEXT NOT NULL, mirrors_sha256 TEXT NOT NULL, cache_sha256 TEXT NOT NULL)"
+        )
+        db.execSQL("INSERT INTO projection_state(singleton_id, desired_revision, applied_revision, aggregate_sha256, mirrors_sha256, cache_sha256) VALUES(1, 0, 0, '${"0".repeat(64)}', '${"0".repeat(64)}', '${"0".repeat(64)}')")
     }
 
     fun canonicalDump(): ByteArray {
@@ -120,6 +138,9 @@ internal class AccountAuthorityDatabase(
             appendTable(db, "attempts", listOf("provider_id", "account_key", "generation", "session_revision", "active_nonce"), "provider_id, account_key")
             appendTable(db, "nonce_heads", listOf("provider_id", "account_key", "last_nonce"), "provider_id, account_key")
             appendTable(db, "published_nonces", listOf("provider_id", "account_key", "nonce"), "provider_id, account_key, nonce")
+            appendTable(db, "migration_mirrors", listOf("provider_id", "account_key", "receipt_sha256"), "provider_id, account_key")
+            appendTable(db, "migration_preferences", listOf("provider_id", "account_key", "receipt_sha256"), "provider_id, account_key")
+            appendTable(db, "projection_state", listOf("singleton_id", "desired_revision", "applied_revision", "aggregate_sha256", "mirrors_sha256", "cache_sha256"), "singleton_id")
         }
         return dump.toByteArray(StandardCharsets.UTF_8)
     }
@@ -150,6 +171,6 @@ internal class AccountAuthorityDatabase(
     }
 
     private companion object {
-        const val SCHEMA_VERSION = 1
+        const val SCHEMA_VERSION = 2
     }
 }
