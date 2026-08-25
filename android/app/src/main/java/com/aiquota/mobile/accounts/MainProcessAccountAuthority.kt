@@ -33,6 +33,48 @@ class MainProcessAccountAuthority private constructor(
         VersionedDisplayRecord(seed.account.copy(modifiedVersion = version), seed.snapshot, version)
     }
 
+    internal fun importLegacyDefaults(
+        snapshots: Map<ProviderId, ProviderUsageSnapshot>
+    ): List<VersionedDisplayRecord> = transaction { db ->
+        snapshots.entries.sortedBy { it.key.ordinal }.map { (providerId, snapshot) ->
+            require(providerId == ProviderId.CLAUDE || providerId == ProviderId.CODEX)
+            val id = ProviderAccountId(providerId, AccountKey.reservedDefault())
+            readLegacyImportRecord(db, id)?.also { existing ->
+                require(existing.account.state == AccountState.ACTIVE)
+                require(existing.account.authState == AccountAuthState.REAUTH_REQUIRED)
+                require(existing.account.deletionState == AccountDeletionState.NONE)
+                require(existing.snapshot == snapshot)
+            } ?: run {
+                val version = readVersion(db).next()
+                val account = AccountRecord(
+                    id = id,
+                    state = AccountState.ACTIVE,
+                    authState = AccountAuthState.REAUTH_REQUIRED,
+                    deletionState = AccountDeletionState.NONE,
+                    generation = AccountGeneration.of(1),
+                    sessionRevision = SessionRevision.of(1),
+                    modifiedVersion = version
+                )
+                insertAccount(db, account)
+                faultInjector.after(AccountAuthorityFaultPoint.CATALOG)
+                writeSnapshot(db, id, snapshot, version)
+                faultInjector.after(AccountAuthorityFaultPoint.SNAPSHOT)
+                writeDemand(db, id, AccountDemandSet.NONE)
+                faultInjector.after(AccountAuthorityFaultPoint.DEMAND)
+                writeAttempt(db, id, account.generation, account.sessionRevision, null)
+                faultInjector.after(AccountAuthorityFaultPoint.ATTEMPT)
+                writeNonceHead(db, id, null)
+                faultInjector.after(AccountAuthorityFaultPoint.NONCE)
+                writeVersion(db, version)
+                faultInjector.after(AccountAuthorityFaultPoint.VERSION)
+                VersionedDisplayRecord(account, snapshot, version)
+            }
+        }
+    }
+
+    internal fun legacyImportRecord(id: ProviderAccountId): VersionedDisplayRecord? =
+        readLegacyImportRecord(database.readableDatabase, id)
+
     fun beginAttempt(
         accountId: ProviderAccountId,
         demand: AccountDemandSet,

@@ -149,6 +149,21 @@ internal fun readAccount(db: SQLiteDatabase, id: ProviderAccountId): AccountReco
         null
     ).use { cursor -> if (cursor.moveToFirst()) cursor.toAccountRecord() else null }
 
+internal fun readLegacyImportRecord(db: SQLiteDatabase, id: ProviderAccountId): VersionedDisplayRecord? =
+    db.rawQuery(
+        """
+        SELECT ${ACCOUNT_COLUMNS.joinToString(",")}, snapshots.snapshot_json, snapshots.display_version
+        FROM accounts JOIN snapshots USING(provider_id, account_key)
+        WHERE accounts.provider_id = ? AND accounts.account_key = ?
+        """.trimIndent(),
+        arrayOf(id.providerId.storageId, id.accountKey.storageValue())
+    ).use { cursor ->
+        if (!cursor.moveToFirst()) return@use null
+        val account = cursor.toAccountRecord()
+        val snapshot = decodeSnapshot(cursor.getString(ACCOUNT_COLUMNS.size), id.providerId)
+        VersionedDisplayRecord(account, snapshot, DisplayVersion.of(cursor.getLong(ACCOUNT_COLUMNS.size + 1)))
+    }
+
 internal fun Cursor.toAccountRecord(): AccountRecord {
     val provider = requireNotNull(ProviderId.fromStorageId(getString(0))) { "Unknown account provider" }
     return AccountRecord(
