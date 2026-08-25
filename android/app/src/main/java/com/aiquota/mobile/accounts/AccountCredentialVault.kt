@@ -44,6 +44,15 @@ internal class ReentrantCredentialVaultOperationLock : CredentialVaultOperationL
     override fun <T> serialized(block: () -> T): T = lock.withLock(block)
 }
 
+internal object ProcessAccountCredentialVaultFactory {
+    private val operationLock = ReentrantCredentialVaultOperationLock()
+
+    fun create(
+        envelopeStore: CredentialEnvelopeStore,
+        crypto: CredentialVaultCrypto,
+    ): AccountCredentialVault = AccountCredentialVault(envelopeStore, crypto, operationLock)
+}
+
 internal class AccountCredentialVault(
     private val envelopeStore: CredentialEnvelopeStore,
     private val crypto: CredentialVaultCrypto,

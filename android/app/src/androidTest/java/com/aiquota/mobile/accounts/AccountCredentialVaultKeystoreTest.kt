@@ -5,7 +5,9 @@ import android.util.Log
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aiquota.mobile.local.ProviderId
+import javax.crypto.AEADBadTagException
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -22,6 +24,8 @@ class AccountCredentialVaultKeystoreTest {
         }
 
         try {
+            productionKeystoreCryptoAuthenticatesSameKeyAad()
+
             val vault1 = createAndroidAccountCredentialVault(context)
             bindings.forEachIndexed { index, binding ->
                 assertTrue(vault1.put(binding, fixtureBundle(index)))
@@ -67,6 +71,62 @@ class AccountCredentialVaultKeystoreTest {
         }
     }
 
+    private fun productionKeystoreCryptoAuthenticatesSameKeyAad() {
+        val crypto = createAndroidKeystoreCredentialVaultCrypto()
+        val original = binding(ProviderId.CLAUDE, AAD_ACCOUNT)
+        val plaintext = "instrumentation-aad-fixture".toByteArray()
+        crypto.deleteAlias(original.accountId)
+
+        try {
+            val encrypted = crypto.encrypt(
+                accountId = original.accountId,
+                aad = CredentialVaultAad.encode(original),
+                plaintext = plaintext,
+            )
+            assertArrayEquals(
+                plaintext,
+                requireNotNull(
+                    crypto.decrypt(
+                        accountId = original.accountId,
+                        aad = CredentialVaultAad.encode(original),
+                        payload = encrypted,
+                    )
+                ),
+            )
+            val mutations = listOf(
+                original.copy(schema = CredentialVaultSchema.of(2)),
+                binding(ProviderId.CODEX, AAD_ACCOUNT),
+                binding(ProviderId.CLAUDE, MUTATED_AAD_ACCOUNT),
+            )
+            val authenticationFailures = mutations.map { mutation ->
+                runCatching {
+                    crypto.decrypt(
+                        accountId = original.accountId,
+                        aad = CredentialVaultAad.encode(mutation),
+                        payload = encrypted,
+                    )
+                }.exceptionOrNull()
+            }
+
+            assertEquals(3, authenticationFailures.count { it is AEADBadTagException })
+            assertArrayEquals(
+                plaintext,
+                requireNotNull(
+                    crypto.decrypt(
+                        accountId = original.accountId,
+                        aad = CredentialVaultAad.encode(original),
+                        payload = encrypted,
+                    )
+                ),
+            )
+            Log.i(TAG, "VAULT_QA_PRODUCTION_KEYSTORE_SAME_KEY_AAD_FAILURE_COUNT=3")
+        } finally {
+            plaintext.fill(0)
+            assertTrue(crypto.deleteAlias(original.accountId))
+            assertTrue(!crypto.containsAlias(original.accountId))
+        }
+    }
+
     private fun fixtureBindings(): List<CredentialVaultBinding> = listOf(
         binding(ProviderId.CLAUDE, ACCOUNT_A),
         binding(ProviderId.CLAUDE, ACCOUNT_B),
@@ -95,5 +155,7 @@ class AccountCredentialVaultKeystoreTest {
         const val ACCOUNT_B = "acct_00000000000000000000000000000002"
         const val ACCOUNT_C = "acct_00000000000000000000000000000003"
         const val ACCOUNT_D = "acct_00000000000000000000000000000004"
+        const val AAD_ACCOUNT = "acct_00000000000000000000000000000005"
+        const val MUTATED_AAD_ACCOUNT = "acct_00000000000000000000000000000006"
     }
 }

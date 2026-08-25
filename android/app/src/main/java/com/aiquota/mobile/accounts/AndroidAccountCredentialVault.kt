@@ -11,14 +11,14 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
-private val accountCredentialVaultOperationLock = ReentrantCredentialVaultOperationLock()
-
 internal fun createAndroidAccountCredentialVault(context: Context): AccountCredentialVault =
-    AccountCredentialVault(
+    ProcessAccountCredentialVaultFactory.create(
         envelopeStore = SharedPreferencesCredentialEnvelopeStore(context.applicationContext),
-        crypto = AndroidKeystoreCredentialVaultCrypto(),
-        operationLock = accountCredentialVaultOperationLock,
+        crypto = createAndroidKeystoreCredentialVaultCrypto(),
     )
+
+internal fun createAndroidKeystoreCredentialVaultCrypto(): CredentialVaultCrypto =
+    AndroidKeystoreCredentialVaultCrypto()
 
 private class SharedPreferencesCredentialEnvelopeStore(
     private val context: Context,
