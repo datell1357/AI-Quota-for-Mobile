@@ -68,10 +68,12 @@ class AccountUsageRepository private constructor(
     private fun reconcileLegacyProjectionLocked(): AccountUsageProjectionResult {
         val store = projectionStore ?: return AccountUsageProjectionResult.MigrationIncomplete
         if (!migrationComplete()) return AccountUsageProjectionResult.MigrationIncomplete
-        var captured = store.captureAggregate()
-        while (true) {
+        return LegacyUsageMutationCoordinator.withLock {
+            val captured = store.captureAggregate()
             val currentSnapshots = LegacySnapshotStrictParser.parse(captured.rawAggregate)
-                ?: return AccountUsageProjectionResult.Failed(AccountUsageProjectionFailure.MALFORMED_LEGACY_DATA)
+                ?: return@withLock AccountUsageProjectionResult.Failed(
+                    AccountUsageProjectionFailure.MALFORMED_LEGACY_DATA
+                )
             val currentTargets = targetHashes(currentSnapshots.associateBy { it.providerId })
             val selected = ACCOUNT_USAGE_TARGET_PROVIDERS.mapNotNull { provider ->
                 val id = authority.accountUsagePrimary(provider) ?: return@mapNotNull null
@@ -84,68 +86,63 @@ class AccountUsageRepository private constructor(
                     desiredTargets = desiredTargets
                 )
             }.getOrElse {
-                return AccountUsageProjectionResult.Failed(AccountUsageProjectionFailure.INTENT_WRITE_FAILED)
+                return@withLock AccountUsageProjectionResult.Failed(
+                    AccountUsageProjectionFailure.INTENT_WRITE_FAILED
+                )
             }
             val raw = LegacyRawProjectionCodec.replaceManagedTargets(
                 captured.rawAggregate,
                 ACCOUNT_USAGE_TARGET_PROVIDERS,
                 selected
-            ) ?: return AccountUsageProjectionResult.Failed(AccountUsageProjectionFailure.MALFORMED_LEGACY_DATA)
+            ) ?: return@withLock AccountUsageProjectionResult.Failed(
+                AccountUsageProjectionFailure.MALFORMED_LEGACY_DATA
+            )
             val projectedSnapshots = LegacySnapshotStrictParser.parse(raw)
-                ?: return AccountUsageProjectionResult.Failed(AccountUsageProjectionFailure.MALFORMED_LEGACY_DATA)
-            when (val attempt = LegacyUsageMutationCoordinator.withLock {
-                val latest = store.captureAggregate()
-                if (latest.rawAggregate != captured.rawAggregate) {
-                    return@withLock ProjectionWriteAttempt.Changed(latest)
-                }
-                if (!store.writeAggregate(raw)) {
-                    return@withLock ProjectionWriteAttempt.Finished(
-                        AccountUsageProjectionResult.Failed(AccountUsageProjectionFailure.AGGREGATE_WRITE_FAILED)
-                    )
-                }
-                ACCOUNT_USAGE_TARGET_PROVIDERS.sortedBy(ProviderId::ordinal).forEach { provider ->
-                    if (!store.writeMirror(provider, selected[provider])) {
-                        return@withLock ProjectionWriteAttempt.Finished(
-                            AccountUsageProjectionResult.Failed(AccountUsageProjectionFailure.MIRROR_WRITE_FAILED)
-                        )
-                    }
-                }
-                if (!store.writeCompatibilityCache(projectedSnapshots)) {
-                    return@withLock ProjectionWriteAttempt.Finished(
-                        AccountUsageProjectionResult.Failed(AccountUsageProjectionFailure.CACHE_WRITE_FAILED)
-                    )
-                }
-                val projection = LegacyProjection(raw, projectedSnapshots, selected, intent.authorityVersion.value)
-                val receipt = store.readProjectionReceipt(projection)
-                    ?: return@withLock ProjectionWriteAttempt.Finished(
-                        AccountUsageProjectionResult.Failed(AccountUsageProjectionFailure.READ_BACK_FAILED)
-                    )
-                if (receipt.desiredRevision != intent.authorityVersion.value ||
-                    receipt.appliedRevision != receipt.desiredRevision
-                ) {
-                    return@withLock ProjectionWriteAttempt.Finished(
-                        AccountUsageProjectionResult.Failed(AccountUsageProjectionFailure.READ_BACK_FAILED)
-                    )
-                }
-                runCatching { authority.finishAccountUsageProjection(intent, receipt) }.getOrElse {
-                    return@withLock ProjectionWriteAttempt.Finished(
-                        AccountUsageProjectionResult.Failed(AccountUsageProjectionFailure.AUTHORITY_ACK_FAILED)
-                    )
-                }
-                val conflicts = authority.legacyUsageConflicts(0, 1).totalCount
-                ProjectionWriteAttempt.Finished(
-                    AccountUsageProjectionResult.Applied(
-                        AccountUsageProjectionReceipt(
-                            authorityVersion = intent.authorityVersion,
-                            aggregateSha256 = receipt.aggregateSha256,
-                            conflictCount = conflicts
-                        )
-                    )
+                ?: return@withLock AccountUsageProjectionResult.Failed(
+                    AccountUsageProjectionFailure.MALFORMED_LEGACY_DATA
                 )
-            }) {
-                is ProjectionWriteAttempt.Changed -> captured = attempt.latest
-                is ProjectionWriteAttempt.Finished -> return attempt.result
+            if (!store.writeAggregate(raw)) {
+                return@withLock AccountUsageProjectionResult.Failed(
+                    AccountUsageProjectionFailure.AGGREGATE_WRITE_FAILED
+                )
             }
+            ACCOUNT_USAGE_TARGET_PROVIDERS.sortedBy(ProviderId::ordinal).forEach { provider ->
+                if (!store.writeMirror(provider, selected[provider])) {
+                    return@withLock AccountUsageProjectionResult.Failed(
+                        AccountUsageProjectionFailure.MIRROR_WRITE_FAILED
+                    )
+                }
+            }
+            if (!store.writeCompatibilityCache(projectedSnapshots)) {
+                return@withLock AccountUsageProjectionResult.Failed(
+                    AccountUsageProjectionFailure.CACHE_WRITE_FAILED
+                )
+            }
+            val projection = LegacyProjection(raw, projectedSnapshots, selected, intent.authorityVersion.value)
+            val receipt = store.readProjectionReceipt(projection)
+                ?: return@withLock AccountUsageProjectionResult.Failed(
+                    AccountUsageProjectionFailure.READ_BACK_FAILED
+                )
+            if (receipt.desiredRevision != intent.authorityVersion.value ||
+                receipt.appliedRevision != receipt.desiredRevision
+            ) {
+                return@withLock AccountUsageProjectionResult.Failed(
+                    AccountUsageProjectionFailure.READ_BACK_FAILED
+                )
+            }
+            runCatching { authority.finishAccountUsageProjection(intent, receipt) }.getOrElse {
+                return@withLock AccountUsageProjectionResult.Failed(
+                    AccountUsageProjectionFailure.AUTHORITY_ACK_FAILED
+                )
+            }
+            val conflicts = authority.legacyUsageConflicts(0, 1).totalCount
+            AccountUsageProjectionResult.Applied(
+                AccountUsageProjectionReceipt(
+                    authorityVersion = intent.authorityVersion,
+                    aggregateSha256 = receipt.aggregateSha256,
+                    conflictCount = conflicts
+                )
+            )
         }
     }
 
@@ -176,9 +173,4 @@ class AccountUsageRepository private constructor(
             migrationComplete: () -> Boolean = { true }
         ): AccountUsageRepository = AccountUsageRepository(authority, projectionStore, migrationComplete)
     }
-}
-
-private sealed interface ProjectionWriteAttempt {
-    data class Changed(val latest: LegacySourceCapture) : ProjectionWriteAttempt
-    data class Finished(val result: AccountUsageProjectionResult) : ProjectionWriteAttempt
 }

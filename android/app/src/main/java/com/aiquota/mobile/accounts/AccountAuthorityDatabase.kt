@@ -4,6 +4,7 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import com.aiquota.mobile.local.ProviderId
 import java.nio.charset.StandardCharsets
 
 internal class AccountAuthorityDatabase(
@@ -107,25 +108,64 @@ internal class AccountAuthorityDatabase(
         if (oldVersion == 1) {
             createMigrationTables(db)
         } else if (oldVersion == 2) {
-            db.execSQL("ALTER TABLE migration_mirrors ADD COLUMN copied_json TEXT NOT NULL DEFAULT ''")
-            db.execSQL("ALTER TABLE migration_mirrors ADD COLUMN copied_sha256 TEXT NOT NULL DEFAULT ''")
-            db.execSQL("ALTER TABLE migration_preferences ADD COLUMN copied_json TEXT NOT NULL DEFAULT ''")
-            db.execSQL("ALTER TABLE migration_preferences ADD COLUMN copied_sha256 TEXT NOT NULL DEFAULT ''")
+            upgradeReceiptOnlyMigrationTables(db)
         }
         createAccountUsageTables(db)
+        if (oldVersion == 4) backfillParentPrimarySelections(db)
+    }
+
+    private fun backfillParentPrimarySelections(db: SQLiteDatabase) {
+        db.compileStatement(
+            """
+            INSERT INTO account_usage_primary(provider_id, account_key)
+            SELECT targets.provider_id, ?
+            FROM account_usage_projection_targets AS targets
+            WHERE targets.provider_id IN (?, ?)
+              AND targets.target_sha256 = ?
+              AND NOT EXISTS (
+                  SELECT 1 FROM account_usage_primary AS primary_selection
+                  WHERE primary_selection.provider_id = targets.provider_id
+              )
+            ORDER BY targets.provider_id
+            """.trimIndent()
+        ).use { statement ->
+            statement.bindString(1, ACCOUNT_USAGE_PRIMARY_NONE)
+            statement.bindString(2, ProviderId.CLAUDE.storageId)
+            statement.bindString(3, ProviderId.CODEX.storageId)
+            statement.bindString(4, ACCOUNT_USAGE_ABSENT_SHA256)
+            statement.executeInsert()
+        }
+    }
+
+    private fun upgradeReceiptOnlyMigrationTables(db: SQLiteDatabase) {
+        listOf("migration_mirrors", "migration_preferences").forEach { table ->
+            db.execSQL("ALTER TABLE $table RENAME TO ${table}_v2")
+        }
+        createMigrationCopyTables(db)
+        listOf("migration_mirrors", "migration_preferences").forEach { table ->
+            db.execSQL(
+                "INSERT INTO $table(provider_id,account_key,receipt_sha256,copied_json,copied_sha256) " +
+                    "SELECT provider_id,account_key,receipt_sha256,'','' FROM ${table}_v2"
+            )
+            db.execSQL("DROP TABLE ${table}_v2")
+        }
     }
 
     private fun createMigrationTables(db: SQLiteDatabase) {
+        createMigrationCopyTables(db)
+        db.execSQL(
+            "CREATE TABLE projection_state (singleton_id INTEGER PRIMARY KEY CHECK(singleton_id = 1), desired_revision INTEGER NOT NULL CHECK(desired_revision >= 0), applied_revision INTEGER NOT NULL CHECK(applied_revision >= 0), aggregate_sha256 TEXT NOT NULL, mirrors_sha256 TEXT NOT NULL, cache_sha256 TEXT NOT NULL)"
+        )
+        db.execSQL("INSERT INTO projection_state(singleton_id, desired_revision, applied_revision, aggregate_sha256, mirrors_sha256, cache_sha256) VALUES(1, 0, 0, '${"0".repeat(64)}', '${"0".repeat(64)}', '${"0".repeat(64)}')")
+    }
+
+    private fun createMigrationCopyTables(db: SQLiteDatabase) {
         db.execSQL(
             "CREATE TABLE migration_mirrors (provider_id TEXT NOT NULL, account_key TEXT NOT NULL, receipt_sha256 TEXT NOT NULL, copied_json TEXT NOT NULL, copied_sha256 TEXT NOT NULL, PRIMARY KEY(provider_id, account_key), FOREIGN KEY(provider_id, account_key) REFERENCES accounts(provider_id, account_key) ON DELETE CASCADE)"
         )
         db.execSQL(
             "CREATE TABLE migration_preferences (provider_id TEXT NOT NULL, account_key TEXT NOT NULL, receipt_sha256 TEXT NOT NULL, copied_json TEXT NOT NULL, copied_sha256 TEXT NOT NULL, PRIMARY KEY(provider_id, account_key), FOREIGN KEY(provider_id, account_key) REFERENCES accounts(provider_id, account_key) ON DELETE CASCADE)"
         )
-        db.execSQL(
-            "CREATE TABLE projection_state (singleton_id INTEGER PRIMARY KEY CHECK(singleton_id = 1), desired_revision INTEGER NOT NULL CHECK(desired_revision >= 0), applied_revision INTEGER NOT NULL CHECK(applied_revision >= 0), aggregate_sha256 TEXT NOT NULL, mirrors_sha256 TEXT NOT NULL, cache_sha256 TEXT NOT NULL)"
-        )
-        db.execSQL("INSERT INTO projection_state(singleton_id, desired_revision, applied_revision, aggregate_sha256, mirrors_sha256, cache_sha256) VALUES(1, 0, 0, '${"0".repeat(64)}', '${"0".repeat(64)}', '${"0".repeat(64)}')")
     }
 
     private fun createAccountUsageTables(db: SQLiteDatabase) {
@@ -248,6 +288,6 @@ internal class AccountAuthorityDatabase(
     }
 
     private companion object {
-        const val SCHEMA_VERSION = 4
+        const val SCHEMA_VERSION = 5
     }
 }

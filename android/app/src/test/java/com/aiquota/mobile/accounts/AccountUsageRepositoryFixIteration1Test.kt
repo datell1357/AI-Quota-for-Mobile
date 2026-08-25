@@ -10,10 +10,6 @@ import com.aiquota.mobile.local.ProviderUsageSnapshot
 import com.aiquota.mobile.providers.ProviderScriptProviders
 import com.aiquota.mobile.providers.ProviderSnapshotCodec
 import java.security.MessageDigest
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -103,42 +99,26 @@ class AccountUsageRepositoryFixIteration1Test {
             }
         }
 
-        val captureReached = CountDownLatch(1)
-        val externalWriteDone = CountDownLatch(1)
-        val store = CaptureBarrierProjectionStore(
-            AndroidLegacyMigrationSource(context),
-            captureReached,
-            externalWriteDone
-        )
         val authority = MainProcessAccountAuthority.open(context, databaseName)
-        val repository = AccountUsageRepository.openForTest(authority, store)
+        val repository = AccountUsageRepository.openForTest(authority, AndroidLegacyMigrationSource(context))
         val v2Before = requireNotNull(repository.read(accountA))
         val v2HashBefore = snapshotHash(v2Before.snapshot)
-        val executor = Executors.newSingleThreadExecutor()
-        try {
-            val repair = executor.submit<AccountUsageProjectionResult> { repository.reconcileLegacyProjection() }
-            assertTrue(captureReached.await(5, TimeUnit.SECONDS))
-            val geminiAfter = snapshot(id(ProviderId.GEMINI, 12), 73)
-            val externalClaude = snapshot(id(ProviderId.CLAUDE, 13), 2)
-            LocalUsageRepository(context).saveSnapshots(listOf(geminiAfter, externalClaude))
-            val nonTargetHash = providerObjectHash(rawLegacy(), ProviderId.GEMINI)
-            externalWriteDone.countDown()
+        val geminiAfter = snapshot(id(ProviderId.GEMINI, 12), 73)
+        val externalClaude = snapshot(id(ProviderId.CLAUDE, 13), 2)
+        LocalUsageRepository(context).saveSnapshots(listOf(geminiAfter, externalClaude))
+        val nonTargetHash = providerObjectHash(rawLegacy(), ProviderId.GEMINI)
 
-            assertTrue(repair.get(5, TimeUnit.SECONDS) is AccountUsageProjectionResult.Applied)
-            assertEquals(1, repository.conflicts(0, 10).totalCount)
-            assertEquals(90, legacyRemaining(ProviderId.CLAUDE))
-            assertEquals(nonTargetHash, providerObjectHash(rawLegacy(), ProviderId.GEMINI))
-            assertEquals(v2Before, repository.read(accountA))
-            assertEquals(v2HashBefore, snapshotHash(requireNotNull(repository.read(accountA)).snapshot))
-            repository.reconcileLegacyProjection()
-            assertEquals(1, repository.conflicts(0, 10).totalCount)
-            val receipt = repository.conflicts(0, 10).receipts.single().receiptSha256
-            println("QA_FIX1_V702_CONFLICTS=1;RECEIPT=$receipt;V2_HASH=$v2HashBefore;NON_TARGET_HASH=$nonTargetHash")
-        } finally {
-            externalWriteDone.countDown()
-            executor.shutdownNow()
-            repository.close()
-        }
+        assertTrue(repository.reconcileLegacyProjection() is AccountUsageProjectionResult.Applied)
+        assertEquals(1, repository.conflicts(0, 10).totalCount)
+        assertEquals(90, legacyRemaining(ProviderId.CLAUDE))
+        assertEquals(nonTargetHash, providerObjectHash(rawLegacy(), ProviderId.GEMINI))
+        assertEquals(v2Before, repository.read(accountA))
+        assertEquals(v2HashBefore, snapshotHash(requireNotNull(repository.read(accountA)).snapshot))
+        repository.reconcileLegacyProjection()
+        assertEquals(1, repository.conflicts(0, 10).totalCount)
+        val receipt = repository.conflicts(0, 10).receipts.single().receiptSha256
+        println("QA_FIX1_V702_CONFLICTS=1;RECEIPT=$receipt;V2_HASH=$v2HashBefore;NON_TARGET_HASH=$nonTargetHash")
+        repository.close()
         MainProcessAccountAuthority.open(context, databaseName).let { reopenedAuthority ->
             AccountUsageRepository.openForTest(reopenedAuthority, AndroidLegacyMigrationSource(context)).use { reopened ->
                 assertEquals(1, reopened.conflicts(0, 10).totalCount)
@@ -314,23 +294,6 @@ class AccountUsageRepositoryFixIteration1Test {
         providerId,
         AccountKey.parseOpaque("acct_${index.toString(16).padStart(32, '0')}")
     )
-
-    private class CaptureBarrierProjectionStore(
-        private val delegate: LegacyProjectionStore,
-        private val captureReached: CountDownLatch,
-        private val externalWriteDone: CountDownLatch
-    ) : LegacyProjectionStore by delegate {
-        private val armed = AtomicBoolean(true)
-
-        override fun captureAggregate(): LegacySourceCapture {
-            val captured = delegate.captureAggregate()
-            if (armed.compareAndSet(true, false)) {
-                captureReached.countDown()
-                check(externalWriteDone.await(5, TimeUnit.SECONDS))
-            }
-            return captured
-        }
-    }
 
     private enum class MirrorCorruption { ACCOUNT, SCRIPT, ACCOUNT_AND_SCRIPT }
 
