@@ -116,7 +116,8 @@ internal class AccountAuthorityDatabase(
     }
 
     private fun backfillParentPrimarySelections(db: SQLiteDatabase) {
-        if (!hasCompleteParentProjectionAuthority(db)) return
+        val currentVersion = readParentAuthorityDisplayVersion(db)
+        if (!hasCompleteParentProjectionAuthority(db, currentVersion)) return
         db.compileStatement(
             """
             INSERT INTO account_usage_primary(provider_id, account_key)
@@ -136,7 +137,26 @@ internal class AccountAuthorityDatabase(
         }
     }
 
-    private fun hasCompleteParentProjectionAuthority(db: SQLiteDatabase): Boolean {
+    private fun readParentAuthorityDisplayVersion(db: SQLiteDatabase): Long = db.rawQuery(
+        "SELECT singleton_id, display_version FROM authority_metadata",
+        null
+    ).use { cursor ->
+        if (!cursor.moveToFirst() ||
+            cursor.getType(0) != Cursor.FIELD_TYPE_INTEGER ||
+            cursor.getLong(0) != 1L ||
+            cursor.getType(1) != Cursor.FIELD_TYPE_INTEGER
+        ) {
+            incoherentParentProjectionAuthority()
+        }
+        val version = cursor.getLong(1)
+        if (version < 0 || cursor.moveToNext()) incoherentParentProjectionAuthority()
+        version
+    }
+
+    private fun hasCompleteParentProjectionAuthority(
+        db: SQLiteDatabase,
+        currentVersion: Long
+    ): Boolean {
         db.rawQuery(
             "SELECT singleton_id, authority_version, claude_sha256, codex_sha256 " +
                 "FROM account_usage_projection_intent",
@@ -177,18 +197,7 @@ internal class AccountAuthorityDatabase(
         ) {
             incoherentParentProjectionAuthority()
         }
-        val currentVersion = db.rawQuery(
-            "SELECT display_version FROM authority_metadata WHERE singleton_id = 1",
-            null
-        ).use { cursor ->
-            if (!cursor.moveToFirst() || cursor.getType(0) != Cursor.FIELD_TYPE_INTEGER) {
-                incoherentParentProjectionAuthority()
-            }
-            cursor.getLong(0)
-        }
-        if (currentVersion < 0 || targets.first().authorityVersion > currentVersion) {
-            incoherentParentProjectionAuthority()
-        }
+        if (targets.first().authorityVersion > currentVersion) incoherentParentProjectionAuthority()
         return true
     }
 
