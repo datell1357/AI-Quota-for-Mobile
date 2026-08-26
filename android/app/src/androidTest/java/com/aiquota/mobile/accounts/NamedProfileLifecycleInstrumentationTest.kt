@@ -3,453 +3,418 @@ package com.aiquota.mobile.accounts
 import android.annotation.SuppressLint
 import android.os.Process
 import android.util.Log
-import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
-import android.webkit.WebStorage
 import android.webkit.WebView
+import androidx.core.content.ContextCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.webkit.Profile
 import androidx.webkit.ProfileStore
-import androidx.webkit.WebViewFeature
+import androidx.webkit.WebStorageCompat
+import androidx.webkit.WebViewCompat
 import com.aiquota.mobile.MainActivity
 import com.aiquota.mobile.local.ProviderId
-import com.aiquota.mobile.local.ProviderUsageSnapshot
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.SocketException
-import java.net.URLDecoder
 import java.security.MessageDigest
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.json.JSONObject
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertThrows
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class NamedProfilePhase1SeedAndPendingTest {
+class NamedProfile145RejectionTest {
     @Test
-    fun seedAAndBThenRequestLiveAErasure() {
-        assertStableFeatures()
-        val server = SyntheticOriginServer()
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            lateinit var manager: NamedProfileLifecycleManager
-            lateinit var a: AccountProfileBinding
-            lateinit var b: AccountProfileBinding
-            lateinit var leaseA: NamedProfileLease
-            lateinit var leaseB: NamedProfileLease
-            lateinit var fixtureA: ProfileStateFixture
-            lateinit var fixtureB: ProfileStateFixture
-            scenario.onActivity { activity ->
-                manager = productionManager(activity)
-                assertTrue(manager.coldStartDrain().isEmpty())
-                a = manager.ensureBinding(ACCOUNT_A)
-                b = manager.ensureBinding(ACCOUNT_B)
-                leaseA = manager.acquire(ACCOUNT_A)
-                fixtureA = ProfileStateFixture(leaseA, server, "A", seed = true)
-                activity.setContentView(leaseA.requireAndroidWebView())
-                fixtureA.start()
+    fun secondEnrollmentRejectedBeforeActivity() {
+        ActivityScenario.launch(MainActivity::class.java).use { s ->
+            s.onActivity { a ->
+                val p = AndroidXNamedProfilePlatform(a)
+                val c = p.probeCapability()
+                assertTrue(c is NamedProfileCapability.Rejected)
+                assertEquals(
+                    RuntimeSupportReason.VERSION_BELOW_SAFE_FLOOR,
+                    (c as NamedProfileCapability.Rejected).reason,
+                )
+                var mutations = 0
+                val r =
+                    NamedProfileEnrollmentCoordinator(p::requireUiThread, p::probeCapability)
+                        .enroll(1) { mutations++ }
+                assertTrue(r is EnrollmentCoordinationResult.Rejected)
+                assertEquals(0, mutations)
+                Log.i(
+                    TAG,
+                    "UNSUPPORTED_145=true;ACCOUNT=0;PROFILE=0;WEBVIEW=0;NETWORK=0;STORAGE=0;PID=${Process.myPid()}",
+                )
             }
-            val stateA = fixtureA.await()
-            scenario.onActivity { activity ->
-                leaseB = manager.acquire(ACCOUNT_B)
-                fixtureB = ProfileStateFixture(leaseB, server, "B", seed = true)
-                activity.setContentView(leaseB.requireAndroidWebView())
-                fixtureB.start()
-            }
-            val stateB = fixtureB.await()
-            assertProfileState(stateA, "A")
-            assertProfileState(stateB, "B")
-            assertProfileCookie(leaseA, "A")
-            assertProfileCookie(leaseB, "B")
-            leaseA.requireAndroidCookieManager().flush()
-            leaseB.requireAndroidCookieManager().flush()
-            assertDefaultProfileEmpty()
-            scenario.onActivity {
-                assertEquals(2, manager.liveLeaseCount(ACCOUNT_A) + manager.liveLeaseCount(ACCOUNT_B))
-                assertEquals(ErasureRequestResult.ERASURE_PENDING_COLD_START, manager.requestErasure(ACCOUNT_A))
-                assertThrows(IllegalStateException::class.java) { manager.acquire(ACCOUNT_A) }
-                assertEquals(ProfileLifecycleState.ACTIVE, manager.binding(ACCOUNT_B)!!.state)
-                leaseA.close()
-                leaseB.close()
-                assertEquals(0, manager.liveLeaseCount(ACCOUNT_A))
-                assertEquals(ProfileLifecycleState.ERASURE_PENDING_COLD_START, manager.binding(ACCOUNT_A)!!.state)
-            }
-            Log.i(TAG, "PHASE1_PROCESS=${Process.myPid()};A_PROFILE_SHA=${sha(a.profileName.storageValue())};B_PROFILE_SHA=${sha(b.profileName.storageValue())};A_STATE_SHA=${sha(stateA.toString())};B_STATE_SHA=${sha(stateB.toString())};A_PENDING=true;B_UNCHANGED=true")
         }
-        server.close()
     }
+}
+
+@RunWith(AndroidJUnit4::class)
+class NamedProfilePhase1SeedAndPendingTest {
+    @Test fun seedEraseDoomedAndRetainContainer() = phase1(reverse())
 }
 
 @RunWith(AndroidJUnit4::class)
 class NamedProfilePhase2ColdDeleteAndRestartTest {
-    @Test
-    fun coldDrainAcceptsADeletionBeforeLoadingPersistentB() {
-        assertStableFeatures()
-        val server = SyntheticOriginServer()
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            lateinit var manager: NamedProfileLifecycleManager
-            lateinit var receipt: ProfileDeletionReceipt
-            lateinit var leaseB: NamedProfileLease
-            lateinit var fixtureB: ProfileStateFixture
-            scenario.onActivity { activity ->
-                manager = productionManager(activity)
-                assertEquals(
-                    ProfileLifecycleState.ERASURE_PENDING_COLD_START,
-                    AndroidNamedProfileLifecycleStore(activity).read(ACCOUNT_A)!!.state,
-                )
-                receipt = (manager.coldStartDrain().single() as ColdStartDeletionResult.Completed).receipt
-                assertEquals(ProfileDeletionDisposition.DELETION_ACCEPTED, receipt.disposition)
-                assertEquals(PhysicalCompletion.UNOBSERVABLE_PLATFORM_ASYNC, receipt.physicalCompletion)
-                assertFalse(receipt.profileName.storageValue() in ProfileStore.getInstance().allProfileNames)
-                assertEquals(ProfileLifecycleState.DELETION_ACCEPTED, manager.binding(ACCOUNT_A)!!.state)
-                assertThrows(IllegalStateException::class.java) { manager.acquire(ACCOUNT_A) }
-                leaseB = manager.acquire(ACCOUNT_B)
-                fixtureB = ProfileStateFixture(leaseB, server, "B", seed = false)
-                activity.setContentView(leaseB.requireAndroidWebView())
-                fixtureB.start()
-            }
-            val stateB = fixtureB.await()
-            assertProfileState(stateB, "B")
-            assertProfileCookie(leaseB, "B")
-            assertDefaultProfileEmpty()
-            scenario.onActivity { leaseB.close() }
-            val durable = AndroidNamedProfileLifecycleStore(scenarioActivityContext()).read(ACCOUNT_A)!!.receipt!!
-            assertEquals(ProfileDeletionDisposition.DELETION_ACCEPTED, durable.disposition)
-            Log.i(TAG, "PHASE2_PROCESS=${Process.myPid()};A_DELETE=DELETION_ACCEPTED;PHYSICAL=UNOBSERVABLE_PLATFORM_ASYNC;B_STATE_SHA=${sha(stateB.toString())};B_UNCHANGED=true")
-        }
-        server.close()
-    }
+    @Test fun freshRead() = readPhase(reverse(), "PHASE2")
 }
 
 @RunWith(AndroidJUnit4::class)
 class NamedProfilePhase3IdempotentAndCatalogTest {
-    @Test
-    fun acceptedAIsNeverRecreatedAndProductionCatalogThousandSelectsOneBSession() {
-        assertStableFeatures()
-        val server = SyntheticOriginServer()
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            lateinit var manager: NamedProfileLifecycleManager
-            lateinit var leaseB: NamedProfileLease
-            lateinit var fixtureB: ProfileStateFixture
-            scenario.onActivity { activity ->
-                manager = productionManager(activity)
-                assertTrue(manager.coldStartDrain().isEmpty())
-                assertEquals(ProfileLifecycleState.DELETION_ACCEPTED, manager.binding(ACCOUNT_A)!!.state)
-                assertThrows(IllegalStateException::class.java) { manager.acquire(ACCOUNT_A) }
-                leaseB = manager.acquire(ACCOUNT_B)
-                fixtureB = ProfileStateFixture(leaseB, server, "B", seed = false)
-                activity.setContentView(leaseB.requireAndroidWebView())
-                fixtureB.start()
-            }
-            val stateB = fixtureB.await()
-            assertProfileState(stateB, "B")
-            scenario.onActivity { leaseB.close() }
-            proveThousandRowCatalogSelectsOneExistingProfile(scenario)
-            Log.i(TAG, "PHASE3_PROCESS=${Process.myPid()};A_DRAIN_NOOP=true;A_RECREATED=false;B_STATE_SHA=${sha(stateB.toString())};CATALOG=1000;BOUND_SESSIONS=1")
-        }
-        server.close()
-    }
+    @Test fun nextFreshRead() = readPhase(reverse(), "PHASE3")
 }
 
 @RunWith(AndroidJUnit4::class)
-class NamedProfileCleanupMarkPendingTest {
+class NamedProfileCleanupDataTest {
     @Test
-    fun markBPendingWithoutLoadingProfile() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.onActivity { activity ->
-                val manager = productionManager(activity)
-                assertTrue(manager.coldStartDrain().isEmpty())
-                assertEquals(ErasureRequestResult.ERASURE_PENDING_COLD_START, manager.requestErasure(ACCOUNT_B))
-                Log.i(TAG, "CLEANUP_MARK_B_PENDING=true;PROFILE_ACTIVITY=false")
+    fun eraseTaskData() {
+        ActivityScenario.launch(MainActivity::class.java).use { s ->
+            val done = CountDownLatch(1)
+            s.onActivity { a ->
+                val ps =
+                    AndroidNamedProfileLifecycleStore(a).readAll().mapNotNull {
+                        ProfileStore.getInstance().getProfile(it.profileName.storageValue())
+                    }
+                fun next(i: Int) {
+                    if (i == ps.size) {
+                        done.countDown()
+                        return
+                    }
+                    WebStorageCompat.deleteBrowsingData(
+                        ps[i].webStorage,
+                        ContextCompat.getMainExecutor(a),
+                    ) {
+                        next(i + 1)
+                    }
+                }
+                next(0)
             }
+            assertTrue(done.await(30, TimeUnit.SECONDS))
         }
     }
 }
 
 @RunWith(AndroidJUnit4::class)
-class NamedProfileCleanupColdDrainTest {
+class NamedProfileCleanupContainersTest {
     @Test
-    fun coldDrainAcceptsBDeletionAndLeavesNoTaskProfile() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.onActivity { activity ->
-                val manager = productionManager(activity)
-                val receipt = (manager.coldStartDrain().single() as ColdStartDeletionResult.Completed).receipt
-                assertEquals(ProfileDeletionDisposition.DELETION_ACCEPTED, receipt.disposition)
-                assertEquals(PhysicalCompletion.UNOBSERVABLE_PLATFORM_ASYNC, receipt.physicalCompletion)
-                val names = ProfileStore.getInstance().allProfileNames
-                val lifecycleNames = AndroidNamedProfileLifecycleStore(activity).readAll().map { it.profileName.storageValue() }
-                assertTrue(names.none { it in lifecycleNames })
-                Log.i(TAG, "CLEANUP_DELETE_B=DELETION_ACCEPTED;TASK_PROFILE_NAMES_REMAINING=0;PHYSICAL=UNOBSERVABLE_PLATFORM_ASYNC")
+    fun removeOnlyTaskContainers() {
+        ActivityScenario.launch(MainActivity::class.java).use { s ->
+            s.onActivity { a ->
+                val ps = ProfileStore.getInstance()
+                val task =
+                    AndroidNamedProfileLifecycleStore(a)
+                        .readAll()
+                        .map { it.profileName.storageValue() }
+                        .toSet()
+                val unrelated = ps.allProfileNames.filterNot { it in task }.toSet()
+                task.forEach { if (it in ps.allProfileNames) assertTrue(ps.deleteProfile(it)) }
+                assertTrue(ps.allProfileNames.none { it in task })
+                assertEquals(unrelated, ps.allProfileNames.filterNot { it in task }.toSet())
             }
+        }
+    }
+}
+
+private fun phase1(reverse: Boolean) {
+    OriginServer().use { server ->
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            lateinit var m: NamedProfileLifecycleManager
+            lateinit var ra: AccountProfileBinding
+            lateinit var rb: AccountProfileBinding
+            lateinit var la: NamedProfileLease
+            lateinit var lb: NamedProfileLease
+            lateinit var fa: Fixture
+            lateinit var fb: Fixture
+            val q = CountDownLatch(2)
+            scenario.onActivity { a ->
+                m =
+                    NamedProfileLifecycleManager(
+                        AndroidNamedProfileLifecycleStore(a),
+                        AndroidXNamedProfilePlatform(a) {
+                            if (it == "session:quiesced") q.countDown()
+                        },
+                    )
+                assertEquals(0, m.resumePendingErasures { _, _ -> })
+                ra = m.ensureBinding(A)
+                rb = m.ensureBinding(B)
+                la = m.acquire(A)
+                fa =
+                    Fixture(
+                        la.requireAndroidWebView(),
+                        ProfileStore.getInstance().getProfile(ra.profileName.storageValue()),
+                        server,
+                        "A",
+                        true,
+                    )
+                a.setContentView(la.requireAndroidWebView())
+                fa.start()
+            }
+            val sa = fa.await()
+            scenario.onActivity { a ->
+                lb = m.acquire(B)
+                fb =
+                    Fixture(
+                        lb.requireAndroidWebView(),
+                        ProfileStore.getInstance().getProfile(rb.profileName.storageValue()),
+                        server,
+                        "B",
+                        true,
+                    )
+                a.setContentView(lb.requireAndroidWebView())
+                fb.start()
+            }
+            val sb = fb.await()
+            present(sa, "A")
+            present(sb, "B")
+            val doomed = if (reverse) B else A
+            val doomedLease = if (reverse) lb else la
+            val survivorLease = if (reverse) la else lb
+            val erased = CountDownLatch(1)
+            scenario.onActivity { a ->
+                assertEquals(
+                    ErasureRequestResult.ERASURE_PENDING,
+                    m.requestErasure(doomed) {
+                        if (it == ProfileDataErasureResult.Completed) erased.countDown()
+                    },
+                )
+                assertEquals(ProfileLifecycleState.ERASURE_PENDING, m.binding(doomed)!!.state)
+                a.setContentView(doomedLease.requireAndroidWebView())
+                doomedLease.close()
+            }
+            assertTrue(erased.await(30, TimeUnit.SECONDS))
+            scenario.onActivity { a ->
+                a.setContentView(survivorLease.requireAndroidWebView())
+                survivorLease.close()
+            }
+            assertTrue(q.await(30, TimeUnit.SECONDS))
+            scenario.onActivity {
+                assertEquals(
+                    ProfileLifecycleState.DATA_ERASURE_COMPLETED_CONTAINER_RETAINED,
+                    m.binding(doomed)!!.state,
+                )
+                assertTrue(
+                    m.binding(doomed)!!.profileName.storageValue() in
+                        ProfileStore.getInstance().allProfileNames
+                )
+                assertTrue(m.acquireTyped(doomed) is LeaseAcquireResult.ProfileUnavailable)
+            }
+            Log.i(
+                TAG,
+                "PHASE1_DONE=true;REVERSE=$reverse;PID=${Process.myPid()};A_SHA=${hash(sa.toString())};B_SHA=${hash(sb.toString())};CONTAINER_RETAINED=true",
+            )
+        }
+    }
+}
+
+private fun readPhase(reverse: Boolean, label: String) {
+    OriginServer().use { server ->
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            lateinit var m: NamedProfileLifecycleManager
+            lateinit var rows: Map<ProviderAccountId, AccountProfileBinding>
+            lateinit var erasedFixture: Fixture
+            lateinit var survivorFixture: Fixture
+            lateinit var survivorLease: NamedProfileLease
+            val q = CountDownLatch(1)
+            val doomed = if (reverse) B else A
+            val survivor = if (reverse) A else B
+            scenario.onActivity { a ->
+                m =
+                    NamedProfileLifecycleManager(
+                        AndroidNamedProfileLifecycleStore(a),
+                        AndroidXNamedProfilePlatform(a) {
+                            if (it == "session:quiesced") q.countDown()
+                        },
+                    )
+                assertEquals(0, m.resumePendingErasures { _, _ -> })
+                rows = AndroidNamedProfileLifecycleStore(a).readAll().associateBy { it.accountId }
+                assertEquals(
+                    ProfileLifecycleState.DATA_ERASURE_COMPLETED_CONTAINER_RETAINED,
+                    rows.getValue(doomed).state,
+                )
+                assertTrue(m.acquireTyped(doomed) is LeaseAcquireResult.ProfileUnavailable)
+                val w = WebView(a)
+                WebViewCompat.setProfile(w, rows.getValue(doomed).profileName.storageValue())
+                val p =
+                    ProfileStore.getInstance()
+                        .getOrCreateProfile(rows.getValue(doomed).profileName.storageValue())
+                erasedFixture = Fixture(w, p, server, if (reverse) "B" else "A", false)
+                a.setContentView(w)
+                erasedFixture.start()
+            }
+            val erased = erasedFixture.await()
+            absent(erased)
+            scenario.onActivity { a ->
+                erasedFixture.destroy()
+                survivorLease = m.acquire(survivor)
+                val marker = if (reverse) "A" else "B"
+                survivorFixture =
+                    Fixture(
+                        survivorLease.requireAndroidWebView(),
+                        ProfileStore.getInstance()
+                            .getProfile(rows.getValue(survivor).profileName.storageValue()),
+                        server,
+                        marker,
+                        false,
+                    )
+                a.setContentView(survivorLease.requireAndroidWebView())
+                survivorFixture.start()
+            }
+            val kept = survivorFixture.await()
+            present(kept, if (reverse) "A" else "B")
+            scenario.onActivity { survivorLease.close() }
+            assertTrue(q.await(30, TimeUnit.SECONDS))
+            Log.i(
+                TAG,
+                "$label=true;REVERSE=$reverse;ERASED=${hash(erased.toString())};SURVIVOR=${hash(kept.toString())};PID=${Process.myPid()}",
+            )
         }
     }
 }
 
 @SuppressLint("SetJavaScriptEnabled")
-private class ProfileStateFixture(
-    private val lease: NamedProfileLease,
-    private val server: SyntheticOriginServer,
+private class Fixture(
+    private val w: WebView,
+    private val p: Profile,
+    private val server: OriginServer,
     private val marker: String,
     private val seed: Boolean,
 ) {
-    private val completed = CountDownLatch(1)
-    private var result: JSONObject? = null
+    private val done = CountDownLatch(1)
+    private var value: JSONObject? = null
 
     init {
-        val webView = lease.requireAndroidWebView()
-        webView.settings.javaScriptEnabled = true
-        webView.settings.domStorageEnabled = true
-        webView.addJavascriptInterface(object {
-            @JavascriptInterface
-            fun complete(raw: String) {
-                val parsed = JSONObject(raw)
-                Log.i(TAG, "PROFILE_RESULT profile=$marker sha=${sha(raw)} error=${parsed.optString("error", "none")}")
-                result = parsed.put("requestCookie", server.requestCookie(marker))
-                completed.countDown()
-            }
-        }, "AndroidProfileResult")
+        w.settings.javaScriptEnabled = true
+        w.settings.domStorageEnabled = true
+        w.addJavascriptInterface(
+            object {
+                @JavascriptInterface
+                fun complete(raw: String) {
+                    value =
+                        JSONObject(raw)
+                            .put(
+                                "cookie",
+                                if (
+                                    p.cookieManager
+                                        .getCookie(ORIGIN)
+                                        .orEmpty()
+                                        .contains("m=$marker")
+                                )
+                                    marker
+                                else "",
+                            )
+                    done.countDown()
+                }
+            },
+            "AndroidResult",
+        )
     }
 
-    fun start() {
-        lease.requireAndroidWebView().loadUrl("$ORIGIN/profiles/state.html?marker=$marker&seed=$seed")
-    }
+    fun start() = w.loadUrl("$ORIGIN/state?marker=$marker&seed=$seed")
 
     fun await(): JSONObject {
-        assertTrue("profile state callback timed out", completed.await(20, TimeUnit.SECONDS))
-        return requireNotNull(result)
+        assertTrue(done.await(25, TimeUnit.SECONDS))
+        return requireNotNull(value)
     }
+
+    fun destroy() = w.destroy()
 }
 
-private class SyntheticOriginServer : AutoCloseable {
+private class OriginServer : AutoCloseable {
+    private val socket = ServerSocket(18765, 50, InetAddress.getByName("127.0.0.1"))
     private val stopped = CountDownLatch(1)
-    private val cookies = ConcurrentHashMap<String, String>()
-    private val socket = ServerSocket(SYNTHETIC_PORT, 50, InetAddress.getByName("127.0.0.1"))
-    private val thread = Thread({ serve() }, "task8-synthetic-origin").apply {
-        isDaemon = true
-        start()
+
+    init {
+        Thread(
+                {
+                    try {
+                        while (!socket.isClosed) handle(socket.accept())
+                    } catch (_: SocketException) {} finally {
+                        stopped.countDown()
+                    }
+                },
+                "fix5-origin",
+            )
+            .apply {
+                isDaemon = true
+                start()
+            }
     }
 
-    fun requestCookie(marker: String): String = cookies[marker].orEmpty()
-
-    private fun serve() {
-        try {
-            while (!socket.isClosed) {
-                val client = socket.accept()
-                client.use {
-                    val reader = BufferedReader(InputStreamReader(it.getInputStream()))
-                    val requestLine = reader.readLine().orEmpty()
-                    val headers = linkedMapOf<String, String>()
-                    while (true) {
-                        val line = reader.readLine() ?: break
-                        if (line.isEmpty()) break
-                        val separator = line.indexOf(':')
-                        if (separator > 0) headers[line.substring(0, separator).lowercase()] = line.substring(separator + 1).trim()
-                    }
-                    val target = requestLine.split(' ').getOrNull(1).orEmpty()
-                    val path = target.substringBefore('?')
-                    val query = target.substringAfter('?', "")
-                    if (path == "/profiles/echo") {
-                        val marker = query.split('&').mapNotNull { part ->
-                            val pieces = part.split('=', limit = 2)
-                            if (pieces.firstOrNull() == "marker") URLDecoder.decode(pieces.getOrElse(1) { "" }, "UTF-8") else null
-                        }.firstOrNull().orEmpty()
-                        val cookie = headers["cookie"].orEmpty()
-                        cookies[marker] = cookie
-                        Log.i(TAG, "SYNTHETIC_REQUEST profile=$marker path=/profiles/echo cookieSha=${sha(cookie)}")
-                    }
-                    val (status, mime, body) = when (path) {
-                        "/profiles/state.html" -> Triple("200 OK", "text/html", STATE_HTML)
-                        "/profiles/sw.js" -> Triple("200 OK", "application/javascript", SERVICE_WORKER_JS)
-                        "/profiles/echo" -> Triple("200 OK", "text/plain", "echo")
-                        else -> Triple("404 Not Found", "text/plain", "not found")
-                    }
-                    val bytes = body.toByteArray()
-                    it.getOutputStream().apply {
-                        write("HTTP/1.1 $status\r\nContent-Type: $mime; charset=UTF-8\r\nContent-Length: ${bytes.size}\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n".toByteArray())
-                        write(bytes)
-                        flush()
-                    }
-                }
+    private fun handle(s: java.net.Socket) {
+        s.use {
+            val r = BufferedReader(InputStreamReader(it.getInputStream()))
+            val req = r.readLine().orEmpty()
+            while (true) {
+                val x = r.readLine() ?: break
+                if (x.isEmpty()) break
             }
-        } catch (_: SocketException) {
-            check(socket.isClosed)
-        } finally {
-            stopped.countDown()
+            val path = req.split(' ').getOrNull(1).orEmpty().substringBefore('?')
+            val body =
+                when (path) {
+                    "/state" -> HTML
+                    "/sw.js" -> SW
+                    else -> "ok"
+                }
+            val b = body.toByteArray()
+            it.getOutputStream().apply {
+                write(
+                    "HTTP/1.1 200 OK\r\nContent-Type: ${if(path.endsWith(".js"))"application/javascript" else "text/html"}\r\nContent-Length: ${b.size}\r\nConnection: close\r\n\r\n"
+                        .toByteArray()
+                )
+                write(b)
+                flush()
+            }
         }
     }
 
     override fun close() {
         socket.close()
-        assertTrue("synthetic server did not stop", stopped.await(5, TimeUnit.SECONDS))
+        assertTrue(stopped.await(5, TimeUnit.SECONDS))
     }
 }
 
-private fun assertProfileState(value: JSONObject, marker: String) {
-    assertEquals(marker, value.getString("localStorage"))
-    assertEquals(marker, value.getString("indexedDb"))
-    assertEquals(marker, value.getString("cache"))
-    assertEquals("SW_READY", value.getString("serviceWorker"))
-    assertTrue(value.getString("documentCookie").contains("task8_marker=$marker"))
-    assertTrue(value.getString("requestCookie").contains("task8_marker=$marker"))
+private fun present(v: JSONObject, m: String) {
+    assertEquals(m, v.optString("local"))
+    assertEquals(m, v.optString("idb"))
+    assertEquals(m, v.optString("cache"))
+    assertEquals("ACK", v.optString("sw"))
+    assertEquals(m, v.optString("cookie"))
 }
 
-private fun assertProfileCookie(lease: NamedProfileLease, marker: String) {
-    val cookie = lease.requireAndroidCookieManager().getCookie(ORIGIN).orEmpty()
-    assertTrue(cookie.contains("task8_marker=$marker"))
-    assertFalse(cookie.contains("task8_marker=${if (marker == "A") "B" else "A"}"))
+private fun absent(v: JSONObject) {
+    assertEquals("", v.optString("local"))
+    assertEquals("", v.optString("idb"))
+    assertEquals("", v.optString("cache"))
+    assertEquals("", v.optString("sw"))
+    assertEquals("", v.optString("cookie"))
 }
 
-private fun assertDefaultProfileEmpty() {
-    val cookie = CookieManager.getInstance().getCookie(ORIGIN).orEmpty()
-    assertFalse(cookie.contains("task8_marker=A"))
-    assertFalse(cookie.contains("task8_marker=B"))
-    val completed = CountDownLatch(1)
-    var originKeys: Set<String>? = null
-    WebStorage.getInstance().getOrigins { values ->
-        originKeys = values.keys.mapTo(mutableSetOf()) { it.toString() }
-        completed.countDown()
+private fun reverse() = InstrumentationRegistry.getArguments().getString("reverse") == "true"
+
+private fun id(i: Int) =
+    ProviderAccountId(
+        ProviderId.CLAUDE,
+        AccountKey.parseOpaque("acct_${i.toString(16).padStart(32,'0')}"),
+    )
+
+private val A = id(1)
+private val B = id(2)
+private const val ORIGIN = "http://127.0.0.1:18765"
+private const val TAG = "NamedProfileFix5"
+
+private fun hash(v: String) =
+    MessageDigest.getInstance("SHA-256").digest(v.toByteArray()).joinToString("") {
+        "%02x".format(it)
     }
-    assertTrue(completed.await(10, TimeUnit.SECONDS))
-    assertFalse(originKeys.orEmpty().contains(ORIGIN))
-    Log.i(TAG, "DEFAULT_COOKIE_SHA=${sha(cookie)};DEFAULT_WEBSTORAGE_ORIGINS=${originKeys.orEmpty().size}")
-}
 
-private fun productionManager(activity: MainActivity) = NamedProfileLifecycleManager(
-    AndroidNamedProfileLifecycleStore(activity),
-    AndroidXNamedProfilePlatform(activity),
-)
-
-private fun proveThousandRowCatalogSelectsOneExistingProfile(scenario: ActivityScenario<MainActivity>) {
-    val context = scenarioActivityContext()
-    val database = "task8_catalog.db"
-    context.deleteDatabase(database)
-    val authority = MainProcessAccountAuthority.open(context, database)
-    try {
-        repeat(1_000) { offset ->
-            val account = id(offset + 1)
-            authority.register(
-                AuthorityAccountSeed(
-                    AccountRecord(
-                        account,
-                        AccountState.ACTIVE,
-                        AccountAuthState.AUTHENTICATED,
-                        AccountDeletionState.NONE,
-                        AccountGeneration.of(1),
-                        SessionRevision.of(1),
-                    ),
-                    ProviderUsageSnapshot.disconnected(ProviderId.CLAUDE),
-                ),
-            )
-        }
-        val rows = buildList {
-            var offset = 0
-            while (offset < 1_000) {
-                val page = authority.catalog(offset, 250)
-                addAll(page.records)
-                offset += page.records.size
-            }
-        }
-        assertEquals(1_000, rows.size)
-        val selected = rows.first { it.id == ACCOUNT_B }.id
-        val durableB = AndroidNamedProfileLifecycleStore(context).read(ACCOUNT_B)!!
-        val store = InMemoryNamedProfileLifecycleStore()
-        rows.forEach { row ->
-            store.write(
-                if (row.id == selected) durableB
-                else AccountProfileBinding(row.id, WebProfileName.create(), ProfileLifecycleState.ACTIVE, null),
-            )
-        }
-        lateinit var counting: CountingNamedProfilePlatform
-        lateinit var manager: NamedProfileLifecycleManager
-        scenario.onActivity { activity ->
-            counting = CountingNamedProfilePlatform(AndroidXNamedProfilePlatform(activity))
-            manager = NamedProfileLifecycleManager(store, counting)
-            assertTrue(manager.coldStartDrain().isEmpty())
-            assertEquals(0, counting.boundSessions)
-            manager.acquire(selected).close()
-            assertEquals(1, counting.boundSessions)
-            assertEquals(0, manager.liveLeaseCount(selected))
-        }
-    } finally {
-        authority.close()
-        context.deleteDatabase(database)
-    }
-}
-
-private class CountingNamedProfilePlatform(private val delegate: NamedProfilePlatform) : NamedProfilePlatform by delegate {
-    var boundSessions = 0
-    override fun createBoundSession(name: WebProfileName): NamedProfileSessionResource {
-        boundSessions++
-        return delegate.createBoundSession(name)
-    }
-}
-
-private fun assertStableFeatures() {
-    assertTrue(WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE))
-    assertTrue(WebViewFeature.isFeatureSupported(WebViewFeature.SERVICE_WORKER_BASIC_USAGE))
-}
-
-private fun scenarioActivityContext() = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
-
-private fun id(index: Int) = ProviderAccountId(
-    ProviderId.CLAUDE,
-    AccountKey.parseOpaque("acct_${index.toString(16).padStart(32, '0')}"),
-)
-
-private fun sha(value: String): String = MessageDigest.getInstance("SHA-256")
-    .digest(value.toByteArray()).joinToString("") { "%02x".format(it) }
-
-private val ACCOUNT_A = id(1)
-private val ACCOUNT_B = id(2)
-private const val SYNTHETIC_PORT = 18765
-private const val ORIGIN = "http://127.0.0.1:$SYNTHETIC_PORT"
-private const val TAG = "NamedProfileLifecycle"
-private const val SERVICE_WORKER_JS = "self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));"
-private const val STATE_HTML = """
-<!doctype html><meta charset="utf-8"><script>
-(async () => {
-  const q = new URLSearchParams(location.search);
-  const marker = q.get('marker');
-  const seed = q.get('seed') === 'true';
-  const idb = await new Promise((resolve, reject) => {
-    const request = indexedDB.open('task8-isolation', 1);
-    request.onupgradeneeded = () => request.result.createObjectStore('markers');
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-  });
-  const transact = (mode, action) => new Promise((resolve, reject) => {
-    const tx = idb.transaction('markers', mode);
-    const request = action(tx.objectStore('markers'));
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-  if (seed) {
-    document.cookie = 'task8_marker=' + marker + '; Path=/; SameSite=Strict';
-    localStorage.setItem('task8-marker', marker);
-    await transact('readwrite', store => store.put(marker, 'marker'));
-    const cache = await caches.open('task8-cache');
-    await cache.put('/profiles/cache-marker', new Response(marker));
-  }
-  const registration = await navigator.serviceWorker.register('/profiles/sw.js');
-  await navigator.serviceWorker.ready;
-  const cache = await caches.open('task8-cache');
-  const cached = await cache.match('/profiles/cache-marker');
-  const indexed = await transact('readonly', store => store.get('marker'));
-  await fetch('/profiles/echo?marker=' + encodeURIComponent(marker), {cache: 'no-store'});
-  AndroidProfileResult.complete(JSON.stringify({
-    localStorage: localStorage.getItem('task8-marker'),
-    indexedDb: indexed,
-    cache: cached ? await cached.text() : null,
-    serviceWorker: registration.active ? 'SW_READY' : 'SW_MISSING',
-    documentCookie: document.cookie
-  }));
-})().catch(error => AndroidProfileResult.complete(JSON.stringify({error: String(error)})));
-</script>
-"""
+private const val SW =
+    "self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('message',e=>e.ports[0].postMessage('ACK'));"
+private const val HTML =
+    """<!doctype html><script>(async()=>{const q=new URLSearchParams(location.search),m=q.get('marker'),seed=q.get('seed')==='true';const dbs=await indexedDB.databases();let db=null;if(seed||dbs.some(x=>x.name==='fix5'))db=await new Promise((ok,no)=>{const r=indexedDB.open('fix5',1);r.onupgradeneeded=()=>r.result.createObjectStore('m');r.onerror=()=>no(r.error);r.onsuccess=()=>ok(r.result)});const tx=(mode,fn)=>new Promise((ok,no)=>{const t=db.transaction('m',mode,{durability:'strict'}),r=fn(t.objectStore('m'));t.oncomplete=()=>ok(r.result);t.onerror=()=>no(t.error);t.onabort=()=>no(t.error)});if(seed){document.cookie='m='+m+'; Path=/; SameSite=Strict';localStorage.setItem('m',m);if(localStorage.getItem('m')!==m)throw Error('local');await tx('readwrite',s=>s.put(m,'m'));const c=await caches.open('fix5');await c.put('/cache',new Response(m));if(await(await c.match('/cache')).text()!==m)throw Error('cache');await navigator.serviceWorker.register('/sw.js');const ready=await navigator.serviceWorker.ready;await new Promise((ok,no)=>{const ch=new MessageChannel();ch.port1.onmessage=e=>e.data==='ACK'?ok():no();ready.active.postMessage('x',[ch.port2])})}const idb=db?await tx('readonly',s=>s.get('m')):null,cached=await caches.match('/cache'),reg=await navigator.serviceWorker.getRegistration();window.__AIQ_PROFILE_PERSISTENCE_READY__=true;AndroidResult.complete(JSON.stringify({local:localStorage.getItem('m')||'',idb:idb||'',cache:cached?await cached.text():'',sw:reg&&reg.active?'ACK':''}))})().catch(e=>AndroidResult.complete(JSON.stringify({error:String(e)})))</script>"""

@@ -64,7 +64,7 @@ class AccountUsageRepositoryFixIteration2Test {
             assertEquals(if (bProvider == ProviderId.CLAUDE) 17 else 18, legacyRemaining(bProvider))
             assertEquals(ACCOUNT_USAGE_PRIMARY_NONE, primaryToken(name, noneProvider))
             assertEquals(bId.accountKey.storageValue(), primaryToken(name, bProvider))
-            assertEquals(5, userVersion(name))
+            assertEquals(6, userVersion(name))
             resumeMigration(name).close()
             assertNull(legacyRemaining(noneProvider))
             schemaHashes += "$beforeHash:${schemaHash(name)}"
@@ -90,7 +90,7 @@ class AccountUsageRepositoryFixIteration2Test {
             downgradeSchema(upgraded, oldVersion)
             MainProcessAccountAuthority.open(context, upgraded).use { it.catalog(0, 1) }
             assertEquals(oldVersion.toString(), freshSchemaHash, schemaHash(upgraded))
-            assertEquals(5, userVersion(upgraded))
+            assertEquals(6, userVersion(upgraded))
         }
 
         clearStorage()

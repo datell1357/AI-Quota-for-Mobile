@@ -100,6 +100,7 @@ internal class AccountAuthorityDatabase(
         db.execSQL("INSERT INTO authority_metadata(singleton_id, display_version) VALUES(1, 0)")
         createMigrationTables(db)
         createAccountUsageTables(db)
+        createNamedProfileTables(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -113,6 +114,7 @@ internal class AccountAuthorityDatabase(
         }
         createAccountUsageTables(db)
         if (oldVersion == 4) backfillParentPrimarySelections(db)
+        createNamedProfileTables(db)
     }
 
     private fun backfillParentPrimarySelections(db: SQLiteDatabase) {
@@ -256,6 +258,20 @@ internal class AccountAuthorityDatabase(
         )
     }
 
+    private fun createNamedProfileTables(db: SQLiteDatabase) {
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS named_profile_lifecycle (
+              provider_id TEXT NOT NULL, account_key TEXT NOT NULL,
+              profile_name TEXT NOT NULL UNIQUE,
+              lifecycle_state TEXT NOT NULL CHECK(lifecycle_state IN ('ACTIVE','ERASURE_PENDING','DATA_ERASURE_COMPLETED_CONTAINER_RETAINED')),
+              receipt_disposition TEXT CHECK(receipt_disposition IS NULL OR receipt_disposition='CONTAINER_RETAINED_EMPTY_NEVER_REUSED'),
+              CHECK((lifecycle_state IN ('ACTIVE','ERASURE_PENDING') AND receipt_disposition IS NULL) OR
+                    (lifecycle_state='DATA_ERASURE_COMPLETED_CONTAINER_RETAINED' AND receipt_disposition='CONTAINER_RETAINED_EMPTY_NEVER_REUSED')),
+              PRIMARY KEY(provider_id,account_key)
+            )
+        """.trimIndent())
+    }
+
     fun canonicalDump(): ByteArray {
         val db = readableDatabase
         val dump = buildString {
@@ -281,6 +297,7 @@ internal class AccountAuthorityDatabase(
             appendTable(db, "account_usage_projection_targets", listOf("provider_id", "target_sha256", "authority_version"), "provider_id")
             appendTable(db, "account_usage_projection_intent", listOf("singleton_id", "authority_version", "claude_sha256", "codex_sha256"), "singleton_id")
             appendTable(db, "legacy_usage_conflicts", listOf("receipt_sha256", "provider_id", "observed_sha256", "expected_sha256", "authority_version"), "provider_id, receipt_sha256")
+            appendTable(db, "named_profile_lifecycle", listOf("provider_id","account_key","profile_name","lifecycle_state","receipt_disposition"), "provider_id,account_key")
         }
         return dump.toByteArray(StandardCharsets.UTF_8)
     }
@@ -309,6 +326,7 @@ internal class AccountAuthorityDatabase(
         appendFields(db, fields, "account_usage_projection_targets", listOf("provider_id", "target_sha256", "authority_version"), "provider_id")
         appendFields(db, fields, "account_usage_projection_intent", listOf("singleton_id", "authority_version", "claude_sha256", "codex_sha256"), "singleton_id")
         appendFields(db, fields, "legacy_usage_conflicts", listOf("receipt_sha256", "provider_id", "observed_sha256", "expected_sha256", "authority_version"), "provider_id, receipt_sha256")
+        appendFields(db, fields, "named_profile_lifecycle", listOf("provider_id","account_key","profile_name","lifecycle_state","receipt_disposition"), "provider_id,account_key")
         return fields
     }
 
@@ -360,11 +378,12 @@ internal class AccountAuthorityDatabase(
         }
     }
 
-    private companion object {
+    internal companion object {
         val ACCOUNT_USAGE_TARGET_PROVIDER_IDS = setOf(
             ProviderId.CLAUDE.storageId,
             ProviderId.CODEX.storageId
         )
-        const val SCHEMA_VERSION = 5
+        const val SCHEMA_VERSION = 6
+        const val DEFAULT_DATABASE_NAME = "ai_quota_accounts_v2.db"
     }
 }

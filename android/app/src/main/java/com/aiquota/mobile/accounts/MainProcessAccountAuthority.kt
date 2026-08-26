@@ -355,7 +355,7 @@ class MainProcessAccountAuthority private constructor(
     }
 
     companion object {
-        private const val DEFAULT_DATABASE_NAME = "ai_quota_accounts_v2.db"
+        private const val DEFAULT_DATABASE_NAME = AccountAuthorityDatabase.DEFAULT_DATABASE_NAME
         private const val MAX_PAGE_SIZE = 250
 
         fun open(context: Context): MainProcessAccountAuthority =
