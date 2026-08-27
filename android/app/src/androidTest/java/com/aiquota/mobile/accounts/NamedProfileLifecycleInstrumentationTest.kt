@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Bitmap
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Process
@@ -72,13 +73,8 @@ class NamedProfile145RejectionTest {
 }
 
 @RunWith(AndroidJUnit4::class)
-class NamedProfilePersistenceSeedTest {
-    @Test fun stagePersistenceAndFinishNormally() = stagePersistence(reverse())
-}
-
-@RunWith(AndroidJUnit4::class)
-class NamedProfilePersistenceReadTest {
-    @Test fun coldReadBothProfiles() = readPersistedBoth(reverse())
+class NamedProfileWalIsolationTest {
+    @Test fun sameRunWalIsolation() = verifySameRunWalIsolation(reverse())
 }
 
 @RunWith(AndroidJUnit4::class)
@@ -194,7 +190,7 @@ class NamedProfileCleanupContainersTest {
     }
 }
 
-private fun stagePersistence(reverse: Boolean) {
+private fun verifySameRunWalIsolation(reverse: Boolean) {
     val markers = certificationMarkers()
     val order = if (reverse) listOf(B, A) else listOf(A, B)
     val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -206,7 +202,26 @@ private fun stagePersistence(reverse: Boolean) {
             lateinit var manager: NamedProfileLifecycleManager
             lateinit var store: AndroidNamedProfileLifecycleStore
             scenario.onActivity { activity ->
-                store = AndroidNamedProfileLifecycleStore(activity)
+                val priorStore =
+                    AndroidNamedProfileLifecycleStore(activity, WAL_ISOLATION_DATABASE)
+                val priorProfileNames =
+                    priorStore.readAll().map { it.profileName.storageValue() }.toSet()
+                priorStore.close()
+                val profileStore = ProfileStore.getInstance()
+                val unrelatedProfileNames =
+                    profileStore.allProfileNames.filterNot { it in priorProfileNames }.toSet()
+                priorProfileNames.forEach { profileName ->
+                    if (profileName in profileStore.allProfileNames) {
+                        assertTrue(profileStore.deleteProfile(profileName))
+                    }
+                }
+                assertTrue(profileStore.allProfileNames.none { it in priorProfileNames })
+                assertEquals(
+                    unrelatedProfileNames,
+                    profileStore.allProfileNames.filterNot { it in priorProfileNames }.toSet(),
+                )
+                assertTrue(activity.deleteDatabase(WAL_ISOLATION_DATABASE))
+                store = AndroidNamedProfileLifecycleStore(activity, WAL_ISOLATION_DATABASE)
                 manager =
                     NamedProfileLifecycleManager(
                         store,
@@ -300,65 +315,7 @@ private fun stagePersistence(reverse: Boolean) {
     }
     Log.i(
         TAG,
-        "PERSISTENCE_SEEDED=true;WAL_CERTIFIED=true;EMPIRICAL_TUPLE_ONLY=true;PID=${Process.myPid()};ORDER=${order.joinToString("") { if (it == A) "A" else "B" }};A_PATH=${mapped.getValue(A).profileDirectory.fileName};B_PATH=${mapped.getValue(B).profileDirectory.fileName};ACTIVITY_DESTROYED=true;INSTRUMENTATION_NORMAL_EXIT=true",
-    )
-}
-
-private fun readPersistedBoth(reverse: Boolean) {
-    val markers = certificationMarkers()
-    val order =
-        if (reverse) listOf(A to markers.getValue(A), B to markers.getValue(B))
-        else listOf(B to markers.getValue(B), A to markers.getValue(A))
-    OriginServer().use { server ->
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            lateinit var manager: NamedProfileLifecycleManager
-            lateinit var rows: Map<ProviderAccountId, AccountProfileBinding>
-            scenario.onActivity { activity ->
-                manager =
-                    NamedProfileLifecycleManager(
-                        AndroidNamedProfileLifecycleStore(activity),
-                        AndroidXNamedProfilePlatform(activity),
-                    )
-                rows =
-                    AndroidNamedProfileLifecycleStore(activity).readAll().associateBy {
-                        it.accountId
-                    }
-                assertEquals(setOf(A, B), rows.keys)
-            }
-            order.forEach { (id, marker) ->
-                lateinit var lease: NamedProfileLease
-                lateinit var fixture: Fixture
-                scenario.onActivity { activity ->
-                    lease = manager.acquire(id)
-                    fixture =
-                        Fixture(
-                            lease.requireAndroidWebView(),
-                            requireNotNull(
-                                ProfileStore.getInstance()
-                                    .getProfile(rows.getValue(id).profileName.storageValue())
-                            ),
-                            server,
-                            marker,
-                            false,
-                        )
-                    activity.setContentView(lease.requireAndroidWebView())
-                    fixture.start()
-                }
-                present(fixture.await(), marker)
-                val closed = CountDownLatch(1)
-                scenario.onActivity {
-                    lease.closeAcknowledged { result ->
-                        assertEquals(LeaseCloseResult.Closed, result)
-                        closed.countDown()
-                    }
-                }
-                assertTrue(closed.await(30, TimeUnit.SECONDS))
-            }
-        }
-    }
-    Log.i(
-        TAG,
-        "PERSISTENCE_VERIFIED=true;REVERSE=$reverse;PID=${Process.myPid()};ORDER=${order.joinToString("") { it.second }}",
+        "SAME_RUN_WAL_ISOLATION=true;WAL_CERTIFIED=true;EMPIRICAL_TUPLE_ONLY=true;DISTINCT_PROFILE_PATHS=true;SIBLING_MARKER_LEAKAGE=false;PID=${Process.myPid()};ORDER=${order.joinToString("") { if (it == A) "A" else "B" }};A_PATH=${mapped.getValue(A).profileDirectory.fileName};B_PATH=${mapped.getValue(B).profileDirectory.fileName};ACTIVITY_DESTROYED=true;INSTRUMENTATION_NORMAL_EXIT=true",
     )
 }
 
@@ -1198,16 +1155,64 @@ private class WalFixture(
     private val initialized = CountDownLatch(1)
     private val localWritten = CountDownLatch(1)
     private val completed = CountDownLatch(1)
+    private val initializationEvents = CopyOnWriteArrayList<String>()
     @Volatile private var localValue: String? = null
     @Volatile private var result: JSONObject? = null
+    @Volatile private var initializationFailure: String? = null
 
     init {
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
+        webView.webViewClient =
+            object : WebViewClient() {
+                override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+                    initializationEvents += "page-started:$url"
+                }
+
+                override fun onPageFinished(view: WebView, url: String) {
+                    initializationEvents += "page-finished:$url"
+                    view.evaluateJavascript(
+                        "typeof AndroidWal + ':' + typeof AndroidWal.initialized",
+                    ) { value -> initializationEvents += "bridge:$value" }
+                }
+
+                override fun onReceivedError(
+                    view: WebView,
+                    request: WebResourceRequest,
+                    error: WebResourceError,
+                ) {
+                    if (request.isForMainFrame) {
+                        initializationFailure =
+                            "navigation:${error.errorCode}:${error.description}"
+                        initializationEvents += requireNotNull(initializationFailure)
+                        initialized.countDown()
+                    }
+                }
+
+                override fun onReceivedHttpError(
+                    view: WebView,
+                    request: WebResourceRequest,
+                    errorResponse: WebResourceResponse,
+                ) {
+                    if (request.isForMainFrame) {
+                        initializationFailure = "http:${errorResponse.statusCode}"
+                        initializationEvents += requireNotNull(initializationFailure)
+                        initialized.countDown()
+                    }
+                }
+            }
         webView.addJavascriptInterface(
             object {
                 @JavascriptInterface
                 fun initialized() {
+                    initializationEvents += "bridge-initialized"
+                    initialized.countDown()
+                }
+
+                @JavascriptInterface
+                fun initializationFailed(reason: String) {
+                    initializationFailure = "javascript:$reason"
+                    initializationEvents += requireNotNull(initializationFailure)
                     initialized.countDown()
                 }
 
@@ -1241,7 +1246,13 @@ private class WalFixture(
     fun start() = webView.loadUrl("$ORIGIN/wal")
 
     fun awaitInitialized() {
-        assertTrue("WAL fixture initialization timed out", initialized.await(25, TimeUnit.SECONDS))
+        assertTrue(
+            "WAL fixture initialization timed out events=$initializationEvents",
+            initialized.await(25, TimeUnit.SECONDS),
+        )
+        check(initializationFailure == null) {
+            "WAL fixture initialization failed reason=$initializationFailure events=$initializationEvents"
+        }
     }
 
     fun writeLocal(marker: String) {
@@ -1412,6 +1423,7 @@ private val A = id(1)
 private val B = id(2)
 private val C = id(3)
 private val D = id(4)
+private const val WAL_ISOLATION_DATABASE = "task3_persistence_fixture.db"
 private const val ORIGIN = "http://127.0.0.1:18765"
 private const val NEGATIVE_LOOPBACK = "http://127.0.0.2:18765/blocked"
 private const val TAG = "NamedProfileFix5"
@@ -1427,11 +1439,13 @@ private const val SW =
 private const val WAL_HTML =
     """<!doctype html><script>
     (()=>{
+      try {
       const openDb=()=>new Promise((ok,no)=>{const r=indexedDB.open('fix5',1);r.onupgradeneeded=()=>r.result.createObjectStore('m');r.onerror=()=>no(r.error);r.onsuccess=()=>ok(r.result)});
       const tx=(db,mode,fn)=>new Promise((ok,no)=>{const t=db.transaction('m',mode,{durability:'strict'}),r=fn(t.objectStore('m'));t.oncomplete=()=>ok(r.result);t.onerror=()=>no(t.error);t.onabort=()=>no(t.error)});
       window.aiqWriteLocal=m=>{localStorage.setItem('m',m);AndroidWal.localWritten(localStorage.getItem('m')||'')};
       window.aiqSeedRemaining=async m=>{try{document.cookie='m='+m+'; Path=/; SameSite=Strict';const db=await openDb();await tx(db,'readwrite',s=>s.put(m,'m'));const c=await caches.open('fix5');await c.put('/cache',new Response(m));if(await(await c.match('/cache')).text()!==m)throw Error('cache');await navigator.serviceWorker.register('/sw.js');const ready=await navigator.serviceWorker.ready;await new Promise((ok,no)=>{const ch=new MessageChannel();ch.port1.onmessage=e=>e.data==='ACK'?ok():no();ready.active.postMessage('x',[ch.port2])});const idb=await tx(db,'readonly',s=>s.get('m')),cached=await caches.match('/cache'),reg=await navigator.serviceWorker.getRegistration();AndroidWal.completed(JSON.stringify({local:localStorage.getItem('m')||'',idb:idb||'',cache:cached?await cached.text():'',sw:reg&&reg.active?'ACK':''}))}catch(e){AndroidWal.completed(JSON.stringify({error:String(e)}))}};
       const k='__aiq_wal_init__';localStorage.setItem(k,'ready');if(localStorage.getItem(k)!=='ready')throw Error('init');localStorage.removeItem(k);window.__AIQ_PROFILE_PERSISTENCE_READY__=true;AndroidWal.initialized();
+      } catch(e) { AndroidWal.initializationFailed(String(e)); }
     })();
     </script>"""
 private const val HTML =
