@@ -1,5 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <application>
+    <service
+      android:name=".accounts.NamedProfileAuthorityProbeService"
+      android:exported="false"
+      android:process=":named_profile_authority_probe" />
     <activity
       android:name=".debug.ProviderLoginDebugActivity"
       android:exported="true" />
