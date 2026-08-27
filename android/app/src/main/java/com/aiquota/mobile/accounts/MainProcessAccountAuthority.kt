@@ -7,6 +7,9 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.os.Build
 import android.os.Process
+import androidx.annotation.RequiresApi
+import com.aiquota.mobile.ProcessNameCandidate
+import com.aiquota.mobile.selectCurrentProcessName
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderUsageSnapshot
 import com.aiquota.mobile.providers.ProviderSnapshotCodec
@@ -404,16 +407,46 @@ class MainProcessAccountAuthority private constructor(
 
         private fun isMainProcess(context: Context): Boolean {
             val expected = context.applicationInfo.processName
-            val current = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                Application.getProcessName()
-            } else {
-                val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-                manager?.runningAppProcesses
-                    ?.firstOrNull { it.pid == Process.myPid() }
-                    ?.processName
-            }
-            return current == expected
+            return isMainProcess(
+                expectedProcessName = expected,
+                sdkInt = Build.VERSION.SDK_INT,
+                currentPid = Process.myPid(),
+                currentUid = Process.myUid(),
+                candidates = {
+                    val manager =
+                        context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+                    manager?.runningAppProcesses
+                        .orEmpty()
+                        .map {
+                            ProcessNameCandidate(
+                                pid = it.pid,
+                                uid = it.uid,
+                                processName = it.processName,
+                            )
+                        }
+                },
+                modernProcessName = ::modernProcessName,
+            )
         }
+
+        internal fun isMainProcess(
+            expectedProcessName: String,
+            sdkInt: Int,
+            currentPid: Int,
+            currentUid: Int,
+            candidates: () -> Iterable<ProcessNameCandidate>,
+            modernProcessName: () -> String,
+        ): Boolean =
+            selectCurrentProcessName(
+                sdkInt = sdkInt,
+                currentPid = currentPid,
+                currentUid = currentUid,
+                candidates = candidates,
+                modernProcessName = modernProcessName,
+            ) == expectedProcessName
+
+        @RequiresApi(Build.VERSION_CODES.P)
+        private fun modernProcessName(): String = Application.getProcessName()
     }
 }
 

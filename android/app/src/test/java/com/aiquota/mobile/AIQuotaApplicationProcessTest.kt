@@ -6,10 +6,14 @@ import org.junit.Test
 class AIQuotaApplicationProcessTest {
     @Test
     fun `api 26 uses the legacy provider without invoking the modern api`() {
-        val processName = selectApplicationProcessName(
+        val processName = selectCurrentProcessName(
             sdkInt = 26,
+            currentPid = 42,
+            currentUid = 1001,
+            candidates = {
+                listOf(ProcessNameCandidate(42, 1001, "com.aiquota.mobile"))
+            },
             modernProcessName = { throw AssertionError("API 28 provider invoked on API 26") },
-            legacyProcessName = { "com.aiquota.mobile" },
         )
 
         assertEquals("com.aiquota.mobile", processName)

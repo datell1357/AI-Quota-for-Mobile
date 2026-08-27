@@ -11,7 +11,10 @@ import android.os.Process
 import android.os.ResultReceiver
 import android.util.Log
 import android.webkit.WebView
+import androidx.annotation.RequiresApi
+import com.aiquota.mobile.ProcessNameCandidate
 import com.aiquota.mobile.local.ProviderId
+import com.aiquota.mobile.selectCurrentProcessName
 import kotlin.coroutines.resume
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -23,7 +26,23 @@ object GlmIsolatedWebViewProfile {
     private const val DATA_DIRECTORY_SUFFIX = "glm_webview"
 
     fun configureIfNeeded(context: Context): Boolean {
-        val isGlmIsolatedProcess = currentProcessName(context).endsWith(PROCESS_SUFFIX)
+        val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val isGlmIsolatedProcess =
+            isGlmIsolatedProcess(
+                sdkInt = Build.VERSION.SDK_INT,
+                currentPid = Process.myPid(),
+                currentUid = Process.myUid(),
+                candidates = {
+                    manager.runningAppProcesses.orEmpty().map {
+                        ProcessNameCandidate(
+                            pid = it.pid,
+                            uid = it.uid,
+                            processName = it.processName,
+                        )
+                    }
+                },
+                modernProcessName = ApplicationProcessName::value,
+            )
         if (!isGlmIsolatedProcess) return false
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             WebView.setDataDirectorySuffix(DATA_DIRECTORY_SUFFIX)
@@ -43,19 +62,28 @@ object GlmIsolatedWebViewProfile {
             }
     }
 
-    private fun currentProcessName(context: Context): String {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) return ApplicationProcessName.value()
-        val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        return manager.runningAppProcesses
-            ?.firstOrNull { it.pid == Process.myPid() }
-            ?.processName
+    internal fun isGlmIsolatedProcess(
+        sdkInt: Int,
+        currentPid: Int,
+        currentUid: Int,
+        candidates: () -> Iterable<ProcessNameCandidate>,
+        modernProcessName: () -> String,
+    ): Boolean =
+        selectCurrentProcessName(
+                sdkInt = sdkInt,
+                currentPid = currentPid,
+                currentUid = currentUid,
+                candidates = candidates,
+                modernProcessName = modernProcessName,
+            )
             .orEmpty()
-    }
+            .endsWith(PROCESS_SUFFIX)
 }
 
 private const val TAG = "GlmIsolatedWebSession"
 
 private object ApplicationProcessName {
+    @RequiresApi(Build.VERSION_CODES.P)
     fun value(): String = android.app.Application.getProcessName()
 }
 

@@ -3,6 +3,7 @@ package com.aiquota.mobile
 import android.app.ActivityManager
 import android.app.Application
 import android.os.Build
+import android.os.Process
 import androidx.annotation.RequiresApi
 import com.aiquota.mobile.accounts.LegacyAccountMigrationRunner
 import com.aiquota.mobile.providers.GlmIsolatedWebViewProfile
@@ -13,10 +14,12 @@ class AIQuotaApplication : Application() {
         val glmIsolatedProcess = GlmIsolatedWebViewProfile.configureIfNeeded(this)
         super.onCreate()
         if (glmIsolatedProcess) return
-        val currentProcessName = selectApplicationProcessName(
+        val currentProcessName = selectCurrentProcessName(
             sdkInt = Build.VERSION.SDK_INT,
+            currentPid = Process.myPid(),
+            currentUid = Process.myUid(),
+            candidates = ::legacyProcessCandidates,
             modernProcessName = ::modernProcessName,
-            legacyProcessName = ::legacyProcessName,
         )
         if (currentProcessName != packageName) return
         if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
@@ -29,25 +32,23 @@ class AIQuotaApplication : Application() {
     @RequiresApi(Build.VERSION_CODES.P)
     private fun modernProcessName(): String = Application.getProcessName()
 
-    private fun legacyProcessName(): String? {
-        val processInfo = ActivityManager.RunningAppProcessInfo()
-        ActivityManager.getMyMemoryState(processInfo)
+    private fun legacyProcessCandidates(): List<ProcessNameCandidate> {
         val activityManager = getSystemService(ActivityManager::class.java)
-        return selectExactProcessName(
-            currentPid = processInfo.pid,
-            currentUid = processInfo.uid,
-            candidates = activityManager.runningAppProcesses.orEmpty().map {
-                ProcessNameCandidate(pid = it.pid, uid = it.uid, processName = it.processName)
-            },
-        )
+        return activityManager.runningAppProcesses.orEmpty().map {
+            ProcessNameCandidate(pid = it.pid, uid = it.uid, processName = it.processName)
+        }
     }
 }
 
-internal fun selectApplicationProcessName(
+internal fun selectCurrentProcessName(
     sdkInt: Int,
+    currentPid: Int,
+    currentUid: Int,
+    candidates: () -> Iterable<ProcessNameCandidate>,
     modernProcessName: () -> String,
-    legacyProcessName: () -> String?,
-): String? = if (sdkInt >= Build.VERSION_CODES.P) modernProcessName() else legacyProcessName()
+): String? =
+    if (sdkInt >= Build.VERSION_CODES.P) modernProcessName()
+    else selectExactProcessName(currentPid, currentUid, candidates())
 
 internal data class ProcessNameCandidate(
     val pid: Int,
