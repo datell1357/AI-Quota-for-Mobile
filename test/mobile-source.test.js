@@ -234,10 +234,10 @@ test("Android release builds fail before packaging placeholder Firebase resource
   assert.match(gradle, /matching \{ task -> task\.name in setOf\("bundleRelease", "assembleRelease"\) \}[\s\S]*dependsOn\(verifyReleaseFirebaseResources\)/);
 });
 
-test("release R8 keeps shrink and optimize disabled while narrowing Android entrypoint keep rules", () => {
+test("release R8 enables shrinking while keeping optimization disabled and narrowing Android entrypoint keep rules", () => {
   const rules = source("android/app/proguard-rules.pro");
 
-  assertContains(rules, "-dontshrink", "release R8 rules");
+  assert.doesNotMatch(rules, /^\s*-dontshrink\s*$/m);
   assertContains(rules, "-dontoptimize", "release R8 rules");
   assert.doesNotMatch(rules, /-keep class com\.aiquota\.mobile\.\*\* extends android\.app\.Activity/);
   assert.doesNotMatch(rules, /-keep class com\.aiquota\.mobile\.\*\* extends android\.app\.Service/);

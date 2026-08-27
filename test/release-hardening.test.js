@@ -111,8 +111,8 @@ test("release builds obfuscate internal classes while preserving runtime entry p
   assert.match(gradle, /release \{[\s\S]*isMinifyEnabled = true[\s\S]*proguardFiles\(/);
   assert.match(gradle, /getDefaultProguardFile\("proguard-android\.txt"\)/);
   assert.match(gradle, /"proguard-rules\.pro"/);
-  assert.match(gradle, /isShrinkResources = false/);
-  assert.match(rules, /-dontshrink/);
+  assert.match(gradle, /isShrinkResources = true/);
+  assert.doesNotMatch(rules, /^\s*-dontshrink\s*$/m);
   assert.match(rules, /-dontoptimize/);
   assert.match(rules, /-keepattributes \*Annotation\*,Signature,InnerClasses,EnclosingMethod/);
   // 매니페스트 컴포넌트는 AGP가 aapt_rules.txt로 자동 keep한다. 여기서는 매니페스트
