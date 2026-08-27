@@ -43,6 +43,27 @@ class NamedProfileFixIteration5Test {
     }
 
     @Test
+    fun `runtime rejects negative missing overflow and extreme components`() {
+        listOf(
+                "-2147483648.0.0.0",
+                "152.-1.7977.54",
+                "152.0.7977",
+                "152.0.7977.54.1",
+                "152..7977.54",
+                "152.0.2147483648.54",
+                "999999999999999999999.0.0.0",
+            )
+            .forEach { version ->
+                assertEquals(
+                    version,
+                    RuntimeSupportReason.VERSION_MALFORMED,
+                    NamedProfileRuntimePolicy.evaluate("com.google.android.webview", version)
+                        .reason,
+                )
+            }
+    }
+
+    @Test
     fun `double probe flip rejects with zero mutation`() {
         var mutations = 0
         val values =

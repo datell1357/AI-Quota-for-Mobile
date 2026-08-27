@@ -84,7 +84,7 @@ class AccountUsageRepositoryFixIteration2Test {
         val fresh = database("fresh-current")
         MainProcessAccountAuthority.open(context, fresh).use { it.catalog(0, 1) }
         val freshSchemaHash = schemaHash(fresh)
-        listOf(1, 2, 3, 4).forEach { oldVersion ->
+        listOf(1, 2, 3, 4, 5).forEach { oldVersion ->
             val upgraded = database("upgrade-$oldVersion")
             MainProcessAccountAuthority.open(context, upgraded).use { it.catalog(0, 1) }
             downgradeSchema(upgraded, oldVersion)
@@ -92,6 +92,21 @@ class AccountUsageRepositoryFixIteration2Test {
             assertEquals(oldVersion.toString(), freshSchemaHash, schemaHash(upgraded))
             assertEquals(6, userVersion(upgraded))
         }
+
+        val malformedV5 = database("malformed-v5")
+        MainProcessAccountAuthority.open(context, malformedV5).use { it.catalog(0, 1) }
+        rawDatabase(malformedV5).use { db ->
+            db.execSQL("DROP TABLE named_profile_lifecycle")
+            db.execSQL("CREATE TABLE named_profile_lifecycle(bad TEXT)")
+            db.execSQL("PRAGMA user_version=5")
+        }
+        assertThrows(SQLiteException::class.java) {
+            MainProcessAccountAuthority.open(context, malformedV5).use { it.catalog(0, 1) }
+        }
+        assertEquals(5, userVersion(malformedV5))
+        rawDatabase(malformedV5).use { it.execSQL("DROP TABLE named_profile_lifecycle") }
+        MainProcessAccountAuthority.open(context, malformedV5).use { it.catalog(0, 1) }
+        assertEquals(6, userVersion(malformedV5))
 
         clearStorage()
         val failing = database("parent-v4-failure")
@@ -112,7 +127,7 @@ class AccountUsageRepositoryFixIteration2Test {
         MainProcessAccountAuthority.open(context, failing).use { it.catalog(0, 1) }
         assertEquals(ACCOUNT_USAGE_PRIMARY_NONE, primaryToken(failing, ProviderId.CLAUDE))
         assertEquals(ACCOUNT_USAGE_PRIMARY_NONE, primaryToken(failing, ProviderId.CODEX))
-        println("QA_FIX2_UPGRADE_SCHEMA_HASH=$freshSchemaHash;PARENT_SCHEMA_PAIRS=${schemaHashes.joinToString(",")};STATE_HASH=${sha256(schemaHashes.joinToString("|").toByteArray())};BACKFILLED_NONE=4;PRESERVED_B=2;UNTOUCHED=2;ROLLBACK=1")
+        println("QA_FIX2_UPGRADE_SCHEMA_HASH=$freshSchemaHash;PARENT_SCHEMA_PAIRS=${schemaHashes.joinToString(",")};STATE_HASH=${sha256(schemaHashes.joinToString("|").toByteArray())};UPGRADES=1,2,3,4,5;MALFORMED_V5_ROLLBACK=1;BACKFILLED_NONE=4;PRESERVED_B=2;UNTOUCHED=2;ROLLBACK=1")
     }
 
     @Test
@@ -320,6 +335,7 @@ class AccountUsageRepositoryFixIteration2Test {
 
     private fun downgradeSchema(name: String, version: Int) {
         rawDatabase(name).use { db ->
+            db.execSQL("DROP TABLE named_profile_lifecycle")
             if (version <= 3) {
                 listOf(
                     "legacy_usage_conflicts", "account_usage_projection_intent",

@@ -114,7 +114,58 @@ internal class AccountAuthorityDatabase(
         }
         createAccountUsageTables(db)
         if (oldVersion == 4) backfillParentPrimarySelections(db)
+        if (tableExists(db, "named_profile_lifecycle")) validateNamedProfileTable(db)
         createNamedProfileTables(db)
+    }
+
+    private fun tableExists(db: SQLiteDatabase, table: String): Boolean =
+        db.rawQuery(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+                arrayOf(table),
+            )
+            .use { it.moveToFirst() }
+
+    private fun validateNamedProfileTable(db: SQLiteDatabase) {
+        val columns = buildList {
+            db.rawQuery("PRAGMA table_info(named_profile_lifecycle)", null).use { cursor ->
+                while (cursor.moveToNext()) {
+                    add(
+                        listOf(
+                            cursor.getString(1),
+                            cursor.getString(2).uppercase(),
+                            cursor.getInt(3).toString(),
+                            cursor.getInt(5).toString(),
+                        )
+                    )
+                }
+            }
+        }
+        val expected =
+            listOf(
+                listOf("provider_id", "TEXT", "1", "1"),
+                listOf("account_key", "TEXT", "1", "2"),
+                listOf("profile_name", "TEXT", "1", "0"),
+                listOf("lifecycle_state", "TEXT", "1", "0"),
+                listOf("receipt_disposition", "TEXT", "0", "0"),
+            )
+        val sql =
+            db.rawQuery(
+                    "SELECT sql FROM sqlite_master WHERE type='table' AND name='named_profile_lifecycle'",
+                    null,
+                )
+                .use { cursor ->
+                    if (!cursor.moveToFirst() || cursor.getType(0) != Cursor.FIELD_TYPE_STRING)
+                        throw SQLiteException("Malformed named profile lifecycle table")
+                    cursor.getString(0).uppercase()
+                }
+        if (
+            columns != expected ||
+                "PROFILE_NAME TEXT NOT NULL UNIQUE" !in sql ||
+                "CONTAINER_RETAINED_EMPTY_NEVER_REUSED" !in sql ||
+                "DATA_ERASURE_COMPLETED_CONTAINER_RETAINED" !in sql
+        ) {
+            throw SQLiteException("Malformed named profile lifecycle table")
+        }
     }
 
     private fun backfillParentPrimarySelections(db: SQLiteDatabase) {

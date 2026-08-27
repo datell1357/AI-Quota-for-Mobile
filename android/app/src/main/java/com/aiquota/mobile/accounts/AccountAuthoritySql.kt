@@ -57,6 +57,18 @@ internal fun updateAccountVersion(db: SQLiteDatabase, id: ProviderAccountId, ver
     }
 }
 
+internal fun updateAccountReauthenticationState(db: SQLiteDatabase, account: AccountRecord) {
+    db.compileStatement(
+        "UPDATE accounts SET auth_state = ?, session_revision = ?, modified_version = ? WHERE provider_id = ? AND account_key = ?"
+    ).use { statement ->
+        statement.bindString(1, account.authState.name)
+        statement.bindLong(2, account.sessionRevision.value)
+        statement.bindLong(3, account.modifiedVersion.value)
+        statement.bindAccountId(4, account.id)
+        check(statement.executeUpdateDelete() == 1) { "Account disappeared during transaction" }
+    }
+}
+
 internal fun writeSnapshot(
     db: SQLiteDatabase,
     id: ProviderAccountId,

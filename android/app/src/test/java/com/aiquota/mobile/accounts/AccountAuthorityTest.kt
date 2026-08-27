@@ -7,6 +7,9 @@ import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderUsageLine
 import com.aiquota.mobile.local.ProviderUsageSnapshot
 import java.security.MessageDigest
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
@@ -230,6 +233,135 @@ class AccountAuthorityTest {
             authority.beginAttempt(signedOutId, AccountDemandSet.NONE, nonce(72))
         }
         assertArrayEquals(beforeRejectedAttempt, authority.canonicalDumpForTest())
+    }
+
+    @Test
+    fun exactProfileLossRequiresOnlyMissingAccountReauthentication() {
+        val sibling = id(ProviderId.CLAUDE, 80)
+        val missing = id(ProviderId.CLAUDE, 81)
+        authority.register(seed(sibling, 80))
+        authority.register(seed(missing, 20))
+        val staleLease =
+            authority.beginAttempt(missing, AccountDemandSet.of(AccountDemand.MANUAL), nonce(81))
+        val siblingBefore = authority.displayRecords(0, 10).single { it.account.id == sibling }
+        val missingBefore = authority.displayRecords(0, 10).single { it.account.id == missing }
+
+        val requireReauthentication =
+            authority.javaClass.methods.single { it.name == "requireReauthentication" }
+        val transitioned =
+            requireReauthentication.invoke(authority, missing) as AccountRecord
+
+        val records = authority.displayRecords(0, 10)
+        val siblingAfter = records.single { it.account.id == sibling }
+        val missingAfter = records.single { it.account.id == missing }
+        assertEquals(AccountAuthState.REAUTH_REQUIRED, transitioned.authState)
+        assertEquals(missingBefore.account.sessionRevision.next(), transitioned.sessionRevision)
+        assertEquals(siblingBefore, siblingAfter)
+        assertEquals(missingBefore.snapshot, missingAfter.snapshot)
+        assertEquals(AccountAuthState.REAUTH_REQUIRED, missingAfter.account.authState)
+        assertThrows(IllegalArgumentException::class.java) {
+            authority.beginAttempt(missing, AccountDemandSet.NONE, nonce(82))
+        }
+        assertEquals(
+            AttemptCommitResult.Rejected(StaleAttemptReason.ACCOUNT_INACTIVE),
+            authority.commitAttempt(staleLease, snapshot(missing, 10)),
+        )
+
+        val beforeIdempotent = authority.canonicalDumpForTest()
+        val versionBeforeIdempotent = authority.displayVersion()
+        val repeated = requireReauthentication.invoke(authority, missing) as AccountRecord
+        assertEquals(transitioned, repeated)
+        assertArrayEquals(beforeIdempotent, authority.canonicalDumpForTest())
+        assertEquals(versionBeforeIdempotent, authority.displayVersion())
+    }
+
+    @Test
+    fun exactReauthenticationFaultsRollbackAcrossRepeatedInterruptions() {
+        listOf(
+            AccountAuthorityFaultPoint.CATALOG,
+            AccountAuthorityFaultPoint.ATTEMPT,
+            AccountAuthorityFaultPoint.VERSION,
+        ).forEachIndexed { index, point ->
+            resetDatabase("reauth-fault-$index.db")
+            val sibling = id(ProviderId.CLAUDE, 90 + index * 2)
+            val missing = id(ProviderId.CLAUDE, 91 + index * 2)
+            authority.register(seed(sibling, 80))
+            authority.register(seed(missing, 20))
+            authority.close()
+            authority =
+                MainProcessAccountAuthority.open(
+                    context,
+                    databaseName,
+                    AccountAuthorityFaultInjector { reached ->
+                        if (reached == point) throw InjectedFault(point)
+                    },
+                )
+            val before = authority.canonicalDumpForTest()
+            val siblingBefore = authority.displayRecords(0, 10).single { it.account.id == sibling }
+
+            repeat(2) {
+                assertThrows(InjectedFault::class.java) {
+                    authority.requireReauthentication(missing)
+                }
+                assertArrayEquals(point.name, before, authority.canonicalDumpForTest())
+                assertEquals(
+                    siblingBefore,
+                    authority.displayRecords(0, 10).single { it.account.id == sibling },
+                )
+            }
+        }
+    }
+
+    @Test
+    fun concurrentSiblingAttemptAndExactReauthenticationRemainIsolated() {
+        val sibling = id(ProviderId.CLAUDE, 100)
+        val missing = id(ProviderId.CLAUDE, 101)
+        authority.register(seed(sibling, 80))
+        authority.register(seed(missing, 20))
+        val concurrentAuthority = MainProcessAccountAuthority.open(context, databaseName)
+        val start = CountDownLatch(1)
+        val executor = Executors.newFixedThreadPool(2)
+        try {
+            val reauthenticated =
+                executor.submit<AccountRecord> {
+                    assertTrue(start.await(10, TimeUnit.SECONDS))
+                    authority.requireReauthentication(missing)
+                }
+            val siblingCommit =
+                executor.submit<AttemptCommitResult> {
+                    assertTrue(start.await(10, TimeUnit.SECONDS))
+                    val lease =
+                        concurrentAuthority.beginAttempt(
+                            sibling,
+                            AccountDemandSet.of(AccountDemand.MANUAL),
+                            nonce(100),
+                        )
+                    concurrentAuthority.commitAttempt(lease, snapshot(sibling, 70))
+                }
+            start.countDown()
+
+            assertEquals(
+                AccountAuthState.REAUTH_REQUIRED,
+                reauthenticated.get(10, TimeUnit.SECONDS).authState,
+            )
+            assertTrue(siblingCommit.get(10, TimeUnit.SECONDS) is AttemptCommitResult.Committed)
+            val records = authority.displayRecords(0, 10)
+            assertEquals(
+                AccountAuthState.AUTHENTICATED,
+                records.single { it.account.id == sibling }.account.authState,
+            )
+            assertEquals(
+                AccountAuthState.REAUTH_REQUIRED,
+                records.single { it.account.id == missing }.account.authState,
+            )
+            assertEquals(
+                "70%",
+                records.single { it.account.id == sibling }.snapshot.lines.single().remainingText,
+            )
+        } finally {
+            executor.shutdownNow()
+            concurrentAuthority.close()
+        }
     }
 
     private fun resetDatabase(name: String) {

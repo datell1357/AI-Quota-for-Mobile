@@ -209,7 +209,9 @@ private class AndroidSession(
 
     override fun destroy() {
         ui()
+        (webView.parent as? android.view.ViewGroup)?.removeView(webView)
         webView.destroy()
+        trace("webview:destroyed-detached")
     }
 
     private fun ui() {

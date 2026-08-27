@@ -132,6 +132,34 @@ class MainProcessAccountAuthority private constructor(
         AttemptLease(accountId, account.generation, account.sessionRevision, nonce)
     }
 
+    fun requireReauthentication(accountId: ProviderAccountId): AccountRecord = transaction { db ->
+        val account = requireNotNull(readAccount(db, accountId)) { "Account is not registered" }
+        require(
+            account.state == AccountState.ACTIVE &&
+                account.deletionState == AccountDeletionState.NONE
+        ) { "Account is not eligible for reauthentication" }
+        if (account.authState == AccountAuthState.REAUTH_REQUIRED) return@transaction account
+        require(account.authState == AccountAuthState.AUTHENTICATED) {
+            "Account is not eligible for reauthentication"
+        }
+        val version = readVersion(db).next()
+        val updated =
+            account
+                .transitionTo(
+                    nextState = account.state,
+                    nextAuthState = AccountAuthState.REAUTH_REQUIRED,
+                    nextDeletionState = account.deletionState,
+                    nextSessionRevision = account.sessionRevision.next(),
+                ).copy(modifiedVersion = version)
+        updateAccountReauthenticationState(db, updated)
+        faultInjector.after(AccountAuthorityFaultPoint.CATALOG)
+        writeAttempt(db, accountId, updated.generation, updated.sessionRevision, null)
+        faultInjector.after(AccountAuthorityFaultPoint.ATTEMPT)
+        writeVersion(db, version)
+        faultInjector.after(AccountAuthorityFaultPoint.VERSION)
+        updated
+    }
+
     fun commitAttempt(
         lease: AttemptLease,
         snapshot: ProviderUsageSnapshot,

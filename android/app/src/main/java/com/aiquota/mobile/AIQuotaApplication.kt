@@ -9,7 +9,7 @@ class AIQuotaApplication : Application() {
     override fun onCreate() {
         val glmIsolatedProcess = GlmIsolatedWebViewProfile.configureIfNeeded(this)
         super.onCreate()
-        if (glmIsolatedProcess) return
+        if (glmIsolatedProcess || Application.getProcessName() != packageName) return
         if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
             LegacyAccountMigrationRunner.runIfEnabled(this, enabled = BuildConfig.MULTI_ACCOUNT_ENABLED)
         }

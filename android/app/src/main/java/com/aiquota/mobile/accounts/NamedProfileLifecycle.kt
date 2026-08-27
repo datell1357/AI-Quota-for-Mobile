@@ -62,6 +62,9 @@ class NamedProfileThreadViolation : IllegalStateException()
 
 class NamedProfileReentrantMutation : IllegalStateException()
 
+class NamedProfileEnrollmentRejected(val rejection: EnrollmentCoordinationResult.Rejected) :
+    IllegalStateException()
+
 interface NamedProfileLifecycleStore {
     fun read(accountId: ProviderAccountId): AccountProfileBinding?
 
@@ -151,19 +154,31 @@ object NamedProfileRuntimePolicy {
                 RuntimeSupportReason.PROVIDER_UNVERIFIED,
                 id,
             )
-        val parts =
-            versionName.split('.').map {
-                it.toIntOrNull()
-                    ?: return NamedProfileRuntimeDecision.Rejected(
-                        RuntimeSupportReason.VERSION_MALFORMED,
-                        id,
-                    )
-            }
-        if (parts.size != 4)
+        val rawParts = versionName.split('.')
+        if (
+            rawParts.size != 4 ||
+                rawParts.any { it.isEmpty() || it.length > 10 || !it.all(Char::isDigit) }
+        ) {
             return NamedProfileRuntimeDecision.Rejected(RuntimeSupportReason.VERSION_MALFORMED, id)
-        val cmp = (0..3).firstNotNullOfOrNull { i -> (parts[i] - floor[i]).takeIf { it != 0 } } ?: 0
-        return if (cmp >= 0) NamedProfileRuntimeDecision.Supported(id)
-        else NamedProfileRuntimeDecision.Rejected(RuntimeSupportReason.VERSION_BELOW_SAFE_FLOOR, id)
+        }
+        val parts = rawParts.map {
+            it.toIntOrNull()?.takeIf { component -> component >= 0 }
+                ?: return NamedProfileRuntimeDecision.Rejected(
+                    RuntimeSupportReason.VERSION_MALFORMED,
+                    id,
+                )
+        }
+        for (index in floor.indices) {
+            val comparison = parts[index].compareTo(floor[index])
+            if (comparison > 0) return NamedProfileRuntimeDecision.Supported(id)
+            if (comparison < 0) {
+                return NamedProfileRuntimeDecision.Rejected(
+                    RuntimeSupportReason.VERSION_BELOW_SAFE_FLOOR,
+                    id,
+                )
+            }
+        }
+        return NamedProfileRuntimeDecision.Supported(id)
     }
 }
 
@@ -272,6 +287,24 @@ sealed interface LeaseAcquireResult {
     data class Rejected(val capability: NamedProfileCapability) : LeaseAcquireResult
 
     data object ProfileUnavailable : LeaseAcquireResult
+
+    data object ReauthenticationRequired : LeaseAcquireResult
+}
+
+enum class LeaseState {
+    OPEN,
+    CLOSING,
+    CLOSED,
+}
+
+sealed interface LeaseCloseResult {
+    data object Closed : LeaseCloseResult
+
+    data class RetryableFailure(val reason: String) : LeaseCloseResult
+
+    data object AlreadyClosing : LeaseCloseResult
+
+    data object AlreadyClosed : LeaseCloseResult
 }
 
 class NamedProfileLease
@@ -279,9 +312,9 @@ internal constructor(
     val accountId: ProviderAccountId,
     val profileName: WebProfileName,
     internal val resource: NamedProfileSessionResource,
-    private val release: (NamedProfileLease) -> Unit,
+    private val release: (NamedProfileLease, (LeaseCloseResult) -> Unit) -> Unit,
 ) : AutoCloseable {
-    private var closed = false
+    private var state = LeaseState.OPEN
     val webView
         get() = resource.webView
 
@@ -294,19 +327,35 @@ internal constructor(
     val serviceWorkerController
         get() = resource.serviceWorkerController
 
-    internal fun validateAndClose(): Boolean {
-        if (closed) return false
-        closed = true
-        return true
+    internal fun beginClose(): LeaseCloseResult? =
+        when (state) {
+            LeaseState.OPEN -> null.also { state = LeaseState.CLOSING }
+            LeaseState.CLOSING -> LeaseCloseResult.AlreadyClosing
+            LeaseState.CLOSED -> LeaseCloseResult.AlreadyClosed
+        }
+
+    internal fun reopen() {
+        check(state == LeaseState.CLOSING)
+        state = LeaseState.OPEN
     }
 
-    override fun close() = release(this)
+    internal fun markClosed() {
+        check(state == LeaseState.CLOSING)
+        state = LeaseState.CLOSED
+    }
+
+    internal fun stateForTest(): LeaseState = state
+
+    fun closeAcknowledged(callback: (LeaseCloseResult) -> Unit) = release(this, callback)
+
+    override fun close() = closeAcknowledged {}
 }
 
 class NamedProfileLifecycleManager(
     private val store: NamedProfileLifecycleStore,
     private val platform: NamedProfilePlatform,
     private val names: () -> WebProfileName = WebProfileName::create,
+    private val afterEraseCallbackBeforeReceipt: (ProviderAccountId) -> Unit = {},
 ) {
     private val leases = linkedMapOf<ProviderAccountId, MutableSet<NamedProfileLease>>()
     private val erasing = mutableSetOf<ProviderAccountId>()
@@ -318,16 +367,20 @@ class NamedProfileLifecycleManager(
         store.read(id)?.let {
             return@mutate it
         }
-        if (store.readAll().isNotEmpty())
-            check(platform.probeCapability() is NamedProfileCapability.Supported) {
-                "Named profile runtime unsupported"
-            }
-        repeat(128) {
-            try {
-                return@mutate store.create(id, names())
-            } catch (_: ProfileNameCollisionException) {}
+        val result =
+            NamedProfileEnrollmentCoordinator(platform::requireUiThread, platform::probeCapability)
+                .enroll(store.readAll().size) {
+                    repeat(128) {
+                        try {
+                            return@enroll store.create(id, names())
+                        } catch (_: ProfileNameCollisionException) {}
+                    }
+                    error("profile name exhausted")
+                }
+        when (result) {
+            is EnrollmentCoordinationResult.Allowed -> result.value
+            is EnrollmentCoordinationResult.Rejected -> throw NamedProfileEnrollmentRejected(result)
         }
-        error("profile name exhausted")
     }
 
     fun binding(id: ProviderAccountId) = read { store.read(id) }
@@ -343,6 +396,16 @@ class NamedProfileLifecycleManager(
         lease = NamedProfileLease(id, row.profileName, resource, ::release)
         leases.getOrPut(id, ::linkedSetOf).add(lease)
         LeaseAcquireResult.Acquired(lease)
+    }
+
+    fun acquireExact(
+        id: ProviderAccountId,
+        requireReauthentication: (ProviderAccountId) -> Unit,
+    ): LeaseAcquireResult {
+        val result = acquireTyped(id)
+        if (result != LeaseAcquireResult.ProfileUnavailable) return result
+        requireReauthentication(id)
+        return LeaseAcquireResult.ReauthenticationRequired
     }
 
     fun acquire(id: ProviderAccountId) =
@@ -371,20 +434,47 @@ class NamedProfileLifecycleManager(
 
     fun liveLeaseCount(id: ProviderAccountId) = read { leases[id]?.size ?: 0 }
 
-    private fun release(l: NamedProfileLease) = mutate {
-        if (!l.validateAndClose()) return@mutate
-        l.resource.quiesce { q ->
+    private fun release(l: NamedProfileLease, callback: (LeaseCloseResult) -> Unit) = mutate {
+        l.beginClose()?.let {
+            callback(it)
+            return@mutate
+        }
+        l.resource.quiesce { result ->
             platform.requireUiThread()
-            if (q !is SessionQuiesceResult.CommittedCrossOriginPlatformAsync) return@quiesce
+            if (result is SessionQuiesceResult.Failed) {
+                l.reopen()
+                callback(LeaseCloseResult.RetryableFailure(result.reason))
+                return@quiesce
+            }
             l.resource.destroy()
             val active = leases[l.accountId]
             active?.remove(l)
             if (active?.isEmpty() == true) leases.remove(l.accountId)
+            l.markClosed()
             if (
                 store.read(l.accountId)?.state == ProfileLifecycleState.ERASURE_PENDING &&
                     leases[l.accountId].isNullOrEmpty()
-            )
+            ) {
                 startErase(l.accountId)
+            }
+            callback(LeaseCloseResult.Closed)
+        }
+    }
+
+    fun shutdown(callback: (List<LeaseCloseResult>) -> Unit) {
+        platform.requireUiThread()
+        check(!mutating)
+        val open = leases.values.flatten().toList()
+        if (open.isEmpty()) {
+            callback(emptyList())
+            return
+        }
+        val results = MutableList<LeaseCloseResult?>(open.size) { null }
+        open.forEachIndexed { index, lease ->
+            lease.closeAcknowledged { result ->
+                results[index] = result
+                if (results.all { it != null }) callback(results.filterNotNull())
+            }
         }
     }
 
@@ -400,7 +490,10 @@ class NamedProfileLifecycleManager(
         platform.eraseProfileData(row.profileName) { r ->
             platform.requireUiThread()
             erasing.remove(id)
-            if (r == ProfileDataErasureResult.Completed) store.complete(id)
+            if (r == ProfileDataErasureResult.Completed) {
+                afterEraseCallbackBeforeReceipt(id)
+                store.complete(id)
+            }
             val callbacks = pendingCallbacks.remove(id).orEmpty()
             callbacks.forEach { it(r) }
             done(r)
