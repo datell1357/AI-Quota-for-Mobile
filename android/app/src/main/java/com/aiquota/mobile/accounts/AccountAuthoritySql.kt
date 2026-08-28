@@ -6,28 +6,19 @@ import android.database.sqlite.SQLiteStatement
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderUsageSnapshot
 import com.aiquota.mobile.providers.ProviderSnapshotCodec
-import java.util.Locale
 
 internal data class NormalizedProviderCardAlias(
     val displayValue: String,
     val normalizedKey: String,
 )
 
-internal fun normalizeProviderCardAlias(value: String): NormalizedProviderCardAlias {
-    val trimmed = value.trim { character ->
-        character.isWhitespace() || Character.isSpaceChar(character)
+internal fun normalizeProviderCardAlias(value: String): NormalizedProviderCardAlias =
+    when (val validation = validateProviderCardAlias(value)) {
+        is ProviderCardAliasValidation.Valid -> validation.alias
+        is ProviderCardAliasValidation.Invalid -> throw IllegalArgumentException(
+            "Invalid provider-card alias: ${validation.reason.name}"
+        )
     }
-    require(trimmed.codePointCount(0, trimmed.length) in 1..40) {
-        "Provider-card alias must contain 1 to 40 Unicode code points"
-    }
-    var offset = 0
-    while (offset < trimmed.length) {
-        val codePoint = trimmed.codePointAt(offset)
-        require(!Character.isISOControl(codePoint)) { "Provider-card alias cannot contain controls" }
-        offset += Character.charCount(codePoint)
-    }
-    return NormalizedProviderCardAlias(trimmed, trimmed.lowercase(Locale.ROOT))
-}
 
 internal val ACCOUNT_COLUMNS = arrayOf(
     "provider_id",
@@ -97,6 +88,23 @@ internal fun insertProviderCardCatalogMetadata(
         check(statement.executeInsert() != -1L) { "Failed to insert provider-card metadata" }
     }
 }
+
+internal fun activeProviderCardCount(db: SQLiteDatabase, providerId: ProviderId): Long =
+    db.rawQuery(
+        "SELECT COUNT(*) FROM provider_card_catalog " +
+            "WHERE provider_id=? AND active_rank IS NOT NULL",
+        arrayOf(providerId.storageId),
+    ).use { cursor ->
+        check(cursor.moveToFirst())
+        cursor.getLong(0)
+    }
+
+internal fun activeProviderCardAliasExists(db: SQLiteDatabase, normalizedKey: String): Boolean =
+    db.rawQuery(
+        "SELECT 1 FROM provider_card_catalog " +
+            "WHERE active_rank IS NOT NULL AND alias_normalized_key=? LIMIT 1",
+        arrayOf(normalizedKey),
+    ).use(Cursor::moveToFirst)
 
 private fun allocateProviderCardAlias(
     db: SQLiteDatabase,

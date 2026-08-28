@@ -36,6 +36,70 @@ class MainProcessAccountAuthority private constructor(
         VersionedDisplayRecord(inserted, seed.snapshot, version)
     }
 
+    internal fun enrollDisconnectedProviderCard(
+        providerId: ProviderId,
+        customAlias: NormalizedProviderCardAlias?,
+    ): ProviderCardAddResult {
+        val multiplicity = when (val policy = ProviderCardCatalogPolicy.classify(providerId)) {
+            is ProviderCardProviderPolicy.Released -> policy.multiplicity
+            ProviderCardProviderPolicy.Unsupported -> {
+                return ProviderCardAddResult.Rejected(
+                    ProviderCardAddRejection.UnsupportedProvider(providerId)
+                )
+            }
+        }
+        return transaction { db ->
+            if (multiplicity == ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT &&
+                activeProviderCardCount(db, providerId) != 0L
+            ) {
+                return@transaction ProviderCardAddResult.Rejected(
+                    ProviderCardAddRejection.MultiplicityExceeded(providerId)
+                )
+            }
+
+            val selectedAlias = customAlias ?: when (multiplicity) {
+                ProviderCardMultiplicity.UNLIMITED -> null
+                ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT -> normalizeProviderCardAlias(providerId.displayName)
+            }
+            if (selectedAlias != null && activeProviderCardAliasExists(db, selectedAlias.normalizedKey)) {
+                return@transaction ProviderCardAddResult.Rejected(
+                    ProviderCardAddRejection.AliasConflict(selectedAlias.displayValue)
+                )
+            }
+
+            val reservedId = ProviderAccountId(providerId, AccountKey.reservedDefault())
+            val accountId = if (multiplicity == ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT &&
+                readAccount(db, reservedId) == null
+            ) {
+                reservedId
+            } else {
+                var candidate = ProviderAccountId(providerId, AccountKey.create())
+                while (readAccount(db, candidate) != null) {
+                    candidate = ProviderAccountId(providerId, AccountKey.create())
+                }
+                candidate
+            }
+            val version = readVersion(db).next()
+            val inserted = insertAccount(
+                db,
+                AccountRecord(
+                    id = accountId,
+                    state = AccountState.ACTIVE,
+                    authState = AccountAuthState.SIGNED_OUT,
+                    deletionState = AccountDeletionState.NONE,
+                    generation = AccountGeneration.of(0),
+                    sessionRevision = SessionRevision.of(0),
+                    alias = selectedAlias?.displayValue,
+                    modifiedVersion = version,
+                )
+            )
+            faultInjector.after(AccountAuthorityFaultPoint.CATALOG)
+            writeVersion(db, version)
+            faultInjector.after(AccountAuthorityFaultPoint.VERSION)
+            ProviderCardAddResult.Added(inserted)
+        }
+    }
+
     internal fun importLegacyDefaults(
         seeds: List<LegacyAuthorityImportSeed>,
         migrationFaultInjector: LegacyMigrationFaultInjector
