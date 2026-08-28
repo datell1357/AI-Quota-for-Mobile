@@ -6,6 +6,28 @@ import android.database.sqlite.SQLiteStatement
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderUsageSnapshot
 import com.aiquota.mobile.providers.ProviderSnapshotCodec
+import java.util.Locale
+
+internal data class NormalizedProviderCardAlias(
+    val displayValue: String,
+    val normalizedKey: String,
+)
+
+internal fun normalizeProviderCardAlias(value: String): NormalizedProviderCardAlias {
+    val trimmed = value.trim { character ->
+        character.isWhitespace() || Character.isSpaceChar(character)
+    }
+    require(trimmed.codePointCount(0, trimmed.length) in 1..40) {
+        "Provider-card alias must contain 1 to 40 Unicode code points"
+    }
+    var offset = 0
+    while (offset < trimmed.length) {
+        val codePoint = trimmed.codePointAt(offset)
+        require(!Character.isISOControl(codePoint)) { "Provider-card alias cannot contain controls" }
+        offset += Character.charCount(codePoint)
+    }
+    return NormalizedProviderCardAlias(trimmed, trimmed.lowercase(Locale.ROOT))
+}
 
 internal val ACCOUNT_COLUMNS = arrayOf(
     "provider_id",
@@ -22,7 +44,10 @@ internal val ACCOUNT_COLUMNS = arrayOf(
     "modified_version"
 )
 
-internal fun insertAccount(db: SQLiteDatabase, account: AccountRecord) {
+internal fun insertAccount(db: SQLiteDatabase, account: AccountRecord): AccountRecord {
+    val alias = account.alias?.let(::normalizeProviderCardAlias)
+        ?: allocateProviderCardAlias(db, account.id.providerId)
+    val storedAccount = account.copy(alias = alias.displayValue)
     db.compileStatement(
         """
         INSERT INTO accounts(
@@ -31,20 +56,93 @@ internal fun insertAccount(db: SQLiteDatabase, account: AccountRecord) {
         ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """.trimIndent()
     ).use { statement ->
-        statement.bindString(1, account.id.providerId.storageId)
-        statement.bindString(2, account.id.accountKey.storageValue())
-        statement.bindLong(3, providerRank(account.id.providerId).toLong())
-        statement.bindString(4, account.state.name)
-        statement.bindString(5, account.authState.name)
-        statement.bindString(6, account.deletionState.name)
-        statement.bindLong(7, account.generation.value)
-        statement.bindLong(8, account.sessionRevision.value)
-        statement.bindNullableString(9, account.alias)
-        statement.bindNullableString(10, account.organization)
-        statement.bindNullableString(11, account.remoteIdentity)
-        statement.bindLong(12, account.modifiedVersion.value)
+        statement.bindString(1, storedAccount.id.providerId.storageId)
+        statement.bindString(2, storedAccount.id.accountKey.storageValue())
+        statement.bindLong(3, providerRank(storedAccount.id.providerId).toLong())
+        statement.bindString(4, storedAccount.state.name)
+        statement.bindString(5, storedAccount.authState.name)
+        statement.bindString(6, storedAccount.deletionState.name)
+        statement.bindLong(7, storedAccount.generation.value)
+        statement.bindLong(8, storedAccount.sessionRevision.value)
+        statement.bindString(9, alias.displayValue)
+        statement.bindNullableString(10, storedAccount.organization)
+        statement.bindNullableString(11, storedAccount.remoteIdentity)
+        statement.bindLong(12, storedAccount.modifiedVersion.value)
         check(statement.executeInsert() != -1L) { "Failed to insert account" }
     }
+    val activeRank = db.rawQuery(
+        "SELECT COUNT(*) FROM provider_card_catalog WHERE active_rank IS NOT NULL",
+        null,
+    ).use { cursor ->
+        check(cursor.moveToFirst())
+        cursor.getLong(0)
+    }
+    insertProviderCardCatalogMetadata(db, storedAccount.id, activeRank, alias.normalizedKey)
+    return storedAccount
+}
+
+internal fun insertProviderCardCatalogMetadata(
+    db: SQLiteDatabase,
+    id: ProviderAccountId,
+    activeRank: Long?,
+    aliasNormalizedKey: String,
+) {
+    db.compileStatement(
+        "INSERT INTO provider_card_catalog(provider_id,account_key,active_rank,alias_normalized_key) " +
+            "VALUES(?,?,?,?)"
+    ).use { statement ->
+        statement.bindAccountId(1, id)
+        if (activeRank == null) statement.bindNull(3) else statement.bindLong(3, activeRank)
+        statement.bindString(4, aliasNormalizedKey)
+        check(statement.executeInsert() != -1L) { "Failed to insert provider-card metadata" }
+    }
+}
+
+private fun allocateProviderCardAlias(
+    db: SQLiteDatabase,
+    providerId: ProviderId,
+): NormalizedProviderCardAlias {
+    val activeAliasCount = db.rawQuery(
+        "SELECT COUNT(*) FROM provider_card_catalog WHERE active_rank IS NOT NULL",
+        null,
+    ).use { cursor ->
+        check(cursor.moveToFirst())
+        cursor.getLong(0)
+    }
+    check(activeAliasCount < Long.MAX_VALUE) { "Provider-card alias allocation exhausted" }
+    val base = normalizeProviderCardAlias(providerId.displayName)
+    val suffix = db.rawQuery(
+        """
+        WITH base(value) AS (VALUES(?)),
+        used(suffix) AS (
+            SELECT 1
+            FROM provider_card_catalog, base
+            WHERE active_rank IS NOT NULL AND alias_normalized_key = base.value
+            UNION ALL
+            SELECT CAST(substr(alias_normalized_key, length(base.value) + 2) AS INTEGER)
+            FROM provider_card_catalog, base
+            WHERE active_rank IS NOT NULL
+              AND alias_normalized_key GLOB base.value || ' [0-9]*'
+              AND CAST(substr(alias_normalized_key, length(base.value) + 2) AS INTEGER) >= 2
+              AND alias_normalized_key = base.value || ' ' ||
+                  CAST(CAST(substr(alias_normalized_key, length(base.value) + 2) AS INTEGER) AS TEXT)
+        ),
+        ordered(suffix, previous) AS (
+            SELECT suffix, lag(suffix, 1, 0) OVER (ORDER BY suffix) FROM used
+        )
+        SELECT coalesce(
+            (SELECT previous + 1 FROM ordered WHERE suffix > previous + 1 ORDER BY suffix LIMIT 1),
+            (SELECT coalesce(max(suffix), 0) + 1 FROM used)
+        )
+        """.trimIndent(),
+        arrayOf(base.normalizedKey),
+    ).use { cursor ->
+        check(cursor.moveToFirst()) { "Provider-card alias allocation exhausted" }
+        cursor.getLong(0)
+    }
+    check(suffix in 1L..(activeAliasCount + 1)) { "Provider-card alias allocation exceeded its bound" }
+    val displayValue = if (suffix == 1L) providerId.displayName else "${providerId.displayName} $suffix"
+    return normalizeProviderCardAlias(displayValue)
 }
 
 internal fun updateAccountVersion(db: SQLiteDatabase, id: ProviderAccountId, version: DisplayVersion) {
@@ -226,7 +324,7 @@ private fun SQLiteStatement.bindNullableString(index: Int, value: String?) {
     if (value == null) bindNull(index) else bindString(index, value)
 }
 
-private fun providerRank(providerId: ProviderId): Int {
+internal fun providerRank(providerId: ProviderId): Int {
     val visibleRank = ProviderId.defaultOrder().indexOf(providerId)
     return if (visibleRank >= 0) visibleRank else ProviderId.defaultOrder().size + providerId.ordinal
 }

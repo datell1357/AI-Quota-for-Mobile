@@ -155,6 +155,23 @@ enum class AccountAuthorityFaultPoint {
     VERSION
 }
 
+internal enum class AccountAuthorityMigrationFaultPoint {
+    LEGACY_ROWS_VALIDATED,
+    CATALOG_TABLE_CREATED,
+    ALIASES_NORMALIZED,
+    CATALOG_ROWS_WRITTEN,
+    CATALOG_INDEXES_CREATED,
+    CATALOG_VALIDATED
+}
+
+internal fun interface AccountAuthorityMigrationFaultInjector {
+    fun after(point: AccountAuthorityMigrationFaultPoint)
+
+    companion object {
+        val NONE = AccountAuthorityMigrationFaultInjector { }
+    }
+}
+
 fun interface AccountAuthorityFaultInjector {
     fun after(point: AccountAuthorityFaultPoint)
 

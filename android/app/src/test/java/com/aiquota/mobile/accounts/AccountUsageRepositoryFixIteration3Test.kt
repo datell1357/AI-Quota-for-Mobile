@@ -140,7 +140,7 @@ class AccountUsageRepositoryFixIteration3Test {
                 insertValidPair(db, reverse = case.label.length % 2 == 0)
             }
             openProduction(name).close()
-            assertEquals(6, userVersion(name))
+            assertEquals(7, userVersion(name))
             val firstV5 = canonicalDatabaseHash(name)
             openProduction(name).close()
             assertEquals(firstV5, canonicalDatabaseHash(name))
@@ -201,7 +201,7 @@ class AccountUsageRepositoryFixIteration3Test {
             val name = parentV4("valid-${case.label}", case.setup)
             val beforePrimary = rawPrimaryRows(name)
             openProduction(name).close()
-            assertEquals(6, userVersion(name))
+            assertEquals(7, userVersion(name))
             assertEquals(freshSchema, schemaHash(name))
             when (case.label) {
                 "untouched" -> {

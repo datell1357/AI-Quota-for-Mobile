@@ -21,7 +21,7 @@ class MainProcessAccountAuthority private constructor(
     fun register(seed: AuthorityAccountSeed): VersionedDisplayRecord = transaction { db ->
         require(readAccount(db, seed.account.id) == null) { "Account key is already registered" }
         val version = readVersion(db).next()
-        insertAccount(db, seed.account.copy(modifiedVersion = version))
+        val inserted = insertAccount(db, seed.account.copy(modifiedVersion = version))
         faultInjector.after(AccountAuthorityFaultPoint.CATALOG)
         writeSnapshot(db, seed.account.id, seed.snapshot, version)
         faultInjector.after(AccountAuthorityFaultPoint.SNAPSHOT)
@@ -33,7 +33,7 @@ class MainProcessAccountAuthority private constructor(
         faultInjector.after(AccountAuthorityFaultPoint.NONCE)
         writeVersion(db, version)
         faultInjector.after(AccountAuthorityFaultPoint.VERSION)
-        VersionedDisplayRecord(seed.account.copy(modifiedVersion = version), seed.snapshot, version)
+        VersionedDisplayRecord(inserted, seed.snapshot, version)
     }
 
     internal fun importLegacyDefaults(
@@ -90,11 +90,18 @@ class MainProcessAccountAuthority private constructor(
         return ordered.map { requireNotNull(readLegacyAuthorityState(database.readableDatabase, it.seed.account.id)) }
     }
 
-    internal fun repairLegacyCopyPayloads(payloads: Map<ProviderAccountId, Pair<String, String>>) = transaction { db ->
-        payloads.forEach { (id, data) ->
-            repairLegacyMigrationCopy(db, "migration_mirrors", id, data.first)
-            repairLegacyMigrationCopy(db, "migration_preferences", id, data.second)
+    internal fun repairLegacyCopyPayloads(
+        payloads: Map<ProviderAccountId, Pair<String, String>>,
+    ): Boolean = try {
+        transaction { db ->
+            payloads.forEach { (id, data) ->
+                repairLegacyMigrationCopy(db, "migration_mirrors", id, data.first)
+                repairLegacyMigrationCopy(db, "migration_preferences", id, data.second)
+            }
         }
+        true
+    } catch (failure: AccountAuthorityCatalogException) {
+        false
     }
 
     internal fun legacyImportRecord(id: ProviderAccountId): VersionedDisplayRecord? =
@@ -215,15 +222,12 @@ class MainProcessAccountAuthority private constructor(
         require(limit in 1..MAX_PAGE_SIZE) { "Catalog page size must be between 1 and $MAX_PAGE_SIZE" }
         val db = database.readableDatabase
         val records = mutableListOf<AccountRecord>()
-        db.query(
-            "accounts",
-            ACCOUNT_COLUMNS,
-            null,
-            null,
-            null,
-            null,
-            "provider_rank, account_key",
-            "$offset,$limit"
+        db.rawQuery(
+            "SELECT ${ACCOUNT_COLUMNS.joinToString(",") { "accounts.$it" }} " +
+                "FROM accounts JOIN provider_card_catalog USING(provider_id,account_key) " +
+                "ORDER BY provider_card_catalog.active_rank IS NULL," +
+                "provider_card_catalog.active_rank,accounts.provider_id,accounts.account_key LIMIT ? OFFSET ?",
+            arrayOf(limit.toString(), offset.toString()),
         ).use { cursor ->
             while (cursor.moveToNext()) records += cursor.toAccountRecord()
         }
@@ -241,9 +245,11 @@ class MainProcessAccountAuthority private constructor(
         val records = mutableListOf<VersionedDisplayRecord>()
         db.rawQuery(
             """
-            SELECT ${ACCOUNT_COLUMNS.joinToString(",")}, snapshots.snapshot_json, snapshots.display_version
-            FROM accounts JOIN snapshots USING(provider_id, account_key)
-            ORDER BY accounts.provider_rank, accounts.account_key LIMIT ? OFFSET ?
+            SELECT ${ACCOUNT_COLUMNS.joinToString(",") { "accounts.$it" }}, snapshots.snapshot_json, snapshots.display_version
+            FROM accounts
+            JOIN snapshots USING(provider_id, account_key)
+            JOIN provider_card_catalog USING(provider_id, account_key)
+            ORDER BY provider_card_catalog.active_rank IS NULL, provider_card_catalog.active_rank, accounts.provider_id, accounts.account_key LIMIT ? OFFSET ?
             """.trimIndent(),
             arrayOf(limit.toString(), offset.toString())
         ).use { cursor ->
@@ -395,12 +401,14 @@ class MainProcessAccountAuthority private constructor(
         internal fun open(
             context: Context,
             databaseName: String,
-            faultInjector: AccountAuthorityFaultInjector = AccountAuthorityFaultInjector.NONE
+            faultInjector: AccountAuthorityFaultInjector = AccountAuthorityFaultInjector.NONE,
+            migrationFaultInjector: AccountAuthorityMigrationFaultInjector =
+                AccountAuthorityMigrationFaultInjector.NONE,
         ): MainProcessAccountAuthority {
             val appContext = context.applicationContext
             check(isMainProcess(appContext)) { "Account authority is main-process only" }
             return MainProcessAccountAuthority(
-                AccountAuthorityDatabase(appContext, databaseName),
+                AccountAuthorityDatabase(appContext, databaseName, migrationFaultInjector),
                 faultInjector
             )
         }
