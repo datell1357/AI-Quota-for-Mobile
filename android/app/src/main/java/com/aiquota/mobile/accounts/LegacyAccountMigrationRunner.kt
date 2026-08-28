@@ -30,6 +30,7 @@ internal object LegacyAccountMigrationRunner {
                 ConnectedProviderCardMigration(AndroidLegacyMigrationSource(appContext), authority).run()
             }
         }
+        MainProcessAccountFeature.start(appContext)
         return result
     }
 }

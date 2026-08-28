@@ -23,7 +23,10 @@ class AIQuotaApplication : Application() {
         )
         if (currentProcessName != packageName) return
         if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
-            LegacyAccountMigrationRunner.runIfEnabled(this, enabled = BuildConfig.MULTI_ACCOUNT_ENABLED)
+            LegacyAccountMigrationRunner.runIfEnabled(
+                this,
+                enabled = MultiAccountStartupGate.isEnabled(),
+            )
         }
         FirebaseGatewayBootstrap.install()
         AppUpdateCheckScheduler.schedule(this)
@@ -38,6 +41,11 @@ class AIQuotaApplication : Application() {
             ProcessNameCandidate(pid = it.pid, uid = it.uid, processName = it.processName)
         }
     }
+}
+
+internal object MultiAccountStartupGate {
+    @JvmStatic
+    fun isEnabled(): Boolean = BuildConfig.MULTI_ACCOUNT_ENABLED
 }
 
 internal fun selectCurrentProcessName(

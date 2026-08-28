@@ -1,7 +1,9 @@
 ﻿package com.aiquota.mobile.widget
 
 import android.content.Context
+import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.WidgetCacheSanitizer
+import com.aiquota.mobile.providers.ProviderSnapshotCodec
 
 data class WidgetSnapshotState(
     val snapshotJson: String,
@@ -38,6 +40,19 @@ class WidgetSnapshotCache(private val context: Context) {
 
     fun readLocalDisplaySnapshot(): String {
         return preferences.getString(KEY_LOCAL_DISPLAY_SNAPSHOT, "") ?: ""
+    }
+
+    fun removeSingleAccountProvider(providerId: ProviderId): Boolean {
+        val editor = preferences.edit()
+        listOf(KEY_LATEST_SNAPSHOT, KEY_LOCAL_DISPLAY_SNAPSHOT).forEach { key ->
+            val raw = preferences.getString(key, null) ?: return@forEach
+            val snapshots = runCatching { ProviderSnapshotCodec.decode(raw) }.getOrElse { return false }
+            editor.putString(
+                key,
+                ProviderSnapshotCodec.encode(snapshots.filterNot { it.providerId == providerId }),
+            )
+        }
+        return editor.commit()
     }
 
     fun readState(): WidgetSnapshotState {

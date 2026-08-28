@@ -453,6 +453,222 @@ class MainProcessAccountAuthority private constructor(
         return readLegacyUsageConflicts(database.readableDatabase, offset, limit)
     }
 
+    internal fun beginProviderCardDeletion(
+        accountId: ProviderAccountId,
+    ): BeginProviderCardDeletionResult = transaction { db ->
+        val account = readAccount(db, accountId) ?: return@transaction BeginProviderCardDeletionResult.Missing
+        readProviderCardDeletion(db, accountId)?.let {
+            return@transaction BeginProviderCardDeletionResult.Ready(it)
+        }
+        val version = readVersion(db).next()
+        if (account.deletionState == AccountDeletionState.NONE) {
+            val activeRank = db.rawQuery(
+                "SELECT active_rank FROM provider_card_catalog WHERE provider_id=? AND account_key=?",
+                arrayOf(accountId.providerId.storageId, accountId.accountKey.storageValue()),
+            ).use { cursor ->
+                check(cursor.moveToFirst() && !cursor.isNull(0)) { "Active card has no authority rank" }
+                cursor.getLong(0)
+            }
+            db.compileStatement(
+                "UPDATE accounts SET state='DELETED',auth_state='SIGNED_OUT'," +
+                    "deletion_state='TOMBSTONED',generation=?,session_revision=?,modified_version=? " +
+                    "WHERE provider_id=? AND account_key=? AND deletion_state='NONE'"
+            ).use { statement ->
+                statement.bindLong(1, account.generation.next().value)
+                statement.bindLong(2, account.sessionRevision.next().value)
+                statement.bindLong(3, version.value)
+                statement.bindString(4, accountId.providerId.storageId)
+                statement.bindString(5, accountId.accountKey.storageValue())
+                check(statement.executeUpdateDelete() == 1) { "Provider card changed during tombstone" }
+            }
+            db.compileStatement(
+                "UPDATE provider_card_catalog SET active_rank=NULL WHERE provider_id=? AND account_key=?"
+            ).use { statement ->
+                statement.bindString(1, accountId.providerId.storageId)
+                statement.bindString(2, accountId.accountKey.storageValue())
+                check(statement.executeUpdateDelete() == 1) { "Provider-card metadata disappeared" }
+            }
+            db.compileStatement(
+                "UPDATE provider_card_catalog SET active_rank=active_rank-1 WHERE active_rank>?"
+            ).use { statement ->
+                statement.bindLong(1, activeRank)
+                statement.executeUpdateDelete()
+            }
+        } else {
+            updateAccountVersion(db, accountId, version)
+        }
+        val journal = if (account.deletionState == AccountDeletionState.ERASED) {
+            writeRecoveredErasedProviderCardDeletion(db, accountId, version)
+        } else {
+            writeInitialProviderCardDeletion(db, accountId, version)
+        }
+        writeVersion(db, version)
+        BeginProviderCardDeletionResult.Ready(journal)
+    }
+
+    internal fun providerCardDeletion(accountId: ProviderAccountId): ProviderCardDeletionRecord? =
+        readProviderCardDeletion(database.readableDatabase, accountId)
+
+    internal fun pendingProviderCardDeletions(): List<ProviderAccountId> =
+        pendingProviderCardDeletionIds(database.readableDatabase)
+
+    internal fun cancelDeletedCardWork(accountId: ProviderAccountId): ProviderCardDeletionRecord =
+        transaction { db ->
+            val current = requireNotNull(readProviderCardDeletion(db, accountId))
+            check(current.step == ProviderCardDeletionStep.TOMBSTONED)
+            val version = readVersion(db).next()
+            db.compileStatement(
+                "UPDATE accounts SET deletion_state='ERASURE_PENDING',modified_version=? " +
+                    "WHERE provider_id=? AND account_key=? AND deletion_state IN ('TOMBSTONED','ERASURE_PENDING')"
+            ).use { statement ->
+                statement.bindLong(1, version.value)
+                statement.bindString(2, accountId.providerId.storageId)
+                statement.bindString(3, accountId.accountKey.storageValue())
+                check(statement.executeUpdateDelete() == 1) { "Deleted account disappeared" }
+            }
+            listOf("demands", "attempts", "nonce_heads", "published_nonces").forEach { table ->
+                db.delete(
+                    table,
+                    "provider_id=? AND account_key=?",
+                    arrayOf(accountId.providerId.storageId, accountId.accountKey.storageValue()),
+                )
+            }
+            val advanced = requireNotNull(
+                advanceUnclaimedProviderCardDeletion(
+                    db,
+                    current,
+                    ProviderCardDeletionStep.WORK_CANCELLED,
+                    version,
+                )
+            ) { "Provider-card deletion cancellation lost its revision" }
+            writeVersion(db, version)
+            advanced
+        }
+
+    internal fun clearDeletedCardPrimary(accountId: ProviderAccountId): ProviderCardDeletionRecord =
+        transaction { db ->
+            val current = requireNotNull(readProviderCardDeletion(db, accountId))
+            check(current.step == ProviderCardDeletionStep.WORK_CANCELLED)
+            if (accountId.providerId in ACCOUNT_USAGE_TARGET_PROVIDERS) {
+                val selected = when (val selection = readAccountUsagePrimarySelection(db, accountId.providerId)) {
+                    AccountUsagePrimarySelection.InitialMigrationDefault ->
+                        ProviderAccountId(accountId.providerId, AccountKey.reservedDefault())
+                    AccountUsagePrimarySelection.ExplicitNone -> null
+                    is AccountUsagePrimarySelection.ExplicitAccount -> selection.accountId
+                }
+                if (selected == accountId) clearAccountUsagePrimary(db, accountId.providerId)
+            }
+            advanceDeletedCardStep(db, current, ProviderCardDeletionStep.PRIMARY_CLEARED)
+        }
+
+    internal fun eraseDeletedCardUsage(accountId: ProviderAccountId): ProviderCardDeletionRecord =
+        transaction { db ->
+            val current = requireNotNull(readProviderCardDeletion(db, accountId))
+            check(current.step == ProviderCardDeletionStep.PROVIDER_CLEANUP)
+            listOf("snapshots", "migration_mirrors", "migration_preferences").forEach { table ->
+                db.delete(
+                    table,
+                    "provider_id=? AND account_key=?",
+                    arrayOf(accountId.providerId.storageId, accountId.accountKey.storageValue()),
+                )
+            }
+            advanceDeletedCardStep(db, current, ProviderCardDeletionStep.USAGE_ERASED)
+        }
+
+    internal fun claimProviderCardDeletion(
+        expected: ProviderCardDeletionRecord,
+        owner: ProviderCardDeletionOwnerToken,
+        nowMillis: Long,
+        expiresAtMillis: Long,
+    ): ProviderCardDeletionClaimResult = transaction { db ->
+        claimProviderCardDeletion(db, expected, owner, nowMillis, expiresAtMillis)
+    }
+
+    internal fun advanceClaimedProviderCardDeletion(
+        claim: ProviderCardDeletionClaim,
+        next: ProviderCardDeletionStep,
+        completionTimeMillis: Long,
+    ): ProviderCardDeletionRecord? = transaction { db ->
+        val version = readVersion(db).next()
+        val advanced = advanceClaimedProviderCardDeletion(
+            db,
+            claim,
+            next,
+            version,
+            completionTimeMillis,
+        )
+            ?: return@transaction null
+        if (next == ProviderCardDeletionStep.ERASED) {
+            markDeletedCardErased(db, claim.record.accountId, version)
+        } else {
+            updateAccountVersion(db, claim.record.accountId, version)
+        }
+        writeVersion(db, version)
+        advanced
+    }
+
+    internal fun failClaimedProviderCardDeletion(
+        claim: ProviderCardDeletionClaim,
+        failure: ProviderCardDeletionFailure,
+        completionTimeMillis: Long,
+    ): ProviderCardDeletionRecord? = transaction { db ->
+        val version = readVersion(db).next()
+        val failed = failClaimedProviderCardDeletion(
+            db,
+            claim,
+            failure,
+            version,
+            completionTimeMillis,
+        )
+            ?: return@transaction null
+        updateAccountVersion(db, claim.record.accountId, version)
+        writeVersion(db, version)
+        failed
+    }
+
+    internal fun finalizeProviderCardDeletion(accountId: ProviderAccountId): ProviderCardDeletionRecord =
+        transaction { db ->
+            val current = requireNotNull(readProviderCardDeletion(db, accountId))
+            check(current.step == ProviderCardDeletionStep.COMPATIBILITY_CLEARED)
+            val version = readVersion(db).next()
+            val erased = requireNotNull(
+                advanceUnclaimedProviderCardDeletion(db, current, ProviderCardDeletionStep.ERASED, version)
+            ) { "Provider-card deletion finalization lost its revision" }
+            markDeletedCardErased(db, accountId, version)
+            writeVersion(db, version)
+            erased
+        }
+
+    private fun markDeletedCardErased(
+        db: SQLiteDatabase,
+        accountId: ProviderAccountId,
+        version: DisplayVersion,
+    ) {
+        db.compileStatement(
+            "UPDATE accounts SET deletion_state='ERASED',modified_version=? " +
+                "WHERE provider_id=? AND account_key=? AND state='DELETED' AND deletion_state='ERASURE_PENDING'"
+        ).use { statement ->
+            statement.bindLong(1, version.value)
+            statement.bindString(2, accountId.providerId.storageId)
+            statement.bindString(3, accountId.accountKey.storageValue())
+            check(statement.executeUpdateDelete() == 1) { "Deleted account is not pending erasure" }
+        }
+    }
+
+    private fun advanceDeletedCardStep(
+        db: SQLiteDatabase,
+        current: ProviderCardDeletionRecord,
+        next: ProviderCardDeletionStep,
+    ): ProviderCardDeletionRecord {
+        val version = readVersion(db).next()
+        val advanced = requireNotNull(advanceUnclaimedProviderCardDeletion(db, current, next, version)) {
+            "Provider-card deletion step lost its revision"
+        }
+        updateAccountVersion(db, current.accountId, version)
+        writeVersion(db, version)
+        return advanced
+    }
+
     internal fun canonicalDumpForTest(): ByteArray = database.canonicalDump()
 
     internal fun canonicalLogicalFieldsForTest(): Map<String, String> = database.canonicalLogicalFields()

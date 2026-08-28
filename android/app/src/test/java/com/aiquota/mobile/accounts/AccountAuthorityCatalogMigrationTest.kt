@@ -64,7 +64,7 @@ class AccountAuthorityCatalogMigrationTest {
         openAndTouch(name)
 
         val migrated = catalogRows(name)
-        assertEquals(8, userVersion(name))
+        assertEquals(9, userVersion(name))
         assertEquals(
             listOf(id(ProviderId.CLAUDE, 1), id(ProviderId.CODEX, 3), id(ProviderId.GEMINI, 4)),
             migrated.filter { it.activeRank != null }.map(CatalogRow::id),
@@ -174,7 +174,7 @@ class AccountAuthorityCatalogMigrationTest {
             assertArrayEquals(point.toString(), before, rawCatalogSurface(name))
 
             openAndTouch(name)
-            assertEquals(point.toString(), 8, userVersion(name))
+            assertEquals(point.toString(), 9, userVersion(name))
             assertEquals(listOf(0L, 1L), catalogRows(name).mapNotNull(CatalogRow::activeRank))
         }
         println("QA_TASK7_FAULT_POINTS=${points.joinToString(",")};ROLLBACKS=${points.size};RETRIES=${points.size}")
@@ -207,7 +207,7 @@ class AccountAuthorityCatalogMigrationTest {
         } finally {
             executor.shutdownNow()
         }
-        assertEquals(8, userVersion(name))
+        assertEquals(9, userVersion(name))
         val once = rawCatalogSurface(name)
         openAndTouch(name)
         assertArrayEquals(once, rawCatalogSurface(name))
@@ -333,7 +333,7 @@ class AccountAuthorityCatalogMigrationTest {
     }
 
     @Test
-    fun currentV8InitializationChecksForeignKeyTopologyAndPersistedEnumsFailClosedUnchanged() {
+    fun currentV9InitializationChecksForeignKeyTopologyAndPersistedEnumsFailClosedUnchanged() {
         val mutations = listOf<Pair<String, (SQLiteDatabase) -> Unit>>(
             "initialization-checks-absent" to { db ->
                 replaceInitializationTable(
@@ -506,6 +506,11 @@ class AccountAuthorityCatalogMigrationTest {
                 "UPDATE accounts SET state='DELETED',auth_state='SIGNED_OUT',deletion_state='TOMBSTONED'"
             )
             db.execSQL("UPDATE provider_card_catalog SET active_rank=NULL")
+            db.execSQL(
+                "INSERT INTO provider_card_deletion_journal(" +
+                    "provider_id,account_key,step,failure,journal_revision,authority_version) " +
+                    "SELECT provider_id,account_key,'TOMBSTONED',NULL,1,modified_version FROM accounts"
+            )
         }
         val expected = listOf(ProviderId.CLAUDE, ProviderId.CODEX)
         repeat(2) {
@@ -532,6 +537,21 @@ class AccountAuthorityCatalogMigrationTest {
                 db.execSQL("UPDATE provider_card_catalog SET active_rank=NULL")
             } else {
                 db.execSQL("UPDATE provider_card_catalog SET active_rank=?", arrayOf(state.activeRank))
+            }
+            db.delete("provider_card_deletion_journal", null, null)
+            val journal = when (state.deletionState) {
+                "TOMBSTONED" -> "'TOMBSTONED',1"
+                "ERASURE_PENDING" -> "'WORK_CANCELLED',2"
+                "ERASED" -> "'ERASED',10"
+                else -> null
+            }
+            if (journal != null) {
+                db.execSQL(
+                    "INSERT INTO provider_card_deletion_journal(" +
+                        "provider_id,account_key,step,failure,journal_revision,authority_version) " +
+                        "SELECT provider_id,account_key,${journal.substringBefore(',')},NULL," +
+                        "${journal.substringAfter(',')},modified_version FROM accounts"
+                )
             }
         }
     }
@@ -654,7 +674,7 @@ class AccountAuthorityCatalogMigrationTest {
         val before = rawCatalogSurface(name)
         repeat(2) {
             assertThrows(SQLiteException::class.java) { openAndTouch(name) }
-            assertEquals(8, userVersion(name))
+            assertEquals(9, userVersion(name))
             assertArrayEquals(before, rawCatalogSurface(name))
         }
     }

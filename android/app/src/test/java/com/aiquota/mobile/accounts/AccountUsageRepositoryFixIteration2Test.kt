@@ -64,7 +64,7 @@ class AccountUsageRepositoryFixIteration2Test {
             assertEquals(if (bProvider == ProviderId.CLAUDE) 17 else 18, legacyRemaining(bProvider))
             assertEquals(ACCOUNT_USAGE_PRIMARY_NONE, primaryToken(name, noneProvider))
             assertEquals(bId.accountKey.storageValue(), primaryToken(name, bProvider))
-            assertEquals(8, userVersion(name))
+            assertEquals(9, userVersion(name))
             resumeMigration(name).close()
             assertNull(legacyRemaining(noneProvider))
             schemaHashes += "$beforeHash:${schemaHash(name)}"
@@ -90,7 +90,7 @@ class AccountUsageRepositoryFixIteration2Test {
             downgradeSchema(upgraded, oldVersion)
             MainProcessAccountAuthority.open(context, upgraded).use { it.catalog(0, 1) }
             assertEquals(oldVersion.toString(), freshSchemaHash, schemaHash(upgraded))
-            assertEquals(8, userVersion(upgraded))
+            assertEquals(9, userVersion(upgraded))
         }
 
         val malformedV5 = database("malformed-v5")
@@ -106,7 +106,7 @@ class AccountUsageRepositoryFixIteration2Test {
         assertEquals(5, userVersion(malformedV5))
         rawDatabase(malformedV5).use { it.execSQL("DROP TABLE named_profile_lifecycle") }
         MainProcessAccountAuthority.open(context, malformedV5).use { it.catalog(0, 1) }
-        assertEquals(8, userVersion(malformedV5))
+        assertEquals(9, userVersion(malformedV5))
 
         clearStorage()
         val failing = database("parent-v4-failure")

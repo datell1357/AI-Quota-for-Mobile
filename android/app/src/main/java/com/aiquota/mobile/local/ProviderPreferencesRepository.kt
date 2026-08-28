@@ -196,6 +196,20 @@ class ProviderPreferencesRepository(context: Context) {
         }.apply()
     }
 
+    fun clearSingleAccountProviderArtifacts(providerId: ProviderId): Boolean {
+        val editor = preferences.edit()
+            .remove("$KEY_PROVIDER_GAUGE_COLOR_PREFIX${providerId.storageId}")
+            .remove("$KEY_RESET_NOTIFICATION_PREFIX${providerId.storageId}")
+            .remove("$KEY_USAGE_THRESHOLD_ENABLED_PREFIX${providerId.storageId}")
+            .remove("$KEY_USAGE_THRESHOLD_PERCENT_PREFIX${providerId.storageId}")
+        preferences.all.forEach { (key, value) ->
+            if (key.startsWith(KEY_PROVIDER_WIDGET_SELECTION_PREFIX) &&
+                value == providerId.storageId
+            ) editor.remove(key)
+        }
+        return editor.commit()
+    }
+
     companion object {
         private const val PREFERENCES_NAME = "ai_quota_provider_preferences"
         private const val KEY_PROVIDER_ORDER = "provider_order"

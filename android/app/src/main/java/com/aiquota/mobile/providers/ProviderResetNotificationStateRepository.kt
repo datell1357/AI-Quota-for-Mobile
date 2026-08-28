@@ -19,6 +19,14 @@ class ProviderResetNotificationStateRepository(context: Context) {
             .apply()
     }
 
+    fun clearProvider(providerId: com.aiquota.mobile.local.ProviderId): Boolean {
+        val prefix = "${providerId.storageId}:"
+        return preferences.edit()
+            .putString(KEY_PENDING, encode(readPending().filterKeys { !it.startsWith(prefix) }))
+            .putString(KEY_NOTIFIED, encode(readNotified().filterKeys { !it.startsWith(prefix) }))
+            .commit()
+    }
+
     private fun read(key: String): Map<String, Long> {
         val raw = preferences.getString(key, null)?.takeIf { it.isNotBlank() } ?: return emptyMap()
         val root = runCatching { JSONObject(raw) }.getOrNull() ?: return emptyMap()

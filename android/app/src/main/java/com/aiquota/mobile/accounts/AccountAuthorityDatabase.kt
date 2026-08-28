@@ -112,6 +112,7 @@ internal class AccountAuthorityDatabase(
         createProviderCardCatalogTable(db)
         createProviderCardCatalogIndexes(db)
         createProviderCardInitializationTables(db)
+        createProviderCardDeletionTables(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -129,12 +130,15 @@ internal class AccountAuthorityDatabase(
         createNamedProfileTables(db)
         upgradeProviderCardCatalog(db)
         createProviderCardInitializationTables(db)
+        createProviderCardDeletionTables(db)
+        backfillProviderCardDeletionJournal(db)
     }
 
     override fun onOpen(db: SQLiteDatabase) {
         super.onOpen(db)
         validateProviderCardCatalog(db)
         validateProviderCardInitializationTables(db)
+        validateProviderCardDeletionJournal(db)
     }
 
     private fun upgradeProviderCardCatalog(db: SQLiteDatabase) {
@@ -246,6 +250,269 @@ internal class AccountAuthorityDatabase(
             "CREATE UNIQUE INDEX IF NOT EXISTS provider_card_catalog_active_alias_unique " +
                 "ON provider_card_catalog(alias_normalized_key) WHERE active_rank IS NOT NULL"
         )
+    }
+
+    private fun createProviderCardDeletionTables(db: SQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS provider_card_deletion_journal (
+                provider_id TEXT NOT NULL,
+                account_key TEXT NOT NULL,
+                step TEXT NOT NULL,
+                failure TEXT,
+                journal_revision INTEGER NOT NULL,
+                authority_version INTEGER NOT NULL,
+                claim_owner TEXT,
+                claim_step TEXT,
+                claim_revision INTEGER,
+                claim_authority_version INTEGER,
+                claim_expires_at INTEGER,
+                CHECK(step IN (
+                    'TOMBSTONED','WORK_CANCELLED','PRIMARY_CLEARED','CREDENTIAL_ERASED',
+                    'PROFILE_ERASED','PROVIDER_CLEANUP','USAGE_ERASED','ARTIFACTS_ERASED',
+                    'COMPATIBILITY_CLEARED','ERASED'
+                )),
+                CHECK(failure IS NULL OR failure IN (
+                    'CREDENTIAL_ERASURE_FAILED','PROFILE_ERASURE_FAILED',
+                    'PROVIDER_CLEANUP_FAILED','ARTIFACT_ERASURE_FAILED',
+                    'COMPATIBILITY_CLEAR_FAILED'
+                )),
+                CHECK(journal_revision > 0),
+                CHECK(authority_version >= 0),
+                CHECK((claim_owner IS NULL AND claim_step IS NULL AND claim_revision IS NULL AND
+                    claim_authority_version IS NULL AND claim_expires_at IS NULL) OR
+                    (claim_owner IS NOT NULL AND claim_step IS NOT NULL AND claim_revision IS NOT NULL AND
+                    claim_authority_version IS NOT NULL AND claim_expires_at IS NOT NULL)),
+                CHECK(claim_owner IS NULL OR (length(claim_owner)=64 AND claim_owner NOT GLOB '*[^0-9a-f]*')),
+                CHECK(claim_step IS NULL OR claim_step=step),
+                CHECK(claim_revision IS NULL OR claim_revision=journal_revision),
+                CHECK(claim_authority_version IS NULL OR claim_authority_version=authority_version),
+                CHECK(claim_expires_at IS NULL OR claim_expires_at>0),
+                PRIMARY KEY(provider_id, account_key),
+                FOREIGN KEY(provider_id, account_key)
+                    REFERENCES accounts(provider_id, account_key) ON DELETE RESTRICT
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS provider_card_deletion_pending_index ON " +
+                "provider_card_deletion_journal(step,claim_expires_at) WHERE step!='ERASED'"
+        )
+    }
+
+    private fun backfillProviderCardDeletionJournal(db: SQLiteDatabase) {
+        db.execSQL(
+            """
+            INSERT INTO provider_card_deletion_journal(
+                provider_id,account_key,step,failure,journal_revision,authority_version
+            )
+            SELECT provider_id,account_key,
+                CASE deletion_state
+                    WHEN 'TOMBSTONED' THEN 'TOMBSTONED'
+                    WHEN 'ERASURE_PENDING' THEN 'WORK_CANCELLED'
+                    WHEN 'ERASED' THEN 'ERASED'
+                END,
+                NULL,
+                CASE deletion_state WHEN 'TOMBSTONED' THEN 1 WHEN 'ERASURE_PENDING' THEN 2 ELSE 10 END,
+                modified_version
+            FROM accounts
+            WHERE deletion_state!='NONE'
+              AND NOT EXISTS(
+                  SELECT 1 FROM provider_card_deletion_journal AS journal
+                  WHERE journal.provider_id=accounts.provider_id AND journal.account_key=accounts.account_key
+              )
+            """.trimIndent()
+        )
+        listOf("demands", "attempts", "nonce_heads", "published_nonces").forEach { table ->
+            db.execSQL(
+                "DELETE FROM $table WHERE EXISTS(" +
+                    "SELECT 1 FROM accounts WHERE accounts.provider_id=$table.provider_id " +
+                    "AND accounts.account_key=$table.account_key " +
+                    "AND accounts.deletion_state IN ('ERASURE_PENDING','ERASED'))"
+            )
+        }
+    }
+
+    private fun validateProviderCardDeletionJournal(db: SQLiteDatabase) {
+        if (!tableExists(db, "provider_card_deletion_journal")) {
+            malformedCatalog("Provider-card deletion journal is missing")
+        }
+        val columns = buildList {
+            db.rawQuery("PRAGMA table_info(provider_card_deletion_journal)", null).use { cursor ->
+                while (cursor.moveToNext()) {
+                    add(
+                        DeletionColumn(
+                            cursor.getString(1),
+                            cursor.getString(2).uppercase(Locale.ROOT),
+                            cursor.getInt(3),
+                            cursor.getString(4),
+                            cursor.getInt(5),
+                        )
+                    )
+                }
+            }
+        }
+        val expectedColumns = listOf(
+            DeletionColumn("provider_id", "TEXT", 1, null, 1),
+            DeletionColumn("account_key", "TEXT", 1, null, 2),
+            DeletionColumn("step", "TEXT", 1, null, 0),
+            DeletionColumn("failure", "TEXT", 0, null, 0),
+            DeletionColumn("journal_revision", "INTEGER", 1, null, 0),
+            DeletionColumn("authority_version", "INTEGER", 1, null, 0),
+            DeletionColumn("claim_owner", "TEXT", 0, null, 0),
+            DeletionColumn("claim_step", "TEXT", 0, null, 0),
+            DeletionColumn("claim_revision", "INTEGER", 0, null, 0),
+            DeletionColumn("claim_authority_version", "INTEGER", 0, null, 0),
+            DeletionColumn("claim_expires_at", "INTEGER", 0, null, 0),
+        )
+        if (columns != expectedColumns) malformedCatalog("Provider-card deletion columns are malformed")
+        validateTableCheckPredicates(
+            db,
+            "provider_card_deletion_journal",
+            listOf(
+                "step IN ('TOMBSTONED','WORK_CANCELLED','PRIMARY_CLEARED','CREDENTIAL_ERASED','PROFILE_ERASED','PROVIDER_CLEANUP','USAGE_ERASED','ARTIFACTS_ERASED','COMPATIBILITY_CLEARED','ERASED')",
+                "failure IS NULL OR failure IN ('CREDENTIAL_ERASURE_FAILED','PROFILE_ERASURE_FAILED','PROVIDER_CLEANUP_FAILED','ARTIFACT_ERASURE_FAILED','COMPATIBILITY_CLEAR_FAILED')",
+                "journal_revision > 0",
+                "authority_version >= 0",
+                "(claim_owner IS NULL AND claim_step IS NULL AND claim_revision IS NULL AND claim_authority_version IS NULL AND claim_expires_at IS NULL) OR (claim_owner IS NOT NULL AND claim_step IS NOT NULL AND claim_revision IS NOT NULL AND claim_authority_version IS NOT NULL AND claim_expires_at IS NOT NULL)",
+                "claim_owner IS NULL OR (length(claim_owner)=64 AND claim_owner NOT GLOB '*[^0-9a-f]*')",
+                "claim_step IS NULL OR claim_step=step",
+                "claim_revision IS NULL OR claim_revision=journal_revision",
+                "claim_authority_version IS NULL OR claim_authority_version=authority_version",
+                "claim_expires_at IS NULL OR claim_expires_at>0",
+            ),
+        )
+        validateProviderCardDeletionForeignKey(db)
+        validateProviderCardDeletionIndex(db)
+        validateProviderCardDeletionRows(db)
+    }
+
+    private fun validateProviderCardDeletionForeignKey(db: SQLiteDatabase) {
+        val keys = buildList {
+            db.rawQuery("PRAGMA foreign_key_list(provider_card_deletion_journal)", null).use { cursor ->
+                while (cursor.moveToNext()) {
+                    add(
+                        CatalogForeignKey(
+                            cursor.getInt(0), cursor.getInt(1), cursor.getString(2),
+                            cursor.getString(3), cursor.getString(4),
+                            cursor.getString(5).uppercase(Locale.ROOT),
+                            cursor.getString(6).uppercase(Locale.ROOT),
+                        )
+                    )
+                }
+            }
+        }.sortedBy(CatalogForeignKey::sequence)
+        if (keys.size != 2 || keys.map(CatalogForeignKey::id).distinct().size != 1) {
+            malformedCatalog("Provider-card deletion journal must have one composite foreign key")
+        }
+        val id = keys.first().id
+        val expected = listOf(
+            CatalogForeignKey(id, 0, "accounts", "provider_id", "provider_id", "NO ACTION", "RESTRICT"),
+            CatalogForeignKey(id, 1, "accounts", "account_key", "account_key", "NO ACTION", "RESTRICT"),
+        )
+        if (keys != expected) malformedCatalog("Provider-card deletion foreign key is malformed")
+    }
+
+    private fun validateProviderCardDeletionIndex(db: SQLiteDatabase) {
+        val explicit = buildList {
+            db.rawQuery("PRAGMA index_list(provider_card_deletion_journal)", null).use { cursor ->
+                while (cursor.moveToNext()) {
+                    if (cursor.getString(3) == "c") {
+                        add(Triple(cursor.getString(1), cursor.getInt(2), cursor.getInt(4)))
+                    }
+                }
+            }
+        }
+        if (explicit != listOf(Triple("provider_card_deletion_pending_index", 0, 1))) {
+            malformedCatalog("Provider-card deletion indexes are malformed")
+        }
+        val indexedColumns = buildList {
+            db.rawQuery("PRAGMA index_info(provider_card_deletion_pending_index)", null).use { cursor ->
+                while (cursor.moveToNext()) add(cursor.getString(2))
+            }
+        }
+        if (indexedColumns != listOf("step", "claim_expires_at")) {
+            malformedCatalog("Provider-card deletion pending index columns are malformed")
+        }
+        val sql = db.rawQuery(
+            "SELECT sql FROM sqlite_master WHERE type='index' AND name='provider_card_deletion_pending_index'",
+            null,
+        ).use { cursor ->
+            if (!cursor.moveToFirst() || cursor.getType(0) != Cursor.FIELD_TYPE_STRING) {
+                malformedCatalog("Provider-card deletion pending index is missing")
+            }
+            cursor.getString(0)
+        }
+        val predicate = sql.substringAfter(" WHERE ", "").trim().replace(Regex("\\s+"), " ").uppercase(Locale.ROOT)
+        if (predicate != "STEP!='ERASED'") malformedCatalog("Provider-card deletion pending index predicate is malformed")
+    }
+
+    private fun validateProviderCardDeletionRows(db: SQLiteDatabase) {
+        val authorityVersion = readVersion(db).value
+        val journalAccounts = mutableSetOf<Pair<String, String>>()
+        db.rawQuery(
+            "SELECT journal.provider_id,journal.account_key,journal.step,journal.failure," +
+                "journal.journal_revision,journal.authority_version,journal.claim_owner,journal.claim_step," +
+                "journal.claim_revision,journal.claim_authority_version,journal.claim_expires_at," +
+                "accounts.deletion_state,accounts.modified_version " +
+                "FROM provider_card_deletion_journal AS journal " +
+                "JOIN accounts USING(provider_id,account_key)",
+            null,
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                if (cursor.getType(0) != Cursor.FIELD_TYPE_STRING || cursor.getType(1) != Cursor.FIELD_TYPE_STRING ||
+                    cursor.getType(2) != Cursor.FIELD_TYPE_STRING ||
+                    cursor.getType(4) != Cursor.FIELD_TYPE_INTEGER || cursor.getLong(4) <= 0 ||
+                    cursor.getType(5) != Cursor.FIELD_TYPE_INTEGER || cursor.getLong(5) < 0 ||
+                    cursor.getType(11) != Cursor.FIELD_TYPE_STRING || cursor.getType(12) != Cursor.FIELD_TYPE_INTEGER
+                ) malformedCatalog("Provider-card deletion row types are malformed")
+                val step = runCatching { ProviderCardDeletionStep.valueOf(cursor.getString(2)) }
+                    .getOrElse { malformedCatalog("Provider-card deletion step is malformed") }
+                val failure = if (cursor.isNull(3)) null else runCatching {
+                    ProviderCardDeletionFailure.valueOf(cursor.getString(3))
+                }.getOrElse { malformedCatalog("Provider-card deletion failure is malformed") }
+                val deletion = runCatching { AccountDeletionState.valueOf(cursor.getString(11)) }
+                    .getOrElse { malformedCatalog("Provider-card deletion account state is malformed") }
+                val revision = cursor.getLong(4)
+                val rowVersion = cursor.getLong(5)
+                val expectedDeletion = when (step) {
+                    ProviderCardDeletionStep.TOMBSTONED -> AccountDeletionState.TOMBSTONED
+                    ProviderCardDeletionStep.ERASED -> AccountDeletionState.ERASED
+                    else -> AccountDeletionState.ERASURE_PENDING
+                }
+                if (deletion != expectedDeletion || revision < step.ordinal + 1L ||
+                    rowVersion != cursor.getLong(12) || rowVersion > authorityVersion ||
+                    failure != null && failureStep(failure) != step
+                ) malformedCatalog("Provider-card deletion row is incoherent")
+                val claimNulls = (6..10).map(cursor::isNull)
+                if (claimNulls.distinct().size != 1) malformedCatalog("Provider-card deletion claim is partial")
+                if (!cursor.isNull(6)) {
+                    val owner = cursor.getString(6)
+                    if (!Regex("[0-9a-f]{64}").matches(owner) || cursor.getString(7) != step.name ||
+                        cursor.getLong(8) != revision || cursor.getLong(9) != rowVersion || cursor.getLong(10) <= 0
+                    ) malformedCatalog("Provider-card deletion claim is incoherent")
+                }
+                journalAccounts += cursor.getString(0) to cursor.getString(1)
+            }
+        }
+        db.rawQuery(
+            "SELECT provider_id,account_key,deletion_state FROM accounts WHERE deletion_state!='NONE'",
+            null,
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                if ((cursor.getString(0) to cursor.getString(1)) !in journalAccounts) {
+                    malformedCatalog("Deleted provider card has no erasure journal")
+                }
+            }
+        }
+    }
+
+    private fun failureStep(failure: ProviderCardDeletionFailure): ProviderCardDeletionStep = when (failure) {
+        ProviderCardDeletionFailure.CREDENTIAL_ERASURE_FAILED -> ProviderCardDeletionStep.PRIMARY_CLEARED
+        ProviderCardDeletionFailure.PROFILE_ERASURE_FAILED -> ProviderCardDeletionStep.CREDENTIAL_ERASED
+        ProviderCardDeletionFailure.PROVIDER_CLEANUP_FAILED -> ProviderCardDeletionStep.PROFILE_ERASED
+        ProviderCardDeletionFailure.ARTIFACT_ERASURE_FAILED -> ProviderCardDeletionStep.USAGE_ERASED
+        ProviderCardDeletionFailure.COMPATIBILITY_CLEAR_FAILED -> ProviderCardDeletionStep.ARTIFACTS_ERASED
     }
 
     private fun createProviderCardInitializationTables(db: SQLiteDatabase) {
@@ -698,6 +965,14 @@ internal class AccountAuthorityDatabase(
         val primaryKey: Int,
     )
 
+    private data class DeletionColumn(
+        val name: String,
+        val type: String,
+        val notNull: Int,
+        val defaultValue: String?,
+        val primaryKey: Int,
+    )
+
     private data class CatalogForeignKey(
         val id: Int,
         val sequence: Int,
@@ -942,6 +1217,7 @@ internal class AccountAuthorityDatabase(
             appendTable(db, "provider_card_catalog", listOf("provider_id", "account_key", "active_rank", "alias_normalized_key"), "active_rank IS NULL, active_rank, provider_id, account_key")
             appendTable(db, "provider_card_initialization", listOf("singleton_id", "migration_version", "onboarding_state", "links_sha256"), "singleton_id")
             appendTable(db, "provider_card_migration_links", listOf("provider_id", "account_key", "origin"), "provider_id, account_key")
+            appendTable(db, "provider_card_deletion_journal", DELETION_JOURNAL_COLUMNS, "provider_id, account_key")
         }
         return dump.toByteArray(StandardCharsets.UTF_8)
     }
@@ -974,6 +1250,7 @@ internal class AccountAuthorityDatabase(
         appendFields(db, fields, "provider_card_catalog", listOf("provider_id", "account_key", "active_rank", "alias_normalized_key"), "active_rank IS NULL, active_rank, provider_id, account_key")
         appendFields(db, fields, "provider_card_initialization", listOf("singleton_id", "migration_version", "onboarding_state", "links_sha256"), "singleton_id")
         appendFields(db, fields, "provider_card_migration_links", listOf("provider_id", "account_key", "origin"), "provider_id, account_key")
+        appendFields(db, fields, "provider_card_deletion_journal", DELETION_JOURNAL_COLUMNS, "provider_id, account_key")
         return fields
     }
 
@@ -1030,10 +1307,14 @@ internal class AccountAuthorityDatabase(
             ProviderId.CLAUDE.storageId,
             ProviderId.CODEX.storageId
         )
+        private val DELETION_JOURNAL_COLUMNS = listOf(
+            "provider_id", "account_key", "step", "failure", "journal_revision", "authority_version",
+            "claim_owner", "claim_step", "claim_revision", "claim_authority_version", "claim_expires_at",
+        )
         private const val PROVIDER_CARD_CATALOG_TABLE = "provider_card_catalog"
         private const val ACTIVE_RANK_INDEX = "provider_card_catalog_active_rank_unique"
         private const val ACTIVE_ALIAS_INDEX = "provider_card_catalog_active_alias_unique"
-        const val SCHEMA_VERSION = 8
+        const val SCHEMA_VERSION = 9
         const val DEFAULT_DATABASE_NAME = "ai_quota_accounts_v2.db"
     }
 }

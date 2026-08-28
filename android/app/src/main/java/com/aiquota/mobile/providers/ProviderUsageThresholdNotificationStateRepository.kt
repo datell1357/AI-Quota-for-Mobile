@@ -22,11 +22,20 @@ class ProviderUsageThresholdNotificationStateRepository(context: Context) {
 
     fun writeArmed(armed: Map<String, Boolean>) {
         preferences.edit()
-            .putString(KEY_ARMED, JSONObject().also { json ->
-                armed.forEach { (key, value) -> json.put(key, value) }
-            }.toString())
+            .putString(KEY_ARMED, encode(armed))
             .apply()
     }
+
+    fun clearProvider(providerId: com.aiquota.mobile.local.ProviderId): Boolean {
+        val prefix = "${providerId.storageId}:"
+        return preferences.edit()
+            .putString(KEY_ARMED, encode(readArmed().filterKeys { !it.startsWith(prefix) }))
+            .commit()
+    }
+
+    private fun encode(armed: Map<String, Boolean>): String = JSONObject().also { json ->
+        armed.forEach { (key, value) -> json.put(key, value) }
+    }.toString()
 
     private companion object {
         const val PREFERENCES_NAME = "ai_quota_usage_threshold_notifications"
