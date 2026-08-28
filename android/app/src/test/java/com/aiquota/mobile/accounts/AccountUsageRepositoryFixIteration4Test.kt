@@ -95,7 +95,7 @@ class AccountUsageRepositoryFixIteration4Test {
             )
         }
         openProduction(untouched).close()
-        assertEquals(6, userVersion(untouched))
+        assertEquals(7, userVersion(untouched))
         assertEquals(untouchedPrimary, primaryToken(untouched, "claude"))
         assertNull(primaryToken(untouched, "codex"))
         val untouchedHash = canonicalDatabaseHash(untouched)
@@ -108,7 +108,7 @@ class AccountUsageRepositoryFixIteration4Test {
             insertTarget(db, "claude", ACCOUNT_USAGE_ABSENT_SHA256, 7)
         }
         openProduction(complete).close()
-        assertEquals(6, userVersion(complete))
+        assertEquals(7, userVersion(complete))
         assertEquals(ACCOUNT_USAGE_PRIMARY_NONE, primaryToken(complete, "claude"))
         assertNull(primaryToken(complete, "codex"))
         val completeHash = canonicalDatabaseHash(complete)
@@ -131,7 +131,7 @@ class AccountUsageRepositoryFixIteration4Test {
         }
         repairMetadata(name)
         openProduction(name).close()
-        assertEquals(6, userVersion(name))
+        assertEquals(7, userVersion(name))
         assertNull(primaryToken(name, "claude"))
         assertNull(primaryToken(name, "codex"))
         val repaired = canonicalDatabaseHash(name)
