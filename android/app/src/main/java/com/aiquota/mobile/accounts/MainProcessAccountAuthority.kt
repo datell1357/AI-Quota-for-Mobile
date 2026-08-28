@@ -407,6 +407,39 @@ class MainProcessAccountAuthority private constructor(
     internal fun accountUsagePrimary(providerId: ProviderId): ProviderAccountId? =
         resolveAccountUsagePrimary(database.readableDatabase, providerId)
 
+    internal fun compatibilityPrimarySnapshot(): ProviderCardCompatibilityPrimarySnapshot {
+        val db = database.readableDatabase
+        val accounts = ProviderId.defaultOrder().associateWith { provider ->
+            val policy = ProviderCardCatalogPolicy.classify(provider) as? ProviderCardProviderPolicy.Released
+                ?: return@associateWith null
+            if (policy.multiplicity == ProviderCardMultiplicity.UNLIMITED) {
+                resolveAccountUsagePrimary(db, provider)
+            } else {
+                val id = ProviderAccountId(provider, AccountKey.reservedDefault())
+                readAccount(db, id)?.takeIf {
+                    it.state == AccountState.ACTIVE && it.deletionState == AccountDeletionState.NONE
+                }?.id
+            }
+        }
+        val selected = accounts.values.filterNotNull().toSet()
+        val ordered = buildList {
+            db.rawQuery(
+                "SELECT provider_id,account_key FROM provider_card_catalog " +
+                    "WHERE active_rank IS NOT NULL ORDER BY active_rank",
+                null,
+            ).use { cursor ->
+                while (cursor.moveToNext()) {
+                    val provider = ProviderId.entries.firstOrNull { it.storageId == cursor.getString(0) }
+                        ?: continue
+                    val key = runCatching { AccountKey.fromStorage(cursor.getString(1)) }.getOrNull()
+                        ?: continue
+                    ProviderAccountId(provider, key).takeIf(selected::contains)?.let(::add)
+                }
+            }
+        }
+        return ProviderCardCompatibilityPrimarySnapshot(readVersion(db), accounts, ordered)
+    }
+
     internal fun accountUsageProjectionIntent(): AccountUsageProjectionIntent? =
         readAccountUsageProjectionIntent(database.readableDatabase)
 

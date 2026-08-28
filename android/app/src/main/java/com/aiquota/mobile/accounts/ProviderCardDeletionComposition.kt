@@ -44,7 +44,9 @@ class ProviderCardDeletionComposition private constructor(
                         ConservativeWidgetArtifactStore(appContext),
                         ConservativeNotificationArtifactStore(appContext),
                     ),
-                    compatibility = AccountUsageCompatibilityProjectionClearer(usageRepository),
+                    compatibility = AccountUsageCompatibilityProjectionClearer(usageRepository) {
+                        ProviderCardCompatibilityProjection(appContext, authority).reconcile()
+                    },
                 )
             } catch (failure: Throwable) {
                 usageRepository.close()
@@ -86,8 +88,9 @@ object MainProcessAccountFeature {
     @Synchronized
     fun start(context: Context): List<ProviderCardDeletionResult> {
         appContext = context.applicationContext
-        val hasPending = MainProcessAccountAuthority.open(context).use {
-            it.pendingProviderCardDeletions().isNotEmpty()
+        val hasPending = MainProcessAccountAuthority.open(context).use { authority ->
+            ProviderCardCompatibilityProjection(context.applicationContext, authority).reconcile()
+            authority.pendingProviderCardDeletions().isNotEmpty()
         }
         if (!hasPending) return emptyList()
         return deletion().resumePending()

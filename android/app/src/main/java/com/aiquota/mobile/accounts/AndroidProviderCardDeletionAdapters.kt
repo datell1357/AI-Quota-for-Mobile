@@ -2,7 +2,7 @@ package com.aiquota.mobile.accounts
 
 import android.content.Context
 import com.aiquota.mobile.local.ProviderId
-import com.aiquota.mobile.local.ProviderPreferencesRepository
+import com.aiquota.mobile.local.ProviderCardPreferencesRepository
 import com.aiquota.mobile.providers.ProviderResetNotificationStateRepository
 import com.aiquota.mobile.providers.ProviderSessionResetter
 import com.aiquota.mobile.providers.ProviderUsageThresholdNotificationStateRepository
@@ -27,14 +27,10 @@ internal class ConservativeSingleAccountProviderCleanup(
 internal class ConservativePreferenceArtifactStore(
     context: Context,
 ) : ExactCardArtifactStore {
-    private val repository = ProviderPreferencesRepository(context.applicationContext)
+    private val repository = ProviderCardPreferencesRepository(context.applicationContext)
 
     override fun eraseExact(accountId: ProviderAccountId): Boolean =
-        if (accountId.isSingleReservedDefault()) {
-            repository.clearSingleAccountProviderArtifacts(accountId.providerId)
-        } else {
-            true
-        }
+        repository.clearExactCardArtifacts(accountId)
 }
 
 internal class ConservativeWidgetArtifactStore(
@@ -43,11 +39,7 @@ internal class ConservativeWidgetArtifactStore(
     private val cache = WidgetSnapshotCache(context.applicationContext)
 
     override fun eraseExact(accountId: ProviderAccountId): Boolean =
-        if (accountId.isSingleReservedDefault()) {
-            cache.removeSingleAccountProvider(accountId.providerId)
-        } else {
-            true
-        }
+        cache.removeExactCard(accountId)
 }
 
 internal class ConservativeNotificationArtifactStore(
@@ -57,14 +49,5 @@ internal class ConservativeNotificationArtifactStore(
     private val threshold = ProviderUsageThresholdNotificationStateRepository(context.applicationContext)
 
     override fun eraseExact(accountId: ProviderAccountId): Boolean =
-        if (accountId.isSingleReservedDefault()) {
-            reset.clearProvider(accountId.providerId) && threshold.clearProvider(accountId.providerId)
-        } else {
-            true
-        }
+        reset.clearExact(accountId) && threshold.clearExact(accountId)
 }
-
-private fun ProviderAccountId.isSingleReservedDefault(): Boolean =
-    accountKey == AccountKey.reservedDefault() &&
-        (ProviderCardCatalogPolicy.classify(providerId) as? ProviderCardProviderPolicy.Released)
-            ?.multiplicity == ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT

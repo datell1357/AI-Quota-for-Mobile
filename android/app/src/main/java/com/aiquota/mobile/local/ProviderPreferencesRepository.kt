@@ -3,6 +3,13 @@
 import android.content.Context
 import android.content.SharedPreferences
 
+/**
+ * Provider-wide defaults and the provider-keyed compatibility surface.
+ *
+ * [dashboardViewMode] and Claude auto-reset prime are genuinely provider-wide. Order, hidden,
+ * gauge, widget, and notification methods are legacy compatibility only; new card state belongs
+ * in [ProviderCardPreferencesRepository] and is projected here only for an explicit primary.
+ */
 class ProviderPreferencesRepository(context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(
         PREFERENCES_NAME,

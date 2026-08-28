@@ -2,11 +2,13 @@ package com.aiquota.mobile.accounts
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.aiquota.mobile.local.ProviderCardPreferencesRepository
 import com.aiquota.mobile.local.ProviderConnectionState
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderPreferencesRepository
 import com.aiquota.mobile.local.ProviderUsageLine
 import com.aiquota.mobile.local.ProviderUsageSnapshot
+import com.aiquota.mobile.providers.ProviderAccountLineKey
 import com.aiquota.mobile.providers.ProviderResetNotificationStateRepository
 import com.aiquota.mobile.providers.ProviderSnapshotCodec
 import com.aiquota.mobile.providers.ProviderUsageThresholdNotificationStateRepository
@@ -60,6 +62,8 @@ class ProviderCardDeletionProductionCompositionTest {
         putCredential(vault, sibling, "sibling-header-payload")
         putCredential(vault, selected, "selected-header-payload")
         seedProviderKeyedArtifacts(ProviderId.CODEX)
+        seedExactArtifacts(sibling, 80)
+        seedExactArtifacts(selected, 20)
         val providerKeyedBefore = providerKeyedArtifactDump()
         val providerCleanup = RecordingProviderCleanup()
         val composition = ProviderCardDeletionComposition.create(
@@ -90,6 +94,12 @@ class ProviderCardDeletionProductionCompositionTest {
         assertEquals(listOf(selected), platform.erased)
         assertTrue(providerCleanup.calls.isEmpty())
         assertEquals(providerKeyedBefore, providerKeyedArtifactDump())
+        assertNull(ProviderCardPreferencesRepository(context).providerGaugeColor(selected))
+        assertEquals("#445566", ProviderCardPreferencesRepository(context).providerGaugeColor(sibling))
+        assertNull(WidgetSnapshotCache(context).readExactCardState(selected))
+        assertEquals(80, exactWidgetRemaining(requireNotNull(WidgetSnapshotCache(context).readExactCardState(sibling))))
+        assertFalse(ProviderResetNotificationStateRepository(context).readExactPending().keys.any { it.accountId == selected })
+        assertTrue(ProviderResetNotificationStateRepository(context).readExactPending().keys.any { it.accountId == sibling })
         assertNull(authority.accountUsageRecord(selected))
         assertEquals(80, authority.accountUsageRecord(sibling)?.snapshot?.lines?.single()?.remainingText?.removeSuffix("%")?.toInt())
         composition.close()
@@ -100,7 +110,10 @@ class ProviderCardDeletionProductionCompositionTest {
         val cursor = ProviderAccountId(ProviderId.CURSOR, AccountKey.reservedDefault())
         seedProviderKeyedArtifacts(ProviderId.CURSOR)
         seedProviderKeyedArtifacts(ProviderId.GEMINI)
-        val geminiBefore = providerArtifactValues(ProviderId.GEMINI)
+        seedExactArtifacts(cursor, 50)
+        val gemini = ProviderAccountId(ProviderId.GEMINI, AccountKey.reservedDefault())
+        seedExactArtifacts(gemini, 60)
+        val geminiBefore = ProviderCardPreferencesRepository(context).providerGaugeColor(gemini)
         val eraser = CompositeExactCardArtifactEraser(
             ConservativePreferenceArtifactStore(context),
             ConservativeWidgetArtifactStore(context),
@@ -109,19 +122,42 @@ class ProviderCardDeletionProductionCompositionTest {
 
         assertTrue(eraser.erase(cursor))
 
-        assertNull(ProviderPreferencesRepository(context).providerGaugeColor(ProviderId.CURSOR))
-        assertEquals(geminiBefore, providerArtifactValues(ProviderId.GEMINI))
-        val widgetProviders = ProviderSnapshotCodec.decode(WidgetSnapshotCache(context).read())
-            .map { it.providerId }
-        assertFalse(ProviderId.CURSOR in widgetProviders)
-        assertTrue(ProviderId.GEMINI in widgetProviders)
-        assertFalse(ProviderResetNotificationStateRepository(context).readPending().keys.any {
-            it.startsWith("cursor:")
+        assertNull(ProviderCardPreferencesRepository(context).providerGaugeColor(cursor))
+        assertEquals(geminiBefore, ProviderCardPreferencesRepository(context).providerGaugeColor(gemini))
+        assertNull(WidgetSnapshotCache(context).readExactCardState(cursor))
+        assertEquals(60, exactWidgetRemaining(requireNotNull(WidgetSnapshotCache(context).readExactCardState(gemini))))
+        assertFalse(ProviderResetNotificationStateRepository(context).readExactPending().keys.any {
+            it.accountId == cursor
         })
-        assertFalse(ProviderUsageThresholdNotificationStateRepository(context).readArmed().keys.any {
-            it.startsWith("cursor:")
+        assertFalse(ProviderUsageThresholdNotificationStateRepository(context).readExactArmed().keys.any {
+            it.accountId == cursor
         })
+        assertEquals("#112233", ProviderPreferencesRepository(context).providerGaugeColor(ProviderId.CURSOR))
     }
+
+    private fun seedExactArtifacts(accountId: ProviderAccountId, remaining: Int) {
+        ProviderCardPreferencesRepository(context).apply {
+            saveProviderGaugeColor(accountId, if (remaining == 80) "#445566" else "#112233")
+            setResetNotificationEnabled(accountId, false)
+            setUsageThresholdNotificationEnabled(accountId, true)
+            setUsageThresholdPercent(accountId, remaining.coerceIn(1, 99))
+        }
+        WidgetSnapshotCache(context).writeExactCardSnapshot(
+            accountId,
+            ProviderSnapshotCodec.encode(listOf(snapshot(accountId.providerId, remaining))),
+        )
+        val line = ProviderAccountLineKey(accountId, "quota")
+        val reset = ProviderResetNotificationStateRepository(context)
+        reset.writeExact(
+            reset.readExactPending() + (line to remaining.toLong()),
+            reset.readExactNotified() + (line to (remaining - 1L)),
+        )
+        val threshold = ProviderUsageThresholdNotificationStateRepository(context)
+        threshold.writeExactArmed(threshold.readExactArmed() + (line to true))
+    }
+
+    private fun exactWidgetRemaining(state: com.aiquota.mobile.widget.WidgetSnapshotState): Int =
+        ProviderSnapshotCodec.decode(state.snapshotJson).single().lines.single().remainingText.removeSuffix("%").toInt()
 
     private fun seedProviderKeyedArtifacts(providerId: ProviderId) {
         ProviderPreferencesRepository(context).apply {

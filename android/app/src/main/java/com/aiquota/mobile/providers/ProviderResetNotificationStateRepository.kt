@@ -1,6 +1,7 @@
 package com.aiquota.mobile.providers
 
 import android.content.Context
+import com.aiquota.mobile.accounts.ProviderAccountId
 import org.json.JSONObject
 
 /** Persists per-line reset tracking for [ProviderResetNotificationPolicy]. */
@@ -11,6 +12,10 @@ class ProviderResetNotificationStateRepository(context: Context) {
     fun readPending(): Map<String, Long> = read(KEY_PENDING)
 
     fun readNotified(): Map<String, Long> = read(KEY_NOTIFIED)
+
+    fun readExactPending(): Map<ProviderAccountLineKey, Long> = readExact(KEY_EXACT_PENDING)
+
+    fun readExactNotified(): Map<ProviderAccountLineKey, Long> = readExact(KEY_EXACT_NOTIFIED)
 
     fun write(pending: Map<String, Long>, notified: Map<String, Long>) {
         preferences.edit()
@@ -24,6 +29,23 @@ class ProviderResetNotificationStateRepository(context: Context) {
         return preferences.edit()
             .putString(KEY_PENDING, encode(readPending().filterKeys { !it.startsWith(prefix) }))
             .putString(KEY_NOTIFIED, encode(readNotified().filterKeys { !it.startsWith(prefix) }))
+            .commit()
+    }
+
+    fun writeExact(
+        pending: Map<ProviderAccountLineKey, Long>,
+        notified: Map<ProviderAccountLineKey, Long>,
+    ): Boolean = synchronized(LOCK) {
+        preferences.edit()
+            .putString(KEY_EXACT_PENDING, encodeExact(pending))
+            .putString(KEY_EXACT_NOTIFIED, encodeExact(notified))
+            .commit()
+    }
+
+    fun clearExact(accountId: ProviderAccountId): Boolean = synchronized(LOCK) {
+        preferences.edit()
+            .putString(KEY_EXACT_PENDING, removeExactAccount(KEY_EXACT_PENDING, accountId))
+            .putString(KEY_EXACT_NOTIFIED, removeExactAccount(KEY_EXACT_NOTIFIED, accountId))
             .commit()
     }
 
@@ -46,9 +68,33 @@ class ProviderResetNotificationStateRepository(context: Context) {
         }.toString()
     }
 
+    private fun removeExactAccount(key: String, accountId: ProviderAccountId): String {
+        val raw = preferences.getString(key, null) ?: return "{}"
+        val root = runCatching { JSONObject(raw) }.getOrNull() ?: return raw
+        root.keys().asSequence().toList().forEach { encoded ->
+            if (ProviderAccountLineKeyCodec.decodeOrNull(encoded)?.accountId == accountId) root.remove(encoded)
+        }
+        return root.toString()
+    }
+
+    private fun readExact(key: String): Map<ProviderAccountLineKey, Long> = buildMap {
+        read(key).forEach { (encoded, value) ->
+            ProviderAccountLineKeyCodec.decodeOrNull(encoded)?.let { put(it, value) }
+        }
+    }
+
+    private fun encodeExact(values: Map<ProviderAccountLineKey, Long>): String = JSONObject().also { json ->
+        values.toSortedMap(compareBy(ProviderAccountLineKeyCodec::encode)).forEach { (key, value) ->
+            if (value > 0L) json.put(ProviderAccountLineKeyCodec.encode(key), value)
+        }
+    }.toString()
+
     private companion object {
+        val LOCK = Any()
         const val PREFERENCES_NAME = "ai_quota_reset_notifications"
         const val KEY_PENDING = "pending"
         const val KEY_NOTIFIED = "notified"
+        const val KEY_EXACT_PENDING = "pending_cards_v1"
+        const val KEY_EXACT_NOTIFIED = "notified_cards_v1"
     }
 }

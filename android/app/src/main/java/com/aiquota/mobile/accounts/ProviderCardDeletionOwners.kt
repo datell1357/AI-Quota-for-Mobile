@@ -76,7 +76,9 @@ fun interface CompatibilityProjectionClearer {
 
 class AccountUsageCompatibilityProjectionClearer(
     private val repository: AccountUsageRepository,
+    private val reconcileCardProjection: () -> Boolean = { true },
 ) : CompatibilityProjectionClearer {
     override fun clear(accountId: ProviderAccountId): Boolean =
-        repository.reconcileLegacyProjection() !is AccountUsageProjectionResult.Failed
+        repository.reconcileLegacyProjection() !is AccountUsageProjectionResult.Failed &&
+            reconcileCardProjection()
 }

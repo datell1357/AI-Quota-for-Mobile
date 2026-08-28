@@ -1,6 +1,8 @@
 ﻿package com.aiquota.mobile.widget
 
 import android.content.Context
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.WidgetCacheSanitizer
 import com.aiquota.mobile.providers.ProviderSnapshotCodec
@@ -42,6 +44,54 @@ class WidgetSnapshotCache(private val context: Context) {
         return preferences.getString(KEY_LOCAL_DISPLAY_SNAPSHOT, "") ?: ""
     }
 
+    fun writeExactCardSnapshot(
+        accountId: ProviderAccountId,
+        snapshotJson: String,
+        updatedAt: String = "",
+    ): Boolean = synchronized(LOCK) {
+        val sanitized = WidgetCacheSanitizer.sanitizeDisplayOnlyJson(snapshotJson)
+        val encoded = ProviderAccountIdStorageCodec.encode(accountId)
+        preferences.edit()
+            .putString("$KEY_CARD_SNAPSHOT_PREFIX$encoded", sanitized)
+            .putString("$KEY_CARD_UPDATED_AT_PREFIX$encoded", updatedAt)
+            .commit()
+    }
+
+    fun readExactCardState(accountId: ProviderAccountId): WidgetSnapshotState? = synchronized(LOCK) {
+        val encoded = ProviderAccountIdStorageCodec.encode(accountId)
+        val snapshot = preferences.getString("$KEY_CARD_SNAPSHOT_PREFIX$encoded", null) ?: return@synchronized null
+        WidgetSnapshotState(
+            snapshotJson = snapshot,
+            deviceName = LOCAL_DEVICE_NAME,
+            status = LOCAL_STATUS,
+            updatedAt = preferences.getString("$KEY_CARD_UPDATED_AT_PREFIX$encoded", "").orEmpty(),
+        )
+    }
+
+    fun exactCardSnapshots(): Map<ProviderAccountId, WidgetSnapshotState> = synchronized(LOCK) {
+        preferences.all.mapNotNull { (key, value) ->
+            if (!key.startsWith(KEY_CARD_SNAPSHOT_PREFIX)) return@mapNotNull null
+            val accountId = ProviderAccountIdStorageCodec.decodeOrNull(key.removePrefix(KEY_CARD_SNAPSHOT_PREFIX))
+                ?: return@mapNotNull null
+            val snapshot = value as? String ?: return@mapNotNull null
+            val encoded = ProviderAccountIdStorageCodec.encode(accountId)
+            accountId to WidgetSnapshotState(
+                snapshot,
+                LOCAL_DEVICE_NAME,
+                LOCAL_STATUS,
+                preferences.getString("$KEY_CARD_UPDATED_AT_PREFIX$encoded", "").orEmpty(),
+            )
+        }.toMap()
+    }
+
+    fun removeExactCard(accountId: ProviderAccountId): Boolean = synchronized(LOCK) {
+        val encoded = ProviderAccountIdStorageCodec.encode(accountId)
+        preferences.edit()
+            .remove("$KEY_CARD_SNAPSHOT_PREFIX$encoded")
+            .remove("$KEY_CARD_UPDATED_AT_PREFIX$encoded")
+            .commit()
+    }
+
     fun removeSingleAccountProvider(providerId: ProviderId): Boolean {
         val editor = preferences.edit()
         listOf(KEY_LATEST_SNAPSHOT, KEY_LOCAL_DISPLAY_SNAPSHOT).forEach { key ->
@@ -74,6 +124,7 @@ class WidgetSnapshotCache(private val context: Context) {
     }
 
     private companion object {
+        val LOCK = Any()
         const val PREFERENCES_NAME = "ai_quota_widget_cache"
         const val KEY_LATEST_SNAPSHOT = "latest_snapshot"
         const val KEY_STATUS = "status"
@@ -81,6 +132,8 @@ class WidgetSnapshotCache(private val context: Context) {
         const val KEY_UPDATED_AT = "updated_at"
         const val KEY_LOCAL_DISPLAY_SNAPSHOT = "local_display_snapshot"
         const val KEY_LOCAL_DISPLAY_UPDATED_AT = "local_display_updated_at"
+        const val KEY_CARD_SNAPSHOT_PREFIX = "card_snapshot_v1_"
+        const val KEY_CARD_UPDATED_AT_PREFIX = "card_updated_at_v1_"
         const val DEFAULT_STATUS = "NotLinked"
         const val LOCAL_STATUS = "LocalProviders"
         const val LOCAL_DEVICE_NAME = "This device"

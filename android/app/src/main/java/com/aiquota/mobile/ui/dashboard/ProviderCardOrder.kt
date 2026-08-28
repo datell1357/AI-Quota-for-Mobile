@@ -1,5 +1,6 @@
 ﻿package com.aiquota.mobile.ui.dashboard
 
+import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderPreferencesCodec
 
@@ -69,5 +70,43 @@ object ProviderCardOrder {
 
     fun normalizedOrder(order: List<ProviderId>): List<ProviderId> {
         return ProviderPreferencesCodec.decodeOrder(ProviderPreferencesCodec.encodeOrder(order))
+    }
+
+    /** Exact-card ordering helper. Durable dashboard rank remains owned by the account catalog. */
+    fun moveExactToTargetIndex(
+        order: List<ProviderAccountId>,
+        accountId: ProviderAccountId,
+        targetIndex: Int,
+    ): List<ProviderAccountId> = moveDistinct(order, accountId, targetIndex)
+
+    fun moveExactToVisibleTargetIndex(
+        order: List<ProviderAccountId>,
+        hidden: Set<ProviderAccountId>,
+        accountId: ProviderAccountId,
+        targetVisibleIndex: Int,
+    ): List<ProviderAccountId> {
+        val normalized = order.distinct()
+        val visible = normalized.filterNot { it in hidden }
+        if (accountId !in visible || visible.size <= 1) return normalized
+        val reordered = moveDistinct(visible, accountId, targetVisibleIndex)
+        val nextVisible = ArrayDeque(reordered)
+        return normalized.map { candidate -> if (candidate in hidden) candidate else nextVisible.removeFirst() }
+    }
+
+    fun previewExactVisibleOrder(
+        visibleOrder: List<ProviderAccountId>,
+        draggedAccount: ProviderAccountId?,
+        targetVisibleIndex: Int?,
+    ): List<ProviderAccountId> {
+        val normalized = visibleOrder.distinct()
+        if (draggedAccount == null || targetVisibleIndex == null || draggedAccount !in normalized) return normalized
+        return moveDistinct(normalized, draggedAccount, targetVisibleIndex)
+    }
+
+    private fun <T> moveDistinct(order: List<T>, item: T, targetIndex: Int): List<T> {
+        val result = order.distinct().toMutableList()
+        if (!result.remove(item)) return result
+        result.add(targetIndex.coerceIn(0, result.size), item)
+        return result
     }
 }
