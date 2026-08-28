@@ -10,17 +10,32 @@ class AccountUsageRepository private constructor(
     private val authority: MainProcessAccountAuthority,
     private val projectionStore: LegacyProjectionStore?,
     private val migrationComplete: () -> Boolean
-) : AutoCloseable {
+) : AutoCloseable, ProviderCardDisplayPageSource {
     fun page(offset: Int, limit: Int): AccountUsagePage = PROCESS_LOCK.withLock {
-        val catalog = authority.catalog(offset, limit)
-        val records = authority.displayRecords(offset, limit)
+        val page = authority.activeProviderCards(offset, limit)
         AccountUsagePage(
-            records = records,
-            offset = offset,
-            totalCount = catalog.totalCount,
-            nextOffset = (offset + records.size).takeIf { it < catalog.totalCount },
-            version = catalog.version
+            records = page.records.map(ProviderCardDisplayRecord::displayRecord),
+            offset = page.offset,
+            totalCount = page.totalCount,
+            nextOffset = page.nextOffset,
+            version = page.version
         )
+    }
+
+    override fun loadPage(offset: Int, limit: Int): ProviderCardDisplayPage = PROCESS_LOCK.withLock {
+        authority.activeProviderCards(offset, limit)
+    }
+
+    fun reorder(request: ReorderProviderCardsRequest): ReorderProviderCardsResult = PROCESS_LOCK.withLock {
+        authority.reorderProviderCards(request)
+    }
+
+    fun requestRefresh(request: AccountRefreshRequest): AccountRefreshRequestResult = PROCESS_LOCK.withLock {
+        authority.requestAccountRefresh(request)
+    }
+
+    fun compatibilityAccount(providerId: ProviderId): ProviderAccountId? = PROCESS_LOCK.withLock {
+        authority.compatibilityPrimarySnapshot().accounts[providerId]
     }
 
     fun read(accountId: ProviderAccountId): VersionedDisplayRecord? = PROCESS_LOCK.withLock {

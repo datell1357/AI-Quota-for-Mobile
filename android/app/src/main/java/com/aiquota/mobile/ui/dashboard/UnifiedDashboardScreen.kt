@@ -70,6 +70,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.aiquota.mobile.R
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.ProviderCardDisplayRecord
 import com.aiquota.mobile.local.ProviderConnectionState
 import com.aiquota.mobile.local.ProviderGaugeColor
 import com.aiquota.mobile.local.ProviderId
@@ -128,7 +130,7 @@ internal data class DashboardCardBounds(
         )
 }
 
-private enum class DashboardDropPlacement {
+internal enum class DashboardDropPlacement {
     Top,
     Bottom
 }
@@ -417,11 +419,43 @@ fun UnifiedDashboardScreen(
     }
 }
 
+/** Exact-card overload used by the feature-enabled shell; legacy provider behavior stays above. */
+@Composable
+fun UnifiedDashboardScreen(
+    cards: List<ProviderCardDisplayRecord>,
+    busyAccountIds: Set<ProviderAccountId>,
+    errors: Map<ProviderAccountId, String>,
+    gaugeColors: Map<ProviderAccountId, String>,
+    onCardSelected: (ProviderAccountId) -> Unit,
+    onConnectCard: (ProviderAccountId) -> Unit,
+    onReorderCard: (ProviderAccountId, Int) -> Unit,
+    onAddWidget: () -> Unit,
+    onOpenSettings: () -> Unit,
+    viewMode: DashboardViewMode,
+    onSelectViewMode: (DashboardViewMode) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ExactDashboardCardsContent(
+        cards = cards,
+        busyAccountIds = busyAccountIds,
+        errors = errors,
+        gaugeColors = gaugeColors,
+        onCardSelected = onCardSelected,
+        onConnectCard = onConnectCard,
+        onReorderCard = onReorderCard,
+        onAddWidget = onAddWidget,
+        onOpenSettings = onOpenSettings,
+        viewMode = viewMode,
+        onSelectViewMode = onSelectViewMode,
+        modifier = modifier,
+    )
+}
+
 /**
  * 목록형·카드형 선택 버튼. 토글이 아니라 두 버튼을 나란히 두고 지금 모드를 강조한다.
  */
 @Composable
-private fun DashboardViewModeButtons(
+internal fun DashboardViewModeButtons(
     viewMode: DashboardViewMode,
     onSelectViewMode: (DashboardViewMode) -> Unit
 ) {
@@ -473,7 +507,7 @@ private fun DashboardViewModeButton(
 }
 
 @Composable
-private fun EmptyDashboardState(layoutMetrics: AppLayoutMetrics) {
+internal fun EmptyDashboardState(layoutMetrics: AppLayoutMetrics) {
     val colors = AIQuotaTheme.colors
 
     Surface(
@@ -551,8 +585,9 @@ private fun DashboardDragOverlay(
 }
 
 @Composable
-private fun ProviderUsageCard(
+internal fun ProviderUsageCard(
     providerId: ProviderId,
+    interactionKey: String = providerId.storageId,
     snapshot: ProviderUsageSnapshot,
     visibleIndex: Int,
     visibleCardCenters: List<DashboardCardCenter>,
@@ -613,20 +648,20 @@ private fun ProviderUsageCard(
         baseSpacingDp = baseUsageColumnSpacingDp
     ).dp
     val dashboardGaugeHeight = dashboardGaugeHeightDp(cardHeightDp, layoutMetrics).dp
-    var dragOffsetX by remember(providerId) { mutableStateOf(0f) }
-    var dragOffsetY by remember(providerId) { mutableStateOf(0f) }
-    var cardCenter by remember(providerId) {
+    var dragOffsetX by remember(interactionKey) { mutableStateOf(0f) }
+    var dragOffsetY by remember(interactionKey) { mutableStateOf(0f) }
+    var cardCenter by remember(interactionKey) {
         mutableStateOf(DashboardCardCenter(Float.NaN, Float.NaN))
     }
-    var cardBounds by remember(providerId) { mutableStateOf<DashboardCardBounds?>(null) }
-    var dragOriginBounds by remember(providerId) { mutableStateOf<DashboardCardBounds?>(null) }
-    var dragOriginCenter by remember(providerId) { mutableStateOf<DashboardCardCenter?>(null) }
-    var isDragging by remember(providerId) { mutableStateOf(false) }
-    var dragStartVisibleIndex by remember(providerId) { mutableStateOf<Int?>(null) }
+    var cardBounds by remember(interactionKey) { mutableStateOf<DashboardCardBounds?>(null) }
+    var dragOriginBounds by remember(interactionKey) { mutableStateOf<DashboardCardBounds?>(null) }
+    var dragOriginCenter by remember(interactionKey) { mutableStateOf<DashboardCardCenter?>(null) }
+    var isDragging by remember(interactionKey) { mutableStateOf(false) }
+    var dragStartVisibleIndex by remember(interactionKey) { mutableStateOf<Int?>(null) }
     val currentVisibleIndex by rememberUpdatedState(visibleIndex)
     val currentVisibleCardCenters by rememberUpdatedState(visibleCardCenters)
     val currentPreviewTargetIndex by rememberUpdatedState(previewTargetIndex)
-    val dragHandleModifier = if (dragEnabled) Modifier.pointerInput(providerId) {
+    val dragHandleModifier = if (dragEnabled) Modifier.pointerInput(interactionKey) {
         detectDragGesturesAfterLongPress(
             onDragStart = {
                 isDragging = true

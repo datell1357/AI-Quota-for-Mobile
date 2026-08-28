@@ -348,8 +348,18 @@ class MainProcessAccountAuthority private constructor(
 
     fun displayVersion(): DisplayVersion = readVersion(database.readableDatabase)
 
+    internal fun activeProviderCards(offset: Int, limit: Int): ProviderCardDisplayPage = transaction { db ->
+        readActiveProviderCardPage(db, offset, limit)
+    }
+
+    internal fun reorderProviderCards(request: ReorderProviderCardsRequest): ReorderProviderCardsResult =
+        transaction { db -> reorderActiveProviderCards(db, request) }
+
+    internal fun requestAccountRefresh(request: AccountRefreshRequest): AccountRefreshRequestResult =
+        transaction { db -> requestExactAccountRefresh(db, request) }
+
     internal fun accountUsageRecord(accountId: ProviderAccountId): VersionedDisplayRecord? =
-        readLegacyImportRecord(database.readableDatabase, accountId)
+        readExactProviderCardRecord(database.readableDatabase, accountId)
 
     internal fun writeAccountUsage(write: AccountUsageWrite): AccountUsageWriteResult = transaction { db ->
         val account = readAccount(db, write.accountId)
@@ -372,7 +382,7 @@ class MainProcessAccountAuthority private constructor(
         writeVersion(db, version)
         val updated = requireNotNull(readAccount(db, write.accountId))
         AccountUsageWriteResult.Committed(
-            VersionedDisplayRecord(updated, write.snapshot, version),
+            VersionedDisplayRecord(updated, write.snapshot, updated.modifiedVersion),
             AccountUsageProjectionResult.MigrationIncomplete
         )
     }

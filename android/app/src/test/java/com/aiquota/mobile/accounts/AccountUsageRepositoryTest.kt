@@ -10,13 +10,16 @@ import com.aiquota.mobile.local.ProviderUsageLine
 import com.aiquota.mobile.local.ProviderUsageSnapshot
 import com.aiquota.mobile.providers.ProviderScriptProviders
 import com.aiquota.mobile.providers.ProviderSnapshotCodec
+import com.aiquota.mobile.ui.ProviderCardShellState
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicInteger
 import org.junit.After
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -45,6 +48,202 @@ class AccountUsageRepositoryTest {
         repository.close()
         context.deleteDatabase(databaseName)
         clearLegacyStorage()
+    }
+
+    @Test
+    fun activeDisconnectedCatalogCardsRemainExactAndDoNotCollapseProviderSiblings() {
+        val added = listOf(
+            authority.enrollDisconnectedProviderCard(ProviderId.CLAUDE, normalizeProviderCardAlias("Claude")),
+            authority.enrollDisconnectedProviderCard(ProviderId.CODEX, normalizeProviderCardAlias("Codex")),
+            authority.enrollDisconnectedProviderCard(ProviderId.CODEX, normalizeProviderCardAlias("Codex 2")),
+            authority.enrollDisconnectedProviderCard(ProviderId.CURSOR, normalizeProviderCardAlias("Cursor")),
+        ).map { (it as ProviderCardAddResult.Added).account }
+
+        val page = repository.page(0, 10)
+
+        assertEquals(4, page.totalCount)
+        assertEquals(added.map { it.id }, page.records.map { it.account.id })
+        assertEquals(listOf("Claude", "Codex", "Codex 2", "Cursor"), page.records.map { it.account.alias })
+        assertTrue(page.records.all { it.snapshot.connectionState == ProviderConnectionState.DISCONNECTED })
+    }
+
+    @Test
+    fun exactReorderUsesCatalogVersionCasAndLeavesSiblingRecordsByteIdentical() {
+        val ids = listOf(
+            id(ProviderId.CLAUDE, 11),
+            id(ProviderId.CODEX, 12),
+            id(ProviderId.CODEX, 13),
+            id(ProviderId.CURSOR, 14),
+        )
+        ids.forEachIndexed { index, accountId -> authority.register(seed(accountId, 80 - index)) }
+        val beforeA = requireNotNull(repository.read(ids[1]))
+        val initial = repository.loadPage(0, 10)
+        val reordered = repository.reorder(
+            ReorderProviderCardsRequest(
+                listOf(ids[0], ids[2], ids[1], ids[3]),
+                initial.version,
+            )
+        )
+        assertTrue(reordered is ReorderProviderCardsResult.Reordered)
+        assertEquals(listOf(ids[0], ids[2], ids[1], ids[3]), repository.loadPage(0, 10).records.map { it.accountId })
+        assertEquals(beforeA, repository.read(ids[1]))
+
+        val bytes = authority.canonicalDumpForTest()
+        assertEquals(
+            ReorderProviderCardsResult.Rejected(ReorderProviderCardsRejection.VERSION_MISMATCH),
+            repository.reorder(ReorderProviderCardsRequest(ids, initial.version)),
+        )
+        assertArrayEquals(bytes, authority.canonicalDumpForTest())
+        val currentVersion = repository.loadPage(0, 10).version
+        assertEquals(
+            ReorderProviderCardsResult.Rejected(ReorderProviderCardsRejection.DUPLICATE_ACCOUNT),
+            repository.reorder(
+                ReorderProviderCardsRequest(
+                    listOf(ids[0], ids[2], ids[2], ids[3]),
+                    currentVersion,
+                )
+            ),
+        )
+        assertEquals(
+            ReorderProviderCardsResult.Rejected(ReorderProviderCardsRejection.CARD_MISSING_OR_INACTIVE),
+            repository.reorder(
+                ReorderProviderCardsRequest(
+                    listOf(ids[0], ids[2], ids[1], id(ProviderId.CURSOR, 999)),
+                    currentVersion,
+                )
+            ),
+        )
+        assertEquals(
+            ReorderProviderCardsResult.Rejected(ReorderProviderCardsRejection.CARD_SET_MISMATCH),
+            repository.reorder(ReorderProviderCardsRequest(listOf(ids[0], ids[2], ids[1]), currentVersion)),
+        )
+        assertArrayEquals(bytes, authority.canonicalDumpForTest())
+    }
+
+    @Test
+    fun exactRefreshIntentAndEligibilityNeverTouchSiblingOrFallback() {
+        val a = id(ProviderId.CODEX, 21)
+        val b = id(ProviderId.CODEX, 22)
+        authority.register(seed(a, 70))
+        authority.register(seed(b, 60))
+        val aBefore = requireNotNull(repository.read(a))
+        val bBefore = requireNotNull(repository.read(b))
+
+        val accepted = repository.requestRefresh(
+            AccountRefreshRequest(b, bBefore.version, bBefore.account.generation, bBefore.account.sessionRevision)
+        )
+        assertTrue(accepted is AccountRefreshRequestResult.Accepted)
+        assertEquals(aBefore, repository.read(a))
+        assertEquals(
+            AccountRefreshRequestResult.Rejected(AccountRefreshRequestRejection.VERSION_MISMATCH),
+            repository.requestRefresh(
+                AccountRefreshRequest(b, bBefore.version, bBefore.account.generation, bBefore.account.sessionRevision)
+            ),
+        )
+        assertEquals(aBefore, repository.read(a))
+
+        val reauth = authority.requireReauthentication(a)
+        assertEquals(AccountAuthState.REAUTH_REQUIRED, reauth.authState)
+        val aReauth = requireNotNull(repository.read(a))
+        assertEquals(
+            AccountRefreshRequestResult.Rejected(AccountRefreshRequestRejection.ACCOUNT_INELIGIBLE),
+            repository.requestRefresh(
+                AccountRefreshRequest(a, aReauth.version, aReauth.account.generation, aReauth.account.sessionRevision)
+            ),
+        )
+        assertTrue(repository.requestRefresh(
+            AccountRefreshRequest(
+                b,
+                requireNotNull(repository.read(b)).version,
+                requireNotNull(repository.read(b)).account.generation,
+                requireNotNull(repository.read(b)).account.sessionRevision,
+            )
+        ) is AccountRefreshRequestResult.Accepted)
+        val bForWrite = requireNotNull(repository.read(b))
+        val written = repository.write(
+            AccountUsageWrite(
+                b,
+                bForWrite.version,
+                bForWrite.account.generation,
+                bForWrite.account.sessionRevision,
+                snapshot(b, 19),
+            )
+        )
+        assertTrue(written is AccountUsageWriteResult.Committed)
+        assertEquals(19, remaining(requireNotNull(repository.read(b))))
+        assertEquals(aBefore.snapshot, requireNotNull(repository.read(a)).snapshot)
+    }
+
+    @Test
+    fun compatibilityUsesReservedDefaultOrExplicitPrimaryAndRestartRestoresExactCatalog() {
+        val cursor = (authority.enrollDisconnectedProviderCard(
+            ProviderId.CURSOR,
+            normalizeProviderCardAlias("Cursor"),
+        ) as ProviderCardAddResult.Added).account.id
+        val codexA = id(ProviderId.CODEX, 31)
+        val codexB = id(ProviderId.CODEX, 32)
+        authority.register(seed(codexA, 40))
+        authority.register(seed(codexB, 30))
+        assertEquals(cursor, repository.compatibilityAccount(ProviderId.CURSOR))
+        val disconnected = requireNotNull(repository.read(cursor))
+        assertEquals(
+            AccountRefreshRequestResult.Rejected(AccountRefreshRequestRejection.ACCOUNT_INELIGIBLE),
+            repository.requestRefresh(
+                AccountRefreshRequest(
+                    cursor,
+                    disconnected.version,
+                    disconnected.account.generation,
+                    disconnected.account.sessionRevision,
+                )
+            ),
+        )
+        val ambiguousShell = ProviderCardShellState()
+            .applyCatalog(ProviderCardCatalogLoader(repository, 2).load())
+            .select(cursor)
+        val unresolved = repository.compatibilityAccount(ProviderId.CODEX)
+        assertNull(unresolved)
+        assertSame(
+            ambiguousShell,
+            ambiguousShell.applyCompatibilitySelection(ProviderId.CODEX, unresolved),
+        )
+        repository.assignPrimary(codexB, requireNotNull(repository.read(codexB)).version)
+        assertEquals(codexB, repository.compatibilityAccount(ProviderId.CODEX))
+        val beforeRestart = ProviderCardCatalogLoader(repository, 2).load() as ProviderCardCatalogLoadResult.Loaded
+
+        repository.close()
+        authority = MainProcessAccountAuthority.open(context, databaseName)
+        repository = AccountUsageRepository.openForTest(authority, AndroidLegacyMigrationSource(context))
+        val afterRestart = ProviderCardCatalogLoader(repository, 2).load() as ProviderCardCatalogLoadResult.Loaded
+        assertEquals(beforeRestart.snapshot, afterRestart.snapshot)
+        assertEquals(codexB, repository.compatibilityAccount(ProviderId.CODEX))
+    }
+
+    @Test
+    fun tombstonedExactCardDisappearsWithoutSiblingFallback() {
+        val a = id(ProviderId.CODEX, 41)
+        val b = id(ProviderId.CODEX, 42)
+        authority.register(seed(a, 80))
+        authority.register(seed(b, 20))
+        repository.assignPrimary(b, requireNotNull(repository.read(b)).version)
+        val aBefore = requireNotNull(repository.read(a))
+
+        assertTrue(authority.beginProviderCardDeletion(b) is BeginProviderCardDeletionResult.Ready)
+
+        val activePage = repository.loadPage(0, 10)
+        assertEquals(listOf(a), activePage.records.map { it.accountId })
+        val bytes = authority.canonicalDumpForTest()
+        assertEquals(
+            ReorderProviderCardsResult.Rejected(ReorderProviderCardsRejection.CARD_MISSING_OR_INACTIVE),
+            repository.reorder(ReorderProviderCardsRequest(listOf(a, b), activePage.version)),
+        )
+        assertArrayEquals(bytes, authority.canonicalDumpForTest())
+        assertNull(repository.read(b))
+        val noSelection = ProviderCardShellState()
+            .applyCatalog(ProviderCardCatalogLoader(repository, 2).load())
+        val deletedPrimary = repository.compatibilityAccount(ProviderId.CODEX)
+        assertNull(deletedPrimary)
+        assertSame(noSelection, noSelection.applyCompatibilitySelection(ProviderId.CODEX, deletedPrimary))
+        assertEquals(aBefore, repository.read(a))
     }
 
     @Test

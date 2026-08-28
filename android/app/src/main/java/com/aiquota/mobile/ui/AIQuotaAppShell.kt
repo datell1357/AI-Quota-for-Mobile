@@ -74,6 +74,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.aiquota.mobile.R
+import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.local.AppTheme
 import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.local.ProviderConnectionState
@@ -138,6 +139,9 @@ fun AIQuotaAppShell(
     val localUsageRepository = remember(appContext) {
         LocalUsageRepository(appContext)
     }
+    val cardRuntime = remember(appContext) {
+        ProviderCardShellRuntime.open(appContext, BuildConfig.MULTI_ACCOUNT_ENABLED)
+    }
     val connectorRegistry = remember(appContext) { ProviderConnectorRegistry.default(appContext) }
     val foregroundRefreshController = remember(appContext) { ForegroundRefreshController(appContext) }
     val refreshStateRepository = remember(appContext) {
@@ -193,6 +197,11 @@ fun AIQuotaAppShell(
 
     fun refreshSnapshots() {
         snapshots = localUsageRepository.readSnapshots()
+    }
+
+    fun selectExactCard(accountId: ProviderAccountId) {
+        cardRuntime.select(accountId)
+        route = AppRoute.ProviderDetail(accountId.providerId)
     }
 
     LaunchedEffect(routeRequest) {
@@ -385,9 +394,22 @@ fun AIQuotaAppShell(
                 providerSessionResetter.disconnectAndWait(providerId)
                 localUsageRepository.removeProviderSnapshot(providerId)
                 refreshSnapshots()
+                cardRuntime.reload()
             } finally {
                 busyProvider = null
             }
+        }
+    }
+
+    fun disconnectExactSingleCard(accountId: ProviderAccountId) {
+        val operation = cardRuntime.beginDisconnect(accountId)
+        coroutineScope.launch {
+            cardRuntime.disconnectSingleReserved(
+                operation,
+                connectorRegistry,
+                providerSessionResetter,
+                localUsageRepository,
+            )
         }
     }
 
@@ -617,11 +639,13 @@ fun AIQuotaAppShell(
             val observer = LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) {
                     refreshSnapshots()
+                    cardRuntime.reload()
                     canPostNotifications = UsageLimitNotificationController.canPostNotifications(launchContext)
                     liveMonitoringEnabled = foregroundRefreshController.liveMonitoringEnabled()
                     batteryOptimizationExempt = isBatteryOptimizationExempt(appContext)
                     liveRefreshStatusNowMillis = System.currentTimeMillis()
                     if (
+                        !BuildConfig.MULTI_ACCOUNT_ENABLED &&
                         ForegroundRefreshPolicy.shouldRunForegroundLoop(
                             snapshots = localUsageRepository.readSnapshots(),
                             liveMonitoringEnabled = liveMonitoringEnabled,
@@ -638,10 +662,15 @@ fun AIQuotaAppShell(
         }
     }
 
+    DisposableEffect(cardRuntime) {
+        onDispose { cardRuntime.close() }
+    }
+
     DisposableEffect(localUsageRepository) {
         val listener = localUsageRepository.registerSnapshotListener {
             coroutineScope.launch {
                 refreshSnapshots()
+                cardRuntime.reload()
             }
         }
         onDispose {
@@ -675,6 +704,7 @@ fun AIQuotaAppShell(
 
     LaunchedEffect(snapshots, liveMonitoringEnabled, canPostNotifications) {
         if (
+            !BuildConfig.MULTI_ACCOUNT_ENABLED &&
             ForegroundRefreshPolicy.shouldRunForegroundLoop(
                 snapshots = snapshots,
                 liveMonitoringEnabled = liveMonitoringEnabled,
@@ -754,36 +784,73 @@ fun AIQuotaAppShell(
             ) { contentPadding ->
                 Box(modifier = Modifier.padding(contentPadding)) {
                     when (val currentRoute = route) {
-                        AppRoute.Home -> UnifiedDashboardScreen(
-                            providerOrder = providerOrder,
-                            hiddenProviders = hiddenProviders,
-                            snapshots = snapshots,
-                            providerGaugeColors = providerGaugeColors,
-                            onProviderSelected = { route = AppRoute.ProviderDetail(it) },
-                            onConnectProvider = ::connectProvider,
-                            onReorderProvider = ::reorderVisibleProvider,
-                            onAddWidget = { showDashboardWidgetPicker = true },
-                            onOpenSettings = { route = AppRoute.Settings },
-                            viewMode = dashboardViewMode,
-                            onSelectViewMode = { mode ->
+                        AppRoute.Home -> {
+                            val selectViewMode: (com.aiquota.mobile.local.DashboardViewMode) -> Unit = { mode ->
                                 if (mode != dashboardViewMode) {
                                     dashboardViewMode = mode
                                     providerPreferencesRepository.setDashboardViewMode(mode)
                                 }
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
+                            }
+                            if (cardRuntime.enabled) {
+                                UnifiedDashboardScreen(
+                                    cards = cardRuntime.state.catalog.cards,
+                                    busyAccountIds = cardRuntime.state.busyAccountIds,
+                                    errors = cardRuntime.state.errors,
+                                    gaugeColors = cardRuntime.gaugeColors,
+                                    onCardSelected = ::selectExactCard,
+                                    onConnectCard = ::selectExactCard,
+                                    onReorderCard = cardRuntime::reorder,
+                                    onAddWidget = { showDashboardWidgetPicker = true },
+                                    onOpenSettings = { route = AppRoute.Settings },
+                                    viewMode = dashboardViewMode,
+                                    onSelectViewMode = selectViewMode,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            } else {
+                                UnifiedDashboardScreen(
+                                    providerOrder = providerOrder,
+                                    hiddenProviders = hiddenProviders,
+                                    snapshots = snapshots,
+                                    providerGaugeColors = providerGaugeColors,
+                                    onProviderSelected = { route = AppRoute.ProviderDetail(it) },
+                                    onConnectProvider = ::connectProvider,
+                                    onReorderProvider = ::reorderVisibleProvider,
+                                    onAddWidget = { showDashboardWidgetPicker = true },
+                                    onOpenSettings = { route = AppRoute.Settings },
+                                    viewMode = dashboardViewMode,
+                                    onSelectViewMode = selectViewMode,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                        }
                         is AppRoute.ProviderDetail -> {
-                            val snapshot = snapshots
-                                .firstOrNull { it.providerId == currentRoute.providerId }
-                                ?: ProviderUsageSnapshot.disconnected(currentRoute.providerId)
+                            val exactDetail = if (cardRuntime.enabled) {
+                                cardRuntime.detailBinding(currentRoute.providerId)
+                            } else null
+                            val exactId = exactDetail?.accountId
+                            val snapshot = exactDetail?.snapshot ?: if (cardRuntime.enabled) {
+                                ProviderUsageSnapshot.disconnected(currentRoute.providerId)
+                            } else {
+                                snapshots.firstOrNull { it.providerId == currentRoute.providerId }
+                                    ?: ProviderUsageSnapshot.disconnected(currentRoute.providerId)
+                            }
                             ProviderDetailScreen(
                                 snapshot = snapshot,
-                                isHidden = currentRoute.providerId in hiddenProviders,
-                                isBusy = busyProvider == currentRoute.providerId,
-                                onConnect = { connectProvider(currentRoute.providerId) },
-                                onDisconnect = { disconnectProvider(currentRoute.providerId) },
-                                onAddWidget = { requestProviderWidget(currentRoute.providerId) },
+                                isHidden = !cardRuntime.enabled && currentRoute.providerId in hiddenProviders,
+                                isBusy = exactDetail?.busy ?: (busyProvider == currentRoute.providerId),
+                                onConnect = {
+                                    if (exactId != null) selectExactCard(exactId)
+                                    else if (!cardRuntime.enabled) connectProvider(currentRoute.providerId)
+                                },
+                                onDisconnect = {
+                                    if (exactDetail?.singleReserved == true) disconnectExactSingleCard(exactDetail.accountId)
+                                    else if (!cardRuntime.enabled) disconnectProvider(currentRoute.providerId)
+                                },
+                                onAddWidget = {
+                                    if (exactDetail?.singleReserved == true || !cardRuntime.enabled) {
+                                        requestProviderWidget(currentRoute.providerId)
+                                    }
+                                },
                                 resetNotificationEnabled = currentRoute.providerId in resetNotificationProviders,
                                 onResetNotificationChange = { enabled ->
                                     setResetNotificationEnabled(currentRoute.providerId, enabled)
@@ -799,8 +866,14 @@ fun AIQuotaAppShell(
                                 onUsageThresholdPercentChange = { percent ->
                                     setUsageThresholdPercent(currentRoute.providerId, percent)
                                 },
-                                gaugeColorHex = providerGaugeColors[currentRoute.providerId],
-                                onGaugeColorChange = { color -> setProviderGaugeColor(currentRoute.providerId, color) },
+                                gaugeColorHex = exactDetail?.gaugeColor ?: providerGaugeColors[currentRoute.providerId],
+                                onGaugeColorChange = { color ->
+                                    if (exactId != null) {
+                                        cardRuntime.saveGaugeColor(exactId, color)
+                                    } else {
+                                        setProviderGaugeColor(currentRoute.providerId, color)
+                                    }
+                                },
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
