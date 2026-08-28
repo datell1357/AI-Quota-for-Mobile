@@ -111,6 +111,7 @@ internal class AccountAuthorityDatabase(
         createNamedProfileTables(db)
         createProviderCardCatalogTable(db)
         createProviderCardCatalogIndexes(db)
+        createProviderCardInitializationTables(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -127,11 +128,13 @@ internal class AccountAuthorityDatabase(
         if (tableExists(db, "named_profile_lifecycle")) validateNamedProfileTable(db)
         createNamedProfileTables(db)
         upgradeProviderCardCatalog(db)
+        createProviderCardInitializationTables(db)
     }
 
     override fun onOpen(db: SQLiteDatabase) {
         super.onOpen(db)
         validateProviderCardCatalog(db)
+        validateProviderCardInitializationTables(db)
     }
 
     private fun upgradeProviderCardCatalog(db: SQLiteDatabase) {
@@ -243,6 +246,212 @@ internal class AccountAuthorityDatabase(
             "CREATE UNIQUE INDEX IF NOT EXISTS provider_card_catalog_active_alias_unique " +
                 "ON provider_card_catalog(alias_normalized_key) WHERE active_rank IS NOT NULL"
         )
+    }
+
+    private fun createProviderCardInitializationTables(db: SQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS provider_card_initialization (
+                singleton_id INTEGER PRIMARY KEY CHECK(singleton_id = 1),
+                migration_version INTEGER NOT NULL CHECK(migration_version IN (0, 1)),
+                onboarding_state TEXT NOT NULL CHECK(onboarding_state IN ('PENDING','COMPLETED','SKIPPED')),
+                links_sha256 TEXT NOT NULL CHECK(
+                    length(links_sha256) = 64 AND links_sha256 NOT GLOB '*[^0-9a-f]*'
+                )
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "INSERT OR IGNORE INTO provider_card_initialization(" +
+                "singleton_id,migration_version,onboarding_state,links_sha256) " +
+                "VALUES(1,0,'PENDING','${"0".repeat(64)}')"
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS provider_card_migration_links (
+                provider_id TEXT NOT NULL CHECK(length(provider_id) > 0),
+                account_key TEXT NOT NULL CHECK(length(account_key) > 0),
+                origin TEXT NOT NULL CHECK(origin IN ('EXISTING_CATALOG','LEGACY_DEFAULT')),
+                PRIMARY KEY(provider_id, account_key),
+                FOREIGN KEY(provider_id, account_key)
+                    REFERENCES provider_card_catalog(provider_id, account_key) ON DELETE RESTRICT
+            )
+            """.trimIndent()
+        )
+    }
+
+    private fun validateProviderCardInitializationTables(db: SQLiteDatabase) {
+        val initializationColumns = tableColumns(db, "provider_card_initialization")
+        val expectedInitialization = listOf(
+            CatalogColumn("singleton_id", "INTEGER", 0, 1),
+            CatalogColumn("migration_version", "INTEGER", 1, 0),
+            CatalogColumn("onboarding_state", "TEXT", 1, 0),
+            CatalogColumn("links_sha256", "TEXT", 1, 0),
+        )
+        if (initializationColumns != expectedInitialization) {
+            malformedCatalog("Provider-card initialization schema is malformed")
+        }
+        validateTableCheckPredicates(
+            db,
+            "provider_card_initialization",
+            listOf(
+                "singleton_id = 1",
+                "migration_version IN (0, 1)",
+                "onboarding_state IN ('PENDING','COMPLETED','SKIPPED')",
+                "length(links_sha256) = 64 AND links_sha256 NOT GLOB '*[^0-9a-f]*'",
+            ),
+        )
+
+        val linkColumns = tableColumns(db, "provider_card_migration_links")
+        val expectedLinks = listOf(
+            CatalogColumn("provider_id", "TEXT", 1, 1),
+            CatalogColumn("account_key", "TEXT", 1, 2),
+            CatalogColumn("origin", "TEXT", 1, 0),
+        )
+        if (linkColumns != expectedLinks) malformedCatalog("Provider-card migration-link schema is malformed")
+        validateTableCheckPredicates(
+            db,
+            "provider_card_migration_links",
+            listOf(
+                "length(provider_id) > 0",
+                "length(account_key) > 0",
+                "origin IN ('EXISTING_CATALOG','LEGACY_DEFAULT')",
+            ),
+        )
+        validateProviderCardMigrationLinkForeignKey(db)
+        validateProviderCardInitializationRows(db)
+    }
+
+    private fun validateProviderCardInitializationRows(db: SQLiteDatabase) {
+        db.rawQuery(
+            "SELECT singleton_id,migration_version,onboarding_state,links_sha256 " +
+                "FROM provider_card_initialization",
+            null,
+        ).use { cursor ->
+            if (!cursor.moveToFirst() ||
+                cursor.getType(0) != Cursor.FIELD_TYPE_INTEGER || cursor.getLong(0) != 1L ||
+                cursor.getType(1) != Cursor.FIELD_TYPE_INTEGER || cursor.getInt(1) !in 0..1 ||
+                cursor.getType(2) != Cursor.FIELD_TYPE_STRING ||
+                cursor.getString(2) !in setOf("PENDING", "COMPLETED", "SKIPPED") ||
+                cursor.getType(3) != Cursor.FIELD_TYPE_STRING ||
+                !SHA256_PATTERN.matches(cursor.getString(3)) ||
+                cursor.moveToNext()
+            ) {
+                malformedCatalog("Provider-card initialization row is malformed")
+            }
+        }
+        db.rawQuery(
+            "SELECT provider_id,account_key,origin FROM provider_card_migration_links",
+            null,
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                if (cursor.getType(0) != Cursor.FIELD_TYPE_STRING ||
+                    ProviderId.fromStorageId(cursor.getString(0)) == null ||
+                    cursor.getType(1) != Cursor.FIELD_TYPE_STRING ||
+                    cursor.getType(2) != Cursor.FIELD_TYPE_STRING ||
+                    cursor.getString(2) !in setOf("EXISTING_CATALOG", "LEGACY_DEFAULT")
+                ) {
+                    malformedCatalog("Provider-card migration-link row is malformed")
+                }
+                try {
+                    AccountKey.fromStorage(cursor.getString(1))
+                } catch (cause: IllegalArgumentException) {
+                    throw AccountAuthorityCatalogException("Malformed provider-card migration-link account key", cause)
+                }
+            }
+        }
+    }
+
+    private fun validateProviderCardMigrationLinkForeignKey(db: SQLiteDatabase) {
+        val foreignKeys = buildList {
+            db.rawQuery("PRAGMA foreign_key_list(provider_card_migration_links)", null).use { cursor ->
+                while (cursor.moveToNext()) {
+                    add(
+                        CatalogForeignKey(
+                            id = cursor.getInt(0),
+                            sequence = cursor.getInt(1),
+                            table = cursor.getString(2),
+                            from = cursor.getString(3),
+                            to = cursor.getString(4),
+                            onUpdate = cursor.getString(5).uppercase(Locale.ROOT),
+                            onDelete = cursor.getString(6).uppercase(Locale.ROOT),
+                        )
+                    )
+                }
+            }
+        }.sortedBy(CatalogForeignKey::sequence)
+        if (foreignKeys.size != 2 || foreignKeys.map(CatalogForeignKey::id).distinct().size != 1) {
+            malformedCatalog("Provider-card migration links must have one composite foreign key")
+        }
+        val id = foreignKeys.first().id
+        val expected = listOf(
+            CatalogForeignKey(id, 0, "provider_card_catalog", "provider_id", "provider_id", "NO ACTION", "RESTRICT"),
+            CatalogForeignKey(id, 1, "provider_card_catalog", "account_key", "account_key", "NO ACTION", "RESTRICT"),
+        )
+        if (foreignKeys != expected) malformedCatalog("Provider-card migration-link foreign key is malformed")
+    }
+
+    private fun validateTableCheckPredicates(
+        db: SQLiteDatabase,
+        table: String,
+        expected: List<String>,
+    ) {
+        val sql = db.rawQuery(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name=?",
+            arrayOf(table),
+        ).use { cursor ->
+            if (!cursor.moveToFirst() || cursor.getType(0) != Cursor.FIELD_TYPE_STRING) {
+                malformedCatalog("Provider-card authority table SQL is missing")
+            }
+            cursor.getString(0)
+        }
+        val actual = extractCheckPredicates(sql).map(::normalizeSqlPredicate)
+        if (actual != expected.map(::normalizeSqlPredicate)) {
+            malformedCatalog("Provider-card authority CHECK predicates are malformed")
+        }
+    }
+
+    private fun extractCheckPredicates(sql: String): List<String> = buildList {
+        var searchFrom = 0
+        while (true) {
+            val check = sql.indexOf("CHECK", searchFrom, ignoreCase = true)
+            if (check < 0) return@buildList
+            val open = sql.indexOf('(', check + 5)
+            if (open < 0) malformedCatalog("Malformed provider-card authority CHECK predicate")
+            var depth = 1
+            var index = open + 1
+            while (index < sql.length && depth != 0) {
+                when (sql[index]) {
+                    '(' -> depth++
+                    ')' -> depth--
+                }
+                index++
+            }
+            if (depth != 0) malformedCatalog("Malformed provider-card authority CHECK predicate")
+            add(sql.substring(open + 1, index - 1))
+            searchFrom = index
+        }
+    }
+
+    private fun normalizeSqlPredicate(value: String): String = value
+        .trim()
+        .replace(Regex("\\s+"), " ")
+        .replace(Regex("\\s*([(),=<>])\\s*"), "$1")
+        .lowercase(Locale.ROOT)
+
+    private fun tableColumns(db: SQLiteDatabase, table: String): List<CatalogColumn> = buildList {
+        db.rawQuery("PRAGMA table_info($table)", null).use { cursor ->
+            while (cursor.moveToNext()) {
+                add(
+                    CatalogColumn(
+                        name = cursor.getString(1),
+                        type = cursor.getString(2).uppercase(Locale.ROOT),
+                        notNull = cursor.getInt(3),
+                        primaryKey = cursor.getInt(5),
+                    )
+                )
+            }
+        }
     }
 
     private fun validateProviderCardCatalog(db: SQLiteDatabase) {
@@ -731,6 +940,8 @@ internal class AccountAuthorityDatabase(
             appendTable(db, "legacy_usage_conflicts", listOf("receipt_sha256", "provider_id", "observed_sha256", "expected_sha256", "authority_version"), "provider_id, receipt_sha256")
             appendTable(db, "named_profile_lifecycle", listOf("provider_id","account_key","profile_name","lifecycle_state","receipt_disposition"), "provider_id,account_key")
             appendTable(db, "provider_card_catalog", listOf("provider_id", "account_key", "active_rank", "alias_normalized_key"), "active_rank IS NULL, active_rank, provider_id, account_key")
+            appendTable(db, "provider_card_initialization", listOf("singleton_id", "migration_version", "onboarding_state", "links_sha256"), "singleton_id")
+            appendTable(db, "provider_card_migration_links", listOf("provider_id", "account_key", "origin"), "provider_id, account_key")
         }
         return dump.toByteArray(StandardCharsets.UTF_8)
     }
@@ -761,6 +972,8 @@ internal class AccountAuthorityDatabase(
         appendFields(db, fields, "legacy_usage_conflicts", listOf("receipt_sha256", "provider_id", "observed_sha256", "expected_sha256", "authority_version"), "provider_id, receipt_sha256")
         appendFields(db, fields, "named_profile_lifecycle", listOf("provider_id","account_key","profile_name","lifecycle_state","receipt_disposition"), "provider_id,account_key")
         appendFields(db, fields, "provider_card_catalog", listOf("provider_id", "account_key", "active_rank", "alias_normalized_key"), "active_rank IS NULL, active_rank, provider_id, account_key")
+        appendFields(db, fields, "provider_card_initialization", listOf("singleton_id", "migration_version", "onboarding_state", "links_sha256"), "singleton_id")
+        appendFields(db, fields, "provider_card_migration_links", listOf("provider_id", "account_key", "origin"), "provider_id, account_key")
         return fields
     }
 
@@ -820,7 +1033,7 @@ internal class AccountAuthorityDatabase(
         private const val PROVIDER_CARD_CATALOG_TABLE = "provider_card_catalog"
         private const val ACTIVE_RANK_INDEX = "provider_card_catalog_active_rank_unique"
         private const val ACTIVE_ALIAS_INDEX = "provider_card_catalog_active_alias_unique"
-        const val SCHEMA_VERSION = 7
+        const val SCHEMA_VERSION = 8
         const val DEFAULT_DATABASE_NAME = "ai_quota_accounts_v2.db"
     }
 }

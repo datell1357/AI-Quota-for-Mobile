@@ -96,6 +96,15 @@ class ProviderCardCatalog private constructor(
 
     fun page(offset: Int, limit: Int): AccountCatalogPage = authority.catalog(offset, limit)
 
+    fun initializationState(): ProviderCatalogInitializationState =
+        authority.providerCatalogInitializationState()
+
+    fun skipOnboarding(): ProviderCatalogInitializationState =
+        authority.setProviderCatalogOnboardingState(ProviderCatalogOnboardingState.SKIPPED)
+
+    fun completeOnboarding(): ProviderCatalogInitializationState =
+        authority.setProviderCatalogOnboardingState(ProviderCatalogOnboardingState.COMPLETED)
+
     override fun close() = authority.close()
 
     companion object {

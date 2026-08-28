@@ -36,6 +36,22 @@ class MainProcessAccountAuthority private constructor(
         VersionedDisplayRecord(inserted, seed.snapshot, version)
     }
 
+    internal fun initializeConnectedProviderCards(
+        source: LegacyMigrationSource,
+        migrationFaultInjector: ConnectedProviderCardMigrationFaultInjector,
+    ): ConnectedProviderCardAuthorityResult = transaction { db ->
+        captureAndInitializeConnectedProviderCards(db, source, migrationFaultInjector)
+    }
+
+    internal fun providerCatalogInitializationState(): ProviderCatalogInitializationState =
+        readProviderCatalogInitializationState(database.readableDatabase)
+
+    internal fun setProviderCatalogOnboardingState(
+        state: ProviderCatalogOnboardingState,
+    ): ProviderCatalogInitializationState = transaction { db ->
+        setProviderCatalogOnboardingState(db, state)
+    }
+
     internal fun enrollDisconnectedProviderCard(
         providerId: ProviderId,
         customAlias: NormalizedProviderCardAlias?,

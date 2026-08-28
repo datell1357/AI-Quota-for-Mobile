@@ -64,7 +64,7 @@ class AccountAuthorityCatalogMigrationTest {
         openAndTouch(name)
 
         val migrated = catalogRows(name)
-        assertEquals(7, userVersion(name))
+        assertEquals(8, userVersion(name))
         assertEquals(
             listOf(id(ProviderId.CLAUDE, 1), id(ProviderId.CODEX, 3), id(ProviderId.GEMINI, 4)),
             migrated.filter { it.activeRank != null }.map(CatalogRow::id),
@@ -174,7 +174,7 @@ class AccountAuthorityCatalogMigrationTest {
             assertArrayEquals(point.toString(), before, rawCatalogSurface(name))
 
             openAndTouch(name)
-            assertEquals(point.toString(), 7, userVersion(name))
+            assertEquals(point.toString(), 8, userVersion(name))
             assertEquals(listOf(0L, 1L), catalogRows(name).mapNotNull(CatalogRow::activeRank))
         }
         println("QA_TASK7_FAULT_POINTS=${points.joinToString(",")};ROLLBACKS=${points.size};RETRIES=${points.size}")
@@ -207,7 +207,7 @@ class AccountAuthorityCatalogMigrationTest {
         } finally {
             executor.shutdownNow()
         }
-        assertEquals(7, userVersion(name))
+        assertEquals(8, userVersion(name))
         val once = rawCatalogSurface(name)
         openAndTouch(name)
         assertArrayEquals(once, rawCatalogSurface(name))
@@ -218,7 +218,7 @@ class AccountAuthorityCatalogMigrationTest {
         val downgrade = legacyV6("downgrade", listOf(row(ProviderId.CLAUDE, 1, null)))
         openAndTouch(downgrade)
         val beforeDowngrade = rawCatalogSurface(downgrade)
-        val older = object : SQLiteOpenHelper(context, downgrade, null, 6) {
+        val older = object : SQLiteOpenHelper(context, downgrade, null, 7) {
             override fun onCreate(db: SQLiteDatabase) = error("unexpected create")
             override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) =
                 error("unexpected upgrade")
@@ -330,6 +330,92 @@ class AccountAuthorityCatalogMigrationTest {
             assertCurrentOpenFailsUnchanged(name)
         }
         println("QA_TASK7_TOPOLOGY_REJECTED_UNCHANGED=${mutations.map { it.first }}")
+    }
+
+    @Test
+    fun currentV8InitializationChecksForeignKeyTopologyAndPersistedEnumsFailClosedUnchanged() {
+        val mutations = listOf<Pair<String, (SQLiteDatabase) -> Unit>>(
+            "initialization-checks-absent" to { db ->
+                replaceInitializationTable(
+                    db,
+                    "CREATE TABLE provider_card_initialization(" +
+                        "singleton_id INTEGER PRIMARY KEY,migration_version INTEGER NOT NULL," +
+                        "onboarding_state TEXT NOT NULL,links_sha256 TEXT NOT NULL)",
+                )
+            },
+            "initialization-hash-check-wrong" to { db ->
+                replaceInitializationTable(
+                    db,
+                    "CREATE TABLE provider_card_initialization(" +
+                        "singleton_id INTEGER PRIMARY KEY CHECK(singleton_id=1)," +
+                        "migration_version INTEGER NOT NULL CHECK(migration_version IN (0,1))," +
+                        "onboarding_state TEXT NOT NULL CHECK(onboarding_state IN ('PENDING','COMPLETED','SKIPPED'))," +
+                        "links_sha256 TEXT NOT NULL CHECK(length(links_sha256)=63))",
+                )
+            },
+            "link-checks-absent" to { db ->
+                replaceMigrationLinks(
+                    db,
+                    "CREATE TABLE provider_card_migration_links(" +
+                        "provider_id TEXT NOT NULL,account_key TEXT NOT NULL,origin TEXT NOT NULL," +
+                        "PRIMARY KEY(provider_id,account_key)," +
+                        "FOREIGN KEY(provider_id,account_key) REFERENCES provider_card_catalog(provider_id,account_key) ON DELETE RESTRICT)",
+                )
+            },
+            "link-foreign-key-missing" to { db ->
+                replaceMigrationLinks(
+                    db,
+                    validMigrationLinksSql(includeForeignKey = false),
+                )
+            },
+            "link-foreign-key-split" to { db ->
+                replaceMigrationLinks(
+                    db,
+                    "CREATE TABLE provider_card_migration_links(" +
+                        "provider_id TEXT NOT NULL CHECK(length(provider_id)>0)," +
+                        "account_key TEXT NOT NULL CHECK(length(account_key)>0)," +
+                        "origin TEXT NOT NULL CHECK(origin IN ('EXISTING_CATALOG','LEGACY_DEFAULT'))," +
+                        "PRIMARY KEY(provider_id,account_key)," +
+                        "FOREIGN KEY(provider_id) REFERENCES provider_card_catalog(provider_id) ON DELETE RESTRICT," +
+                        "FOREIGN KEY(account_key) REFERENCES provider_card_catalog(account_key) ON DELETE RESTRICT)",
+                )
+            },
+            "invalid-onboarding-enum" to { db ->
+                replaceInitializationTable(
+                    db,
+                    "CREATE TABLE provider_card_initialization(" +
+                        "singleton_id INTEGER PRIMARY KEY,migration_version INTEGER NOT NULL," +
+                        "onboarding_state TEXT NOT NULL,links_sha256 TEXT NOT NULL)",
+                    onboardingState = "BROKEN",
+                )
+            },
+            "invalid-hash" to { db ->
+                replaceInitializationTable(
+                    db,
+                    "CREATE TABLE provider_card_initialization(" +
+                        "singleton_id INTEGER PRIMARY KEY,migration_version INTEGER NOT NULL," +
+                        "onboarding_state TEXT NOT NULL,links_sha256 TEXT NOT NULL)",
+                    linksSha256 = "not-a-hash",
+                )
+            },
+            "invalid-origin" to { db ->
+                replaceMigrationLinks(db, validMigrationLinksSql(includeForeignKey = true))
+                db.execSQL(
+                    "PRAGMA ignore_check_constraints=ON"
+                )
+                db.execSQL(
+                    "INSERT INTO provider_card_migration_links(provider_id,account_key,origin) " +
+                        "SELECT provider_id,account_key,'BROKEN' FROM provider_card_catalog LIMIT 1"
+                )
+                db.execSQL("PRAGMA ignore_check_constraints=OFF")
+            },
+        )
+        mutations.forEach { (label, mutate) ->
+            val name = currentV7("task9-topology-$label")
+            rawDatabase(name).use(mutate)
+            assertCurrentOpenFailsUnchanged(name)
+        }
+        println("QA_TASK9_SCHEMA_REJECTED_UNCHANGED=${mutations.map { it.first }}")
     }
 
     @Test
@@ -450,6 +536,46 @@ class AccountAuthorityCatalogMigrationTest {
         }
     }
 
+    private fun replaceInitializationTable(
+        db: SQLiteDatabase,
+        createSql: String,
+        onboardingState: String = "PENDING",
+        linksSha256: String = "0".repeat(64),
+    ) {
+        db.execSQL("ALTER TABLE provider_card_initialization RENAME TO provider_card_initialization_old")
+        db.execSQL(createSql)
+        db.execSQL("PRAGMA ignore_check_constraints=ON")
+        try {
+            db.execSQL(
+                "INSERT INTO provider_card_initialization(singleton_id,migration_version,onboarding_state,links_sha256) " +
+                    "VALUES(1,0,?,?)",
+                arrayOf(onboardingState, linksSha256),
+            )
+        } finally {
+            db.execSQL("PRAGMA ignore_check_constraints=OFF")
+        }
+        db.execSQL("DROP TABLE provider_card_initialization_old")
+    }
+
+    private fun replaceMigrationLinks(db: SQLiteDatabase, createSql: String) {
+        db.execSQL("ALTER TABLE provider_card_migration_links RENAME TO provider_card_migration_links_old")
+        db.execSQL(createSql)
+        db.execSQL("DROP TABLE provider_card_migration_links_old")
+    }
+
+    private fun validMigrationLinksSql(includeForeignKey: Boolean): String =
+        "CREATE TABLE provider_card_migration_links(" +
+            "provider_id TEXT NOT NULL CHECK(length(provider_id)>0)," +
+            "account_key TEXT NOT NULL CHECK(length(account_key)>0)," +
+            "origin TEXT NOT NULL CHECK(origin IN ('EXISTING_CATALOG','LEGACY_DEFAULT'))," +
+            "PRIMARY KEY(provider_id,account_key)" +
+            if (includeForeignKey) {
+                ",FOREIGN KEY(provider_id,account_key) " +
+                    "REFERENCES provider_card_catalog(provider_id,account_key) ON DELETE RESTRICT)"
+            } else {
+                ")"
+            }
+
     private fun splitCatalogForeignKey(db: SQLiteDatabase) {
         db.execSQL("ALTER TABLE provider_card_catalog RENAME TO provider_card_catalog_composite")
         db.execSQL(
@@ -528,7 +654,7 @@ class AccountAuthorityCatalogMigrationTest {
         val before = rawCatalogSurface(name)
         repeat(2) {
             assertThrows(SQLiteException::class.java) { openAndTouch(name) }
-            assertEquals(7, userVersion(name))
+            assertEquals(8, userVersion(name))
             assertArrayEquals(before, rawCatalogSurface(name))
         }
     }

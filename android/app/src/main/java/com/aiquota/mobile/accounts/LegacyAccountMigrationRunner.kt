@@ -11,15 +11,25 @@ internal object LegacyAccountMigrationRunner {
         return operation()
     }
 
-    fun run(context: Context): LegacyMigrationResult? = runCatching {
-        MainProcessAccountAuthority.open(context.applicationContext).use { authority ->
-            LegacyAccountMigration(
-                source = AndroidLegacyMigrationSource(context.applicationContext),
-                journal = AndroidLegacyMigrationJournal(context.applicationContext),
-                authority = authority,
-                vault = createAndroidAccountCredentialVault(context.applicationContext),
-                projectionStore = AndroidLegacyMigrationSource(context.applicationContext)
-            ).run()
+    fun run(context: Context): LegacyMigrationResult? {
+        val appContext = context.applicationContext
+        val result = runCatching {
+            MainProcessAccountAuthority.open(appContext).use { authority ->
+                val source = AndroidLegacyMigrationSource(appContext)
+                LegacyAccountMigration(
+                    source = source,
+                    journal = AndroidLegacyMigrationJournal(appContext),
+                    authority = authority,
+                    vault = createAndroidAccountCredentialVault(appContext),
+                    projectionStore = source,
+                ).run()
+            }
+        }.getOrNull()
+        if (result is LegacyMigrationResult.Completed) {
+            MainProcessAccountAuthority.open(appContext).use { authority ->
+                ConnectedProviderCardMigration(AndroidLegacyMigrationSource(appContext), authority).run()
+            }
         }
-    }.getOrNull()
+        return result
+    }
 }
