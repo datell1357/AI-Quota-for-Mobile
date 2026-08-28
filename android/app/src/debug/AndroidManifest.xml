@@ -7,6 +7,10 @@
     <activity
       android:name=".debug.ProviderLoginDebugActivity"
       android:exported="true" />
+    <activity
+      android:name=".debug.ProviderCardCatalogDebugActivity"
+      android:exported="true"
+      android:process=":provider_card_catalog_debug" />
     <receiver
       android:name=".debug.LiveRefreshIssueDebugReceiver"
       android:exported="true">

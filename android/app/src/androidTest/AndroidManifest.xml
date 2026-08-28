@@ -2,4 +2,8 @@
   <instrumentation
     android:name="androidx.test.runner.AndroidJUnitRunner"
     android:targetPackage="com.aiquota.mobile" />
+  <instrumentation
+    android:name="com.aiquota.mobile.ui.ProviderCardCatalogInstrumentationRunner"
+    android:targetPackage="com.aiquota.mobile"
+    android:targetProcesses="com.aiquota.mobile:provider_card_catalog_debug" />
 </manifest>
