@@ -19,7 +19,7 @@ internal class AccountAuthorityDatabase(
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
-            CREATE TABLE accounts (
+            CREATE TABLE IF NOT EXISTS accounts (
                 provider_id TEXT NOT NULL,
                 account_key TEXT NOT NULL,
                 provider_rank INTEGER NOT NULL,
@@ -38,7 +38,7 @@ internal class AccountAuthorityDatabase(
         )
         db.execSQL(
             """
-            CREATE TABLE snapshots (
+            CREATE TABLE IF NOT EXISTS snapshots (
                 provider_id TEXT NOT NULL,
                 account_key TEXT NOT NULL,
                 snapshot_json TEXT NOT NULL,
@@ -50,7 +50,7 @@ internal class AccountAuthorityDatabase(
         )
         db.execSQL(
             """
-            CREATE TABLE demands (
+            CREATE TABLE IF NOT EXISTS demands (
                 provider_id TEXT NOT NULL,
                 account_key TEXT NOT NULL,
                 demand_mask INTEGER NOT NULL CHECK(demand_mask >= 0),
@@ -61,7 +61,7 @@ internal class AccountAuthorityDatabase(
         )
         db.execSQL(
             """
-            CREATE TABLE attempts (
+            CREATE TABLE IF NOT EXISTS attempts (
                 provider_id TEXT NOT NULL,
                 account_key TEXT NOT NULL,
                 generation INTEGER NOT NULL CHECK(generation >= 0),
@@ -74,7 +74,7 @@ internal class AccountAuthorityDatabase(
         )
         db.execSQL(
             """
-            CREATE TABLE nonce_heads (
+            CREATE TABLE IF NOT EXISTS nonce_heads (
                 provider_id TEXT NOT NULL,
                 account_key TEXT NOT NULL,
                 last_nonce TEXT,
@@ -85,7 +85,7 @@ internal class AccountAuthorityDatabase(
         )
         db.execSQL(
             """
-            CREATE TABLE published_nonces (
+            CREATE TABLE IF NOT EXISTS published_nonces (
                 provider_id TEXT NOT NULL,
                 account_key TEXT NOT NULL,
                 nonce TEXT NOT NULL,
@@ -95,9 +95,9 @@ internal class AccountAuthorityDatabase(
             """.trimIndent()
         )
         db.execSQL(
-            "CREATE TABLE authority_metadata (singleton_id INTEGER PRIMARY KEY CHECK(singleton_id = 1), display_version INTEGER NOT NULL CHECK(display_version >= 0))"
+            "CREATE TABLE IF NOT EXISTS authority_metadata (singleton_id INTEGER PRIMARY KEY CHECK(singleton_id = 1), display_version INTEGER NOT NULL CHECK(display_version >= 0))"
         )
-        db.execSQL("INSERT INTO authority_metadata(singleton_id, display_version) VALUES(1, 0)")
+        db.execSQL("INSERT OR IGNORE INTO authority_metadata(singleton_id, display_version) VALUES(1, 0)")
         createMigrationTables(db)
         createAccountUsageTables(db)
         createNamedProfileTables(db)
@@ -280,17 +280,17 @@ internal class AccountAuthorityDatabase(
     private fun createMigrationTables(db: SQLiteDatabase) {
         createMigrationCopyTables(db)
         db.execSQL(
-            "CREATE TABLE projection_state (singleton_id INTEGER PRIMARY KEY CHECK(singleton_id = 1), desired_revision INTEGER NOT NULL CHECK(desired_revision >= 0), applied_revision INTEGER NOT NULL CHECK(applied_revision >= 0), aggregate_sha256 TEXT NOT NULL, mirrors_sha256 TEXT NOT NULL, cache_sha256 TEXT NOT NULL)"
+            "CREATE TABLE IF NOT EXISTS projection_state (singleton_id INTEGER PRIMARY KEY CHECK(singleton_id = 1), desired_revision INTEGER NOT NULL CHECK(desired_revision >= 0), applied_revision INTEGER NOT NULL CHECK(applied_revision >= 0), aggregate_sha256 TEXT NOT NULL, mirrors_sha256 TEXT NOT NULL, cache_sha256 TEXT NOT NULL)"
         )
-        db.execSQL("INSERT INTO projection_state(singleton_id, desired_revision, applied_revision, aggregate_sha256, mirrors_sha256, cache_sha256) VALUES(1, 0, 0, '${"0".repeat(64)}', '${"0".repeat(64)}', '${"0".repeat(64)}')")
+        db.execSQL("INSERT OR IGNORE INTO projection_state(singleton_id, desired_revision, applied_revision, aggregate_sha256, mirrors_sha256, cache_sha256) VALUES(1, 0, 0, '${"0".repeat(64)}', '${"0".repeat(64)}', '${"0".repeat(64)}')")
     }
 
     private fun createMigrationCopyTables(db: SQLiteDatabase) {
         db.execSQL(
-            "CREATE TABLE migration_mirrors (provider_id TEXT NOT NULL, account_key TEXT NOT NULL, receipt_sha256 TEXT NOT NULL, copied_json TEXT NOT NULL, copied_sha256 TEXT NOT NULL, PRIMARY KEY(provider_id, account_key), FOREIGN KEY(provider_id, account_key) REFERENCES accounts(provider_id, account_key) ON DELETE CASCADE)"
+            "CREATE TABLE IF NOT EXISTS migration_mirrors (provider_id TEXT NOT NULL, account_key TEXT NOT NULL, receipt_sha256 TEXT NOT NULL, copied_json TEXT NOT NULL, copied_sha256 TEXT NOT NULL, PRIMARY KEY(provider_id, account_key), FOREIGN KEY(provider_id, account_key) REFERENCES accounts(provider_id, account_key) ON DELETE CASCADE)"
         )
         db.execSQL(
-            "CREATE TABLE migration_preferences (provider_id TEXT NOT NULL, account_key TEXT NOT NULL, receipt_sha256 TEXT NOT NULL, copied_json TEXT NOT NULL, copied_sha256 TEXT NOT NULL, PRIMARY KEY(provider_id, account_key), FOREIGN KEY(provider_id, account_key) REFERENCES accounts(provider_id, account_key) ON DELETE CASCADE)"
+            "CREATE TABLE IF NOT EXISTS migration_preferences (provider_id TEXT NOT NULL, account_key TEXT NOT NULL, receipt_sha256 TEXT NOT NULL, copied_json TEXT NOT NULL, copied_sha256 TEXT NOT NULL, PRIMARY KEY(provider_id, account_key), FOREIGN KEY(provider_id, account_key) REFERENCES accounts(provider_id, account_key) ON DELETE CASCADE)"
         )
     }
 

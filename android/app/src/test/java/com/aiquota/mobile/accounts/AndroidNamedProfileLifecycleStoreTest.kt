@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.aiquota.mobile.local.ProviderId
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
@@ -87,19 +88,22 @@ class AndroidNamedProfileLifecycleStoreTest {
         val n = 30
         val start = CountDownLatch(1)
         val pool = Executors.newFixedThreadPool(6)
-        val done = CountDownLatch(n)
-        repeat(n) { i ->
-            pool.execute {
+        val futures =
+            List(n) { i ->
+                pool.submit {
                 start.await()
                 AndroidNamedProfileLifecycleStore(c, db).use {
                     it.create(id(i + 1), profile(i + 1))
                 }
-                done.countDown()
             }
         }
         start.countDown()
-        done.await()
-        pool.shutdown()
+        try {
+            futures.forEach { it.get(30, TimeUnit.SECONDS) }
+        } finally {
+            pool.shutdownNow()
+            pool.awaitTermination(30, TimeUnit.SECONDS)
+        }
         AndroidNamedProfileLifecycleStore(c, db).use { assertEquals(n, it.readAll().size) }
     }
 }
