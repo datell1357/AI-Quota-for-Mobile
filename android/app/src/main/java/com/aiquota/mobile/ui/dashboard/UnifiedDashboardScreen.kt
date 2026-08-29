@@ -434,6 +434,7 @@ fun UnifiedDashboardScreen(
     viewMode: DashboardViewMode,
     onSelectViewMode: (DashboardViewMode) -> Unit,
     modifier: Modifier = Modifier,
+    onAddProvider: () -> Unit = {},
 ) {
     ExactDashboardCardsContent(
         cards = cards,
@@ -447,6 +448,7 @@ fun UnifiedDashboardScreen(
         onOpenSettings = onOpenSettings,
         viewMode = viewMode,
         onSelectViewMode = onSelectViewMode,
+        onAddProvider = onAddProvider,
         modifier = modifier,
     )
 }

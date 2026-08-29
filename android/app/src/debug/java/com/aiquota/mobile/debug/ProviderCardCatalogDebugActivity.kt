@@ -62,19 +62,23 @@ class ProviderCardCatalogDebugActivity : ComponentActivity() {
                         .windowInsetsPadding(WindowInsets.safeDrawing),
                     color = AIQuotaTheme.colors.appBackground
                 ) {
-                    UnifiedDashboardScreen(
-                        providerOrder = if (populated) populatedProviderOrder else emptyList(),
-                        hiddenProviders = emptySet(),
-                        snapshots = if (populated) populatedSnapshots else emptyList(),
-                        onProviderSelected = {},
-                        onConnectProvider = {},
-                        onReorderProvider = { _, _ -> },
-                        onAddWidget = {},
-                        onOpenSettings = {},
-                        viewMode = viewMode,
-                        onSelectViewMode = { viewMode = it },
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    if (dataset.equals(DATASET_ONBOARDING, ignoreCase = true)) {
+                        ProviderOnboardingDebugSurface()
+                    } else {
+                        UnifiedDashboardScreen(
+                            providerOrder = if (populated) populatedProviderOrder else emptyList(),
+                            hiddenProviders = emptySet(),
+                            snapshots = if (populated) populatedSnapshots else emptyList(),
+                            onProviderSelected = {},
+                            onConnectProvider = {},
+                            onReorderProvider = { _, _ -> },
+                            onAddWidget = {},
+                            onOpenSettings = {},
+                            viewMode = viewMode,
+                            onSelectViewMode = { viewMode = it },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                 }
             }
         }
@@ -85,6 +89,7 @@ class ProviderCardCatalogDebugActivity : ComponentActivity() {
         const val EXTRA_VIEW_MODE = "com.aiquota.mobile.debug.extra.VIEW_MODE"
         const val DATASET_POPULATED = "populated"
         const val DATASET_EMPTY = "empty"
+        const val DATASET_ONBOARDING = "onboarding"
         const val VIEW_MODE_LIST = "list"
         const val VIEW_MODE_GRID = "grid"
         const val VIEW_MODE_CARD = "card"
@@ -92,7 +97,7 @@ class ProviderCardCatalogDebugActivity : ComponentActivity() {
 }
 
 @Composable
-private fun ProviderCardCatalogDebugTheme(content: @Composable () -> Unit) {
+internal fun ProviderCardCatalogDebugTheme(content: @Composable () -> Unit) {
     val colors = aiQuotaThemeColors(AppTheme.DEFAULT)
     val materialColors = lightColorScheme(
         primary = colors.primary,

@@ -148,6 +148,7 @@ fun AIQuotaAppShell(
     val cardRuntime = remember(appContext) {
         ProviderCardShellRuntime.open(appContext, BuildConfig.MULTI_ACCOUNT_ENABLED)
     }
+    val providerEnrollment = rememberProviderEnrollmentRuntime(appContext, cardRuntime)
     val connectorRegistry = remember(appContext) { ProviderConnectorRegistry.default(appContext) }
     val foregroundRefreshController = remember(appContext) { ForegroundRefreshController(appContext) }
     val refreshStateRepository = remember(appContext) {
@@ -879,6 +880,7 @@ fun AIQuotaAppShell(
                                     onOpenSettings = { route = AppRoute.Settings },
                                     viewMode = dashboardViewMode,
                                     onSelectViewMode = selectViewMode,
+                                    onAddProvider = { providerEnrollment?.openExplicitAdd() },
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             } else {
@@ -1029,6 +1031,7 @@ fun AIQuotaAppShell(
                             onDismiss = { showDashboardWidgetPicker = false }
                         )
                     }
+                    providerEnrollment?.Content()
                 }
             }
     }

@@ -59,6 +59,7 @@ internal fun ExactDashboardCardsContent(
     onOpenSettings: () -> Unit,
     viewMode: DashboardViewMode,
     onSelectViewMode: (DashboardViewMode) -> Unit,
+    onAddProvider: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val layoutMetrics = rememberAppLayoutMetrics().forDashboardViewMode(viewMode)
@@ -120,7 +121,7 @@ internal fun ExactDashboardCardsContent(
             }
 
             if (previewIds.isEmpty()) {
-                EmptyDashboardState(layoutMetrics)
+                ProviderCatalogEmptyState(layoutMetrics, onAddProvider)
             } else if (columns == 1) {
                 previewIds.forEachIndexed { index, accountId ->
                     key(accountId) {
