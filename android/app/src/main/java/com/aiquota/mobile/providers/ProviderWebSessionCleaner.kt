@@ -10,6 +10,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebStorage
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.aiquota.mobile.accounts.AccountLoginSessionBinding
 import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.local.ProviderId
 import java.util.concurrent.ConcurrentHashMap
@@ -23,9 +24,14 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 internal object ProviderWebSessionMaintenanceGate {
     private val providerMutexes = ConcurrentHashMap<ProviderId, Mutex>()
+    private val exactSessionMutexes = ConcurrentHashMap<AccountLoginSessionBinding, Mutex>()
 
     suspend fun <T> withMaintenanceLock(providerId: ProviderId, block: suspend () -> T): T {
         return providerMutexes.getOrPut(providerId) { Mutex() }.withLock { block() }
+    }
+
+    suspend fun <T> withMaintenanceLock(binding: AccountLoginSessionBinding, block: suspend () -> T): T {
+        return exactSessionMutexes.getOrPut(binding) { Mutex() }.withLock { block() }
     }
 }
 

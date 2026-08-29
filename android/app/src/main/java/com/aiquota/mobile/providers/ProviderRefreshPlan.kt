@@ -1,5 +1,8 @@
 ﻿package com.aiquota.mobile.providers
 
+import com.aiquota.mobile.accounts.AccountKey
+import com.aiquota.mobile.accounts.AccountLoginSessionBinding
+import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderConnectionState
 import com.aiquota.mobile.local.ProviderRefreshState
@@ -13,11 +16,28 @@ enum class ProviderRefreshMode {
 }
 
 data class ProviderRefreshJob(
-    val providerId: ProviderId,
+    val accountId: ProviderAccountId,
     val mode: ProviderRefreshMode,
     val startUrl: String,
-    val qos: Int = ProviderRefreshPlan.NORMAL_REFRESH_QOS
-)
+    val qos: Int = ProviderRefreshPlan.NORMAL_REFRESH_QOS,
+    val binding: AccountLoginSessionBinding? = null,
+) {
+    val providerId: ProviderId get() = accountId.providerId
+
+    constructor(
+        providerId: ProviderId,
+        mode: ProviderRefreshMode,
+        startUrl: String,
+        qos: Int = ProviderRefreshPlan.NORMAL_REFRESH_QOS,
+        binding: AccountLoginSessionBinding? = null,
+    ) : this(
+        ProviderAccountId(providerId, AccountKey.reservedDefault()),
+        mode,
+        startUrl,
+        qos,
+        binding,
+    )
+}
 
 object ProviderRefreshPlan {
     const val AUTO_REFRESH_INTERVAL_MILLIS = 60_000L
@@ -49,11 +69,19 @@ object ProviderRefreshPlan {
     }
 
     fun manualJobFor(providerId: ProviderId): ProviderRefreshJob {
-        return jobFor(providerId, NORMAL_REFRESH_QOS)
+        return manualJobFor(ProviderAccountId(providerId, AccountKey.reservedDefault()))
+    }
+
+    fun manualJobFor(accountId: ProviderAccountId): ProviderRefreshJob {
+        return jobFor(accountId, NORMAL_REFRESH_QOS)
     }
 
     fun resetJobFor(providerId: ProviderId): ProviderRefreshJob {
-        return jobFor(providerId, RESET_REFRESH_QOS)
+        return resetJobFor(ProviderAccountId(providerId, AccountKey.reservedDefault()))
+    }
+
+    fun resetJobFor(accountId: ProviderAccountId): ProviderRefreshJob {
+        return jobFor(accountId, RESET_REFRESH_QOS)
     }
 
     fun automaticJobsFor(
@@ -124,10 +152,11 @@ object ProviderRefreshPlan {
             .map(::resetJobFor)
     }
 
-    private fun jobFor(providerId: ProviderId, qos: Int): ProviderRefreshJob {
+    private fun jobFor(accountId: ProviderAccountId, qos: Int): ProviderRefreshJob {
+        val providerId = accountId.providerId
         val mode = refreshModeFor(providerId)
         return ProviderRefreshJob(
-            providerId = providerId,
+            accountId = accountId,
             mode = mode,
             startUrl = if (mode == ProviderRefreshMode.NATIVE_API) "" else hiddenCollectorUrl(providerId),
             qos = qos

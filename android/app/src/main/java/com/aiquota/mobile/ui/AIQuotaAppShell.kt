@@ -91,6 +91,7 @@ import com.aiquota.mobile.local.ThemePreferencesRepository
 import com.aiquota.mobile.local.snapshotUpdatedAtForStatusTransition
 import com.aiquota.mobile.notification.UsageLimitNotificationController
 import com.aiquota.mobile.providers.AndroidExactAccountLoginComposition
+import com.aiquota.mobile.providers.AndroidExactProviderCollectorResources
 import com.aiquota.mobile.providers.AntigravityLoopbackOAuthActivity
 import com.aiquota.mobile.providers.GlmApiKeyActivity
 import com.aiquota.mobile.providers.ProviderCollectionCaches
@@ -454,13 +455,23 @@ fun AIQuotaAppShell(
     }
 
     fun disconnectExactNamedCard(accountId: ProviderAccountId) {
-        val composition = AndroidExactAccountLoginComposition.open(launchContext)
-        if (!composition.coordinator.logout(accountId) {
+        val binding = AndroidExactProviderCollectorResources.currentBinding(accountId)
+        val logout = {
+            val composition = AndroidExactAccountLoginComposition.open(launchContext)
+            if (!composition.coordinator.logout(accountId) {
+                    composition.close()
+                    cardRuntime.reload()
+                }
+            ) {
                 composition.close()
-                cardRuntime.reload()
             }
-        ) {
-            composition.close()
+        }
+        if (binding == null) {
+            logout()
+        } else {
+            coroutineScope.launch {
+                AndroidExactProviderCollectorResources.logout(binding) { logout() }
+            }
         }
     }
 

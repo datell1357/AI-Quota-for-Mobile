@@ -1,5 +1,7 @@
 ﻿package com.aiquota.mobile.providers
 
+import com.aiquota.mobile.accounts.AccountKey
+import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.local.ProviderId
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -64,6 +66,31 @@ class ProviderRefreshQueuePolicyTest {
     }
 
     @Test
+    fun claudeSiblingJobsAndCodexJobDoNotCollapseByProvider() {
+        val jobs = listOf(
+            ProviderRefreshJob(id(ProviderId.CLAUDE, 1), ProviderRefreshMode.HIDDEN_WEB_COLLECTOR, "synthetic://claude-a"),
+            ProviderRefreshJob(id(ProviderId.CLAUDE, 2), ProviderRefreshMode.HIDDEN_WEB_COLLECTOR, "synthetic://claude-b"),
+            ProviderRefreshJob(id(ProviderId.CODEX, 3), ProviderRefreshMode.HIDDEN_WEB_COLLECTOR, "synthetic://codex-a"),
+        )
+
+        val merged = ProviderRefreshQueuePolicy.merge(emptyList(), jobs, prioritize = false)
+
+        assertEquals(
+            listOf("synthetic://claude-a", "synthetic://claude-b", "synthetic://codex-a"),
+            merged.map { it.startUrl },
+        )
+    }
+
+    @Test
+    fun oneBatchAcceptsAtMostFourAttempts() {
+        val jobs = ProviderId.defaultOrder().take(5).map(::job)
+
+        val merged = ProviderRefreshQueuePolicy.merge(emptyList(), jobs, prioritize = false)
+
+        assertEquals(4, merged.size)
+    }
+
+    @Test
     fun resetRefreshQosSupersedesManualOrAutomaticJobsForSameProvider() {
         val existing = listOf(
             ProviderRefreshPlan.manualJobFor(ProviderId.CLAUDE),
@@ -81,7 +108,15 @@ class ProviderRefreshQueuePolicyTest {
         assertEquals(ProviderRefreshPlan.RESET_REFRESH_QOS, merged.first().qos)
     }
 
-    private fun job(providerId: ProviderId, mode: ProviderRefreshMode): ProviderRefreshJob {
+    private fun id(providerId: ProviderId, value: Int) = ProviderAccountId(
+        providerId,
+        AccountKey.parseOpaque("acct_${value.toString(16).padStart(32, '0')}"),
+    )
+
+    private fun job(
+        providerId: ProviderId,
+        mode: ProviderRefreshMode = ProviderRefreshMode.HIDDEN_WEB_COLLECTOR,
+    ): ProviderRefreshJob {
         return ProviderRefreshJob(providerId = providerId, mode = mode, startUrl = "")
     }
 }

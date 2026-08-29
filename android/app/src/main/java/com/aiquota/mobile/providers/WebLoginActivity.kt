@@ -28,6 +28,9 @@ import android.widget.TextView
 import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.accounts.AccountGeneration
 import com.aiquota.mobile.accounts.AccountLoginSessionBinding
+import com.aiquota.mobile.accounts.AccountUsageRepository
+import com.aiquota.mobile.accounts.AccountUsageWrite
+import com.aiquota.mobile.accounts.AccountUsageWriteResult
 import com.aiquota.mobile.accounts.NamedProfileLease
 import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
@@ -37,6 +40,7 @@ import com.aiquota.mobile.accounts.requireAndroidWebView
 import com.aiquota.mobile.accounts.SessionRevision
 import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.local.ProviderId
+import com.aiquota.mobile.local.ProviderUsageSnapshot
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URL
@@ -1898,7 +1902,20 @@ open class WebLoginActivity : Activity() {
                 else -> emptyMap()
             }
             when (composition.coordinator.complete(binding, context)) {
-                LoginCallbackResult.Accepted -> setExactLoginResult(EXACT_RESULT_SUCCESS)
+                LoginCallbackResult.Accepted -> {
+                    if (publishExactLoginSnapshot(binding, rawPayload)) {
+                        setExactLoginResult(EXACT_RESULT_SUCCESS)
+                        val lease = requireNotNull(namedProfileLease)
+                        rootContainer.removeView(webView)
+                        AndroidExactProviderCollectorResources.retain(binding, lease, composition, context)
+                        namedProfileLease = null
+                        exactLoginComposition = null
+                        mainWebViewDestroyed = true
+                    } else {
+                        composition.coordinator.fail(binding)
+                        setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
+                    }
+                }
                 LoginCallbackResult.Stale,
                 LoginCallbackResult.PersistenceFailed -> {
                     composition.coordinator.fail(binding)
@@ -1921,6 +1938,35 @@ open class WebLoginActivity : Activity() {
             glmWebSessionCookieHeader = captureGlmWebSessionCookieHeader()
         )
         finish()
+    }
+
+    private fun publishExactLoginSnapshot(
+        binding: AccountLoginSessionBinding,
+        rawPayload: String?,
+    ): Boolean = AccountUsageRepository.open(applicationContext).use { repository ->
+        val current = repository.read(binding.accountId) ?: return@use false
+        if (current.account.generation != binding.generation ||
+            current.account.sessionRevision != binding.sessionRevision
+        ) return@use false
+        val snapshot = rawPayload?.let {
+            ProviderUsageNormalizer.normalize(
+                binding.accountId.providerId,
+                it,
+                ProviderPayloadSource.STRUCTURED_SCRIPT,
+            )
+        } ?: ProviderUsageSnapshot.connectedWithoutUsage(
+            binding.accountId.providerId,
+            "Connected. Usage quota is not available yet.",
+        )
+        repository.write(
+            AccountUsageWrite(
+                binding.accountId,
+                current.version,
+                binding.generation,
+                binding.sessionRevision,
+                snapshot,
+            )
+        ) is AccountUsageWriteResult.Committed
     }
 
     private fun finishGlmNoSubscription(errorKind: String) {

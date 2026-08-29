@@ -341,6 +341,53 @@ class MainProcessAccountAuthority private constructor(
         updated
     }
 
+    fun refreshDemandRecords(): List<AccountRefreshDemandRecord> {
+        val db = database.readableDatabase
+        val records = mutableListOf<AccountRefreshDemandRecord>()
+        var offset = 0
+        do {
+            val page = readActiveProviderCardPage(db, offset, MAX_PAGE_SIZE)
+            page.records.forEach { card ->
+                val id = card.accountId
+                val demand = db.rawQuery(
+                    "SELECT demand_mask FROM demands WHERE provider_id=? AND account_key=?",
+                    arrayOf(id.providerId.storageId, id.accountKey.storageValue()),
+                ).use { cursor ->
+                    if (cursor.moveToFirst()) AccountDemandSet.fromMask(cursor.getInt(0))
+                    else AccountDemandSet.NONE
+                }
+                records += AccountRefreshDemandRecord(card, demand)
+            }
+            offset = page.nextOffset ?: break
+        } while (true)
+        return records
+    }
+
+    fun abandonAttempt(lease: AttemptLease, requeue: Boolean): Boolean = transaction { db ->
+        val account = readAccount(db, lease.accountId) ?: return@transaction false
+        if (account.generation != lease.generation || account.sessionRevision != lease.sessionRevision) {
+            return@transaction false
+        }
+        if (!attemptMatches(db, lease)) return@transaction false
+        val demand = if (requeue) {
+            db.rawQuery(
+                "SELECT demand_mask FROM demands WHERE provider_id=? AND account_key=?",
+                arrayOf(lease.accountId.providerId.storageId, lease.accountId.accountKey.storageValue()),
+            ).use { cursor ->
+                if (cursor.moveToFirst()) AccountDemandSet.fromMask(cursor.getInt(0))
+                else AccountDemandSet.NONE
+            }
+        } else {
+            AccountDemandSet.NONE
+        }
+        val version = readVersion(db).next()
+        updateAccountVersion(db, lease.accountId, version)
+        writeDemand(db, lease.accountId, demand)
+        writeAttempt(db, lease.accountId, lease.generation, lease.sessionRevision, null)
+        writeVersion(db, version)
+        true
+    }
+
     fun commitAttempt(
         lease: AttemptLease,
         snapshot: ProviderUsageSnapshot,

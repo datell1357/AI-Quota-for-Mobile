@@ -97,6 +97,11 @@ value class AccountDemandSet private constructor(val mask: Int) {
     }
 }
 
+data class AccountRefreshDemandRecord(
+    val card: ProviderCardDisplayRecord,
+    val demand: AccountDemandSet,
+)
+
 data class AttemptLease(
     val accountId: ProviderAccountId,
     val generation: AccountGeneration,

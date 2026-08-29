@@ -192,6 +192,36 @@ class AccountAuthorityTest {
     }
 
     @Test
+    fun exactAttemptAbandonRequeuesOrClearsOnlyItsOwnDemand() {
+        val a = id(ProviderId.CLAUDE, 60)
+        val b = id(ProviderId.CLAUDE, 61)
+        authority.register(seed(a, 80))
+        authority.register(seed(b, 70))
+        val aLease = authority.beginAttempt(a, AccountDemandSet.of(AccountDemand.SCHEDULED), nonce(60))
+        val bLease = authority.beginAttempt(b, AccountDemandSet.of(AccountDemand.MANUAL), nonce(61))
+
+        assertTrue(authority.abandonAttempt(bLease, requeue = true))
+        assertEquals(
+            AccountDemandSet.of(AccountDemand.MANUAL),
+            authority.refreshDemandRecords().single { it.card.accountId == b }.demand,
+        )
+        assertTrue(authority.commitAttempt(aLease, snapshot(a, 44)) is AttemptCommitResult.Committed)
+        assertEquals(
+            AttemptCommitResult.Rejected(StaleAttemptReason.ATTEMPT_MISMATCH),
+            authority.commitAttempt(bLease, snapshot(b, 1)),
+        )
+
+        val retried = authority.beginAttempt(b, AccountDemandSet.of(AccountDemand.MANUAL), nonce(62))
+        assertTrue(authority.abandonAttempt(retried, requeue = false))
+        assertEquals(
+            AccountDemandSet.NONE,
+            authority.refreshDemandRecords().single { it.card.accountId == b }.demand,
+        )
+        assertEquals(44, authority.displayRecords(0, 10).single { it.account.id == a }.snapshot.lines.single().remainingText.removeSuffix("%").toInt())
+        assertEquals(70, authority.displayRecords(0, 10).single { it.account.id == b }.snapshot.lines.single().remainingText.removeSuffix("%").toInt())
+    }
+
+    @Test
     fun malformedInputsAndInvalidStateTransitionsFailClosed() {
         val accountId = id(ProviderId.CLAUDE, 70)
         val active = activeRecord(accountId)

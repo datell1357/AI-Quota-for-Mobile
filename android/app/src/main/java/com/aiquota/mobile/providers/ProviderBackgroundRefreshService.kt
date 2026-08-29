@@ -25,6 +25,10 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.aiquota.mobile.BuildConfig
+import com.aiquota.mobile.accounts.AccountUsageRepository
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
+import com.aiquota.mobile.accounts.requireAndroidCookieManager
 import com.aiquota.mobile.R
 import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.sync.NetworkAvailability
@@ -53,6 +57,17 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
 import org.json.JSONObject
 
+internal interface ExactServiceAttemptCoordinator {
+    fun timeout(attempt: ProviderRefreshAttempt): ProviderRefreshAttempt?
+    fun fail(attempt: ProviderRefreshAttempt, requeue: Boolean): ProviderRefreshAttempt?
+}
+
+internal data class ExactServiceCollectionDispatch<T>(
+    val outcome: T,
+    val timedOut: Boolean,
+    val next: ProviderRefreshAttempt?,
+)
+
 class ProviderBackgroundRefreshService : Service() {
     private val mainHandler = Handler(Looper.getMainLooper())
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -71,6 +86,8 @@ class ProviderBackgroundRefreshService : Service() {
     private val claudeNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
     private var observedCodexAccountId: String? = null
     private var pendingManualProviderId: ProviderId? = null
+    private val pendingManualAccountIds = linkedSetOf<ProviderAccountId>()
+    private var exactRefreshCoordinator: AndroidProviderAccountRefreshCoordinator? = null
     private var pendingManualWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
     private var sessionResetReceiverRegistered = false
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
@@ -78,7 +95,20 @@ class ProviderBackgroundRefreshService : Service() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action != ACTION_PROVIDER_SESSION_RESET) return
             val providerId = ProviderId.fromStorageId(intent.getStringExtra(EXTRA_PROVIDER_ID)) ?: return
-            handleProviderSessionReset(providerId)
+            if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
+                val rawAccountId = intent.getStringExtra(EXTRA_PROVIDER_ACCOUNT_ID)
+                val accountId = if (rawAccountId != null) {
+                    (ProviderRefreshIntentBoundary.resolve(providerId.storageId, rawAccountId, true)
+                        as? ProviderRefreshIntentResolution.Exact)?.accountId
+                } else {
+                    AccountUsageRepository.open(applicationContext).use { repository ->
+                        repository.compatibilityAccount(providerId)
+                    }
+                }
+                accountId?.let(::handleExactAccountSessionReset)
+            } else {
+                handleProviderSessionReset(providerId)
+            }
         }
     }
     private val geminiCollectorAsset = ""
@@ -133,6 +163,8 @@ class ProviderBackgroundRefreshService : Service() {
         unregisterNetworkCallback()
         unregisterSessionResetReceiver()
         stopRefreshLoop()
+        exactRefreshCoordinator?.close()
+        exactRefreshCoordinator = null
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -157,13 +189,35 @@ class ProviderBackgroundRefreshService : Service() {
             return
         }
         refreshStateRepository.recordStarted(source = "manual")
-        pendingManualProviderId = ProviderId.fromStorageId(
-            intent?.getStringExtra(WidgetRefreshActions.EXTRA_PROVIDER_ID)
-        )
+        val rawProviderId = intent?.getStringExtra(WidgetRefreshActions.EXTRA_PROVIDER_ID)
+        val providerId = ProviderId.fromStorageId(rawProviderId)
+        if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
+            val rawAccountId = intent?.getStringExtra(EXTRA_PROVIDER_ACCOUNT_ID)
+            val resolvedAccountId = if (rawAccountId != null) {
+                (ProviderRefreshIntentBoundary.resolve(rawProviderId, rawAccountId, true)
+                    as? ProviderRefreshIntentResolution.Exact)?.accountId
+            } else {
+                providerId?.let { requestedProvider ->
+                    AccountUsageRepository.open(applicationContext).use { repository ->
+                        repository.compatibilityAccount(requestedProvider)
+                    }
+                }
+            }
+            resolvedAccountId?.let(pendingManualAccountIds::add)
+            pendingManualProviderId = null
+        } else {
+            pendingManualProviderId = providerId
+            pendingManualAccountIds.clear()
+        }
         pendingManualWidgetId = intent?.getIntExtra(
             WidgetRefreshActions.EXTRA_APP_WIDGET_ID,
             AppWidgetManager.INVALID_APPWIDGET_ID
         ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
+        if (BuildConfig.MULTI_ACCOUNT_ENABLED && rawProviderId != null && pendingManualAccountIds.isEmpty()) {
+            WidgetRefreshFeedback.clearWidgetRefresh(applicationContext, pendingManualWidgetId)
+            pendingManualWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+            return
+        }
         running = true
         if (!refreshInProgress) {
             scheduleNextTick(delayMillis = 0L)
@@ -175,6 +229,7 @@ class ProviderBackgroundRefreshService : Service() {
         tickScheduled = false
         mainHandler.removeCallbacks(tickRunnable)
         completeActiveWebJob(ServiceRefreshOutcome.Cancelled)
+        exactRefreshCoordinator?.reset()
         retainedWebViews.values.toList().forEach { webView ->
             runCatching { webView.stopLoading() }
             runCatching { webView.destroy() }
@@ -202,6 +257,20 @@ class ProviderBackgroundRefreshService : Service() {
         if (!sessionResetReceiverRegistered) return
         runCatching { unregisterReceiver(sessionResetReceiver) }
         sessionResetReceiverRegistered = false
+    }
+
+    private fun handleExactAccountSessionReset(accountId: ProviderAccountId) {
+        Log.d(TAG, "sessionReset provider=${accountId.providerId.storageId} exact=true")
+        val binding = AndroidExactProviderCollectorResources.currentBinding(accountId)
+        activeWebJob
+            ?.takeIf { it.job.binding == binding }
+            ?.let { completeWebJob(it.requestId, ServiceRefreshOutcome.Cancelled) }
+        serviceScope.launch {
+            if (binding != null) {
+                AndroidExactProviderCollectorResources.sessionReset(binding)
+            }
+            exactRefreshCoordinator?.cancelExact(accountId)
+        }
     }
 
     private fun handleProviderSessionReset(providerId: ProviderId) {
@@ -289,6 +358,7 @@ class ProviderBackgroundRefreshService : Service() {
 
     private fun hasPendingManualRefresh(): Boolean {
         return pendingManualProviderId != null ||
+            pendingManualAccountIds.isNotEmpty() ||
             pendingManualWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID
     }
 
@@ -297,16 +367,23 @@ class ProviderBackgroundRefreshService : Service() {
         refreshInProgress = true
         refreshStateRepository.recordHeartbeat()
         val manualProviderId = pendingManualProviderId
+        val manualAccountId = pendingManualAccountIds.firstOrNull()
         val manualWidgetId = pendingManualWidgetId
         pendingManualProviderId = null
+        manualAccountId?.let(pendingManualAccountIds::remove)
         pendingManualWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
-        val userInitiated = manualProviderId != null || manualWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID
+        val userInitiated = manualProviderId != null || manualAccountId != null ||
+            manualWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID
         try {
             // 네트워크가 아예 없으면 자동 주기는 통째로 건너뛴다. 그대로 두면 provider마다
             // 재시도·타임아웃을 끝까지 소진하며 메인 스레드를 붙잡아 배터리만 태운다.
             // 사용자가 직접 누른 새로고침은 오프라인이어도 시도해 결과를 보여준다.
             if (!userInitiated && NetworkAvailability.isDefinitelyOffline(applicationContext)) {
                 Log.d(TAG, "cycleSkipped reason=offline")
+                return
+            }
+            if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
+                runExactRefreshCycle(manualAccountId)
                 return
             }
             // 스냅샷 읽기는 SharedPreferences + JSON 파싱이라 메인 스레드에서 하면 안 된다.
@@ -345,6 +422,78 @@ class ProviderBackgroundRefreshService : Service() {
                 UsageSurfaceRefresher.refresh(applicationContext, repository)
             }
             refreshInProgress = false
+        }
+    }
+
+    private suspend fun runExactRefreshCycle(manualAccountId: ProviderAccountId?) {
+        val coordinator = exactRefreshCoordinator
+            ?: AndroidProviderAccountRefreshCoordinator(applicationContext).also {
+                exactRefreshCoordinator = it
+            }
+        val trigger = withContext(Dispatchers.IO) {
+            coordinator.trigger(automatic = manualAccountId == null, exactTarget = manualAccountId)
+        }
+        var attempt = (trigger as? ProviderRefreshTriggerResult.Launched)?.attempt ?: return
+        while (true) {
+            var exactDispatch: ExactServiceCollectionDispatch<ServiceRefreshOutcome>? = null
+            val outcome = when (attempt.job.mode) {
+                ProviderRefreshMode.NATIVE_API -> collectNativeProviderUsage(
+                    attempt.job,
+                    automaticRefresh = manualAccountId == null,
+                )
+                ProviderRefreshMode.HIDDEN_WEB_COLLECTOR -> dispatchExactHiddenCollection(
+                    attempt,
+                    coordinator,
+                ) { onTimeout ->
+                    collectWebProviderUsage(
+                        attempt.job,
+                        automaticRefresh = manualAccountId == null,
+                        onTimeout = onTimeout,
+                    )
+                }.also { exactDispatch = it }.outcome
+            }
+            if (exactDispatch?.timedOut == true) {
+                attempt = exactDispatch.next ?: break
+                continue
+            }
+            val next = when (outcome) {
+                is ServiceRefreshOutcome.Snapshot -> withContext(Dispatchers.IO) {
+                    (coordinator.publish(attempt, outcome.snapshot) as? ProviderRefreshCallbackResult.Accepted)?.next
+                }
+                is ServiceRefreshOutcome.Payload -> {
+                    val snapshot = withContext(Dispatchers.IO) {
+                        ProviderUsageNormalizer.normalize(
+                            attempt.accountId.providerId,
+                            outcome.rawPayload,
+                            ProviderPayloadSource.STRUCTURED_SCRIPT,
+                        )
+                    }
+                    if (snapshot == null) {
+                        withContext(Dispatchers.IO) { coordinator.fail(attempt, requeue = true) }
+                    } else {
+                        withContext(Dispatchers.IO) {
+                            (coordinator.publish(attempt, snapshot) as? ProviderRefreshCallbackResult.Accepted)?.next
+                        }
+                    }
+                }
+                is ServiceRefreshOutcome.Failure -> {
+                    val requiresLogin = ProviderRefreshFailureClassifier.requiresInteractiveAuth(
+                        attempt.accountId.providerId,
+                        outcome.failure.kind,
+                    )
+                    withContext(Dispatchers.IO) {
+                        if (requiresLogin) coordinator.requireReauthentication(attempt.accountId)
+                        else coordinator.fail(attempt, requeue = true)
+                    }
+                }
+                ServiceRefreshOutcome.Cancelled -> withContext(Dispatchers.IO) {
+                    coordinator.fail(attempt, requeue = false)
+                }
+            }
+            attempt = next ?: break
+        }
+        withContext(Dispatchers.IO) {
+            UsageSurfaceRefresher.refresh(applicationContext, repository)
         }
     }
 
@@ -754,7 +903,8 @@ class ProviderBackgroundRefreshService : Service() {
 
     private suspend fun collectWebProviderUsage(
         job: ProviderRefreshJob,
-        automaticRefresh: Boolean
+        automaticRefresh: Boolean,
+        onTimeout: (suspend () -> Unit)? = null,
     ): ServiceRefreshOutcome {
         val requestId = ++nextRequestId
         webJobLastUrls[requestId] = job.startUrl
@@ -800,6 +950,10 @@ class ProviderBackgroundRefreshService : Service() {
         clearActiveWebJob(requestId)
         clearClaudeNativeFetchHeaders(job.providerId)
         webJobLastUrls.remove(requestId)
+        when (result) {
+            null -> onTimeout?.invoke()
+            else -> Unit
+        }
         if (result == null && job.providerId == ProviderId.GEMINI) {
             val safeLastUrl = lastUrl.orEmpty()
             Log.d(TAG, "timeout provider=gemini last=${hostOf(safeLastUrl)}${pathOf(safeLastUrl)}")
@@ -855,29 +1009,53 @@ class ProviderBackgroundRefreshService : Service() {
     private fun startWebCollection(active: ServiceWebRefreshJob) {
         val job = active.job
         clearClaudeNativeFetchHeaders(job.providerId)
-        val webView = retainedWebViews.getOrPut(job.providerId) {
-            WebView(this).apply {
-                val cookieManager = CookieManager.getInstance()
-                val collectorUserAgent = ProviderWebViewUserAgent.hiddenCollectorUserAgent(
-                    this@ProviderBackgroundRefreshService,
-                    job.providerId
-                )
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                settings.databaseEnabled = true
-                settings.allowFileAccess = false
-                settings.javaScriptCanOpenWindowsAutomatically = true
-                settings.setSupportMultipleWindows(false)
-                settings.userAgentString = collectorUserAgent
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    cookieManager.setAcceptThirdPartyCookies(this, true)
-                }
-                addJavascriptInterface(ServiceUsageBridge(job.providerId, collectorUserAgent), BRIDGE_NAME)
-                webChromeClient = ServiceCollectorChromeClient()
-                webViewClient = ServiceCollectorWebViewClient(job.providerId)
-            }
+        val exactResources = job.binding?.let(AndroidExactProviderCollectorResources::read)
+        if (job.binding != null && exactResources == null) {
+            completeWebJob(
+                active.requestId,
+                ServiceRefreshOutcome.Failure(
+                    ProviderRefreshFailure.interactiveAuthRequired("Exact account Profile lease is unavailable.")
+                ),
+            )
+            return
         }
-        prepareSharedWebSessionForCollection(webView, job.providerId)
+        val webView = exactResources?.retainedWebView ?: retainedWebViews.getOrPut(job.providerId) {
+            WebView(this)
+        }
+        val cookieManager = exactResources?.profileLease?.requireAndroidCookieManager()
+            ?: CookieManager.getInstance()
+        val collectorUserAgent = ProviderWebViewUserAgent.hiddenCollectorUserAgent(
+            this@ProviderBackgroundRefreshService,
+            job.providerId,
+        )
+        webView.settings.javaScriptEnabled = true
+        webView.settings.domStorageEnabled = true
+        webView.settings.databaseEnabled = true
+        webView.settings.allowFileAccess = false
+        webView.settings.javaScriptCanOpenWindowsAutomatically = true
+        webView.settings.setSupportMultipleWindows(false)
+        webView.settings.userAgentString = collectorUserAgent
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            cookieManager.setAcceptThirdPartyCookies(webView, true)
+        }
+        webView.addJavascriptInterface(ServiceUsageBridge(job.accountId, collectorUserAgent), BRIDGE_NAME)
+        webView.webChromeClient = ServiceCollectorChromeClient()
+        webView.webViewClient = ServiceCollectorWebViewClient(job.accountId)
+        if (exactResources == null) {
+            prepareSharedWebSessionForCollection(webView, job.providerId)
+        } else {
+            codexNativeFetchHeaders.clear()
+            claudeNativeFetchHeaders.clear()
+            when (job.providerId) {
+                ProviderId.CODEX -> codexNativeFetchHeaders.putAll(exactResources.nativeHeaders)
+                ProviderId.CLAUDE -> claudeNativeFetchHeaders.putAll(exactResources.nativeHeaders)
+                else -> Unit
+            }
+            cookieManager.setAcceptCookie(true)
+            cookieManager.flush()
+            webView.onResume()
+            webView.resumeTimers()
+        }
         val initialUrl = initialUrlForWebCollection(active)
         webJobLastUrls[active.requestId] = initialUrl
         Log.d(
@@ -951,6 +1129,21 @@ class ProviderBackgroundRefreshService : Service() {
 
     private fun currentWebJobFor(providerId: ProviderId): ServiceWebRefreshJob? {
         return activeWebJob?.takeIf { it.job.providerId == providerId }
+    }
+
+    private fun currentWebJobFor(accountId: ProviderAccountId): ServiceWebRefreshJob? {
+        return activeWebJob?.takeIf { it.job.accountId == accountId }
+    }
+
+    private fun retainedWebViewFor(active: ServiceWebRefreshJob): WebView? =
+        active.job.binding
+            ?.let(AndroidExactProviderCollectorResources::read)
+            ?.retainedWebView
+            ?: retainedWebViews[active.job.providerId]
+
+    private fun flushCookies(active: ServiceWebRefreshJob) {
+        val exact = active.job.binding?.let(AndroidExactProviderCollectorResources::read)
+        (exact?.profileLease?.requireAndroidCookieManager() ?: CookieManager.getInstance()).flush()
     }
 
     private fun completeActiveWebJob(outcome: ServiceRefreshOutcome) {
@@ -1218,10 +1411,11 @@ class ProviderBackgroundRefreshService : Service() {
     }
 
     private inner class ServiceCollectorWebViewClient(
-        private val ownerProviderId: ProviderId
+        private val ownerAccountId: ProviderAccountId
     ) : WebViewClient() {
+        private val ownerProviderId: ProviderId get() = ownerAccountId.providerId
         override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
-            val active = currentWebJobFor(ownerProviderId) ?: return
+            val active = currentWebJobFor(ownerAccountId) ?: return
             val effectiveUrl = effectiveCollectorPageUrl(ownerProviderId, active.requestId, url)
             recordWebJobUrl(active.requestId, effectiveUrl)
             if (isWebSessionWarmUpPage(active, effectiveUrl)) return
@@ -1240,7 +1434,7 @@ class ProviderBackgroundRefreshService : Service() {
         }
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-            val active = currentWebJobFor(ownerProviderId) ?: return true
+            val active = currentWebJobFor(ownerAccountId) ?: return true
             val url = request.url.toString()
             if (shouldWaitForGeminiRefreshSignInRedirect(active, url)) {
                 Log.d(TAG, "allowSignInRedirect provider=gemini to=${hostOf(url)}${pathOf(url)}")
@@ -1261,14 +1455,14 @@ class ProviderBackgroundRefreshService : Service() {
         }
 
         override fun onLoadResource(view: WebView, url: String) {
-            val active = currentWebJobFor(ownerProviderId) ?: return
+            val active = currentWebJobFor(ownerAccountId) ?: return
             val pageUrl = effectiveCollectorPageUrl(ownerProviderId, active.requestId, view.url ?: url)
             recordWebJobUrl(active.requestId, pageUrl)
             if (isWebSessionWarmUpPage(active, pageUrl)) return
             if (!ProviderWebCollectorScripts.shouldRunCollectorFromResource(ownerProviderId, pageUrl, url)) return
             val requestId = active.requestId
             view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
-                if (currentWebJobFor(ownerProviderId)?.requestId != requestId) return@evaluateJavascript
+                if (currentWebJobFor(ownerAccountId)?.requestId != requestId) return@evaluateJavascript
                 val pageText = decodeJsString(encoded)
                 if (ProviderWebCollectorScripts.isRefreshLoginPage(ownerProviderId, pageUrl, pageText)) {
                     Log.d(
@@ -1287,7 +1481,7 @@ class ProviderBackgroundRefreshService : Service() {
         }
 
         override fun onPageFinished(view: WebView, url: String) {
-            val active = currentWebJobFor(ownerProviderId) ?: return
+            val active = currentWebJobFor(ownerAccountId) ?: return
             val requestId = active.requestId
             val effectiveUrl = effectiveCollectorPageUrl(ownerProviderId, requestId, url)
             recordWebJobUrl(requestId, effectiveUrl)
@@ -1309,7 +1503,7 @@ class ProviderBackgroundRefreshService : Service() {
                 return
             }
             view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
-                if (currentWebJobFor(ownerProviderId)?.requestId != requestId) return@evaluateJavascript
+                if (currentWebJobFor(ownerAccountId)?.requestId != requestId) return@evaluateJavascript
                 val pageText = decodeJsString(encoded)
                 if (ProviderWebCollectorScripts.isRefreshLoginPage(ownerProviderId, effectiveUrl, pageText)) {
                     Log.d(
@@ -1330,7 +1524,7 @@ class ProviderBackgroundRefreshService : Service() {
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
             if (!request.isForMainFrame) return
-            val active = currentWebJobFor(ownerProviderId) ?: return
+            val active = currentWebJobFor(ownerAccountId) ?: return
             completeWebJob(
                 active.requestId,
                 ServiceRefreshOutcome.Failure(
@@ -1356,7 +1550,7 @@ class ProviderBackgroundRefreshService : Service() {
             ) {
                 return
             }
-            val active = currentWebJobFor(ownerProviderId) ?: return
+            val active = currentWebJobFor(ownerAccountId) ?: return
             val failure = ProviderRefreshHttpErrorPolicy.failureForMainFrameHttpError(
                 ownerProviderId,
                 request.url.toString(),
@@ -1370,14 +1564,15 @@ class ProviderBackgroundRefreshService : Service() {
     }
 
     private inner class ServiceUsageBridge(
-        private val ownerProviderId: ProviderId,
+        private val ownerAccountId: ProviderAccountId,
         private val collectorUserAgent: String
     ) {
+        private val ownerProviderId: ProviderId get() = ownerAccountId.providerId
         @JavascriptInterface
         fun postUsagePayload(rawPayload: String) {
             mainHandler.post {
-                val active = currentWebJobFor(ownerProviderId) ?: return@post
-                val pageUrl = retainedWebViews[ownerProviderId]?.url.orEmpty().ifBlank { active.job.startUrl }
+                val active = currentWebJobFor(ownerAccountId) ?: return@post
+                val pageUrl = webJobLastUrls[active.requestId].orEmpty().ifBlank { active.job.startUrl }
                 if (!ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ownerProviderId, pageUrl, rawPayload)) {
                     Log.d(
                         TAG,
@@ -1391,8 +1586,8 @@ class ProviderBackgroundRefreshService : Service() {
                     "payload provider=${ownerProviderId.storageId} url=${hostOf(pageUrl)}${pathOf(pageUrl)} " +
                         "summary=${payloadSignal(rawPayload)}"
                 )
-                CookieManager.getInstance().flush()
-                ProviderSessionReviveStore.clear(ownerProviderId)
+                flushCookies(active)
+                if (active.job.binding == null) ProviderSessionReviveStore.clear(ownerProviderId)
                 completeWebJob(active.requestId, ServiceRefreshOutcome.Payload(rawPayload))
             }
         }
@@ -1400,7 +1595,7 @@ class ProviderBackgroundRefreshService : Service() {
         fun postClaudeSubscriptionDetailsPlanStructure(rawRecord: String) {
             if (!BuildConfig.DEBUG || ownerProviderId != ProviderId.CLAUDE) return
             mainHandler.post {
-                if (!BuildConfig.DEBUG || currentWebJobFor(ProviderId.CLAUDE) == null) return@post
+                if (!BuildConfig.DEBUG || currentWebJobFor(ownerAccountId) == null) return@post
                 val safeRecord = safeClaudeSubscriptionDetailsPlanStructureRecord(rawRecord) ?: return@post
                 Log.d(PLAN_PROVENANCE_DIAGNOSTICS_TAG, safeRecord)
             }
@@ -1410,8 +1605,8 @@ class ProviderBackgroundRefreshService : Service() {
         @JavascriptInterface
         fun postCollectorError(rawError: String) {
             mainHandler.post {
-                val active = currentWebJobFor(ownerProviderId) ?: return@post
-                val pageUrl = retainedWebViews[ownerProviderId]?.url.orEmpty().ifBlank { active.job.startUrl }
+                val active = currentWebJobFor(ownerAccountId) ?: return@post
+                val pageUrl = webJobLastUrls[active.requestId].orEmpty().ifBlank { active.job.startUrl }
                 if (!ProviderWebCollectorScripts.shouldAcceptCollectorError(ownerProviderId, pageUrl, rawError)) {
                     Log.d(TAG, "dropCollectorError provider=${ownerProviderId.storageId} reason=untrusted_bridge_page")
                     return@post
@@ -1432,7 +1627,7 @@ class ProviderBackgroundRefreshService : Service() {
                         TAG,
                         "retryCollector provider=${ownerProviderId.storageId} errorKind=$errorKind retry=${retryCount + 1}"
                     )
-                    retainedWebViews[ownerProviderId]?.let { webView ->
+                    retainedWebViewFor(active)?.let { webView ->
                         runCatching { webView.stopLoading() }
                         if (webView.url.isNullOrBlank()) {
                             webView.loadUrl(active.job.startUrl)
@@ -1442,7 +1637,7 @@ class ProviderBackgroundRefreshService : Service() {
                     }
                     return@post
                 }
-                if (ProviderSessionReviveStore.arm(ownerProviderId, errorKind)) {
+                if (active.job.binding == null && ProviderSessionReviveStore.arm(ownerProviderId, errorKind)) {
                     Log.i(
                         TAG,
                         "sessionReviveArmed provider=${ownerProviderId.storageId} errorKind=$errorKind"
@@ -1536,7 +1731,8 @@ class ProviderBackgroundRefreshService : Service() {
         }
 
         private fun isNativeFetchBridgePageAllowed(providerId: ProviderId): Boolean {
-            val active = currentWebJobFor(providerId) ?: return false
+            val active = currentWebJobFor(ownerAccountId) ?: return false
+            if (active.job.providerId != providerId) return false
             val pageUrl = webJobLastUrls[active.requestId].orEmpty().ifBlank { active.job.startUrl }
             return ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, pageUrl)
         }
@@ -1687,13 +1883,23 @@ class ProviderBackgroundRefreshService : Service() {
     private fun saveClaudeNativeRequestContext() {
         val requestContext = ClaudeNativeHeaderStore.snapshotRequestContext(claudeNativeFetchHeaders)
         if (requestContext.isEmpty()) return
-        ClaudeNativeRequestContextStore(applicationContext).save(requestContext)
+        val binding = activeWebJob?.job?.binding?.takeIf { it.accountId.providerId == ProviderId.CLAUDE }
+        if (binding == null) {
+            ClaudeNativeRequestContextStore(applicationContext).save(requestContext)
+        } else if (ClaudeNativeRequestContextStore(applicationContext).saveExact(binding, requestContext)) {
+            AndroidExactProviderCollectorResources.updateNativeHeaders(binding, requestContext)
+        }
     }
 
     private fun saveCodexNativeAuthContext() {
         val authContext = CodexNativeHeaderStore.snapshotAuthContext(codexNativeFetchHeaders)
         if (authContext.isEmpty()) return
-        CodexNativeAuthContextStore(applicationContext).save(authContext)
+        val binding = activeWebJob?.job?.binding?.takeIf { it.accountId.providerId == ProviderId.CODEX }
+        if (binding == null) {
+            CodexNativeAuthContextStore(applicationContext).save(authContext)
+        } else if (CodexNativeAuthContextStore(applicationContext).saveExact(binding, authContext)) {
+            AndroidExactProviderCollectorResources.updateNativeHeaders(binding, authContext)
+        }
     }
 
     private fun debugNativeAuthContextForSnapshot(providerId: ProviderId): Map<String, Map<String, String>> {
@@ -1913,6 +2119,7 @@ class ProviderBackgroundRefreshService : Service() {
         const val ACTION_REFRESH = "com.aiquota.mobile.action.REFRESH"
         const val ACTION_PROVIDER_SESSION_RESET = "com.aiquota.mobile.action.PROVIDER_SESSION_RESET"
         const val EXTRA_PROVIDER_ID = "provider_id"
+        const val EXTRA_PROVIDER_ACCOUNT_ID = "provider_account_id"
         fun createRefreshIntent(
             context: Context,
             providerId: ProviderId?,
@@ -1926,6 +2133,16 @@ class ProviderBackgroundRefreshService : Service() {
                 }
         }
 
+        fun createRefreshIntent(
+            context: Context,
+            accountId: ProviderAccountId,
+            appWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID,
+        ): Intent = Intent(context, ProviderBackgroundRefreshService::class.java)
+            .setAction(ACTION_REFRESH)
+            .putExtra(WidgetRefreshActions.EXTRA_APP_WIDGET_ID, appWidgetId)
+            .putExtra(WidgetRefreshActions.EXTRA_PROVIDER_ID, accountId.providerId.storageId)
+            .putExtra(EXTRA_PROVIDER_ACCOUNT_ID, ProviderAccountIdStorageCodec.encode(accountId))
+
         fun createControlIntents(context: Context, action: String): List<Intent> {
             val defaultIntent = Intent(context, ProviderBackgroundRefreshService::class.java)
                 .setAction(action)
@@ -1937,6 +2154,30 @@ class ProviderBackgroundRefreshService : Service() {
                 .setPackage(context.packageName)
                 .putExtra(EXTRA_PROVIDER_ID, providerId.storageId)
         }
+
+        fun createSessionResetIntent(context: Context, accountId: ProviderAccountId): Intent {
+            return createSessionResetIntent(context, accountId.providerId)
+                .putExtra(EXTRA_PROVIDER_ACCOUNT_ID, ProviderAccountIdStorageCodec.encode(accountId))
+        }
+
+        internal suspend fun <T> dispatchExactHiddenCollection(
+            attempt: ProviderRefreshAttempt,
+            coordinator: ExactServiceAttemptCoordinator,
+            collector: suspend (suspend () -> Unit) -> T,
+        ): ExactServiceCollectionDispatch<T> {
+            var timedOut = false
+            var timeoutNext: ProviderRefreshAttempt? = null
+            val outcome = ProviderWebSessionMaintenanceGate.withMaintenanceLock(
+                requireNotNull(attempt.job.binding)
+            ) {
+                collector {
+                    timedOut = true
+                    timeoutNext = withContext(Dispatchers.IO) { coordinator.timeout(attempt) }
+                }
+            }
+            return ExactServiceCollectionDispatch(outcome, timedOut, timeoutNext)
+        }
+
         private const val BRIDGE_NAME = "AIQuotaCollectorBridge"
         private const val INITIAL_AUTO_REFRESH_DELAY_MILLIS = 3_000L
         private const val WEB_SESSION_WARM_UP_TIMEOUT_MILLIS = 8_000L
@@ -2023,6 +2264,7 @@ class ProviderBackgroundRefreshService : Service() {
      * 소비는 잡을 만들 때 한 번만 한다.
      */
     private fun webSessionWarmUpUrl(job: ProviderRefreshJob): String? {
+        if (job.binding != null) return null
         return when (job.providerId) {
             // github.com 홈은 한 번 로드에 90KB에 가깝다(실측). 쿠키가 살아 있는 동안에는
             // 다시 받을 이유가 없으므로 워밍업을 건너뛴다.

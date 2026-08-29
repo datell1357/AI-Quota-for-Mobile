@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.providers.CopilotNativeUsageFetcher
 import com.aiquota.mobile.providers.CursorNativeUsageFetcher
@@ -61,7 +62,7 @@ data class QueuedProviderRefreshJob(
 @Composable
 fun BackgroundProviderWebCollector(
     currentJob: QueuedProviderRefreshJob?,
-    sessionResetEvent: Pair<ProviderId, Long>? = null,
+    sessionResetEvent: Pair<ProviderAccountId, Long>? = null,
     geminiCollectorAsset: String,
     antigravityCollectorAsset: String,
     onPayload: (QueuedProviderRefreshJob, String) -> Unit,
@@ -74,14 +75,14 @@ fun BackgroundProviderWebCollector(
     val latestOnError = rememberUpdatedState(onError)
     val latestOnFinished = rememberUpdatedState(onFinished)
     val webCollectorJob = currentJob?.takeIf { it.job.mode == ProviderRefreshMode.HIDDEN_WEB_COLLECTOR }
-    val retainedWebViews = remember { mutableMapOf<ProviderId, WebView>() }
-    val loadedRequestIds = remember { mutableMapOf<ProviderId, Long>() }
-    val pageUrls = remember { mutableMapOf<ProviderId, String>() }
+    val retainedWebViews = remember { mutableMapOf<ProviderAccountId, WebView>() }
+    val loadedRequestIds = remember { mutableMapOf<ProviderAccountId, Long>() }
+    val pageUrls = remember { mutableMapOf<ProviderAccountId, String>() }
 
-    fun destroyProviderWebView(providerId: ProviderId) {
-        loadedRequestIds.remove(providerId)
-        pageUrls.remove(providerId)
-        retainedWebViews.remove(providerId)?.let { webView ->
+    fun destroyProviderWebView(accountId: ProviderAccountId) {
+        loadedRequestIds.remove(accountId)
+        pageUrls.remove(accountId)
+        retainedWebViews.remove(accountId)?.let { webView ->
             (webView.parent as? ViewGroup)?.removeView(webView)
             webView.destroyBackgroundCollector()
         }
@@ -98,12 +99,12 @@ fun BackgroundProviderWebCollector(
     LaunchedEffect(currentJob?.requestId) {
         val job = currentJob ?: return@LaunchedEffect
         delay(ProviderRefreshPlan.timeoutMillisFor(job.job.providerId))
-        val lastUrl = retainedWebViews[job.job.providerId]?.url ?: job.job.startUrl
+        val lastUrl = retainedWebViews[job.job.accountId]?.url ?: job.job.startUrl
         val failure = ProviderRefreshTimeoutPolicy.failureFor(job.job.providerId, lastUrl)
         if (job.job.mode == ProviderRefreshMode.HIDDEN_WEB_COLLECTOR &&
             ProviderHiddenWebViewRetentionPolicy.shouldRecreateAfterFailure(failure.kind)
         ) {
-            destroyProviderWebView(job.job.providerId)
+            destroyProviderWebView(job.job.accountId)
         }
         latestOnError.value(job, failure)
         latestOnFinished.value(job.requestId)
@@ -124,9 +125,10 @@ fun BackgroundProviderWebCollector(
             if (activeJob == null) {
                 retainedWebViews.values.forEach { it.visibility = View.INVISIBLE }
             } else {
-                val providerId = activeJob.job.providerId
+                val accountId = activeJob.job.accountId
+                val providerId = accountId.providerId
                 if (ProviderHiddenWebViewRetentionPolicy.shouldRetain(providerId)) {
-                    val webView = retainedWebViews.getOrPut(providerId) {
+                    val webView = retainedWebViews.getOrPut(accountId) {
                         val cookieManager = CookieManager.getInstance()
                         val collectorUserAgent = ProviderWebViewUserAgent.hiddenCollectorUserAgent(
                             container.context,
@@ -138,29 +140,29 @@ fun BackgroundProviderWebCollector(
                             configureForBackgroundCollection(cookieManager, collectorUserAgent)
                             addJavascriptInterface(
                                 BackgroundUsageBridge(
-                                    ownerProviderId = providerId,
+                                    ownerAccountId = accountId,
                                     context = container.context.applicationContext,
                                     collectorUserAgent = collectorUserAgent,
                                     currentJob = { latestJob.value },
-                                    currentPageUrl = { pageUrls[providerId].orEmpty() },
+                                    currentPageUrl = { pageUrls[accountId].orEmpty() },
                                     onPayload = { job, payload -> latestOnPayload.value(job, payload) },
                                     onError = { job, message -> latestOnError.value(job, message) },
                                     onFinished = { requestId -> latestOnFinished.value(requestId) },
-                                    onRecreateWebView = { failedProviderId -> destroyProviderWebView(failedProviderId) }
+                                    onRecreateWebView = { failedAccountId -> destroyProviderWebView(failedAccountId) }
                                 ),
                                 BRIDGE_NAME
                             )
                             webChromeClient = BackgroundCollectorChromeClient()
                             webViewClient = BackgroundCollectorWebViewClient(
-                                ownerProviderId = providerId,
+                                ownerAccountId = accountId,
                                 currentJob = { latestJob.value },
-                                onPageUrl = { pageProviderId, url -> pageUrls[pageProviderId] = url },
+                                onPageUrl = { pageAccountId, url -> pageUrls[pageAccountId] = url },
                                 geminiCollectorAsset = geminiCollectorAsset,
                                 antigravityCollectorAsset = antigravityCollectorAsset,
                                 onPayload = { job, payload -> latestOnPayload.value(job, payload) },
                                 onError = { job, message -> latestOnError.value(job, message) },
                                 onFinished = { requestId -> latestOnFinished.value(requestId) },
-                                onRecreateWebView = { failedProviderId -> destroyProviderWebView(failedProviderId) }
+                                onRecreateWebView = { failedAccountId -> destroyProviderWebView(failedAccountId) }
                             )
                         }
                     }
@@ -168,11 +170,11 @@ fun BackgroundProviderWebCollector(
                         (webView.parent as? ViewGroup)?.removeView(webView)
                         container.addView(webView, FrameLayout.LayoutParams(1, 1))
                     }
-                    retainedWebViews.forEach { (retainedProviderId, retainedWebView) ->
-                        retainedWebView.visibility = if (retainedProviderId == providerId) View.VISIBLE else View.INVISIBLE
+                    retainedWebViews.forEach { (retainedAccountId, retainedWebView) ->
+                        retainedWebView.visibility = if (retainedAccountId == accountId) View.VISIBLE else View.INVISIBLE
                     }
-                    if (loadedRequestIds[providerId] != activeJob.requestId) {
-                        loadedRequestIds[providerId] = activeJob.requestId
+                    if (loadedRequestIds[accountId] != activeJob.requestId) {
+                        loadedRequestIds[accountId] = activeJob.requestId
                         // 세션 만료를 감지했으면 이번 주기만 provider 페이지를 먼저 로드해
                         // 웹 앱이 토큰 쿠키를 갱신하게 한 뒤 about:blank 수집으로 돌아온다.
                         val reviveUrl = ProviderSessionReviveStore.consumeReviveUrl(providerId)
@@ -230,28 +232,29 @@ private class BackgroundCollectorChromeClient : WebChromeClient() {
 }
 
 private class BackgroundCollectorWebViewClient(
-    private val ownerProviderId: ProviderId,
+    private val ownerAccountId: ProviderAccountId,
     private val currentJob: () -> QueuedProviderRefreshJob?,
-    private val onPageUrl: (ProviderId, String) -> Unit,
+    private val onPageUrl: (ProviderAccountId, String) -> Unit,
     private val geminiCollectorAsset: String,
     private val antigravityCollectorAsset: String,
     private val onPayload: (QueuedProviderRefreshJob, String) -> Unit,
     private val onError: (QueuedProviderRefreshJob, ProviderRefreshFailure) -> Unit,
     private val onFinished: (Long) -> Unit,
-    private val onRecreateWebView: (ProviderId) -> Unit
+    private val onRecreateWebView: (ProviderAccountId) -> Unit
 ) : WebViewClient() {
+    private val ownerProviderId: ProviderId get() = ownerAccountId.providerId
     private val mainHandler = Handler(Looper.getMainLooper())
     private val collectorInjectionKeys = mutableSetOf<String>()
     private val terminalRequestIds = mutableSetOf<Long>()
     private var observedCodexAccountId: String? = null
 
     private fun currentProviderJob(): QueuedProviderRefreshJob? {
-        return currentJob()?.takeIf { it.job.providerId == ownerProviderId }
+        return currentJob()?.takeIf { it.job.accountId == ownerAccountId }
     }
 
     override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
         val job = currentProviderJob() ?: return
-        onPageUrl(ownerProviderId, url)
+        onPageUrl(ownerAccountId, url)
         if (ProviderWebCollectorScripts.isRefreshLoginPage(job.job.providerId, url)) {
             finishWithErrorOnce(job, ProviderRefreshFailure.interactiveAuthRequired(LOGIN_PAGE_REACHED_MESSAGE))
             return
@@ -273,7 +276,7 @@ private class BackgroundCollectorWebViewClient(
     override fun onLoadResource(view: WebView, url: String) {
         val job = currentProviderJob() ?: return
         val pageUrl = view.url ?: url
-        onPageUrl(ownerProviderId, pageUrl)
+        onPageUrl(ownerAccountId, pageUrl)
         if (!ProviderWebCollectorScripts.shouldRunCollectorFromResource(job.job.providerId, pageUrl, url)) return
         val requestId = job.requestId
         val providerId = job.job.providerId
@@ -294,7 +297,7 @@ private class BackgroundCollectorWebViewClient(
         val job = currentProviderJob() ?: return
         val requestId = job.requestId
         val providerId = job.job.providerId
-        onPageUrl(ownerProviderId, url)
+        onPageUrl(ownerAccountId, url)
         Log.d(
             "AIQuotaBgCollector",
             "pageFinished provider=${providerId.storageId} start=${hostOf(job.job.startUrl)}${pathOf(job.job.startUrl)} url=${hostOf(url)}${pathOf(url)}"
@@ -341,7 +344,7 @@ private class BackgroundCollectorWebViewClient(
             "Background refresh page failed to load."
         )
         if (ProviderHiddenWebViewRetentionPolicy.shouldRecreateAfterFailure(failure.kind)) {
-            onRecreateWebView(job.job.providerId)
+            onRecreateWebView(job.job.accountId)
         }
         onError(job, failure)
         onFinished(job.requestId)
@@ -368,7 +371,7 @@ private class BackgroundCollectorWebViewClient(
             errorResponse.statusCode
         )
         if (ProviderHiddenWebViewRetentionPolicy.shouldRecreateAfterFailure(failure.kind)) {
-            onRecreateWebView(job.job.providerId)
+            onRecreateWebView(job.job.accountId)
         }
         onError(job, failure)
         onFinished(job.requestId)
@@ -407,7 +410,7 @@ private class BackgroundCollectorWebViewClient(
     private fun finishWithErrorOnce(job: QueuedProviderRefreshJob, failure: ProviderRefreshFailure) {
         if (!terminalRequestIds.add(job.requestId)) return
         if (ProviderHiddenWebViewRetentionPolicy.shouldRecreateAfterFailure(failure.kind)) {
-            onRecreateWebView(job.job.providerId)
+            onRecreateWebView(job.job.accountId)
         }
         onError(job, failure)
         onFinished(job.requestId)
@@ -431,7 +434,7 @@ private class BackgroundCollectorWebViewClient(
 }
 
 private class BackgroundUsageBridge(
-    private val ownerProviderId: ProviderId,
+    private val ownerAccountId: ProviderAccountId,
     context: Context,
     private val collectorUserAgent: String,
     private val currentJob: () -> QueuedProviderRefreshJob?,
@@ -439,13 +442,14 @@ private class BackgroundUsageBridge(
     private val onPayload: (QueuedProviderRefreshJob, String) -> Unit,
     private val onError: (QueuedProviderRefreshJob, ProviderRefreshFailure) -> Unit,
     private val onFinished: (Long) -> Unit,
-    private val onRecreateWebView: (ProviderId) -> Unit
+    private val onRecreateWebView: (ProviderAccountId) -> Unit
 ) {
+    private val ownerProviderId: ProviderId get() = ownerAccountId.providerId
     private val mainHandler = Handler(Looper.getMainLooper())
     private val applicationContext = context.applicationContext
 
     private fun currentProviderJob(): QueuedProviderRefreshJob? {
-        return currentJob()?.takeIf { it.job.providerId == ownerProviderId }
+        return currentJob()?.takeIf { it.job.accountId == ownerAccountId }
     }
 
     @JavascriptInterface
@@ -501,7 +505,7 @@ private class BackgroundUsageBridge(
             }
             val failure = ProviderCollectorErrorPolicy.failureFor(job.job.providerId, rawError)
             if (ProviderHiddenWebViewRetentionPolicy.shouldRecreateAfterFailure(failure.kind)) {
-                onRecreateWebView(job.job.providerId)
+                onRecreateWebView(job.job.accountId)
             }
             onError(job, failure)
             onFinished(job.requestId)

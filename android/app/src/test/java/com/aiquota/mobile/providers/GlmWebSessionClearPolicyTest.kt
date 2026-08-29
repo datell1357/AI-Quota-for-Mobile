@@ -472,10 +472,13 @@ class GlmWebSessionClearPolicyTest {
         val contextCleanup = cleaner.substringAfter("suspend fun clearProviderWebSessionAndWait(")
             .substringBefore("fun clearProviderWebSession(")
         val hiddenCollectorBranch = service.substringAfter("ProviderRefreshMode.HIDDEN_WEB_COLLECTOR ->")
-            .substringBefore("}")
+            .substringBefore("if (exactDispatch?.timedOut")
+        val exactDispatch = service.substringAfter("internal suspend fun <T> dispatchExactHiddenCollection")
+            .substringBefore("private const val BRIDGE_NAME")
 
         assertTrue(cleaner.contains("internal object ProviderWebSessionMaintenanceGate"))
         assertTrue(contextCleanup.contains("ProviderWebSessionMaintenanceGate.withMaintenanceLock"))
-        assertTrue(hiddenCollectorBranch.contains("ProviderWebSessionMaintenanceGate.withMaintenanceLock"))
+        assertTrue(hiddenCollectorBranch.contains("dispatchExactHiddenCollection"))
+        assertTrue(exactDispatch.contains("ProviderWebSessionMaintenanceGate.withMaintenanceLock"))
     }
 }

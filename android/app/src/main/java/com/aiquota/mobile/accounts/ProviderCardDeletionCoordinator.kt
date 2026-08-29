@@ -15,13 +15,15 @@ class ProviderCardDeletionCoordinator internal constructor(
         when (val begin = authority.beginProviderCardDeletion(accountId)) {
             BeginProviderCardDeletionResult.Missing ->
                 ProviderCardDeletionResult.Rejected(ProviderCardDeletionRejection.ACCOUNT_MISSING)
-            is BeginProviderCardDeletionResult.Ready -> {
-                if (begin.record.step == ProviderCardDeletionStep.TOMBSTONED &&
-                    begin.record.journalRevision == 1L
-                ) faultInjector.afterPersisted(ProviderCardDeletionStep.TOMBSTONED)
-                drive(begin.record)
-            }
+            is BeginProviderCardDeletionResult.Ready -> continueAfterBegin(begin.record)
         }
+
+    internal fun continueAfterBegin(record: ProviderCardDeletionRecord): ProviderCardDeletionResult {
+        if (record.step == ProviderCardDeletionStep.TOMBSTONED && record.journalRevision == 1L) {
+            faultInjector.afterPersisted(ProviderCardDeletionStep.TOMBSTONED)
+        }
+        return drive(record)
+    }
 
     fun resumePending(): List<ProviderCardDeletionResult> =
         authority.pendingProviderCardDeletions().map(::delete)
