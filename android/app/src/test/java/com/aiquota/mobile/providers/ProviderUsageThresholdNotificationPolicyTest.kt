@@ -1,5 +1,10 @@
 package com.aiquota.mobile.providers
 
+import com.aiquota.mobile.accounts.AccountGeneration
+import com.aiquota.mobile.accounts.AccountKey
+import com.aiquota.mobile.accounts.DisplayVersion
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.SessionRevision
 import com.aiquota.mobile.local.ProviderConnectionState
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderRefreshState
@@ -10,143 +15,114 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProviderUsageThresholdNotificationPolicyTest {
-    private val enabledAll: (ProviderId) -> Boolean = { true }
-    private val threshold5: (ProviderId) -> Int = { 5 }
+    private val accountId = ProviderAccountId(ProviderId.CLAUDE, AccountKey.reservedDefault())
+    private val key = ProviderAccountLineKey(accountId, "claude:session")
 
     @Test
     fun aboveThresholdArmsWithoutNotifying() {
-        val result = evaluate(remaining = 0.8f, storedArmed = emptyMap())
-
+        val result = evaluate(0.8f, emptyMap())
         assertTrue(result.notifications.isEmpty())
-        assertEquals(true, result.armed["claude:claude:session"])
+        assertEquals(true, result.armed[key])
     }
 
     @Test
     fun droppingToThresholdNotifiesOnceAndDisarms() {
-        val armed = mapOf("claude:claude:session" to true)
-        val result = evaluate(remaining = 0.05f, storedArmed = armed)
-
+        val result = evaluate(0.05f, mapOf(key to true))
         assertEquals(1, result.notifications.size)
-        assertEquals(5, result.notifications.first().thresholdPercent)
-        assertEquals(false, result.armed["claude:claude:session"])
+        assertEquals(5, result.notifications.single().thresholdPercent)
+        assertEquals(false, result.armed[key])
     }
 
     @Test
     fun stayingLowDoesNotNotifyAgain() {
-        val armed = mapOf("claude:claude:session" to false)
-        val result = evaluate(remaining = 0.03f, storedArmed = armed)
-
+        val result = evaluate(0.03f, mapOf(key to false))
         assertTrue(result.notifications.isEmpty())
-        assertEquals(false, result.armed["claude:claude:session"])
+        assertEquals(false, result.armed[key])
     }
 
     @Test
     fun recoveringAboveThresholdReArms() {
-        val armed = mapOf("claude:claude:session" to false)
-        val result = evaluate(remaining = 1.0f, storedArmed = armed)
-
+        val result = evaluate(1f, mapOf(key to false))
         assertTrue(result.notifications.isEmpty())
-        assertEquals(true, result.armed["claude:claude:session"])
+        assertEquals(true, result.armed[key])
     }
 
     @Test
     fun firstObservationAlreadyLowIsSuppressed() {
-        val result = evaluate(remaining = 0.02f, storedArmed = emptyMap())
-
+        val result = evaluate(0.02f, emptyMap())
         assertTrue(result.notifications.isEmpty())
-        assertEquals(false, result.armed["claude:claude:session"])
+        assertEquals(false, result.armed[key])
     }
 
     @Test
-    fun disabledProviderIsIgnored() {
-        val result = ProviderUsageThresholdNotificationPolicy.evaluate(
-            snapshots = listOf(snapshot(remaining = 0.05f)),
-            isEnabled = { false },
-            thresholdPercent = threshold5,
-            storedArmed = mapOf("claude:claude:session" to true)
+    fun disabledCardIsIgnored() {
+        val input = evaluation(card(0.05f), mapOf(key to true)).copy(enabledAccounts = emptySet())
+        val result = ProviderUsageThresholdNotificationPolicy.evaluate(input)
+        assertTrue(result.notifications.isEmpty())
+        assertEquals(true, result.armed[key])
+    }
+
+    @Test
+    fun refreshingAndDisconnectedCardsAreSkipped() {
+        val refreshing = ProviderUsageThresholdNotificationPolicy.evaluate(
+            evaluation(card(0.05f, refresh = ProviderRefreshState.REFRESHING), mapOf(key to true)),
         )
-
-        assertTrue(result.notifications.isEmpty())
-        // Untouched providers keep their prior armed state.
-        assertEquals(true, result.armed["claude:claude:session"])
-    }
-
-    @Test
-    fun refreshingSnapshotIsSkipped() {
-        val result = ProviderUsageThresholdNotificationPolicy.evaluate(
-            snapshots = listOf(snapshot(remaining = 0.05f, refreshState = ProviderRefreshState.REFRESHING)),
-            isEnabled = enabledAll,
-            thresholdPercent = threshold5,
-            storedArmed = mapOf("claude:claude:session" to true)
+        val disconnected = ProviderUsageThresholdNotificationPolicy.evaluate(
+            evaluation(card(0.05f, connection = ProviderConnectionState.DISCONNECTED), mapOf(key to true)),
         )
-
-        assertTrue(result.notifications.isEmpty())
+        assertTrue(refreshing.notifications.isEmpty())
+        assertTrue(disconnected.notifications.isEmpty())
     }
 
     @Test
-    fun disconnectedSnapshotIsSkipped() {
-        val result = ProviderUsageThresholdNotificationPolicy.evaluate(
-            snapshots = listOf(snapshot(remaining = 0.05f, state = ProviderConnectionState.DISCONNECTED)),
-            isEnabled = enabledAll,
-            thresholdPercent = threshold5,
-            storedArmed = mapOf("claude:claude:session" to true)
-        )
-
-        assertTrue(result.notifications.isEmpty())
-    }
-
-    @Test
-    fun perLineTrackingIsIndependent() {
-        val snapshot = ProviderUsageSnapshot(
-            providerId = ProviderId.CLAUDE,
-            connectionState = ProviderConnectionState.CONNECTED,
-            refreshState = ProviderRefreshState.IDLE,
-            lines = listOf(
-                ProviderUsageLine(key = "session", label = "5시간 세션", remainingPercent = 0.04f),
-                ProviderUsageLine(key = "weekly", label = "주간 세션", remainingPercent = 0.5f)
+    fun linesTrackIndependentlyWithinOneCard() {
+        val weekly = ProviderAccountLineKey(accountId, "claude:weekly")
+        val card = card(0.04f).copy(
+            snapshot = card(0.04f).snapshot.copy(
+                lines = listOf(
+                    ProviderUsageLine("Session", 0.04f, key = key.lineKey),
+                    ProviderUsageLine("Weekly", 0.5f, key = weekly.lineKey),
+                )
             )
         )
         val result = ProviderUsageThresholdNotificationPolicy.evaluate(
-            snapshots = listOf(snapshot),
-            isEnabled = enabledAll,
-            thresholdPercent = threshold5,
-            storedArmed = mapOf("claude:session" to true, "claude:weekly" to true)
+            evaluation(card, mapOf(key to true, weekly to true)),
         )
-
-        assertEquals(1, result.notifications.size)
-        assertEquals("session", result.notifications.first().lineKey)
-        assertEquals(false, result.armed["claude:session"])
-        assertEquals(true, result.armed["claude:weekly"])
+        assertEquals(listOf(key.lineKey), result.notifications.map { it.lineKey })
+        assertEquals(false, result.armed[key])
+        assertEquals(true, result.armed[weekly])
     }
 
     private fun evaluate(
         remaining: Float,
-        storedArmed: Map<String, Boolean>
-    ): ProviderUsageThresholdNotificationPolicy.Result {
-        return ProviderUsageThresholdNotificationPolicy.evaluate(
-            snapshots = listOf(snapshot(remaining = remaining)),
-            isEnabled = enabledAll,
-            thresholdPercent = threshold5,
-            storedArmed = storedArmed
-        )
-    }
+        armed: Map<ProviderAccountLineKey, Boolean>,
+    ) = ProviderUsageThresholdNotificationPolicy.evaluate(evaluation(card(remaining), armed))
 
-    private fun snapshot(
+    private fun evaluation(
+        card: ProviderCardNotificationSnapshot,
+        armed: Map<ProviderAccountLineKey, Boolean>,
+    ) = ThresholdNotificationEvaluation(
+        listOf(card),
+        setOf(accountId),
+        mapOf(accountId to 5),
+        armed,
+    )
+
+    private fun card(
         remaining: Float,
-        state: ProviderConnectionState = ProviderConnectionState.CONNECTED,
-        refreshState: ProviderRefreshState = ProviderRefreshState.IDLE
-    ): ProviderUsageSnapshot {
-        return ProviderUsageSnapshot(
-            providerId = ProviderId.CLAUDE,
-            connectionState = state,
-            refreshState = refreshState,
-            lines = listOf(
-                ProviderUsageLine(
-                    key = "claude:session",
-                    label = "5시간 세션",
-                    remainingPercent = remaining
-                )
-            )
-        )
-    }
+        connection: ProviderConnectionState = ProviderConnectionState.CONNECTED,
+        refresh: ProviderRefreshState = ProviderRefreshState.IDLE,
+    ) = ProviderCardNotificationSnapshot(
+        accountId,
+        "Claude",
+        AccountGeneration.of(1),
+        SessionRevision.of(1),
+        DisplayVersion.of(1),
+        ProviderUsageSnapshot(
+            ProviderId.CLAUDE,
+            connectionState = connection,
+            refreshState = refresh,
+            lines = listOf(ProviderUsageLine("Session", remaining, key = key.lineKey)),
+        ),
+    )
 }

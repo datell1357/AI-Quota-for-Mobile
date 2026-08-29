@@ -35,8 +35,6 @@ import com.aiquota.mobile.sync.NetworkAvailability
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderPreferencesRepository
 import com.aiquota.mobile.local.ProviderUsageSnapshot
-import com.aiquota.mobile.notification.ProviderResetNotificationController
-import com.aiquota.mobile.notification.ProviderUsageThresholdNotificationController
 import com.aiquota.mobile.notification.UsageLimitNotificationController
 import com.aiquota.mobile.update.AppUpdatedRefreshCooldown
 import com.aiquota.mobile.widget.WidgetRefreshActions
@@ -412,8 +410,7 @@ class ProviderBackgroundRefreshService : Service() {
                 refreshProvider(job, automaticRefresh = manualProviderId == null)
             }
             withContext(Dispatchers.IO) {
-                evaluateResetNotifications()
-                evaluateUsageThresholdNotifications()
+                ProviderCardNotificationRuntime.evaluate(applicationContext, BuildConfig.MULTI_ACCOUNT_ENABLED)
             }
             RefreshCycleMeter.log(TAG, meterStart, jobs.size)
         } finally {
@@ -494,6 +491,7 @@ class ProviderBackgroundRefreshService : Service() {
         }
         withContext(Dispatchers.IO) {
             UsageSurfaceRefresher.refresh(applicationContext, repository)
+            ProviderCardNotificationRuntime.evaluate(applicationContext, BuildConfig.MULTI_ACCOUNT_ENABLED)
         }
     }
 
@@ -645,42 +643,6 @@ class ProviderBackgroundRefreshService : Service() {
         withContext(Dispatchers.IO) { UsageSurfaceRefresher.refresh(applicationContext, repository) }
         if (effectiveJob.providerId == ProviderId.CLAUDE) {
             maybePrimeClaudeSession()
-        }
-    }
-
-    private fun evaluateResetNotifications() {
-        val preferences = ProviderPreferencesRepository(applicationContext)
-        val stateRepository = ProviderResetNotificationStateRepository(applicationContext)
-        val result = ProviderResetNotificationPolicy.evaluate(
-            snapshots = repository.readSnapshots(),
-            isEnabled = { preferences.isResetNotificationEnabled(it) },
-            storedPending = stateRepository.readPending(),
-            lastNotified = stateRepository.readNotified()
-        )
-        stateRepository.write(result.pending, result.notified)
-        result.notifications.forEach { notification ->
-            Log.i(TAG, "resetNotification provider=${notification.providerId.storageId} line=${notification.lineKey}")
-            ProviderResetNotificationController.notifyReset(applicationContext, notification)
-        }
-    }
-
-    private fun evaluateUsageThresholdNotifications() {
-        val preferences = ProviderPreferencesRepository(applicationContext)
-        val stateRepository = ProviderUsageThresholdNotificationStateRepository(applicationContext)
-        val result = ProviderUsageThresholdNotificationPolicy.evaluate(
-            snapshots = repository.readSnapshots(),
-            isEnabled = { preferences.isUsageThresholdNotificationEnabled(it) },
-            thresholdPercent = { preferences.usageThresholdPercent(it) },
-            storedArmed = stateRepository.readArmed()
-        )
-        stateRepository.writeArmed(result.armed)
-        result.notifications.forEach { notification ->
-            Log.i(
-                TAG,
-                "usageThresholdNotification provider=${notification.providerId.storageId} " +
-                    "line=${notification.lineKey} threshold=${notification.thresholdPercent}"
-            )
-            ProviderUsageThresholdNotificationController.notifyLowUsage(applicationContext, notification)
         }
     }
 

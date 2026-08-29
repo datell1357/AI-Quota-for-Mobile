@@ -100,6 +100,9 @@
       android:exported="false"
       android:process=":glm_webview" />
     <receiver
+      android:name=".notification.ProviderNotificationResetReceiver"
+      android:exported="false" />
+    <receiver
       android:name=".widget.ProviderWidgetDetailReceiver"
       android:exported="false" />
     <receiver

@@ -156,7 +156,7 @@ internal fun requestExactAccountRefresh(
     ).use { cursor -> if (cursor.moveToFirst()) AccountDemandSet.fromMask(cursor.getInt(0)) else AccountDemandSet.NONE }
     val version = readVersion(db).next()
     updateAccountVersion(db, request.accountId, version)
-    writeDemand(db, request.accountId, currentDemand.plus(AccountDemand.MANUAL))
+    writeDemand(db, request.accountId, currentDemand.plus(request.demand))
     writeVersion(db, version)
     return AccountRefreshRequestResult.Accepted(requireNotNull(readExactProviderCardRecord(db, request.accountId)))
 }

@@ -89,6 +89,7 @@ data class AccountRefreshRequest(
     val expectedVersion: DisplayVersion,
     val expectedGeneration: AccountGeneration,
     val expectedSessionRevision: SessionRevision,
+    val demand: AccountDemand = AccountDemand.MANUAL,
 )
 
 enum class AccountRefreshRequestRejection {

@@ -1,87 +1,62 @@
 package com.aiquota.mobile.providers
 
+import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.local.ProviderConnectionState
-import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderRefreshState
-import com.aiquota.mobile.local.ProviderUsageSnapshot
 
-data class ProviderUsageThresholdNotification(
-    val providerId: ProviderId,
-    val lineKey: String,
-    val lineLabel: String,
-    val lineIndex: Int,
-    val thresholdPercent: Int
+data class ThresholdNotificationEvaluation(
+    val cards: List<ProviderCardNotificationSnapshot>,
+    val enabledAccounts: Set<ProviderAccountId>,
+    val thresholdPercents: Map<ProviderAccountId, Int>,
+    val storedArmed: Map<ProviderAccountLineKey, Boolean>,
 )
 
-/**
- * Decides which logged-in provider usage lines have just dropped to or below the user's
- * remaining-usage threshold so a "low usage" notification can be posted.
- *
- * Each line fires at most once per cycle: after notifying, it stays armed=false until the line
- * recovers back above the threshold (typically after its window resets), which re-arms it. This
- * mirrors the reset-notification policy's per-line tracking and avoids repeat spam while the
- * line sits low. A line first observed already at/below the threshold is suppressed (armed=false
- * without notifying) so enabling the option does not immediately fire on an already-low line.
- */
+/** Exact-card low-usage transition policy. */
 object ProviderUsageThresholdNotificationPolicy {
     data class Result(
         val notifications: List<ProviderUsageThresholdNotification>,
-        val armed: Map<String, Boolean>
+        val armed: Map<ProviderAccountLineKey, Boolean>,
     )
 
-    fun evaluate(
-        snapshots: List<ProviderUsageSnapshot>,
-        isEnabled: (ProviderId) -> Boolean,
-        thresholdPercent: (ProviderId) -> Int,
-        storedArmed: Map<String, Boolean>
-    ): Result {
-        val armed = storedArmed.toMutableMap()
+    fun evaluate(input: ThresholdNotificationEvaluation): Result {
+        val armed = input.storedArmed.toMutableMap()
         val notifications = mutableListOf<ProviderUsageThresholdNotification>()
 
-        snapshots.forEach { snapshot ->
-            if (!isEnabled(snapshot.providerId)) return@forEach
+        input.cards.forEach { card ->
+            val snapshot = card.snapshot
+            if (card.accountId !in input.enabledAccounts) return@forEach
             if (snapshot.refreshState == ProviderRefreshState.REFRESHING) return@forEach
             if (snapshot.connectionState != ProviderConnectionState.CONNECTED &&
                 snapshot.connectionState != ProviderConnectionState.STALE
-            ) {
-                return@forEach
-            }
-
-            val threshold = thresholdPercent(snapshot.providerId)
+            ) return@forEach
+            val threshold = input.thresholdPercents[card.accountId] ?: return@forEach
 
             snapshot.lines.forEachIndexed { index, line ->
                 val remaining = line.remainingPercent ?: return@forEachIndexed
-                val remainingPercent = (remaining.coerceIn(0f, 1f) * 100f)
-                val trackingKey = "${snapshot.providerId.storageId}:${line.key}"
-                val isLow = remainingPercent <= threshold.toFloat()
-
-                if (!armed.containsKey(trackingKey)) {
-                    // First observation: arm only if currently above the threshold, so an
-                    // already-low line does not fire the moment tracking starts.
-                    armed[trackingKey] = !isLow
+                val key = runCatching { ProviderAccountLineKey(card.accountId, line.key) }.getOrNull()
+                    ?: return@forEachIndexed
+                val isLow = remaining.coerceIn(0f, 1f) * 100f <= threshold.toFloat()
+                if (key !in armed) {
+                    armed[key] = !isLow
                     return@forEachIndexed
                 }
-
-                if (isLow) {
-                    if (armed[trackingKey] == true) {
-                        notifications.add(
-                            ProviderUsageThresholdNotification(
-                                providerId = snapshot.providerId,
-                                lineKey = line.key,
-                                lineLabel = line.label,
-                                lineIndex = index,
-                                thresholdPercent = threshold
-                            )
-                        )
-                        armed[trackingKey] = false
-                    }
-                } else {
-                    // Recovered above the threshold (e.g. window reset) — re-arm.
-                    armed[trackingKey] = true
+                if (isLow && armed[key] == true) {
+                    notifications += ProviderUsageThresholdNotification(
+                        key,
+                        card.alias,
+                        line.label,
+                        index,
+                        threshold,
+                        card.generation,
+                        card.sessionRevision,
+                        card.version,
+                    )
+                    armed[key] = false
+                } else if (!isLow) {
+                    armed[key] = true
                 }
             }
         }
-
         return Result(notifications, armed)
     }
 }

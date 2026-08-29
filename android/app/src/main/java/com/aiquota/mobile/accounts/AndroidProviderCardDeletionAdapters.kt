@@ -3,6 +3,7 @@ package com.aiquota.mobile.accounts
 import android.content.Context
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderCardPreferencesRepository
+import com.aiquota.mobile.notification.ProviderNotificationArtifacts
 import com.aiquota.mobile.providers.ProviderResetNotificationStateRepository
 import com.aiquota.mobile.providers.ProviderSessionResetter
 import com.aiquota.mobile.providers.ProviderUsageThresholdNotificationStateRepository
@@ -57,9 +58,12 @@ internal class ConservativeWidgetArtifactStore(
 internal class ConservativeNotificationArtifactStore(
     context: Context,
 ) : ExactCardArtifactStore {
-    private val reset = ProviderResetNotificationStateRepository(context.applicationContext)
-    private val threshold = ProviderUsageThresholdNotificationStateRepository(context.applicationContext)
+    private val appContext = context.applicationContext
+    private val reset = ProviderResetNotificationStateRepository(appContext)
+    private val threshold = ProviderUsageThresholdNotificationStateRepository(appContext)
 
     override fun eraseExact(accountId: ProviderAccountId): Boolean =
-        reset.clearExact(accountId) && threshold.clearExact(accountId)
+        ProviderNotificationArtifacts.eraseExact(appContext, accountId) &&
+            reset.clearExact(accountId) &&
+            threshold.clearExact(accountId)
 }
