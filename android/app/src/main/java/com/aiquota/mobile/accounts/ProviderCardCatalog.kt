@@ -96,6 +96,8 @@ class ProviderCardCatalog private constructor(
 
     fun page(offset: Int, limit: Int): AccountCatalogPage = authority.catalog(offset, limit)
 
+    fun suggestAlias(providerId: ProviderId): String? = authority.suggestProviderCardAlias(providerId)
+
     fun initializationState(): ProviderCatalogInitializationState =
         authority.providerCatalogInitializationState()
 

@@ -106,7 +106,7 @@ internal fun activeProviderCardAliasExists(db: SQLiteDatabase, normalizedKey: St
         arrayOf(normalizedKey),
     ).use(Cursor::moveToFirst)
 
-private fun allocateProviderCardAlias(
+internal fun allocateProviderCardAlias(
     db: SQLiteDatabase,
     providerId: ProviderId,
 ): NormalizedProviderCardAlias {

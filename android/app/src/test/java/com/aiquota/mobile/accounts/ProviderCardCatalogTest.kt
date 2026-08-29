@@ -92,6 +92,23 @@ class ProviderCardCatalogTest {
     }
 
     @Test
+    fun suggestionUsesTheAtomicAllocatorWithoutWriting() {
+        // Given
+        val fixture = fixture("suggestion")
+
+        // When / Then
+        assertEquals("Codex", fixture.catalog.suggestAlias(ProviderId.CODEX))
+        assertEquals(0, fixture.catalog.page(0, 1).totalCount)
+        added(fixture.catalog.add(ProviderId.CODEX))
+        assertEquals("Codex 2", fixture.catalog.suggestAlias(ProviderId.CODEX))
+        added(fixture.catalog.add(ProviderId.CODEX))
+        assertEquals("Codex 3", fixture.catalog.suggestAlias(ProviderId.CODEX))
+        assertEquals("Cursor", fixture.catalog.suggestAlias(ProviderId.CURSOR))
+        added(fixture.catalog.add(ProviderId.CURSOR))
+        assertNull(fixture.catalog.suggestAlias(ProviderId.CURSOR))
+    }
+
+    @Test
     fun zeroOneAndOneThousandCardsUseBoundedLowestSuffixAllocation() {
         val fixture = fixture("thousand")
         assertEquals(0, fixture.catalog.page(0, 1).totalCount)

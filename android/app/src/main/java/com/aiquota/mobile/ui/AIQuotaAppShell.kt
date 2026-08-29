@@ -881,6 +881,7 @@ fun AIQuotaAppShell(
                                     viewMode = dashboardViewMode,
                                     onSelectViewMode = selectViewMode,
                                     onAddProvider = { providerEnrollment?.openExplicitAdd() },
+                                    onRemoveProvider = {},
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             } else {

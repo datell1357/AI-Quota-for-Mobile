@@ -95,6 +95,8 @@
     <string name="dashboard_empty_body">provider를 연결하면 한도 추적을 시작할 수 있습니다.</string>
     <string name="provider_catalog_empty_prompt">추적할 AI 제공자를 선택해주세요</string>
     <string name="provider_catalog_add">추가</string>
+    <string name="provider_catalog_add_action">제공자 추가</string>
+    <string name="provider_catalog_remove_action">제공자 제거</string>
     <string name="provider_picker_title">제공자 선택</string>
     <string name="provider_picker_body">대시보드에 추가할 AI 제공자 하나를 선택하세요.</string>
     <string name="provider_picker_already_added">이미 추가됨</string>

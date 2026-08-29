@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -60,6 +62,7 @@ internal fun ExactDashboardCardsContent(
     viewMode: DashboardViewMode,
     onSelectViewMode: (DashboardViewMode) -> Unit,
     onAddProvider: () -> Unit,
+    onRemoveProvider: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val layoutMetrics = rememberAppLayoutMetrics().forDashboardViewMode(viewMode)
@@ -87,37 +90,64 @@ internal fun ExactDashboardCardsContent(
                 ),
             verticalArrangement = Arrangement.spacedBy(layoutMetrics.sectionSpacingDp.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().height(layoutMetrics.dashboardTitleHeightDp.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(layoutMetrics.cardSpacingDp.dp),
             ) {
                 Row(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = DashboardCatalogActionSize),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = stringResource(R.string.dashboard_title),
-                        modifier = Modifier.weight(1f, fill = false),
+                        modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleLarge,
                         color = colors.textPrimary,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    IconButton(onClick = onOpenSettings) {
+                    IconButton(
+                        onClick = onOpenSettings,
+                        modifier = Modifier.size(DashboardCatalogActionSize),
+                    ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_settings),
                             contentDescription = stringResource(R.string.nav_settings),
                             tint = colors.textSecondary,
                         )
                     }
+                    IconButton(
+                        onClick = onAddProvider,
+                        modifier = Modifier.size(DashboardCatalogActionSize),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_add_provider),
+                            contentDescription = stringResource(R.string.provider_catalog_add_action),
+                            tint = colors.textSecondary,
+                        )
+                    }
+                    IconButton(
+                        onClick = onRemoveProvider,
+                        modifier = Modifier.size(DashboardCatalogActionSize),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_remove_provider),
+                            contentDescription = stringResource(R.string.provider_catalog_remove_action),
+                            tint = colors.textSecondary,
+                        )
+                    }
                 }
-                OutlinedButton(onClick = onAddWidget, modifier = Modifier.widthIn(min = 104.dp)) {
-                    Text(stringResource(R.string.dashboard_add_widget), maxLines = 1)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OutlinedButton(onClick = onAddWidget, modifier = Modifier.widthIn(min = 104.dp)) {
+                        Text(stringResource(R.string.dashboard_add_widget), maxLines = 1)
+                    }
+                    DashboardViewModeButtons(viewMode, onSelectViewMode)
                 }
-                DashboardViewModeButtons(viewMode, onSelectViewMode)
             }
 
             if (previewIds.isEmpty()) {
@@ -180,6 +210,8 @@ internal fun ExactDashboardCardsContent(
         }
     }
 }
+
+private val DashboardCatalogActionSize = 48.dp
 
 @Composable
 private fun ExactProviderUsageCard(

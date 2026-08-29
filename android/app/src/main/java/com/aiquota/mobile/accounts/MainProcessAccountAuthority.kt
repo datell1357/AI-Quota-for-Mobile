@@ -52,6 +52,22 @@ class MainProcessAccountAuthority private constructor(
         setProviderCatalogOnboardingState(db, state)
     }
 
+    internal fun suggestProviderCardAlias(providerId: ProviderId): String? {
+        val multiplicity = when (val policy = ProviderCardCatalogPolicy.classify(providerId)) {
+            is ProviderCardProviderPolicy.Released -> policy.multiplicity
+            ProviderCardProviderPolicy.Unsupported -> return null
+        }
+        return transaction { db ->
+            if (multiplicity == ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT &&
+                activeProviderCardCount(db, providerId) != 0L
+            ) {
+                null
+            } else {
+                allocateProviderCardAlias(db, providerId).displayValue
+            }
+        }
+    }
+
     internal fun enrollDisconnectedProviderCard(
         providerId: ProviderId,
         customAlias: NormalizedProviderCardAlias?,

@@ -12,7 +12,7 @@
       android:exported="true" />
     <activity
       android:name=".debug.ProviderOnboardingComposeTestActivity"
-      android:exported="false" />
+      android:exported="true" />
     <activity
       android:name=".debug.ProviderCardCatalogDebugActivity"
       android:exported="true"

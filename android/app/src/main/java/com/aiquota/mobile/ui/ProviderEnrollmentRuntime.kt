@@ -22,12 +22,11 @@ internal class ProviderEnrollmentRuntime(
             existingAccountIds = cardRuntime.state.catalog.cards
                 .mapTo(mutableSetOf()) { it.accountId },
             onLater = { catalog.skipOnboarding() },
+            suggestedAlias = catalog::suggestAlias,
             onSubmit = { submission ->
                 catalog.add(submission.providerId, submission.optionalAlias).also { result ->
-                    if (result is ProviderCardAddResult.Added) {
-                        catalog.completeOnboarding()
-                        cardRuntime.reload()
-                    }
+                    if (result is ProviderCardAddResult.Added) catalog.completeOnboarding()
+                    cardRuntime.reload()
                 }
             },
             onAdded = {},

@@ -40,10 +40,10 @@ class ProviderCardCatalogUiTest {
         launchCatalog(DATASET_EMPTY)
         assertNoLoginSurface("First-run onboarding must not automatically launch login")
 
-        requireAction(
-            label = GET_STARTED,
+        val getStarted = requireNode(
             failureMessage = "Onboarding semantics missing: first run must expose an exact clickable 'Get started' action"
-        )
+        ) { node -> node.isClickable && nodeOrDescendantHasExactLabel(node, GET_STARTED) }
+        assertFalse("Get started must remain disabled until a provider is selected", getStarted.isEnabled)
         requireAction(
             label = LATER,
             failureMessage = "Onboarding semantics missing: first run must expose an exact clickable 'Later' action"
@@ -53,6 +53,11 @@ class ProviderCardCatalogUiTest {
     @Test
     fun laterShowsFutureEmptyCatalogAndAddProvider() {
         launchCatalog(DATASET_EMPTY)
+        val later = requireAction(
+            label = LATER,
+            failureMessage = "First-run Later action must dismiss into the empty catalog"
+        )
+        clickAndAwaitAccessibilityChange(later, "dismiss first-run onboarding")
         assertNoLoginSurface("Later/empty catalog must not automatically launch login")
 
         val legacyProviderCards = allNodes().filter { node ->
@@ -91,11 +96,13 @@ class ProviderCardCatalogUiTest {
         val namingField = requireNode(
             failureMessage = "Naming semantics missing: selecting Codex must expose one editable naming field with the automatic 'Codex 2' suggestion"
         ) { node ->
-            node.className?.toString() == EDIT_TEXT_CLASS &&
-                node.isEditable &&
-                node.text?.toString() == CODEX_SECOND_ALIAS
+            node.className?.toString() == EDIT_TEXT_CLASS && node.isEditable
         }
         assertNonEmptyBounds(namingField, "Naming field")
+        requireExactText(
+            targetContext.getString(R.string.provider_naming_default, CODEX_SECOND_ALIAS),
+            "Naming semantics missing: Codex must expose the current automatic Codex 2 suggestion"
+        )
 
         val confirmAdd = requireAction(
             label = ADD,
@@ -221,14 +228,21 @@ class ProviderCardCatalogUiTest {
         assertEquals("Accessibility root must belong to the target app", APP_PACKAGE, root.packageName?.toString())
         assertNonEmptyBounds(root, "Accessibility root")
         val nodes = allNodes()
-        assertTrue(
-            "Remote debug Activity must expose the current Dashboard identity\n${dumpTree()}",
-            nodes.any { node -> node.text?.toString() == dashboardTitle }
-        )
-        assertTrue(
-            "Remote debug Activity must expose current dashboard accessibility content\n${dumpTree()}",
-            nodes.any { node -> node.contentDescription?.toString() == settings }
-        )
+        if (dataset == DATASET_EMPTY) {
+            assertTrue(
+                "First-run debug Activity must expose the provider picker\n${dumpTree()}",
+                nodes.any { node -> node.text?.toString() == targetContext.getString(R.string.provider_picker_title) }
+            )
+        } else {
+            assertTrue(
+                "Debug Activity must expose the current Dashboard identity\n${dumpTree()}",
+                nodes.any { node -> node.text?.toString() == dashboardTitle }
+            )
+            assertTrue(
+                "Debug Activity must expose current dashboard accessibility content\n${dumpTree()}",
+                nodes.any { node -> node.contentDescription?.toString() == settings }
+            )
+        }
     }
 
     private fun clickAndAwaitAccessibilityChange(node: AccessibilityNodeInfo, actionName: String) {
@@ -287,7 +301,7 @@ class ProviderCardCatalogUiTest {
         if (match == null) {
             fail("$failureMessage\nLive accessibility tree:\n${dumpTree()}")
         }
-        return match!!
+        return requireNotNull(match)
     }
 
     private fun assertNoLoginSurface(message: String) {
@@ -362,7 +376,7 @@ class ProviderCardCatalogUiTest {
 
     private companion object {
         const val APP_PACKAGE = "com.aiquota.mobile"
-        const val ACTIVITY_COMPONENT = "$APP_PACKAGE/.debug.ProviderCardCatalogDebugActivity"
+        const val ACTIVITY_COMPONENT = "$APP_PACKAGE/.debug.ProviderOnboardingComposeTestActivity"
         const val EXTRA_DATASET = "com.aiquota.mobile.debug.extra.DATASET"
         const val EXTRA_VIEW_MODE = "com.aiquota.mobile.debug.extra.VIEW_MODE"
         const val DATASET_EMPTY = "empty"
@@ -386,8 +400,8 @@ class ProviderCardCatalogUiTest {
 
         const val COLLIDING_ALIAS = " work "
         const val MALFORMED_ALIAS = "\u0007work"
-        const val ALIAS_COLLISION_ERROR = "Alias already in use"
-        const val MALFORMED_ALIAS_ERROR = "Alias must not contain control characters"
+        const val ALIAS_COLLISION_ERROR = "That card name is already in use."
+        const val MALFORMED_ALIAS_ERROR = "Card names cannot contain control characters."
 
         const val RADIO_BUTTON_CLASS = "android.widget.RadioButton"
         const val CHECKBOX_CLASS = "android.widget.CheckBox"

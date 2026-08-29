@@ -46,9 +46,10 @@ internal fun ProviderPickerStep(
     onLater: () -> Unit,
     contentPadding: Int,
     contentSpacing: Int,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier.padding(contentPadding.dp),
+        modifier = modifier.padding(contentPadding.dp),
         verticalArrangement = Arrangement.spacedBy(contentSpacing.dp),
     ) {
         Text(

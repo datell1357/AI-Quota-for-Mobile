@@ -63,7 +63,7 @@ class ProviderCardCatalogDebugActivity : ComponentActivity() {
                     color = AIQuotaTheme.colors.appBackground
                 ) {
                     if (dataset.equals(DATASET_ONBOARDING, ignoreCase = true)) {
-                        ProviderOnboardingDebugSurface()
+                        ProviderOnboardingPreviewSurface()
                     } else {
                         UnifiedDashboardScreen(
                             providerOrder = if (populated) populatedProviderOrder else emptyList(),

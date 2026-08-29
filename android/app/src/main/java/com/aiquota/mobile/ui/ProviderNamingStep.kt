@@ -1,20 +1,30 @@
 package com.aiquota.mobile.ui
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -26,47 +36,79 @@ import com.aiquota.mobile.accounts.ProviderCardAddResult
 @Composable
 internal fun ProviderNamingStep(
     state: ProviderEnrollmentState,
+    suggestedAlias: String,
     onSubmit: (ProviderEnrollmentSubmission) -> ProviderCardAddResult,
     onAdded: () -> Unit,
     contentPadding: Int,
     contentSpacing: Int,
 ) {
     val providerId = checkNotNull(state.selectedProvider)
-    Column(
-        modifier = Modifier.padding(contentPadding.dp),
-        verticalArrangement = Arrangement.spacedBy(contentSpacing.dp),
-    ) {
+    val errorMessage = state.errorResource?.let { stringResource(it) }
+    val focusRequester = remember { FocusRequester() }
+    val scrollState = rememberScrollState()
+    val landscapeLayout =
+        LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    LaunchedEffect(providerId) { focusRequester.requestFocus() }
+    val title: @Composable () -> Unit = {
         Text(
             text = stringResource(R.string.provider_naming_title, providerId.displayName),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
         )
+    }
+    val field: @Composable (Modifier) -> Unit = { modifier ->
         OutlinedTextField(
             value = state.alias,
             onValueChange = {
                 state.alias = it
                 state.errorResource = null
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier
+                .focusRequester(focusRequester)
+                .semantics {
+                    if (errorMessage != null) error(errorMessage)
+                },
             label = { Text(stringResource(R.string.provider_naming_label)) },
             supportingText = {
-                val error = state.errorResource
                 Text(
-                    text = if (error == null) {
-                        stringResource(R.string.provider_naming_default, providerId.displayName)
+                    text = errorMessage ?: stringResource(R.string.provider_naming_default, suggestedAlias),
+                    modifier = if (errorMessage == null) {
+                        Modifier
                     } else {
-                        stringResource(error)
-                    },
-                    modifier = if (error == null) Modifier else Modifier.semantics {
-                        liveRegion = LiveRegionMode.Polite
+                        Modifier.semantics {
+                            liveRegion = LiveRegionMode.Polite
+                            error(errorMessage)
+                        }
                     },
                 )
             },
-            isError = state.errorResource != null,
+            isError = errorMessage != null,
             singleLine = true,
         )
+    }
+    val body: @Composable (Modifier) -> Unit = { modifier ->
+        if (landscapeLayout) {
+            Row(
+                modifier = modifier,
+                horizontalArrangement = Arrangement.spacedBy(contentSpacing.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                title()
+                field(Modifier.weight(1f))
+            }
+        } else {
+            Column(
+                modifier = modifier,
+                verticalArrangement = Arrangement.spacedBy(contentSpacing.dp),
+            ) {
+                title()
+                field(Modifier.fillMaxWidth())
+            }
+        }
+    }
+    val actions: @Composable (Modifier) -> Unit = { modifier ->
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier,
             horizontalArrangement = Arrangement.spacedBy(contentSpacing.dp, Alignment.End),
         ) {
             OutlinedButton(onClick = state::close) {
@@ -86,6 +128,29 @@ internal fun ProviderNamingStep(
             }) {
                 Text(stringResource(R.string.provider_enrollment_add))
             }
+        }
+    }
+    Column(
+        modifier = Modifier
+            .imePadding()
+            .padding(
+                horizontal = contentPadding.dp,
+                vertical = if (landscapeLayout) 0.dp else contentPadding.dp,
+            ),
+        verticalArrangement = Arrangement.spacedBy(contentSpacing.dp),
+    ) {
+        if (landscapeLayout) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(contentSpacing.dp),
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                body(Modifier.weight(1f).verticalScroll(scrollState))
+                actions(Modifier)
+            }
+        } else {
+            body(Modifier.weight(1f, fill = false).verticalScroll(scrollState))
+            actions(Modifier.fillMaxWidth())
         }
     }
 }
