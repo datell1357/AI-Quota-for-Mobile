@@ -20,6 +20,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
+import com.aiquota.mobile.accounts.AccountKey
+import com.aiquota.mobile.accounts.AccountUsageRepository
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.notification.UsageLimitNotificationController
 import com.aiquota.mobile.sync.ForegroundRefreshController
 import com.aiquota.mobile.ui.AIQuotaAppShell
@@ -28,6 +32,17 @@ import com.aiquota.mobile.ui.ads.warmUpAds
 import com.aiquota.mobile.update.AppUpdateCoordinator
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+internal sealed interface AppRouteIntentRequest {
+    data object Absent : AppRouteIntentRequest
+    data class Navigate(val route: AppRoute) : AppRouteIntentRequest
+
+    fun routeOrNull(): AppRoute? = (this as? Navigate)?.route
+
+    fun routeOrHome(): AppRoute = routeOrNull() ?: AppRoute.Home
+
+    fun applyTo(currentRoute: AppRoute): AppRoute = routeOrNull() ?: currentRoute
+}
 
 @Suppress("DEPRECATION")
 class MainActivity : ComponentActivity() {
@@ -46,7 +61,7 @@ class MainActivity : ComponentActivity() {
         appUpdateCoordinator = AppUpdateCoordinator(this)
         // 배너는 화면에 올라온 뒤에야 동의·초기화를 시작해 첫 노출이 늦다. 여기서 미리 건다.
         lifecycleScope.launch { warmUpAds(this@MainActivity) }
-        routeRequest = routeFromIntent(intent)
+        routeRequest = resolveRouteRequestFromIntent(intent).routeOrNull()
         postCachedNotificationWhenAllowed()
         setContent {
             var showUpdatePrompt by remember { mutableStateOf(false) }
@@ -67,7 +82,7 @@ class MainActivity : ComponentActivity() {
             }
             AIQuotaAppShell(
                 context = this,
-                initialRoute = routeFromIntent(intent),
+                initialRoute = routeRequest ?: AppRoute.Home,
                 routeRequest = routeRequest
             )
             if (showUpdatePrompt) {
@@ -98,7 +113,10 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        routeRequest = routeFromIntent(intent)
+        when (val request = resolveRouteRequestFromIntent(intent)) {
+            AppRouteIntentRequest.Absent -> Unit
+            is AppRouteIntentRequest.Navigate -> routeRequest = request.route
+        }
     }
 
     override fun onResume() {
@@ -110,6 +128,19 @@ class MainActivity : ComponentActivity() {
         appUpdateCoordinator.dispose()
         super.onDestroy()
     }
+
+    private fun resolveRouteRequestFromIntent(intent: Intent?): AppRouteIntentRequest =
+        routeRequestFromIntent(intent) { providerId ->
+            if (!BuildConfig.MULTI_ACCOUNT_ENABLED) {
+                ProviderAccountId(providerId, AccountKey.reservedDefault())
+            } else {
+                runCatching {
+                    AccountUsageRepository.open(applicationContext).use { repository ->
+                        repository.compatibilityAccount(providerId)
+                    }
+                }.getOrNull()
+            }
+        }
 
     private fun postCachedNotificationWhenAllowed() {
         if (
@@ -128,6 +159,7 @@ class MainActivity : ComponentActivity() {
         fun createHomeIntent(context: Context): Intent {
             return Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                putExtra(AppRoute.EXTRA_ROUTE, AppRoute.ROUTE_HOME)
             }
         }
 
@@ -138,13 +170,43 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        private fun routeFromIntent(intent: Intent?): AppRoute {
-            return AppRoute.fromExtras(
-                route = intent?.getStringExtra(AppRoute.EXTRA_ROUTE),
-                providerIdStorageId = intent?.getStringExtra(AppRoute.EXTRA_PROVIDER_ID),
-                legacyProviderIdStorageId = intent?.getStringExtra(AppRoute.EXTRA_PROVIDER_ID_LEGACY)
+        fun createProviderDetailIntent(context: Context, accountId: ProviderAccountId): Intent {
+            return Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                putExtra(AppRoute.EXTRA_ROUTE, AppRoute.ROUTE_PROVIDER)
+                putExtra(
+                    AppRoute.EXTRA_PROVIDER_ACCOUNT_ID,
+                    com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec.encode(accountId),
+                )
+            }
+        }
+
+        internal fun routeRequestFromIntent(
+            intent: Intent?,
+            legacyProviderResolver: (ProviderId) -> ProviderAccountId?,
+        ): AppRouteIntentRequest {
+            val hasNavigationData = intent != null && listOf(
+                AppRoute.EXTRA_ROUTE,
+                AppRoute.EXTRA_PROVIDER_ACCOUNT_ID,
+                AppRoute.EXTRA_PROVIDER_ID,
+                AppRoute.EXTRA_PROVIDER_ID_LEGACY,
+            ).any(intent::hasExtra)
+            if (!hasNavigationData) return AppRouteIntentRequest.Absent
+            return AppRouteIntentRequest.Navigate(
+                AppRoute.fromExtras(
+                    route = intent.getStringExtra(AppRoute.EXTRA_ROUTE),
+                    providerAccountId = intent.getStringExtra(AppRoute.EXTRA_PROVIDER_ACCOUNT_ID),
+                    providerIdStorageId = intent.getStringExtra(AppRoute.EXTRA_PROVIDER_ID),
+                    legacyProviderIdStorageId = intent.getStringExtra(AppRoute.EXTRA_PROVIDER_ID_LEGACY),
+                    legacyProviderResolver = legacyProviderResolver,
+                )
             )
         }
+
+        internal fun routeFromIntent(
+            intent: Intent?,
+            legacyProviderResolver: (ProviderId) -> ProviderAccountId?,
+        ): AppRoute = routeRequestFromIntent(intent, legacyProviderResolver).routeOrHome()
     }
 }
 

@@ -219,6 +219,14 @@ class ProviderCardShellStateTest {
     }
 
     @Test
+    fun exactDetailSnapshotUsesTheSelectedCardAlias() {
+        val b = card(ProviderId.CODEX, 2, "Codex 2", 1)
+
+        assertEquals("Codex 2", b.routedDetailSnapshot().displayName)
+        assertEquals(ProviderId.CODEX, b.routedDetailSnapshot().providerId)
+    }
+
+    @Test
     fun accountKeyNotAliasProviderOrRankDefinesIdentity() {
         val first = card(ProviderId.CODEX, 1, "Shared", 0)
         val second = card(ProviderId.CODEX, 2, "Shared", 1)

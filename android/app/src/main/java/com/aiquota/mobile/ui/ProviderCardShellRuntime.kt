@@ -45,6 +45,9 @@ class ProviderCardShellRuntime private constructor(
     var gaugeColors: Map<ProviderAccountId, String> by mutableStateOf(preferencesRepository.providerGaugeColors())
         private set
 
+    var preferenceRevision: Int by mutableStateOf(0)
+        private set
+
     fun reload() {
         val repository = usageRepository ?: return
         state = state.applyCatalog(ProviderCardCatalogLoader(repository).load())
@@ -58,15 +61,12 @@ class ProviderCardShellRuntime private constructor(
     fun compatibilityAccount(providerId: ProviderId): ProviderAccountId? =
         usageRepository?.compatibilityAccount(providerId)
 
-    fun detailBinding(providerId: ProviderId): ProviderCardDetailBinding? {
-        val accountId = state.selectedAccountId?.takeIf { it.providerId == providerId }
-            ?: compatibilityAccount(providerId)
-            ?: return null
+    fun detailBinding(accountId: ProviderAccountId): ProviderCardDetailBinding? {
         val card = state.card(accountId) ?: return null
-        val policy = ProviderCardCatalogPolicy.classify(providerId) as? ProviderCardProviderPolicy.Released
+        val policy = ProviderCardCatalogPolicy.classify(accountId.providerId) as? ProviderCardProviderPolicy.Released
         return ProviderCardDetailBinding(
             accountId,
-            card.displayRecord.snapshot,
+            card.routedDetailSnapshot(),
             accountId in state.busyAccountIds,
             gaugeColors[accountId],
             policy?.multiplicity == ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT,
@@ -154,6 +154,36 @@ class ProviderCardShellRuntime private constructor(
         )
     }
 
+    fun resetNotificationEnabled(accountId: ProviderAccountId): Boolean {
+        preferenceRevision
+        return preferencesRepository.isResetNotificationEnabled(accountId)
+    }
+
+    fun setResetNotificationEnabled(accountId: ProviderAccountId, enabled: Boolean) {
+        preferencesRepository.setResetNotificationEnabled(accountId, enabled)
+        preferenceRevision++
+    }
+
+    fun usageThresholdEnabled(accountId: ProviderAccountId): Boolean {
+        preferenceRevision
+        return preferencesRepository.isUsageThresholdNotificationEnabled(accountId)
+    }
+
+    fun setUsageThresholdEnabled(accountId: ProviderAccountId, enabled: Boolean) {
+        preferencesRepository.setUsageThresholdNotificationEnabled(accountId, enabled)
+        preferenceRevision++
+    }
+
+    fun usageThresholdPercent(accountId: ProviderAccountId): Int {
+        preferenceRevision
+        return preferencesRepository.usageThresholdPercent(accountId)
+    }
+
+    fun setUsageThresholdPercent(accountId: ProviderAccountId, percent: Int) {
+        preferencesRepository.setUsageThresholdPercent(accountId, percent)
+        preferenceRevision++
+    }
+
     fun saveGaugeColor(accountId: ProviderAccountId, color: String?) {
         preferencesRepository.saveProviderGaugeColor(accountId, color)
         gaugeColors = preferencesRepository.providerGaugeColors()
@@ -178,3 +208,6 @@ class ProviderCardShellRuntime private constructor(
         }
     }
 }
+
+internal fun ProviderCardDisplayRecord.routedDetailSnapshot(): ProviderUsageSnapshot =
+    displayRecord.snapshot.copy(displayName = alias)

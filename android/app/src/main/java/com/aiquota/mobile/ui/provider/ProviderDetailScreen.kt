@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.aiquota.mobile.R
+import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.local.AppTheme
 import com.aiquota.mobile.local.ProviderGaugeColor
 import com.aiquota.mobile.local.ProviderConnectionAction
@@ -99,6 +100,7 @@ private val ProviderGaugeHeight = 10.4.dp
 
 @Composable
 fun ProviderDetailScreen(
+    accountId: ProviderAccountId,
     snapshot: ProviderUsageSnapshot,
     isHidden: Boolean,
     isBusy: Boolean,
@@ -118,6 +120,7 @@ fun ProviderDetailScreen(
     modifier: Modifier = Modifier
 ) {
     val layoutMetrics = rememberAppLayoutMetrics()
+    require(accountId.providerId == snapshot.providerId) { "Detail snapshot does not match routed card" }
 
     Column(
         modifier = modifier

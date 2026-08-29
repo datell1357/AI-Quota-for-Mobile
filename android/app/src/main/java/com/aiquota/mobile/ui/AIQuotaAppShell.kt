@@ -56,6 +56,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -74,7 +76,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.aiquota.mobile.R
+import com.aiquota.mobile.accounts.AccountKey
 import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.ProviderCardDisplayRecord
 import com.aiquota.mobile.local.AppTheme
 import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.local.ProviderConnectionState
@@ -152,7 +156,22 @@ fun AIQuotaAppShell(
     val layoutMetrics = rememberAppLayoutMetrics()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    var route by remember { mutableStateOf(initialRoute) }
+    fun resolveRoute(candidate: AppRoute): AppRoute {
+        val activeIds = if (cardRuntime.enabled) {
+            cardRuntime.state.catalog.cards.mapTo(mutableSetOf()) { it.accountId }
+        } else {
+            ProviderId.defaultOrder().mapTo(mutableSetOf()) {
+                ProviderAccountId(it, AccountKey.reservedDefault())
+            }
+        }
+        return candidate.resolveAgainst(activeIds) { accountId ->
+            if (cardRuntime.enabled) cardRuntime.select(accountId)
+        }
+    }
+
+    var route by rememberSaveable(stateSaver = AppRouteSaver) {
+        mutableStateOf(resolveRoute(initialRoute))
+    }
     var currentTheme by remember { mutableStateOf(themePreferencesRepository.currentTheme()) }
     var providerOrder by remember { mutableStateOf(providerPreferencesRepository.providerOrder()) }
     var hiddenProviders by remember { mutableStateOf(providerPreferencesRepository.hiddenProviders()) }
@@ -200,14 +219,16 @@ fun AIQuotaAppShell(
     }
 
     fun selectExactCard(accountId: ProviderAccountId) {
-        cardRuntime.select(accountId)
-        route = AppRoute.ProviderDetail(accountId.providerId)
+        route = resolveRoute(AppRoute.ProviderDetail(accountId))
     }
 
     LaunchedEffect(routeRequest) {
-        routeRequest?.let { requestedRoute ->
-            route = requestedRoute
-        }
+        routeRequest?.let { requestedRoute -> route = resolveRoute(requestedRoute) }
+    }
+
+    LaunchedEffect(cardRuntime.state.catalog) {
+        val resolved = resolveRoute(route)
+        if (resolved != route) route = resolved
     }
 
     fun scheduleTransientStateExpiryRefresh() {
@@ -264,12 +285,20 @@ fun AIQuotaAppShell(
     }
 
     fun connectProvider(providerId: ProviderId) {
+        val accountId = if (cardRuntime.enabled) {
+            cardRuntime.compatibilityAccount(providerId) ?: run {
+                route = AppRoute.Home
+                return
+            }
+        } else {
+            ProviderAccountId(providerId, AccountKey.reservedDefault())
+        }
         // 재로그인·계정 전환은 연결 해제를 거치지 않는다. 이전 세션에서 통했던 토큰과 판정을
         // 그대로 두면 새 계정 화면에 옛 요금제·계정이 최대 15분 남는다.
         ProviderCollectionCaches.invalidate(providerId)
         val connector = connectorRegistry.connectorFor(providerId)
         val now = Instant.now().toString()
-        route = AppRoute.ProviderDetail(providerId)
+        route = AppRoute.ProviderDetail(accountId)
         val currentSnapshot = snapshots
             .firstOrNull { it.providerId == providerId }
             ?: ProviderUsageSnapshot.disconnected(providerId)
@@ -777,6 +806,7 @@ fun AIQuotaAppShell(
                         route = route,
                         providerOrder = providerOrder,
                         hiddenProviders = hiddenProviders,
+                        providerCards = cardRuntime.state.catalog.cards.takeIf { cardRuntime.enabled },
                         layoutMetrics = layoutMetrics,
                         onRouteSelected = { route = it }
                     )
@@ -812,7 +842,11 @@ fun AIQuotaAppShell(
                                     hiddenProviders = hiddenProviders,
                                     snapshots = snapshots,
                                     providerGaugeColors = providerGaugeColors,
-                                    onProviderSelected = { route = AppRoute.ProviderDetail(it) },
+                                    onProviderSelected = {
+                                        route = AppRoute.ProviderDetail(
+                                            ProviderAccountId(it, AccountKey.reservedDefault())
+                                        )
+                                    },
                                     onConnectProvider = ::connectProvider,
                                     onReorderProvider = ::reorderVisibleProvider,
                                     onAddWidget = { showDashboardWidgetPicker = true },
@@ -825,7 +859,7 @@ fun AIQuotaAppShell(
                         }
                         is AppRoute.ProviderDetail -> {
                             val exactDetail = if (cardRuntime.enabled) {
-                                cardRuntime.detailBinding(currentRoute.providerId)
+                                cardRuntime.detailBinding(currentRoute.accountId)
                             } else null
                             val exactId = exactDetail?.accountId
                             val snapshot = exactDetail?.snapshot ?: if (cardRuntime.enabled) {
@@ -835,6 +869,7 @@ fun AIQuotaAppShell(
                                     ?: ProviderUsageSnapshot.disconnected(currentRoute.providerId)
                             }
                             ProviderDetailScreen(
+                                accountId = currentRoute.accountId,
                                 snapshot = snapshot,
                                 isHidden = !cardRuntime.enabled && currentRoute.providerId in hiddenProviders,
                                 isBusy = exactDetail?.busy ?: (busyProvider == currentRoute.providerId),
@@ -851,20 +886,44 @@ fun AIQuotaAppShell(
                                         requestProviderWidget(currentRoute.providerId)
                                     }
                                 },
-                                resetNotificationEnabled = currentRoute.providerId in resetNotificationProviders,
+                                resetNotificationEnabled = if (exactId != null) {
+                                    cardRuntime.resetNotificationEnabled(exactId)
+                                } else {
+                                    currentRoute.providerId in resetNotificationProviders
+                                },
                                 onResetNotificationChange = { enabled ->
-                                    setResetNotificationEnabled(currentRoute.providerId, enabled)
+                                    if (exactId != null) {
+                                        cardRuntime.setResetNotificationEnabled(exactId, enabled)
+                                    } else {
+                                        setResetNotificationEnabled(currentRoute.providerId, enabled)
+                                    }
                                 },
                                 autoResetPrimeEnabled = claudeAutoResetPrimeEnabled,
                                 onAutoResetPrimeChange = ::setClaudeAutoResetPrimeEnabled,
-                                usageThresholdEnabled = currentRoute.providerId in usageThresholdProviders,
-                                onUsageThresholdEnabledChange = { enabled ->
-                                    setUsageThresholdEnabled(currentRoute.providerId, enabled)
+                                usageThresholdEnabled = if (exactId != null) {
+                                    cardRuntime.usageThresholdEnabled(exactId)
+                                } else {
+                                    currentRoute.providerId in usageThresholdProviders
                                 },
-                                usageThresholdPercent = usageThresholdPercents[currentRoute.providerId]
-                                    ?: ProviderPreferencesRepository.DEFAULT_USAGE_THRESHOLD_PERCENT,
+                                onUsageThresholdEnabledChange = { enabled ->
+                                    if (exactId != null) {
+                                        cardRuntime.setUsageThresholdEnabled(exactId, enabled)
+                                    } else {
+                                        setUsageThresholdEnabled(currentRoute.providerId, enabled)
+                                    }
+                                },
+                                usageThresholdPercent = if (exactId != null) {
+                                    cardRuntime.usageThresholdPercent(exactId)
+                                } else {
+                                    usageThresholdPercents[currentRoute.providerId]
+                                        ?: ProviderPreferencesRepository.DEFAULT_USAGE_THRESHOLD_PERCENT
+                                },
                                 onUsageThresholdPercentChange = { percent ->
-                                    setUsageThresholdPercent(currentRoute.providerId, percent)
+                                    if (exactId != null) {
+                                        cardRuntime.setUsageThresholdPercent(exactId, percent)
+                                    } else {
+                                        setUsageThresholdPercent(currentRoute.providerId, percent)
+                                    }
                                 },
                                 gaugeColorHex = exactDetail?.gaugeColor ?: providerGaugeColors[currentRoute.providerId],
                                 onGaugeColorChange = { color ->
@@ -1160,6 +1219,11 @@ private fun LiveRefreshPermissionDialog(
     }
 }
 
+private val AppRouteSaver = Saver<AppRoute, String>(
+    save = { route -> route.toSavedState() },
+    restore = { saved -> AppRoute.fromSavedState(saved) },
+)
+
 private val SettingsBackButtonSize = 40.dp
 private val SettingsBackIconSize = 22.dp
 
@@ -1250,6 +1314,7 @@ private fun AppNavigationBar(
     route: AppRoute,
     providerOrder: List<ProviderId>,
     hiddenProviders: Set<ProviderId>,
+    providerCards: List<ProviderCardDisplayRecord>?,
     layoutMetrics: AppLayoutMetrics,
     onRouteSelected: (AppRoute) -> Unit
 ) {
@@ -1290,13 +1355,27 @@ private fun AppNavigationBar(
                     layoutMetrics = layoutMetrics,
                     onClick = { onRouteSelected(AppRoute.Home) }
                 )
-                navigationProviderOrder(providerOrder, hiddenProviders).forEach { providerId ->
-                    ProviderNavigationChip(
-                        providerId = providerId,
-                        selected = route is AppRoute.ProviderDetail && route.providerId == providerId,
-                        layoutMetrics = layoutMetrics,
-                        onClick = { onRouteSelected(AppRoute.ProviderDetail(providerId)) }
-                    )
+                if (providerCards != null) {
+                    providerCards.forEach { card ->
+                        val accountId = card.accountId
+                        ProviderNavigationChip(
+                            providerId = accountId.providerId,
+                            label = card.alias,
+                            selected = route is AppRoute.ProviderDetail && route.accountId == accountId,
+                            layoutMetrics = layoutMetrics,
+                            onClick = { onRouteSelected(AppRoute.ProviderDetail(accountId)) }
+                        )
+                    }
+                } else {
+                    navigationProviderOrder(providerOrder, hiddenProviders).forEach { providerId ->
+                        val accountId = ProviderAccountId(providerId, AccountKey.reservedDefault())
+                        ProviderNavigationChip(
+                            providerId = providerId,
+                            selected = route is AppRoute.ProviderDetail && route.accountId == accountId,
+                            layoutMetrics = layoutMetrics,
+                            onClick = { onRouteSelected(AppRoute.ProviderDetail(accountId)) }
+                        )
+                    }
                 }
             }
         }
@@ -1362,6 +1441,7 @@ private fun RouteChip(
 private fun ProviderNavigationChip(
     providerId: ProviderId,
     selected: Boolean,
+    label: String = providerNavigationLabel(providerId),
     layoutMetrics: AppLayoutMetrics,
     onClick: () -> Unit
 ) {
@@ -1394,7 +1474,7 @@ private fun ProviderNavigationChip(
                 modifier = Modifier.size(22.dp)
             )
             Text(
-                text = providerNavigationLabel(providerId),
+                text = label,
                 modifier = Modifier.fillMaxWidth(),
                 color = textColor,
                 style = compactProviderLineBreakStyle(providerId, MaterialTheme.typography.labelSmall),

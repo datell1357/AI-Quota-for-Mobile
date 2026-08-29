@@ -5,7 +5,6 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -240,9 +239,7 @@ class AIQuotaCircularWidgetProvider : AppWidgetProvider() {
         }
 
         private fun mainActivityPendingIntent(context: Context): PendingIntent {
-            val intent = Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            }
+            val intent = MainActivity.createHomeIntent(context)
             return PendingIntent.getActivity(
                 context,
                 0,
