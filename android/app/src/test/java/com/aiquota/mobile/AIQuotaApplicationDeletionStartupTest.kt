@@ -9,6 +9,7 @@ import android.os.Bundle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.work.Configuration
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.impl.WorkManagerImpl
 import androidx.work.impl.utils.taskexecutor.WorkManagerTaskExecutor
@@ -36,6 +37,8 @@ import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.google.firebase.appcheck.internal.DefaultFirebaseAppCheck
 import com.google.firebase.components.ComponentDiscoveryService
 import java.lang.reflect.Modifier
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
@@ -142,6 +145,50 @@ class AIQuotaApplicationFinalArchitectureTest {
     }
 }
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35], application = Application::class)
+class FinalApplicationRouteLifecycleTest : FinalApplicationRouteTest() {
+    @Test
+    fun teardownTerminatesOwnedWorkManagerExecutorsAndClearsDelegate() {
+        startFinalApplication(mainProcessName)
+        val workManager = WorkManagerImpl.getInstance(base)
+        val workerExecutor = workManager.configuration.executor as ExecutorService
+        val taskExecutor = workManager.configuration.taskExecutor as ExecutorService
+
+        tearDownRoute()
+
+        assertEquals(2, workStatesAtTeardown.size)
+        assertTrue(workStatesAtTeardown.all { it == WorkInfo.State.CANCELLED })
+        assertTrue("WorkManager worker executor survived fixture teardown", workerExecutor.isTerminated)
+        assertTrue("WorkManager task executor survived fixture teardown", taskExecutor.isTerminated)
+        assertFalse("WorkManager delegate survived fixture teardown", WorkManagerImpl.isInitialized())
+    }
+
+    @Test
+    fun teardownDeletesFirebaseAppCreatedByFixture() {
+        assertTrue(FirebaseApp.getApps(base).any { it.name == FirebaseApp.DEFAULT_APP_NAME })
+
+        tearDownRoute()
+
+        assertTrue("Firebase app created by fixture survived teardown", FirebaseApp.getApps(base).isEmpty())
+    }
+
+    @Test
+    fun teardownClosesWorkManagerDatabase() {
+        val workManager = WorkManagerImpl.getInstance(base)
+        workManager.getWorkInfosForUniqueWork("fixture-opens-database").get(10, TimeUnit.SECONDS)
+        val workDatabase = workManager.javaClass.getMethod("getWorkDatabase").invoke(workManager)
+        assertTrue(workDatabase.javaClass.getMethod("isOpen").invoke(workDatabase) as Boolean)
+
+        tearDownRoute()
+
+        assertFalse(
+            "WorkManager database survived fixture teardown",
+            workDatabase.javaClass.getMethod("isOpen").invoke(workDatabase) as Boolean,
+        )
+    }
+}
+
 @Implements(MultiAccountStartupGate::class)
 class DisabledMultiAccountStartupGateShadow {
     companion object {
@@ -153,13 +200,24 @@ class DisabledMultiAccountStartupGateShadow {
 
 open class FinalApplicationRouteTest {
     protected lateinit var base: Application
+    protected var workStatesAtTeardown: List<WorkInfo.State> = emptyList()
+    private var workerExecutor: ExecutorService? = null
+    private var taskExecutor: ExecutorService? = null
+    private var workManager: WorkManagerImpl? = null
+    private var workManagerTaskExecutor: WorkManagerTaskExecutor? = null
+    private var ownedFirebaseApp: FirebaseApp? = null
 
     @Before
     fun setUpRoute() {
         base = ApplicationProvider.getApplicationContext()
         installFirebaseComponentMetadata()
-        val workConfiguration = Configuration.Builder().build()
-        val taskExecutor = WorkManagerTaskExecutor(workConfiguration.taskExecutor)
+        workerExecutor = Executors.newSingleThreadExecutor()
+        taskExecutor = Executors.newSingleThreadExecutor()
+        val workConfiguration = Configuration.Builder()
+            .setExecutor(checkNotNull(workerExecutor))
+            .setTaskExecutor(checkNotNull(taskExecutor))
+            .build()
+        workManagerTaskExecutor = WorkManagerTaskExecutor(workConfiguration.taskExecutor)
         val createTestWorkManager = Class.forName("androidx.work.impl.WorkManagerImplExtKt")
             .getMethod(
                 "createTestWorkManager",
@@ -167,11 +225,15 @@ open class FinalApplicationRouteTest {
                 Configuration::class.java,
                 androidx.work.impl.utils.taskexecutor.TaskExecutor::class.java,
             )
-        WorkManagerImpl.setDelegate(
-            createTestWorkManager.invoke(null, base, workConfiguration, taskExecutor) as WorkManagerImpl
-        )
+        workManager = createTestWorkManager.invoke(
+            null,
+            base,
+            workConfiguration,
+            checkNotNull(workManagerTaskExecutor),
+        ) as WorkManagerImpl
+        WorkManagerImpl.setDelegate(checkNotNull(workManager))
         if (FirebaseApp.getApps(base).none { it.name == FirebaseApp.DEFAULT_APP_NAME }) {
-            FirebaseApp.initializeApp(
+            ownedFirebaseApp = FirebaseApp.initializeApp(
                 base,
                 FirebaseOptions.Builder()
                     .setApplicationId("1:123456789:android:robolectric")
@@ -221,8 +283,36 @@ open class FinalApplicationRouteTest {
     @After
     fun tearDownRoute() {
         MainProcessAccountFeature.resetForTest()
-        WorkManagerImpl.setDelegate(null)
+        val manager = workManager
+        if (manager != null) {
+            WorkManager.getInstance(base).cancelAllWork().result.get(10, TimeUnit.SECONDS)
+            workStatesAtTeardown = listOf(
+                "ai_quota_app_update_check_now",
+                "ai_quota_app_update_check",
+            ).flatMap { name ->
+                manager.getWorkInfosForUniqueWork(name).get(10, TimeUnit.SECONDS)
+            }.map { it.state }
+            val workDatabase = manager.javaClass.getMethod("getWorkDatabase").invoke(manager)
+            workDatabase.javaClass.getMethod("close").invoke(workDatabase)
+            WorkManagerImpl.setDelegate(null)
+            workManager = null
+            workManagerTaskExecutor = null
+        }
+        ownedFirebaseApp?.delete()
+        ownedFirebaseApp = null
+        shutdown(workerExecutor)
+        workerExecutor = null
+        shutdown(taskExecutor)
+        taskExecutor = null
         Fixture.cleanup(base)
+    }
+
+    private fun shutdown(executor: ExecutorService?) {
+        executor ?: return
+        executor.shutdown()
+        check(executor.awaitTermination(10, TimeUnit.SECONDS)) {
+            "Owned WorkManager executor did not terminate"
+        }
     }
 
     protected fun seedPending(): Fixture.State = Fixture.seed(base)
