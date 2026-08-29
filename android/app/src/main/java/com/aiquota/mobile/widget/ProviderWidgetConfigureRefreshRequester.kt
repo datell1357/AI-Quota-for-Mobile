@@ -3,6 +3,7 @@
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import androidx.core.content.ContextCompat
+import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.providers.ProviderBackgroundRefreshService
 import kotlinx.coroutines.CoroutineScope
@@ -28,12 +29,32 @@ object ProviderWidgetConfigureRefreshRequester {
                     ProviderBackgroundRefreshService.createRefreshIntent(
                         context = appContext,
                         providerId = providerId,
-                        appWidgetId = appWidgetId
-                    )
+                        appWidgetId = appWidgetId,
+                    ),
                 )
             }.onFailure {
                 WidgetRefreshFeedback.clearWidgetRefresh(appContext, appWidgetId)
                 ProviderWidgetImmediateRenderer.render(appContext, appWidgetId, providerId)
+            }
+        }
+    }
+
+    fun schedule(context: Context, appWidgetId: Int, accountId: ProviderAccountId) {
+        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return
+        val appContext = context.applicationContext
+        scope.launch {
+            delay(PROVIDER_WIDGET_CONFIGURE_REFRESH_DELAY_MS)
+            if (ProviderWidgetCardCatalog.activeRecord(appContext, accountId) == null) return@launch
+            WidgetRefreshFeedback.markWidgetRefreshStarted(appContext, appWidgetId)
+            ProviderWidgetImmediateRenderer.render(appContext, appWidgetId, accountId)
+            runCatching {
+                ContextCompat.startForegroundService(
+                    appContext,
+                    ProviderBackgroundRefreshService.createRefreshIntent(appContext, accountId, appWidgetId),
+                )
+            }.onFailure {
+                WidgetRefreshFeedback.clearWidgetRefresh(appContext, appWidgetId)
+                ProviderWidgetImmediateRenderer.render(appContext, appWidgetId, accountId)
             }
         }
     }

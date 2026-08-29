@@ -33,6 +33,15 @@ class ProviderCardPreferencesRepository(context: Context) {
         preferences.edit().putString(widgetSelectionKey(appWidgetId), ProviderAccountIdStorageCodec.encode(accountId)).commit()
     }
 
+    fun providerWidgetIds(accountId: ProviderAccountId): Set<Int> = synchronized(LOCK) {
+        preferences.all.mapNotNull { (key, value) ->
+            if (!key.startsWith(WIDGET_SELECTION_PREFIX) ||
+                ProviderAccountIdStorageCodec.decodeOrNull(value as? String) != accountId
+            ) return@mapNotNull null
+            key.removePrefix(WIDGET_SELECTION_PREFIX).toIntOrNull()
+        }.toSet()
+    }
+
     fun clearProviderWidgetSelection(appWidgetId: Int): Boolean = synchronized(LOCK) {
         preferences.edit().remove(widgetSelectionKey(appWidgetId)).commit()
     }

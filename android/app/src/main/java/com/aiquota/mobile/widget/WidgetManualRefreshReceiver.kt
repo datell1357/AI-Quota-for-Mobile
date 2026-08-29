@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.providers.UsageSurfaceRefresher
 
@@ -12,13 +13,23 @@ class WidgetManualRefreshReceiver : BroadcastReceiver() {
         val internalAction = WidgetRefreshActions.internalActionForWidgetAction(intent?.action) ?: return
         val appWidgetId = intent?.getIntExtra(
             WidgetRefreshActions.EXTRA_APP_WIDGET_ID,
-            AppWidgetManager.INVALID_APPWIDGET_ID
+            AppWidgetManager.INVALID_APPWIDGET_ID,
         ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
+        val resolution = resolveProviderWidgetAction(
+            context,
+            ProviderWidgetActionRequest(
+                appWidgetId,
+                intent?.getStringExtra(WidgetRefreshActions.EXTRA_PROVIDER_ID),
+                intent?.getStringExtra(WidgetRefreshActions.EXTRA_PROVIDER_ACCOUNT_ID),
+                BuildConfig.MULTI_ACCOUNT_ENABLED,
+            ),
+        )
+        if (resolution == ProviderWidgetActionResolution.Rejected) return
         WidgetRefreshFeedback.markWidgetRefreshStarted(context, appWidgetId)
         UsageSurfaceRefresher.refresh(context, LocalUsageRepository(context.applicationContext))
         context.sendBroadcast(
-            WidgetRefreshActions.internalRefreshIntent(context, intent)
-                .setAction(internalAction)
+            WidgetRefreshActions.internalRefreshIntent(context, appWidgetId, resolution)
+                .setAction(internalAction),
         )
     }
 }

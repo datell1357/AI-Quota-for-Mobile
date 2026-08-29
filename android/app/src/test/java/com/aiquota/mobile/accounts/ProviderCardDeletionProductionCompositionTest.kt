@@ -64,6 +64,10 @@ class ProviderCardDeletionProductionCompositionTest {
         seedProviderKeyedArtifacts(ProviderId.CODEX)
         seedExactArtifacts(sibling, 80)
         seedExactArtifacts(selected, 20)
+        ProviderCardPreferencesRepository(context).apply {
+            saveProviderWidgetSelection(201, sibling)
+            saveProviderWidgetSelection(202, selected)
+        }
         val providerKeyedBefore = providerKeyedArtifactDump()
         val providerCleanup = RecordingProviderCleanup()
         val composition = ProviderCardDeletionComposition.create(
@@ -96,6 +100,8 @@ class ProviderCardDeletionProductionCompositionTest {
         assertEquals(providerKeyedBefore, providerKeyedArtifactDump())
         assertNull(ProviderCardPreferencesRepository(context).providerGaugeColor(selected))
         assertEquals("#445566", ProviderCardPreferencesRepository(context).providerGaugeColor(sibling))
+        assertEquals(sibling, ProviderCardPreferencesRepository(context).providerWidgetSelection(201))
+        assertNull(ProviderCardPreferencesRepository(context).providerWidgetSelection(202))
         assertNull(WidgetSnapshotCache(context).readExactCardState(selected))
         assertEquals(80, exactWidgetRemaining(requireNotNull(WidgetSnapshotCache(context).readExactCardState(sibling))))
         assertFalse(ProviderResetNotificationStateRepository(context).readExactPending().keys.any { it.accountId == selected })

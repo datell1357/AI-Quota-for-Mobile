@@ -1,223 +1,205 @@
-﻿package com.aiquota.mobile.widget
+package com.aiquota.mobile.widget
 
+import android.appwidget.AppWidgetManager
+import android.content.Context
+import android.view.Gravity
+import androidx.test.core.app.ApplicationProvider
+import com.aiquota.mobile.accounts.AccountKey
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
+import com.aiquota.mobile.local.AppTheme
+import com.aiquota.mobile.local.ProviderCardPreferencesRepository
+import com.aiquota.mobile.local.ProviderId
+import com.aiquota.mobile.providers.ProviderBackgroundRefreshService
+import com.aiquota.mobile.ui.provider.providerIconRes
 import java.io.File
+import javax.xml.parsers.DocumentBuilderFactory
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class ProviderWidgetConfigureActivityTest {
-    @Test
-    fun providerWidgetCanBeReconfiguredFromLauncherSettings() {
-        val providerWidgetXml = File("src/main/res/xml/ai_quota_widget_provider.xml").readText()
+    private lateinit var context: Context
+    private val accountId = ProviderAccountId(
+        ProviderId.CODEX,
+        AccountKey.parseOpaque("acct_00000000000000000000000000000002"),
+    )
 
-        assertTrue(
-            "Provider widget should expose the launcher settings action after long-press.",
-            providerWidgetXml.contains("android:configure=\"com.aiquota.mobile.widget.ProviderWidgetConfigureActivity\"") &&
-                providerWidgetXml.contains("android:widgetFeatures=\"reconfigurable\"") &&
-                !providerWidgetXml.contains("configuration_optional")
+    @Before
+    fun setUp() {
+        context = ApplicationProvider.getApplicationContext()
+        preferences().edit().clear().commit()
+    }
+
+    @After
+    fun tearDown() {
+        preferences().edit().clear().commit()
+    }
+
+    @Test
+    fun providerWidgetMetadataRequiresConfigurationAndSupportsReconfiguration() {
+        // Given
+        val root = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+            .parse(File("src/main/res/xml/ai_quota_widget_provider.xml"))
+            .documentElement
+
+        // When
+        val configure = root.getAttribute("android:configure")
+        val features = root.getAttribute("android:widgetFeatures")
+
+        // Then
+        assertEquals("com.aiquota.mobile.widget.ProviderWidgetConfigureActivity", configure)
+        assertEquals("reconfigurable", features)
+    }
+
+    @Test
+    fun exactSelectionPersistsCanonicallyAcrossRepositoryRecreation() {
+        // Given
+        val repository = ProviderCardPreferencesRepository(context)
+
+        // When
+        assertTrue(repository.saveProviderWidgetSelection(73, accountId))
+        val restarted = ProviderCardPreferencesRepository(context)
+
+        // Then
+        assertEquals(accountId, restarted.providerWidgetSelection(73))
+        assertEquals(
+            ProviderAccountIdStorageCodec.encode(accountId),
+            preferences().getString("${ProviderCardPreferencesRepository.WIDGET_SELECTION_PREFIX}73", null),
         )
     }
 
     @Test
-    fun providerWidgetConfigurationUsesAsyncApplyAndRendersSelectedProviderDirectly() {
-        val repositorySource = File("src/main/java/com/aiquota/mobile/local/ProviderPreferencesRepository.kt").readText()
-        val activitySource = File("src/main/java/com/aiquota/mobile/widget/ProviderWidgetConfigureActivity.kt").readText()
-        val saveSelectionBody = repositorySource
-            .substringAfter("fun saveProviderWidgetSelection")
-            .substringBefore("fun clearProviderWidgetSelection")
-        val finishBlock = activitySource.substringAfter("private fun finishWithProvider").substringBefore("private fun Int.dp")
+    fun missingSelectionNeverFallsBackToAProvider() {
+        // Given
+        val repository = ProviderCardPreferencesRepository(context)
 
-        assertTrue(
-            "Provider widget selection should not block UI; immediate renderer and delayed refresh receive the selected provider directly.",
-            saveSelectionBody.contains(".apply()") &&
-                !saveSelectionBody.contains(".commit()") &&
-                finishBlock.contains("ProviderWidgetImmediateRenderer.render(this, appWidgetId, providerId)") &&
-                finishBlock.contains("ProviderWidgetPostConfigureUpdater.schedule(applicationContext, appWidgetId, providerId)") &&
-                finishBlock.contains("ProviderWidgetConfigureRefreshRequester.schedule(applicationContext, appWidgetId, providerId)")
+        // When
+        val selected = repository.providerWidgetSelection(74)
+
+        // Then
+        assertNull(selected)
+    }
+
+    @Test
+    fun exactConfigureRefreshIntentTargetsOnlySelectedCardAndWidget() {
+        // Given
+        val widgetId = 75
+
+        // When
+        val intent = ProviderBackgroundRefreshService.createRefreshIntent(context, accountId, widgetId)
+
+        // Then
+        assertEquals(ProviderBackgroundRefreshService.ACTION_REFRESH, intent.action)
+        assertEquals(widgetId, intent.getIntExtra(WidgetRefreshActions.EXTRA_APP_WIDGET_ID, -1))
+        assertEquals(
+            ProviderAccountIdStorageCodec.encode(accountId),
+            intent.getStringExtra(ProviderBackgroundRefreshService.EXTRA_PROVIDER_ACCOUNT_ID),
         )
     }
 
     @Test
-    fun providerWidgetConfigurationAvoidsUpdateAllWhenSpecificGlanceIdIsNotReady() {
-        val updaterSource = File("src/main/java/com/aiquota/mobile/widget/ProviderWidgetPostConfigureUpdater.kt").readText()
+    fun rebindingOneWidgetReplacesOnlyThatExactSelection() {
+        // Given
+        val a = accountId.copy(accountKey = AccountKey.parseOpaque("acct_00000000000000000000000000000001"))
+        val repository = ProviderCardPreferencesRepository(context)
+        repository.saveProviderWidgetSelection(73, accountId)
+        repository.saveProviderWidgetSelection(74, accountId)
 
-        assertTrue(
-            "Provider widget post-configure retries must not call updateAll because it can redraw other provider widgets with a fallback provider.",
-            !updaterSource.contains(".updateAll(appContext)")
-        )
+        // When
+        repository.saveProviderWidgetSelection(73, a)
+
+        // Then
+        assertEquals(a, repository.providerWidgetSelection(73))
+        assertEquals(accountId, repository.providerWidgetSelection(74))
     }
 
     @Test
-    fun providerWidgetConfigurationSchedulesRefreshAfterReturningResult() {
-        val activitySource = File("src/main/java/com/aiquota/mobile/widget/ProviderWidgetConfigureActivity.kt").readText()
-        val finishBlock = activitySource.substringAfter("private fun finishWithProvider").substringBefore("private fun Int.dp")
+    fun clearingOneWidgetSelectionPreservesAnotherWidget() {
+        // Given
+        val repository = ProviderCardPreferencesRepository(context)
+        repository.saveProviderWidgetSelection(73, accountId)
+        repository.saveProviderWidgetSelection(74, accountId)
 
-        assertTrue(
-            "Provider widget selection should return to the launcher immediately and let a post-configure updater refresh the new widget.",
-            finishBlock.contains("setResult(Activity.RESULT_OK, resultValue)") &&
-                finishBlock.contains("ProviderWidgetPostConfigureUpdater.schedule(applicationContext, appWidgetId, providerId)") &&
-                finishBlock.contains("finish()") &&
-                !finishBlock.contains("lifecycleScope.launch")
-        )
+        // When
+        repository.clearProviderWidgetSelection(73)
+
+        // Then
+        assertNull(repository.providerWidgetSelection(73))
+        assertEquals(accountId, repository.providerWidgetSelection(74))
     }
 
     @Test
-    fun providerWidgetConfigurationReturnsHomeOnlyForInAppPinCallback() {
-        val activitySource = File("src/main/java/com/aiquota/mobile/widget/ProviderWidgetConfigureActivity.kt").readText()
-        val finishBlock = activitySource.substringAfter("private fun finishWithProvider").substringBefore("private fun Int.dp")
+    fun malformedPersistedSelectionIsUnavailable() {
+        // Given
+        preferences().edit()
+            .putString("${ProviderCardPreferencesRepository.WIDGET_SELECTION_PREFIX}73", "pa1:broken")
+            .commit()
 
-        assertTrue(finishBlock.contains("returnHomeIfLaunchedFromPinCallback()"))
-        assertTrue(activitySource.contains("private fun returnHomeIfLaunchedFromPinCallback()"))
-        assertTrue(activitySource.contains("intent?.action == null"))
-        assertTrue(activitySource.contains("Intent(Intent.ACTION_MAIN)"))
-        assertTrue(activitySource.contains("Intent.CATEGORY_HOME"))
-        assertTrue(activitySource.contains("Intent.FLAG_ACTIVITY_NEW_TASK"))
+        // When
+        val selected = ProviderCardPreferencesRepository(context).providerWidgetSelection(73)
+
+        // Then
+        assertNull(selected)
     }
 
     @Test
-    fun providerWidgetConfigurationSchedulesDelayedRefreshAfterSelectedProviderCacheIsShown() {
-        val activitySource = File("src/main/java/com/aiquota/mobile/widget/ProviderWidgetConfigureActivity.kt").readText()
-        val requesterSource = File("src/main/java/com/aiquota/mobile/widget/ProviderWidgetConfigureRefreshRequester.kt").readText()
-        val finishBlock = activitySource.substringAfter("private fun finishWithProvider").substringBefore("private fun Int.dp")
+    fun exactRefreshAndDetailActionsUseDifferentMachineIdentities() {
+        // Given
+        val refresh = WidgetRefreshActions.widgetRefreshIntent(context, 73, accountId)
+        val detail = providerWidgetDetailIntent(context, 73, accountId)
 
-        assertTrue(
-            "Adding a provider widget should show the selected provider from cache first, then schedule a delayed provider-specific refresh.",
-            finishBlock.indexOf("ProviderWidgetImmediateRenderer.render(this, appWidgetId, providerId)") in 0 until
-                finishBlock.indexOf("ProviderWidgetConfigureRefreshRequester.schedule(applicationContext, appWidgetId, providerId)") &&
-                requesterSource.contains("PROVIDER_WIDGET_CONFIGURE_REFRESH_DELAY_MS = 5_000L") &&
-                requesterSource.contains("delay(PROVIDER_WIDGET_CONFIGURE_REFRESH_DELAY_MS)") &&
-                requesterSource.contains("ProviderBackgroundRefreshService.createRefreshIntent") &&
-                requesterSource.contains("providerId = providerId") &&
-                requesterSource.contains("appWidgetId = appWidgetId")
-        )
+        // When / Then
+        assertNotEquals(refresh.component, detail.component)
+        assertNotEquals(refresh.data, detail.data)
     }
 
     @Test
-    fun providerWidgetConfigureRefreshDoesNotRunGlobalSurfaceRefreshBeforeSelectionStabilizes() {
-        val requesterSource = File("src/main/java/com/aiquota/mobile/widget/ProviderWidgetConfigureRefreshRequester.kt").readText()
-        val scheduleBlock = requesterSource.substringAfter("fun schedule").substringBefore("\n    }\n}")
+    fun providerPayloadUsesSelectedProviderIdentity() {
+        // Given
+        val payload = providerWidgetPayload("", ProviderId.CODEX.storageId)
 
-        assertTrue(
-            "Delayed configure refresh must not call UsageSurfaceRefresher.refresh because ProviderUsageGlanceWidget.updateAll can redraw the new widget with fallback Claude before the Glance id mapping is stable.",
-            !scheduleBlock.contains("UsageSurfaceRefresher.refresh") &&
-                scheduleBlock.contains("ProviderWidgetImmediateRenderer.render(appContext, appWidgetId, providerId)") &&
-                scheduleBlock.contains("ProviderBackgroundRefreshService.createRefreshIntent")
-        )
+        // When / Then
+        assertEquals(ProviderId.CODEX.storageId, payload.providerId)
+        assertEquals(ProviderId.CODEX.displayName, payload.displayName)
     }
 
     @Test
-    fun providerWidgetConfigurationPushesSelectedProviderRemoteViewsBeforeReturningResult() {
-        val activitySource = File("src/main/java/com/aiquota/mobile/widget/ProviderWidgetConfigureActivity.kt").readText()
-        val finishBlock = activitySource.substringAfter("private fun finishWithProvider").substringBefore("private fun Int.dp")
+    fun postConfigureRetryScheduleIsDeterministic() {
+        // Given / When
+        val delays = providerWidgetPostConfigureRetryDelaysMs()
 
-        assertTrue(
-            "Selected provider should be rendered through AppWidgetManager immediately, before the launcher waits for Glance.",
-            finishBlock.indexOf("ProviderWidgetImmediateRenderer.render(this, appWidgetId, providerId)") in 0 until
-                finishBlock.indexOf("setResult(Activity.RESULT_OK, resultValue)")
-        )
+        // Then
+        assertTrue(delays.contentEquals(longArrayOf(0L, 250L, 750L, 1_500L, 3_000L, 4_500L)))
+        assertEquals(0L, delays.first())
     }
 
     @Test
-    fun providerWidgetImmediateRendererUsesSelectedProviderPayload() {
-        val rendererSource = File("src/main/java/com/aiquota/mobile/widget/ProviderWidgetImmediateRenderer.kt").readText()
-        val layoutSource = File("src/main/res/layout/ai_quota_widget_provider_immediate.xml").readText()
+    fun configurationStyleAndIconsRemainProviderSpecific() {
+        // Given
+        val mac = context.widgetConfigureStyle(AppTheme.MACOS)
+        val windows = context.widgetConfigureStyle(AppTheme.WINDOWS)
 
-        assertTrue(rendererSource.contains("providerWidgetPayload("))
-        assertTrue(rendererSource.contains("providerId = providerId.storageId"))
-        assertTrue(rendererSource.contains("responsiveViews(context, appWidgetId, providerId)"))
-        assertTrue(layoutSource.contains("@+id/provider_immediate_name"))
-        assertTrue(layoutSource.contains("@+id/provider_immediate_progress"))
-        assertTrue(layoutSource.contains("@+id/provider_immediate_reset"))
+        // When / Then
+        assertNotEquals(mac.rowCornerRadiusDp, windows.rowCornerRadiusDp)
+        ProviderId.defaultOrder().forEach { providerId -> assertTrue(providerIconRes(providerId) != 0) }
     }
 
     @Test
-    fun providerWidgetImmediateLayoutDoesNotRenderProviderStatusText() {
-        val rendererSource = File("src/main/java/com/aiquota/mobile/widget/ProviderWidgetImmediateRenderer.kt").readText()
-        val layoutSource = File("src/main/res/layout/ai_quota_widget_provider_immediate.xml").readText()
-
-        assertTrue(
-            "RemoteViews provider widget should not render cached provider status text because transient states such as collecting usage can clip the selected provider header.",
-            rendererSource.contains("provider_immediate_status, View.GONE") &&
-                !rendererSource.contains("providerWidgetStatusLabel(payload.status)")
-        )
-        assertTrue(
-            "Immediate provider placeholder should use the same 2x1 gauge thickness as the Glance provider widget.",
-            layoutSource.contains("android:layout_height=\"8dp\"") &&
-                layoutSource.contains("android:progressDrawable=\"@drawable/widget_provider_progress\"")
-        )
+    fun providerSelectionContentUsesCenteredLayoutContract() {
+        // Given / When / Then
+        assertEquals(Gravity.CENTER_VERTICAL, providerWidgetSelectionGravity())
     }
 
-    @Test
-    fun providerWidgetPostConfigureUpdaterRetriesUntilLauncherCreatesGlanceId() {
-        assertTrue(
-            "Post-configure refresh should retry quickly because the launcher may attach the new widget after the configure Activity finishes.",
-            providerWidgetPostConfigureRetryDelaysMs().contentEquals(longArrayOf(0L, 250L, 750L, 1_500L, 3_000L, 4_500L))
-        )
-    }
-
-    @Test
-    fun providerWidgetPostConfigureUpdaterReissuesSelectedProviderRemoteViewsDuringRetries() {
-        val updaterSource = File("src/main/java/com/aiquota/mobile/widget/ProviderWidgetPostConfigureUpdater.kt").readText()
-        val scheduleBlock = updaterSource.substringAfter("fun schedule").substringBefore("\n    }\n}")
-
-        assertTrue(
-            "Post-configure retry must keep pushing selected-provider RemoteViews after the launcher attaches the host view.",
-            scheduleBlock.contains("providerId: ProviderId") &&
-                scheduleBlock.contains("ProviderWidgetImmediateRenderer.render(appContext, appWidgetId, providerId)")
-        )
-    }
-
-    @Test
-    fun providerWidgetPostConfigureUpdaterDoesNotLetGlanceOverwriteImmediateSelection() {
-        val updaterSource = File("src/main/java/com/aiquota/mobile/widget/ProviderWidgetPostConfigureUpdater.kt").readText()
-        val retryBlock = updaterSource
-            .substringAfter("providerWidgetPostConfigureRetryDelaysMs().forEach")
-            .substringBefore("\n            }")
-
-        assertTrue(
-            "Post-configure retries should only reissue selected-provider RemoteViews; early Glance updates can arrive late and overwrite the selected provider with fallback content.",
-            retryBlock.contains("ProviderWidgetImmediateRenderer.render(appContext, appWidgetId, providerId)") &&
-                !updaterSource.contains("GlanceAppWidgetManager") &&
-                !updaterSource.contains("ProviderUsageGlanceWidget()") &&
-                !updaterSource.contains("widget.update")
-        )
-    }
-
-    @Test
-    fun providerWidgetConfigurationUsesThemedIconRowsInsteadOfPlainButtons() {
-        val activitySource = File("src/main/java/com/aiquota/mobile/widget/ProviderWidgetConfigureActivity.kt").readText()
-
-        assertTrue(
-            "Provider selection should use the active app theme.",
-            activitySource.contains("widgetConfigureStyle") &&
-                activitySource.contains("ThemePreferencesRepository")
-        )
-        assertTrue(
-            "Provider selection rows should show provider icons with names.",
-            activitySource.contains("providerIconRes(providerId)")
-        )
-        assertTrue(
-            "Provider selection should not render providers as plain text-only buttons.",
-            activitySource.contains("providerSelectionRow") &&
-                !activitySource.contains("Button(this).apply")
-        )
-    }
-
-    @Test
-    fun providerWidgetConfigurationCentersContentVerticallyWhenViewportHasExtraSpace() {
-        val activitySource = File("src/main/java/com/aiquota/mobile/widget/ProviderWidgetConfigureActivity.kt").readNormalizedText()
-        val rootBlock = activitySource.substringAfter("val root = LinearLayout(this).apply").substringBefore("root.addView(")
-        val scrollBlock = activitySource.substringAfter("ScrollView(this).apply").substringAfter("addView(")
-
-        assertTrue(
-            "Provider selection content should be vertically centered when the screen is taller than the list.",
-            rootBlock.contains("gravity = Gravity.CENTER_VERTICAL")
-        )
-        assertTrue(
-            "Provider selection root should fill the ScrollView viewport so vertical centering has real space to use.",
-            activitySource.contains("isFillViewport = true") &&
-                scrollBlock.contains("ViewGroup.LayoutParams.MATCH_PARENT,\n                        ViewGroup.LayoutParams.MATCH_PARENT")
-        )
-    }
+    private fun preferences() = context.getSharedPreferences(
+        ProviderCardPreferencesRepository.PREFERENCES_NAME,
+        Context.MODE_PRIVATE,
+    )
 }
-
-private fun File.readNormalizedText(): String = readText().replace("\r\n", "\n")

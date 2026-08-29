@@ -624,8 +624,8 @@ fun AIQuotaAppShell(
         }
     }
 
-    fun requestProviderWidget(providerId: ProviderId) {
-        showWidgetPinFeedback(PinnedWidgetRequester.requestProviderWidget(launchContext, providerId))
+    fun requestProviderWidget(accountId: ProviderAccountId) {
+        showWidgetPinFeedback(PinnedWidgetRequester.requestProviderWidget(launchContext, accountId))
     }
 
     fun requestDashboardWidget(type: DashboardPinnedWidgetType) {
@@ -933,7 +933,7 @@ fun AIQuotaAppShell(
                                 },
                                 onAddWidget = {
                                     if (exactDetail?.singleReserved == true || !cardRuntime.enabled) {
-                                        requestProviderWidget(currentRoute.providerId)
+                                        requestProviderWidget(currentRoute.accountId)
                                     }
                                 },
                                 resetNotificationEnabled = if (exactId != null) {

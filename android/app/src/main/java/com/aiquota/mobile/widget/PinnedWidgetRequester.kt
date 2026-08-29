@@ -7,6 +7,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
 import com.aiquota.mobile.local.ProviderId
 
 enum class DashboardPinnedWidgetType {
@@ -22,6 +24,30 @@ enum class WidgetPinRequestStatus {
 
 object PinnedWidgetRequester {
     const val EXTRA_PINNED_PROVIDER_ID = "com.aiquota.mobile.extra.PINNED_PROVIDER_ID"
+    const val EXTRA_PINNED_PROVIDER_ACCOUNT_ID = "com.aiquota.mobile.extra.PINNED_PROVIDER_ACCOUNT_ID"
+
+    fun requestProviderWidget(context: Context, accountId: ProviderAccountId): WidgetPinRequestStatus {
+        val appContext = context.applicationContext
+        val encoded = ProviderAccountIdStorageCodec.encode(accountId)
+        val extras = Bundle().apply {
+            putString(EXTRA_PINNED_PROVIDER_ID, accountId.providerId.storageId)
+            putString(EXTRA_PINNED_PROVIDER_ACCOUNT_ID, encoded)
+        }
+        return requestPin(
+            context = appContext,
+            provider = ComponentName(appContext, ProviderUsageWidgetProvider::class.java),
+            extras = extras,
+            successCallback = configureActivityCallback(
+                context = appContext,
+                requestCode = PROVIDER_WIDGET_PIN_REQUEST_CODE_BASE + accountId.hashCode(),
+                intent = Intent(appContext, ProviderWidgetConfigureActivity::class.java).apply {
+                    data = widgetActionData("pin", AppWidgetManager.INVALID_APPWIDGET_ID, accountId)
+                    putExtra(EXTRA_PINNED_PROVIDER_ID, accountId.providerId.storageId)
+                    putExtra(EXTRA_PINNED_PROVIDER_ACCOUNT_ID, encoded)
+                },
+            ),
+        )
+    }
 
     fun requestProviderWidget(context: Context, providerId: ProviderId): WidgetPinRequestStatus {
         val appContext = context.applicationContext

@@ -2,6 +2,7 @@
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
+import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.local.ProviderId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +23,18 @@ object ProviderWidgetPostConfigureUpdater {
             }
         }
     }
+
+    fun schedule(context: Context, appWidgetId: Int, accountId: ProviderAccountId) {
+        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return
+        val appContext = context.applicationContext
+        scope.launch {
+            providerWidgetPostConfigureRetryDelaysMs().forEach { delayMs ->
+                if (delayMs > 0L) delay(delayMs)
+                runCatching { ProviderWidgetImmediateRenderer.render(appContext, appWidgetId, accountId) }
+            }
+        }
+    }
+
 }
 
 internal fun providerWidgetPostConfigureRetryDelaysMs(): LongArray {

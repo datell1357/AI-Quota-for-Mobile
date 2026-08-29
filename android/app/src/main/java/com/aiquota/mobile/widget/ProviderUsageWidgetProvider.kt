@@ -8,7 +8,9 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.RemoteViews
+import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.R
+import com.aiquota.mobile.local.ProviderCardPreferencesRepository
 import com.aiquota.mobile.local.ProviderPreferencesRepository
 
 class ProviderUsageWidgetProvider : AppWidgetProvider() {
@@ -27,9 +29,11 @@ class ProviderUsageWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
-        val repository = ProviderPreferencesRepository(context.applicationContext)
+        val legacyRepository = ProviderPreferencesRepository(context.applicationContext)
+        val cardRepository = ProviderCardPreferencesRepository(context.applicationContext)
         appWidgetIds.forEach { appWidgetId ->
-            repository.clearProviderWidgetSelection(appWidgetId)
+            legacyRepository.clearProviderWidgetSelection(appWidgetId)
+            cardRepository.clearProviderWidgetSelection(appWidgetId)
             WidgetRefreshFeedback.clearWidgetRefresh(context, appWidgetId)
         }
     }
@@ -50,18 +54,35 @@ class ProviderUsageWidgetProvider : AppWidgetProvider() {
             updateWidgets(context.applicationContext, AppWidgetManager.getInstance(context), intArrayOf(appWidgetId))
         }
 
+        fun isActiveWidget(context: Context, appWidgetId: Int): Boolean {
+            val appContext = context.applicationContext
+            return appWidgetId in AppWidgetManager.getInstance(appContext).getAppWidgetIds(
+                ComponentName(appContext, ProviderUsageWidgetProvider::class.java),
+            )
+        }
+
         private fun updateWidgets(
             context: Context,
             appWidgetManager: AppWidgetManager,
             appWidgetIds: IntArray
         ) {
-            val repository = ProviderPreferencesRepository(context.applicationContext)
+            val legacyRepository = ProviderPreferencesRepository(context.applicationContext)
+            val cardRepository = ProviderCardPreferencesRepository(context.applicationContext)
             appWidgetIds.forEach { appWidgetId ->
-                val providerId = repository.providerWidgetSelection(appWidgetId)
-                if (providerId == null) {
-                    appWidgetManager.updateAppWidget(appWidgetId, notConfiguredViews(context, appWidgetId))
+                if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
+                    val accountId = cardRepository.providerWidgetSelection(appWidgetId)
+                    if (accountId == null) {
+                        appWidgetManager.updateAppWidget(appWidgetId, notConfiguredViews(context, appWidgetId))
+                    } else {
+                        ProviderWidgetImmediateRenderer.render(context, appWidgetId, accountId)
+                    }
                 } else {
-                    ProviderWidgetImmediateRenderer.render(context, appWidgetId, providerId)
+                    val providerId = legacyRepository.providerWidgetSelection(appWidgetId)
+                    if (providerId == null) {
+                        appWidgetManager.updateAppWidget(appWidgetId, notConfiguredViews(context, appWidgetId))
+                    } else {
+                        ProviderWidgetImmediateRenderer.render(context, appWidgetId, providerId)
+                    }
                 }
             }
         }
