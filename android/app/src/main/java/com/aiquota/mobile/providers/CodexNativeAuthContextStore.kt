@@ -2,11 +2,27 @@ package com.aiquota.mobile.providers
 
 import android.content.Context
 import android.util.Log
+import com.aiquota.mobile.accounts.AccountCredentialVault
+import com.aiquota.mobile.accounts.AccountLoginSessionBinding
+import com.aiquota.mobile.accounts.CredentialBundle
+import com.aiquota.mobile.accounts.CredentialVaultAccountId
+import com.aiquota.mobile.accounts.CredentialVaultBinding
+import com.aiquota.mobile.accounts.CredentialVaultSchema
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.SecretRevision
+import com.aiquota.mobile.accounts.createAndroidAccountCredentialVault
 import com.aiquota.mobile.local.ProviderId
 import org.json.JSONObject
 
-internal class CodexNativeAuthContextStore(context: Context) {
-    private val secureStore = SecureStringStore(context.applicationContext, STORE_NAME)
+internal class CodexNativeAuthContextStore(
+    context: Context,
+    private val providedExactVault: AccountCredentialVault? = null,
+) {
+    private val appContext = context.applicationContext
+    private val secureStore = SecureStringStore(appContext, STORE_NAME)
+    private val exactVault by lazy {
+        providedExactVault ?: createAndroidAccountCredentialVault(appContext)
+    }
 
     fun save(nativeAuthContext: Map<String, Map<String, String>>) {
         val restorable = CodexNativeHeaderStore.snapshotAuthContext(nativeAuthContext)
@@ -36,6 +52,27 @@ internal class CodexNativeAuthContextStore(context: Context) {
     fun clear() {
         secureStore.remove(KEY_CONTEXT)
         Log.i(TAG, "provider=codex nativeAuthContextCleared=true")
+    }
+
+    fun saveExact(
+        binding: AccountLoginSessionBinding,
+        nativeAuthContext: Map<String, Map<String, String>>,
+    ): Boolean {
+        require(binding.accountId.providerId == ProviderId.CODEX)
+        val restorable = CodexNativeHeaderStore.snapshotAuthContext(nativeAuthContext)
+        if (restorable.isEmpty()) return false
+        return exactVault.put(binding.vaultBinding(), CredentialBundle.fromBytes(encode(restorable).toByteArray()))
+    }
+
+    fun restoreExact(binding: AccountLoginSessionBinding): Map<String, Map<String, String>> {
+        require(binding.accountId.providerId == ProviderId.CODEX)
+        val payload = exactVault.decrypt(binding.vaultBinding())?.copyBytes() ?: return emptyMap()
+        return decode(payload.toString(Charsets.UTF_8))
+    }
+
+    fun clearExact(accountId: ProviderAccountId): Boolean {
+        require(accountId.providerId == ProviderId.CODEX)
+        return exactVault.delete(CredentialVaultAccountId.parse(accountId))
     }
 
     companion object {
@@ -84,3 +121,11 @@ internal class CodexNativeAuthContextStore(context: Context) {
         private const val TAG = "AIQuotaCodexAuth"
     }
 }
+
+private fun AccountLoginSessionBinding.vaultBinding() = CredentialVaultBinding(
+    CredentialVaultSchema.CURRENT,
+    CredentialVaultAccountId.parse(accountId),
+    generation,
+    sessionRevision,
+    SecretRevision.of(1),
+)

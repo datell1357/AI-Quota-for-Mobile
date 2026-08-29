@@ -29,6 +29,24 @@ object ProviderNativeUsagePayloadFetcher {
         return bridgeUsagePayload(providerId, userAgent, requestHeadersForUrl, cookieHeaderForUrl, bridgePageUrl, geminiRpcIds, ProviderNativeJsonBridge::fetchJson)
     }
 
+    internal fun bridgeUsagePayloadWithFetcher(
+        providerId: ProviderId,
+        userAgent: String,
+        cookieHeaderForUrl: (String) -> String?,
+        bridgePageUrl: String?,
+        geminiRpcIds: List<String>,
+        requestHeadersForUrl: (String) -> Map<String, String>,
+        fetchJson: NativeJsonFetcher,
+    ): String = bridgeUsagePayload(
+        providerId,
+        userAgent,
+        requestHeadersForUrl,
+        cookieHeaderForUrl,
+        bridgePageUrl,
+        geminiRpcIds,
+        fetchJson,
+    )
+
     internal fun codexUsagePayloadForTest(
         userAgent: String,
         requestHeadersForUrl: (String) -> Map<String, String>,

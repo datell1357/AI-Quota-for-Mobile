@@ -1,10 +1,23 @@
 package com.aiquota.mobile.providers
 
+import androidx.test.core.app.ApplicationProvider
+import com.aiquota.mobile.accounts.AccountCredentialVault
+import com.aiquota.mobile.accounts.AccountGeneration
+import com.aiquota.mobile.accounts.AccountKey
+import com.aiquota.mobile.accounts.AccountLoginSessionBinding
+import com.aiquota.mobile.accounts.FakeCredentialVaultCrypto
+import com.aiquota.mobile.accounts.InMemoryCredentialEnvelopeStore
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.SessionRevision
+import com.aiquota.mobile.local.ProviderId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class ClaudeNativeHeaderStoreTest {
     @Test
     fun capturesClaudeApiHeadersAndFiltersNonForwardableHeaders() {
@@ -82,6 +95,29 @@ class ClaudeNativeHeaderStoreTest {
     }
 
     @Test
+    fun exactClaudeContextNeverReadsCodexOrSiblingEnvelope() {
+        val vault = AccountCredentialVault(InMemoryCredentialEnvelopeStore(), FakeCredentialVaultCrypto())
+        val store = ClaudeNativeRequestContextStore(ApplicationProvider.getApplicationContext(), vault)
+        val a = binding(1)
+        val b = binding(2)
+        val aMarker = mapOf("claude:a" to mapOf("Authorization" to "Bearer A"))
+        val bMarker = mapOf("claude:b" to mapOf("Authorization" to "Bearer B"))
+
+        assertTrue(store.saveExact(a, aMarker))
+        assertTrue(store.saveExact(b, bMarker))
+        assertEquals(aMarker, store.restoreExact(a))
+        assertEquals(bMarker, store.restoreExact(b))
+        val codex = a.copy(accountId = ProviderAccountId(ProviderId.CODEX, a.accountId.accountKey))
+        assertTrue(vault.decrypt(com.aiquota.mobile.accounts.CredentialVaultBinding(
+            com.aiquota.mobile.accounts.CredentialVaultSchema.CURRENT,
+            com.aiquota.mobile.accounts.CredentialVaultAccountId.parse(codex.accountId),
+            codex.generation,
+            codex.sessionRevision,
+            com.aiquota.mobile.accounts.SecretRevision.of(1),
+        )) == null)
+    }
+
+    @Test
     fun replaySafeHeadersKeepClaudeFetchContextOnly() {
         val headers = ClaudeNativeHeaderStore.replaySafeHeaders(
             mapOf(
@@ -118,4 +154,13 @@ class ClaudeNativeHeaderStoreTest {
         assertEquals("Bearer auth", headers["Authorization"])
         assertEquals("activity", headers["x-activity-session-id"])
     }
+
+    private fun binding(index: Int) = AccountLoginSessionBinding(
+        ProviderAccountId(
+            ProviderId.CLAUDE,
+            AccountKey.parseOpaque("acct_${index.toString(16).padStart(32, '0')}"),
+        ),
+        AccountGeneration.of(4),
+        SessionRevision.of(6),
+    )
 }

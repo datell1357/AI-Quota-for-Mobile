@@ -51,21 +51,29 @@ class AndroidXNamedProfilePlatform(
         if (Looper.myLooper() != Looper.getMainLooper()) throw NamedProfileThreadViolation()
     }
 
-    override fun createBoundSession(name: WebProfileName): NamedProfileSessionResource {
+    override fun createBoundSession(
+        name: WebProfileName,
+        createIfMissing: Boolean,
+    ): NamedProfileSessionResource? {
         requireUiThread()
         check(probeCapability() is NamedProfileCapability.Supported)
+        trace("profile:load")
+        val profiles = ProfileStore.getInstance()
+        val profile = if (createIfMissing) {
+            profiles.getOrCreateProfile(name.storageValue())
+        } else {
+            profiles.getProfile(name.storageValue()) ?: return null
+        }
         trace("webview:create")
         val w = WebView(context)
         try {
             trace("webview:bind")
             WebViewCompat.setProfile(w, name.storageValue())
-            trace("profile:load")
-            val p = ProfileStore.getInstance().getOrCreateProfile(name.storageValue())
             return AndroidSession(
                 w,
-                p.cookieManager,
-                p.webStorage,
-                p.serviceWorkerController,
+                profile.cookieManager,
+                profile.webStorage,
+                profile.serviceWorkerController,
                 trace,
             )
         } catch (e: RuntimeException) {
@@ -84,7 +92,11 @@ class AndroidXNamedProfilePlatform(
             return
         }
         try {
-            val p = ProfileStore.getInstance().getOrCreateProfile(name.storageValue())
+            val p = ProfileStore.getInstance().getProfile(name.storageValue())
+            if (p == null) {
+                callback(ProfileDataErasureResult.Completed)
+                return
+            }
             WebStorageCompat.deleteBrowsingData(
                 p.webStorage,
                 ContextCompat.getMainExecutor(context),
@@ -106,6 +118,10 @@ private class AndroidSession(
     override val serviceWorkerController: ServiceWorkerController,
     private val trace: (String) -> Unit,
 ) : NamedProfileSessionResource {
+    override val cookieSource = ExactProfileCookieSource { url, origin ->
+        cookieManager.getCookie(url)?.takeIf(String::isNotBlank)
+            ?: cookieManager.getCookie(origin)?.takeIf(String::isNotBlank)
+    }
     private val observedRequest = AtomicBoolean()
     private val observedBeacon = AtomicBoolean()
     private var finished = false
@@ -227,6 +243,13 @@ private class AndroidSession(
         fun response(m: String, b: String) =
             WebResourceResponse(m, "UTF-8", ByteArrayInputStream(b.toByteArray()))
     }
+}
+
+fun NamedProfileLease.createAndroidPopupWebView(context: Context): WebView {
+    check(ProfileStore.getInstance().getProfile(profileName.storageValue()) != null) {
+        "Exact popup Profile is unavailable"
+    }
+    return WebView(context).also { WebViewCompat.setProfile(it, profileName.storageValue()) }
 }
 
 fun NamedProfileLease.requireAndroidWebView() = webView as WebView

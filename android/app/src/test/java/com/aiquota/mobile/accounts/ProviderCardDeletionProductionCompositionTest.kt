@@ -279,8 +279,10 @@ class ProviderCardDeletionProductionCompositionTest {
             WebViewProviderIdentity("com.google.android.webview", "152.0.7977.54")
         )
         override fun requireUiThread() = Unit
-        override fun createBoundSession(name: WebProfileName): NamedProfileSessionResource =
-            error("Deletion composition must not create a login session")
+        override fun createBoundSession(
+            name: WebProfileName,
+            createIfMissing: Boolean,
+        ): NamedProfileSessionResource = error("Deletion composition must not create a login session")
         override fun eraseProfileData(
             name: WebProfileName,
             callback: (ProfileDataErasureResult) -> Unit,

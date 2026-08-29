@@ -1,5 +1,6 @@
 package com.aiquota.mobile.providers
 
+import com.aiquota.mobile.accounts.ExactProfileCookieSource
 import com.aiquota.mobile.local.ProviderId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -50,6 +51,53 @@ class ProviderNativeJsonBridgeTest {
             ProviderNativeJsonBridge.firstNonBlankCookieForTest("auth=path", "auth=origin")
         )
         assertNull(ProviderNativeJsonBridge.firstNonBlankCookieForTest("", ""))
+    }
+
+    @Test
+    fun exactClaudeAndCodexRequestsUseOnlySelectedProfileCookieWithExactHeaders() {
+        val selected = ExactProfileCookieSource { _, _ -> "profile_session=B" }
+        val cases = listOf(
+            ProviderId.CLAUDE to "https://claude.ai/api/organizations",
+            ProviderId.CODEX to "https://chatgpt.com/backend-api/wham/usage",
+        )
+
+        cases.forEach { (providerId, url) ->
+            val headers = ProviderNativeJsonBridge.assembledHeadersForTest(
+                ProviderNativeJsonRequest(
+                    providerId,
+                    url,
+                    "task14-agent",
+                    mapOf("Authorization" to "Bearer B"),
+                    selected,
+                )
+            )
+
+            assertEquals("Bearer B", headers["Authorization"])
+            assertEquals("profile_session=B", headers["Cookie"])
+            assertFalse(headers.values.any { it.contains("default_session=A") })
+        }
+    }
+
+    @Test
+    fun exactClaudeAndCodexRequestsOmitCookieWhenSelectedProfileHasNone() {
+        val emptySelectedProfile = ExactProfileCookieSource { _, _ -> null }
+        listOf(
+            ProviderId.CLAUDE to "https://claude.ai/api/organizations",
+            ProviderId.CODEX to "https://chatgpt.com/backend-api/wham/usage",
+        ).forEach { (providerId, url) ->
+            val headers = ProviderNativeJsonBridge.assembledHeadersForTest(
+                ProviderNativeJsonRequest(
+                    providerId,
+                    url,
+                    "task14-agent",
+                    mapOf("Authorization" to "Bearer B"),
+                    emptySelectedProfile,
+                )
+            )
+
+            assertEquals("Bearer B", headers["Authorization"])
+            assertFalse(headers.keys.any { it.equals("Cookie", ignoreCase = true) })
+        }
     }
 
     @Test

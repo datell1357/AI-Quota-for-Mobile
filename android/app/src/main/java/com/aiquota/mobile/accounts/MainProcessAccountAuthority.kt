@@ -17,7 +17,7 @@ import com.aiquota.mobile.providers.ProviderSnapshotCodec
 class MainProcessAccountAuthority private constructor(
     private val database: AccountAuthorityDatabase,
     private val faultInjector: AccountAuthorityFaultInjector
-) : AutoCloseable {
+) : AutoCloseable, ExactAccountLoginAuthority {
     fun register(seed: AuthorityAccountSeed): VersionedDisplayRecord = transaction { db ->
         require(readAccount(db, seed.account.id) == null) { "Account key is already registered" }
         val version = readVersion(db).next()
@@ -220,6 +220,97 @@ class MainProcessAccountAuthority private constructor(
         writeAttempt(db, accountId, account.generation, account.sessionRevision, nonce)
         writeVersion(db, version)
         AttemptLease(accountId, account.generation, account.sessionRevision, nonce)
+    }
+
+    override fun beginAuthentication(id: ProviderAccountId): AccountLoginSessionBinding? = transaction { db ->
+        val account = readAccount(db, id) ?: return@transaction null
+        if (account.state != AccountState.ACTIVE || account.deletionState != AccountDeletionState.NONE) {
+            return@transaction null
+        }
+        val version = readVersion(db).next()
+        val updated = account.transitionTo(
+            nextState = account.state,
+            nextAuthState = AccountAuthState.AUTHENTICATING,
+            nextDeletionState = account.deletionState,
+            nextGeneration = account.generation.next(),
+            nextSessionRevision = account.sessionRevision.next(),
+        ).copy(modifiedVersion = version)
+        writeExactLoginState(db, updated)
+        writeAttempt(db, id, updated.generation, updated.sessionRevision, null)
+        writeVersion(db, version)
+        AccountLoginSessionBinding(id, updated.generation, updated.sessionRevision)
+    }
+
+    override fun resumeAuthentication(binding: AccountLoginSessionBinding): Boolean {
+        val account = readAccount(database.readableDatabase, binding.accountId) ?: return false
+        return account.matches(binding) && account.authState == AccountAuthState.AUTHENTICATING
+    }
+
+    override fun completeAuthentication(
+        binding: AccountLoginSessionBinding,
+        persist: () -> Boolean,
+    ): Boolean = transaction { db ->
+        val account = readAccount(db, binding.accountId) ?: return@transaction false
+        if (!account.matches(binding) || account.authState != AccountAuthState.AUTHENTICATING) {
+            return@transaction false
+        }
+        if (!persist()) return@transaction false
+        val version = readVersion(db).next()
+        writeExactLoginState(
+            db,
+            account.transitionTo(
+                account.state,
+                AccountAuthState.AUTHENTICATED,
+                account.deletionState,
+            ).copy(modifiedVersion = version),
+        )
+        writeVersion(db, version)
+        true
+    }
+
+    override fun markReauthentication(binding: AccountLoginSessionBinding): Boolean = transaction { db ->
+        val account = readAccount(db, binding.accountId) ?: return@transaction false
+        if (!account.matches(binding)) return@transaction false
+        val version = readVersion(db).next()
+        writeExactLoginState(
+            db,
+            account.transitionTo(
+                account.state,
+                AccountAuthState.REAUTH_REQUIRED,
+                account.deletionState,
+            ).copy(modifiedVersion = version),
+        )
+        writeAttempt(db, binding.accountId, account.generation, account.sessionRevision, null)
+        writeVersion(db, version)
+        true
+    }
+
+    override fun logoutExact(id: ProviderAccountId, clear: () -> Boolean): Boolean = transaction { db ->
+        val account = readAccount(db, id) ?: return@transaction false
+        if (account.state != AccountState.ACTIVE || account.deletionState != AccountDeletionState.NONE) {
+            return@transaction false
+        }
+        if (!clear()) return@transaction false
+        val version = readVersion(db).next()
+        val updated = account.transitionTo(
+            account.state,
+            AccountAuthState.REAUTH_REQUIRED,
+            account.deletionState,
+            account.generation.next(),
+            account.sessionRevision.next(),
+        ).copy(modifiedVersion = version)
+        writeExactLoginState(db, updated)
+        writeAttempt(db, id, updated.generation, updated.sessionRevision, null)
+        writeVersion(db, version)
+        true
+    }
+
+    override fun currentBinding(id: ProviderAccountId): AccountLoginSessionBinding? {
+        val account = readAccount(database.readableDatabase, id) ?: return null
+        if (account.state != AccountState.ACTIVE || account.deletionState != AccountDeletionState.NONE) {
+            return null
+        }
+        return AccountLoginSessionBinding(id, account.generation, account.sessionRevision)
     }
 
     fun requireReauthentication(accountId: ProviderAccountId): AccountRecord = transaction { db ->
@@ -717,6 +808,28 @@ class MainProcessAccountAuthority private constructor(
     internal fun canonicalLogicalFieldsForTest(): Map<String, String> = database.canonicalLogicalFields()
 
     override fun close() = database.close()
+
+    private fun writeExactLoginState(db: SQLiteDatabase, account: AccountRecord) {
+        db.compileStatement(
+            "UPDATE accounts SET auth_state=?,generation=?,session_revision=?,modified_version=? " +
+                "WHERE provider_id=? AND account_key=?"
+        ).use { statement ->
+            statement.bindString(1, account.authState.name)
+            statement.bindLong(2, account.generation.value)
+            statement.bindLong(3, account.sessionRevision.value)
+            statement.bindLong(4, account.modifiedVersion.value)
+            statement.bindString(5, account.id.providerId.storageId)
+            statement.bindString(6, account.id.accountKey.storageValue())
+            check(statement.executeUpdateDelete() == 1) { "Exact login account changed" }
+        }
+    }
+
+    private fun AccountRecord.matches(binding: AccountLoginSessionBinding): Boolean =
+        id == binding.accountId &&
+            generation == binding.generation &&
+            sessionRevision == binding.sessionRevision &&
+            state == AccountState.ACTIVE &&
+            deletionState == AccountDeletionState.NONE
 
     private inline fun <T> transaction(block: (SQLiteDatabase) -> T): T {
         val db = database.writableDatabase

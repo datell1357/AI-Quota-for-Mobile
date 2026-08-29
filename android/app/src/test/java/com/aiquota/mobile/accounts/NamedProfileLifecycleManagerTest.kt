@@ -332,11 +332,15 @@ private class FakePlatform : NamedProfilePlatform {
         if (!ui) throw NamedProfileThreadViolation()
     }
 
-    override fun createBoundSession(name: WebProfileName): NamedProfileSessionResource {
+    override fun createBoundSession(
+        name: WebProfileName,
+        createIfMissing: Boolean,
+    ): NamedProfileSessionResource {
         bindCount++
         return object : NamedProfileSessionResource {
             override val webView = Any()
             override val cookieManager = Any()
+            override val cookieSource = ExactProfileCookieSource { _, _ -> null }
             override val webStorage = Any()
             override val serviceWorkerController = Any()
 

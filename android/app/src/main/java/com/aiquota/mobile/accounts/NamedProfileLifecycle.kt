@@ -249,9 +249,14 @@ sealed interface SessionQuiesceResult {
     data class Failed(val reason: String) : SessionQuiesceResult
 }
 
+fun interface ExactProfileCookieSource {
+    fun cookieHeader(url: String, origin: String): String?
+}
+
 interface NamedProfileSessionResource {
     val webView: Any
     val cookieManager: Any
+    val cookieSource: ExactProfileCookieSource
     val webStorage: Any
     val serviceWorkerController: Any
 
@@ -271,7 +276,11 @@ interface NamedProfilePlatform {
 
     fun requireUiThread()
 
-    fun createBoundSession(name: WebProfileName): NamedProfileSessionResource
+    /** Returns null rather than creating when an authority-bound Profile is physically missing. */
+    fun createBoundSession(
+        name: WebProfileName,
+        createIfMissing: Boolean = true,
+    ): NamedProfileSessionResource?
 
     fun eraseProfileData(name: WebProfileName, callback: (ProfileDataErasureResult) -> Unit)
 }
@@ -320,6 +329,9 @@ internal constructor(
 
     val cookieManager
         get() = resource.cookieManager
+
+    val cookieSource
+        get() = resource.cookieSource
 
     val webStorage
         get() = resource.webStorage
@@ -385,13 +397,23 @@ class NamedProfileLifecycleManager(
 
     fun binding(id: ProviderAccountId) = read { store.read(id) }
 
-    fun acquireTyped(id: ProviderAccountId): LeaseAcquireResult = mutate {
+    fun acquireTyped(id: ProviderAccountId): LeaseAcquireResult = acquire(id, createIfMissing = false)
+
+    /** Explicit first Connect creates; reconnect opens only the exact existing physical Profile. */
+    fun acquireForExplicitConnect(id: ProviderAccountId): LeaseAcquireResult {
+        val existed = binding(id) != null
+        if (!existed) ensureBinding(id)
+        return acquire(id, createIfMissing = !existed)
+    }
+
+    private fun acquire(id: ProviderAccountId, createIfMissing: Boolean): LeaseAcquireResult = mutate {
         val c = platform.probeCapability()
         if (c !is NamedProfileCapability.Supported) return@mutate LeaseAcquireResult.Rejected(c)
         val row =
             store.read(id)?.takeIf { it.state == ProfileLifecycleState.ACTIVE }
                 ?: return@mutate LeaseAcquireResult.ProfileUnavailable
-        val resource = platform.createBoundSession(row.profileName)
+        val resource = platform.createBoundSession(row.profileName, createIfMissing)
+            ?: return@mutate LeaseAcquireResult.ProfileUnavailable
         lateinit var lease: NamedProfileLease
         lease = NamedProfileLease(id, row.profileName, resource, ::release)
         leases.getOrPut(id, ::linkedSetOf).add(lease)
@@ -409,7 +431,24 @@ class NamedProfileLifecycleManager(
     }
 
     fun acquire(id: ProviderAccountId) =
-        (acquireTyped(id) as? LeaseAcquireResult.Acquired)?.lease ?: error("profile unavailable")
+        (acquire(id, createIfMissing = true) as? LeaseAcquireResult.Acquired)?.lease
+            ?: error("profile unavailable")
+
+    fun clearSessionData(
+        id: ProviderAccountId,
+        onResult: (ProfileDataErasureResult) -> Unit,
+    ): Boolean = mutate {
+        val row = store.read(id)
+        if (row == null) {
+            onResult(ProfileDataErasureResult.Completed)
+            return@mutate true
+        }
+        if (row.state != ProfileLifecycleState.ACTIVE || !leases[id].isNullOrEmpty()) {
+            return@mutate false
+        }
+        platform.eraseProfileData(row.profileName, onResult)
+        true
+    }
 
     fun requestErasure(
         id: ProviderAccountId,

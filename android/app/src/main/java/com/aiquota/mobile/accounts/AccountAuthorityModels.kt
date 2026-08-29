@@ -192,9 +192,9 @@ private fun isAuthStateTransitionAllowed(current: AccountAuthState, next: Accoun
     current == next || when (current) {
         AccountAuthState.SIGNED_OUT -> next == AccountAuthState.AUTHENTICATING || next == AccountAuthState.REAUTH_REQUIRED
         AccountAuthState.AUTHENTICATING -> next != AccountAuthState.AUTHENTICATING
-        AccountAuthState.AUTHENTICATED -> next == AccountAuthState.REAUTH_REQUIRED || next == AccountAuthState.SIGNED_OUT || next == AccountAuthState.IDENTITY_MISMATCH
+        AccountAuthState.AUTHENTICATED -> next == AccountAuthState.AUTHENTICATING || next == AccountAuthState.REAUTH_REQUIRED || next == AccountAuthState.SIGNED_OUT || next == AccountAuthState.IDENTITY_MISMATCH
         AccountAuthState.REAUTH_REQUIRED -> next == AccountAuthState.AUTHENTICATING || next == AccountAuthState.SIGNED_OUT
-        AccountAuthState.IDENTITY_MISMATCH -> next == AccountAuthState.AUTHENTICATING || next == AccountAuthState.SIGNED_OUT
+        AccountAuthState.IDENTITY_MISMATCH -> next == AccountAuthState.AUTHENTICATING || next == AccountAuthState.REAUTH_REQUIRED || next == AccountAuthState.SIGNED_OUT
     }
 
 private fun isDeletionTransitionAllowed(current: AccountDeletionState, next: AccountDeletionState): Boolean =

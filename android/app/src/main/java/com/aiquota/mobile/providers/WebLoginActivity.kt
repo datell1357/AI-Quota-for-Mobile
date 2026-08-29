@@ -25,6 +25,16 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.TextView
+import com.aiquota.mobile.BuildConfig
+import com.aiquota.mobile.accounts.AccountGeneration
+import com.aiquota.mobile.accounts.AccountLoginSessionBinding
+import com.aiquota.mobile.accounts.NamedProfileLease
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
+import com.aiquota.mobile.accounts.createAndroidPopupWebView
+import com.aiquota.mobile.accounts.requireAndroidCookieManager
+import com.aiquota.mobile.accounts.requireAndroidWebView
+import com.aiquota.mobile.accounts.SessionRevision
 import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.local.ProviderId
 import java.net.HttpURLConnection
@@ -48,13 +58,18 @@ import com.aiquota.mobile.ui.ads.ActivityTopBanner
 
 open class WebLoginActivity : Activity() {
     private lateinit var providerId: ProviderId
+    private lateinit var accountId: ProviderAccountId
     private lateinit var webView: WebView
+    private var exactLoginComposition: AndroidExactAccountLoginComposition? = null
+    private var exactLoginBinding: AccountLoginSessionBinding? = null
+    private var namedProfileLease: NamedProfileLease? = null
     private lateinit var rootContainer: FrameLayout
     private lateinit var titleView: TextView
     private lateinit var topBanner: ActivityTopBanner
     private val loginAdHeight: Int get() = if (::topBanner.isInitialized) topBanner.heightPx else 0
     private var loginTitleHeightPx = 0
     private var mainWebViewDestroyed = false
+    private var exactLoginResultSet = false
     @Volatile
     private var finished = false
     private var firstPageLogged = false
@@ -101,6 +116,7 @@ open class WebLoginActivity : Activity() {
     private val claudeNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
     private val geminiUsageRpcIds = linkedSetOf<String>()
     private val popupViews = mutableSetOf<WebView>()
+    private val exactPopupProfileNames = mutableMapOf<WebView, String>()
     private val collectorInjectionKeys = mutableSetOf<String>()
     private val loginScope = MainScope()
     private val startedAtMs = SystemClock.elapsedRealtime()
@@ -115,16 +131,61 @@ open class WebLoginActivity : Activity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        providerId = ProviderId.fromStorageId(intent.getStringExtra(EXTRA_PROVIDER_ID)) ?: run {
+        val resolution = AccountLoginIntentBoundary.resolve(
+            intent.getStringExtra(EXTRA_PROVIDER_ID),
+            intent.getStringExtra(EXTRA_PROVIDER_ACCOUNT_ID),
+            BuildConfig.MULTI_ACCOUNT_ENABLED,
+        )
+        accountId = (resolution as? LoginIntentResolution.Exact)?.accountId ?: run {
+            setResult(RESULT_CANCELED)
             finish()
             return
         }
+        providerId = accountId.providerId
+        if (BuildConfig.MULTI_ACCOUNT_ENABLED && providerId in NAMED_PROFILE_PROVIDERS) {
+            val composition = AndroidExactAccountLoginComposition.open(this)
+            exactLoginComposition = composition
+            val restoredBinding = savedInstanceState?.takeIf {
+                it.containsKey(STATE_EXACT_GENERATION) && it.containsKey(STATE_EXACT_SESSION_REVISION)
+            }?.let {
+                AccountLoginSessionBinding(
+                    accountId,
+                    AccountGeneration.of(it.getLong(STATE_EXACT_GENERATION)),
+                    SessionRevision.of(it.getLong(STATE_EXACT_SESSION_REVISION)),
+                )
+            }
+            val start = restoredBinding?.let(composition.coordinator::resume)
+                ?: composition.coordinator.connectExplicit(accountId)
+            when (start) {
+                is ExactAccountLoginStartResult.Opened -> {
+                    exactLoginBinding = start.binding
+                    namedProfileLease = requireNotNull(start.lease)
+                }
+                is ExactAccountLoginStartResult.ReauthenticationRequired -> {
+                    exactLoginBinding = start.binding
+                    setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
+                    composition.close()
+                    exactLoginComposition = null
+                    finish()
+                    return
+                }
+                is ExactAccountLoginStartResult.Rejected -> {
+                    exactLoginBinding = start.binding
+                    setExactLoginResult(EXACT_RESULT_REJECTED)
+                    composition.close()
+                    exactLoginComposition = null
+                    finish()
+                    return
+                }
+            }
+        }
         val definition = ProviderDefinitionRegistry.definitionFor(providerId)
         val repository = LocalUsageRepository(applicationContext)
-        val previousConnectionState = repository.readSnapshots()
-            .firstOrNull { it.providerId == providerId }
-            ?.connectionState
-        repository.markConnecting(providerId)
+        val exactNamedLogin = exactLoginBinding != null
+        val previousConnectionState = if (exactNamedLogin) null else {
+            repository.readSnapshots().firstOrNull { it.providerId == providerId }?.connectionState
+        }
+        if (!exactNamedLogin) repository.markConnecting(providerId)
 
         titleView = TextView(this).apply {
             text = loginTitleText()
@@ -137,18 +198,24 @@ open class WebLoginActivity : Activity() {
         loginTitleHeightPx = measureLoginTitleHeight()
         // 배너 높이를 먼저 확정해야 제목·WebView·팝업의 상단 오프셋을 한 번에 맞출 수 있다.
         topBanner = ActivityTopBanner(this)
-        val cookieManager = CookieManager.getInstance()
+        val cookieManager = loginCookieManager()
         val capabilities = ProviderLoginWebViewPolicy.capabilities()
         cookieManager.setAcceptCookie(true)
         if (capabilities.webContentsDebuggingEnabled) {
             WebView.setWebContentsDebuggingEnabled(true)
         }
-        if (ProviderWebSessionClearPolicy.shouldClearBeforeLogin(providerId, previousConnectionState)) {
+        if (namedProfileLease == null &&
+            ProviderWebSessionClearPolicy.shouldClearBeforeLogin(providerId, previousConnectionState)
+        ) {
             clearProviderWebSession(cookieManager, providerId)
         }
         restoreCodexNativeAuthContext()
         restoreClaudeNativeRequestContext()
-        webView = createConfiguredWebView(cookieManager, capabilities)
+        webView = createConfiguredWebView(
+            cookieManager,
+            capabilities,
+            namedProfileLease?.requireAndroidWebView(),
+        )
         rootContainer = FrameLayout(this).apply {
             addView(webView, loginWebViewLayoutParams())
             addView(
@@ -166,6 +233,14 @@ open class WebLoginActivity : Activity() {
         webView.loadUrl(requestedStartUrl)
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        exactLoginBinding?.let {
+            outState.putLong(STATE_EXACT_GENERATION, it.generation.value)
+            outState.putLong(STATE_EXACT_SESSION_REVISION, it.sessionRevision.value)
+        }
+        super.onSaveInstanceState(outState)
+    }
+
     override fun onResume() {
         super.onResume()
         if (::topBanner.isInitialized) topBanner.resume()
@@ -179,8 +254,13 @@ open class WebLoginActivity : Activity() {
 
     override fun onDestroy() {
         if (::topBanner.isInitialized) topBanner.destroy()
-        if (::providerId.isInitialized && !finished) {
-            if (oauthCallbackHandled && isGoogleProvider()) {
+        if (::providerId.isInitialized && !finished && !isChangingConfigurations) {
+            val binding = exactLoginBinding
+            val exact = exactLoginComposition
+            if (binding != null && exact != null) {
+                exact.coordinator.fail(binding)
+                setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
+            } else if (oauthCallbackHandled && isGoogleProvider()) {
                 Log.i(
                     "AIQuotaLogin",
                     "provider=${providerId.storageId} googleCallbackDestroy awaitingCollector=true"
@@ -194,10 +274,16 @@ open class WebLoginActivity : Activity() {
             }
         }
         popupViews.toList().forEach(::destroyPopupWindow)
-        if (::webView.isInitialized) {
-            if (!mainWebViewDestroyed) {
-                webView.destroy()
-            }
+        val lease = namedProfileLease
+        val composition = exactLoginComposition
+        if (lease != null && !mainWebViewDestroyed) {
+            lease.closeAcknowledged { composition?.close() }
+            namedProfileLease = null
+            exactLoginComposition = null
+        } else {
+            if (::webView.isInitialized && !mainWebViewDestroyed) webView.destroy()
+            composition?.close()
+            exactLoginComposition = null
         }
         loginScope.cancel()
         clearClaudeNativeFetchHeaders()
@@ -207,9 +293,10 @@ open class WebLoginActivity : Activity() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun createConfiguredWebView(
         cookieManager: CookieManager,
-        capabilities: ProviderLoginWebViewCapabilities
+        capabilities: ProviderLoginWebViewCapabilities,
+        exactWebView: WebView? = null,
     ): WebView {
-        return WebView(this).apply {
+        return (exactWebView ?: WebView(this)).apply {
             val loginUserAgent = ProviderWebViewUserAgent.loginUserAgent(this@WebLoginActivity)
             currentBridgeUserAgent = loginUserAgent
             settings.javaScriptEnabled = true
@@ -283,8 +370,47 @@ open class WebLoginActivity : Activity() {
         if (::rootContainer.isInitialized) {
             rootContainer.removeView(window)
         }
+        exactPopupProfileNames.remove(window)
         window.destroy()
         Log.d("AIQuotaLogin", "provider=${providerId.storageId} popupWindowClosed=true")
+    }
+
+    private fun loginCookieManager(): CookieManager =
+        namedProfileLease?.requireAndroidCookieManager() ?: CookieManager.getInstance()
+
+    internal fun exactBindingForTest(): AccountLoginSessionBinding? = exactLoginBinding
+
+    internal fun mainWebViewForTest(): WebView = webView
+
+    internal fun popupWebViewsForTest(): List<WebView> = popupViews.toList()
+
+    internal fun exactProfileNameForTest(): String? = namedProfileLease?.profileName?.storageValue()
+
+    internal fun exactPopupProfileNameForTest(popup: WebView): String? = exactPopupProfileNames[popup]
+
+    private fun setExactLoginResult(status: String) {
+        val binding = exactLoginBinding
+        val selected = if (::accountId.isInitialized) accountId else null
+        val data = Intent().putExtra(EXTRA_EXACT_LOGIN_STATUS, status)
+        selected?.let {
+            data.putExtra(EXTRA_PROVIDER_ACCOUNT_ID, ProviderAccountIdStorageCodec.encode(it))
+        }
+        binding?.let {
+            data.putExtra(EXTRA_ACCOUNT_GENERATION, it.generation.value)
+            data.putExtra(EXTRA_SESSION_REVISION, it.sessionRevision.value)
+        }
+        setResult(if (status == EXACT_RESULT_SUCCESS) RESULT_OK else RESULT_CANCELED, data)
+        exactLoginResultSet = true
+    }
+
+    override fun finish() {
+        val composition = exactLoginComposition
+        val binding = exactLoginBinding
+        if (!exactLoginResultSet && composition != null && binding != null) {
+            composition.coordinator.fail(binding)
+            setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
+        }
+        super.finish()
     }
 
     private fun clearProviderWebSession(cookieManager: CookieManager, providerId: ProviderId) {
@@ -295,6 +421,13 @@ open class WebLoginActivity : Activity() {
     private fun noteBridgePageUrl(url: String?) {
         if (!url.isNullOrBlank()) {
             currentBridgePageUrl = url
+        }
+    }
+
+    private fun createExactPopupWebView(): WebView? {
+        val lease = namedProfileLease ?: return null
+        return lease.createAndroidPopupWebView(this).also { popup ->
+            exactPopupProfileNames[popup] = lease.profileName.storageValue()
         }
     }
 
@@ -312,9 +445,12 @@ open class WebLoginActivity : Activity() {
 
         override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
             if (!::rootContainer.isInitialized) return false
-            val popup = createConfiguredWebView(CookieManager.getInstance(), ProviderLoginWebViewPolicy.capabilities()).apply {
-                setBackgroundColor(Color.WHITE)
-            }
+            val exactPopup = createExactPopupWebView()
+            val popup = createConfiguredWebView(
+                loginCookieManager(),
+                ProviderLoginWebViewPolicy.capabilities(),
+                exactPopup,
+            ).apply { setBackgroundColor(Color.WHITE) }
             popupViews.add(popup)
             rootContainer.addView(popup, loginWebViewLayoutParams())
             val transport = resultMsg.obj as WebView.WebViewTransport
@@ -644,7 +780,7 @@ open class WebLoginActivity : Activity() {
             if (oauthCallbackHandled || finished) return true
             oauthCallbackHandled = true
             Log.i("AIQuotaLogin", "provider=${providerId.storageId} oauthCallback=true host=${hostOf(url)}")
-            CookieManager.getInstance().flush()
+            loginCookieManager().flush()
             captureDebugProviderSessionCookies("login_complete_navigation")
             view.stopLoading()
             failKeepingPrevious("Provider login did not produce a trusted usage payload.", "login_complete_without_payload")
@@ -760,7 +896,7 @@ open class WebLoginActivity : Activity() {
                 ProviderId.CLAUDE -> claudeNativeFetchHeadersFor(url)
                 else -> emptyMap()
             }
-            return ProviderNativeJsonBridge.fetchJson(providerId, url, currentBridgeUserAgent, headers)
+            return fetchProviderNativeJson(providerId, url, currentBridgeUserAgent, headers)
         }
 
         @JavascriptInterface
@@ -1013,7 +1149,7 @@ open class WebLoginActivity : Activity() {
         }
         if (!hasClaudeNativeFetchHeaders(url)) return false
         claudeNativeCollectionStarted = true
-        CookieManager.getInstance().flush()
+        loginCookieManager().flush()
         captureDebugProviderSessionCookies("claude_native_collection_start")
         collectorInjectionKeys.clear()
         noteBridgePageUrl("about:blank")
@@ -1039,7 +1175,7 @@ open class WebLoginActivity : Activity() {
         geminiNativeCollectionStarted = true
         geminiNativeUsagePageUrl = canonicalUsageUrl
         saveGeminiUsageUrl(canonicalUsageUrl)
-        CookieManager.getInstance().flush()
+        loginCookieManager().flush()
         collectorInjectionKeys.clear()
         noteBridgePageUrl("about:blank")
         Log.i(
@@ -1059,7 +1195,7 @@ open class WebLoginActivity : Activity() {
         if (!glmAuthorizedQuotaResourceSeen) return false
         if (ProviderWebCollectorScripts.isRefreshLoginPage(providerId, url, pageText)) return false
         glmNativeCollectionStarted = true
-        CookieManager.getInstance().flush()
+        loginCookieManager().flush()
         captureGlmWebSessionCookieHeader()?.let {
             GlmUsageRepository(applicationContext).saveWebSessionCookieHeader(it)
         }
@@ -1176,7 +1312,7 @@ open class WebLoginActivity : Activity() {
         if (providerId != ProviderId.OPENCODE || finished || openCodeNativeCollectionStarted || url == "about:blank") return false
         val goUsageUrl = OpenCodeUsagePageRoutes.canonicalGoUsageUrlFrom(url) ?: return false
         openCodeNativeCollectionStarted = true
-        CookieManager.getInstance().flush()
+        loginCookieManager().flush()
         collectorInjectionKeys.clear()
         saveOpenCodeUsageUrl(goUsageUrl)
         noteBridgePageUrl("about:blank")
@@ -1199,7 +1335,7 @@ open class WebLoginActivity : Activity() {
         if (providerId != ProviderId.COPILOT || finished || copilotNativeCollectionStarted || url == "about:blank") return false
         if (!ProviderLoginStrategy.shouldStartCopilotNativeCollection(url)) return false
         copilotNativeCollectionStarted = true
-        CookieManager.getInstance().flush()
+        loginCookieManager().flush()
         collectorInjectionKeys.clear()
         noteBridgePageUrl("about:blank")
         Log.i("AIQuotaLogin", "provider=copilot nativeCollectorStart=aboutblank reason=$reason from=${hostOf(url)}${pathOf(url)}")
@@ -1211,7 +1347,7 @@ open class WebLoginActivity : Activity() {
     private fun maybeStartCodexNativeCollection(view: WebView, url: String, reason: String): Boolean {
         if (providerId != ProviderId.CODEX || finished || codexNativeCollectionStarted || url == "about:blank") return false
         codexNativeCollectionStarted = true
-        CookieManager.getInstance().flush()
+        loginCookieManager().flush()
         collectorInjectionKeys.clear()
         noteBridgePageUrl("about:blank")
         Log.i("AIQuotaLogin", "provider=codex nativeCollectorStart=aboutblank reason=$reason from=${hostOf(url)}${pathOf(url)}")
@@ -1230,7 +1366,7 @@ open class WebLoginActivity : Activity() {
         if (!ABOUT_BLANK_NATIVE_LOGIN_PROVIDERS.contains(providerId)) return false
         if (!ProviderWebCollectorScripts.shouldRunCollectorOnResource(providerId, url)) return false
         aboutBlankNativeCollectionStarted = true
-        CookieManager.getInstance().flush()
+        loginCookieManager().flush()
         collectorInjectionKeys.clear()
         noteBridgePageUrl("about:blank")
         Log.i(
@@ -1286,14 +1422,73 @@ open class WebLoginActivity : Activity() {
     }
 
     private fun nativeUsagePayloadJson(): String {
-        return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(
+        if (exactLoginBinding == null) {
+            return ProviderNativeUsagePayloadFetcher.bridgeUsagePayload(
+                providerId = providerId,
+                userAgent = currentBridgeUserAgent,
+                bridgePageUrl = nativeUsageBridgePageUrl(),
+                geminiRpcIds = geminiUsageRpcIds.toList(),
+                cookieHeaderForUrl = { url -> cookieHeaderForNativeUsage(url) },
+                requestHeadersForUrl = { url -> nativeUsageRequestHeadersFor(url) },
+            )
+        }
+        return ProviderNativeUsagePayloadFetcher.bridgeUsagePayloadWithFetcher(
             providerId = providerId,
             userAgent = currentBridgeUserAgent,
             bridgePageUrl = nativeUsageBridgePageUrl(),
             geminiRpcIds = geminiUsageRpcIds.toList(),
-            cookieHeaderForUrl = { url -> cookieHeaderForNativeUsage(url) }
-        ) { url -> nativeUsageRequestHeadersFor(url) }
+            cookieHeaderForUrl = { url -> cookieHeaderForNativeUsage(url) },
+            requestHeadersForUrl = { url -> nativeUsageRequestHeadersFor(url) },
+            fetchJson = ::fetchProviderNativeJson,
+        )
     }
+
+    private fun fetchProviderNativeJson(
+        requestProviderId: ProviderId,
+        url: String,
+        userAgent: String,
+        headers: Map<String, String>,
+    ): String {
+        if (exactLoginBinding == null) {
+            return ProviderNativeJsonBridge.fetchJson(requestProviderId, url, userAgent, headers)
+        }
+        val request = exactNativeJsonRequest(requestProviderId, url, userAgent, headers)
+            ?: return JSONObject().put("ok", false).put("error", "exact_profile_cookie_unavailable").toString()
+        return ProviderNativeJsonBridge.fetchJson(request)
+    }
+
+    private fun exactNativeJsonRequest(
+        requestProviderId: ProviderId,
+        url: String,
+        userAgent: String,
+        headers: Map<String, String>,
+    ): ProviderNativeJsonRequest? {
+        val binding = exactLoginBinding ?: return null
+        val lease = namedProfileLease
+        if (lease == null || binding.accountId != accountId || requestProviderId != accountId.providerId) {
+            exactLoginComposition?.coordinator?.fail(binding)
+            return null
+        }
+        return ProviderNativeJsonRequest(
+            requestProviderId,
+            url,
+            userAgent,
+            headers,
+            lease.cookieSource,
+        )
+    }
+
+    internal fun exactNativeRequestHeadersForTest(url: String): Map<String, String> =
+        ProviderNativeJsonBridge.assembledHeadersForTest(
+            requireNotNull(
+                exactNativeJsonRequest(
+                    accountId.providerId,
+                    url,
+                    currentBridgeUserAgent,
+                    nativeUsageRequestHeadersFor(url),
+                )
+            )
+        )
 
     private fun nativeUsageRequestHeadersFor(url: String): Map<String, String> {
         return when (providerId) {
@@ -1307,7 +1502,7 @@ open class WebLoginActivity : Activity() {
     private fun maybeStartCursorNativeCollection(view: WebView, url: String, reason: String): Boolean {        if (providerId != ProviderId.CURSOR || finished || cursorNativeCollectionStarted || url == "about:blank") return false
         if (!ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CURSOR, url)) return false
         cursorNativeCollectionStarted = true
-        CookieManager.getInstance().flush()
+        loginCookieManager().flush()
         collectorInjectionKeys.clear()
         noteBridgePageUrl("about:blank")
         Log.i("AIQuotaLogin", "provider=cursor nativeCollectorStart=aboutblank reason=$reason from=${hostOf(url)}${pathOf(url)}")
@@ -1318,7 +1513,7 @@ open class WebLoginActivity : Activity() {
 
     private fun maybeRedirectCodexToUsageAfterLogin(view: WebView, pageUrl: String, resourceUrl: String): Boolean {
         if (!shouldRedirectCodexToUsageAfterLogin(pageUrl, resourceUrl)) return false
-        CookieManager.getInstance().flush()
+        loginCookieManager().flush()
         captureDebugProviderSessionCookies("codex_post_login_redirect")
         codexPostLoginUsageRedirected = true
         collectorInjectionKeys.clear()
@@ -1369,8 +1564,8 @@ open class WebLoginActivity : Activity() {
     private fun hasCodexSessionCookies(url: String): Boolean {
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
         val origin = "${uri.scheme}://${uri.host}"
-        return !CookieManager.getInstance().getCookie(url).isNullOrBlank() ||
-            !CookieManager.getInstance().getCookie(origin).isNullOrBlank()
+        return !loginCookieManager().getCookie(url).isNullOrBlank() ||
+            !loginCookieManager().getCookie(origin).isNullOrBlank()
     }
 
     private fun isCodexAboutBlankNavigation(url: String): Boolean {
@@ -1395,7 +1590,7 @@ open class WebLoginActivity : Activity() {
     }
 
     private fun recoverCodexFromLocalAuthCallback(view: WebView, url: String) {
-        CookieManager.getInstance().flush()
+        loginCookieManager().flush()
         captureDebugProviderSessionCookies("codex_local_auth_callback")
         collectorInjectionKeys.clear()
         Log.i("AIQuotaLogin", "provider=codex localCallbackRecovered=true host=${hostOf(url)}")
@@ -1411,7 +1606,7 @@ open class WebLoginActivity : Activity() {
         val headers = request.requestHeaders.orEmpty()
         val authHeader = headerValue(headers, "Authorization")
         val exactCookieCount = GoogleWebSessionCodeAssistFetcher
-            .parseCookieHeader(CookieManager.getInstance().getCookie(request.url.toString()).orEmpty())
+            .parseCookieHeader(loginCookieManager().getCookie(request.url.toString()).orEmpty())
             .size
         val resourceMethod = uri.path.orEmpty().substringAfterLast(":").ifBlank { uri.path.orEmpty() }
         Log.i(
@@ -1618,6 +1813,7 @@ open class WebLoginActivity : Activity() {
     }
 
     private fun saveClaudeNativeRequestContext() {
+        if (exactLoginBinding != null) return
         val requestContext = ClaudeNativeHeaderStore.snapshotRequestContext(claudeNativeFetchHeaders)
         if (requestContext.isEmpty()) return
         ClaudeNativeRequestContextStore(applicationContext).save(requestContext)
@@ -1625,12 +1821,18 @@ open class WebLoginActivity : Activity() {
 
     private fun restoreClaudeNativeRequestContext() {
         if (providerId != ProviderId.CLAUDE) return
-        val restoredHeaders = ClaudeNativeRequestContextStore(applicationContext).restore()
+        val binding = exactLoginBinding
+        val restoredHeaders = if (binding != null) {
+            exactLoginComposition?.coordinator?.restore(binding).orEmpty()
+        } else {
+            ClaudeNativeRequestContextStore(applicationContext).restore()
+        }
         if (restoredHeaders.isEmpty()) return
         claudeNativeFetchHeaders.putAll(restoredHeaders)
     }
 
     private fun saveCodexNativeAuthContext() {
+        if (exactLoginBinding != null) return
         val authContext = CodexNativeHeaderStore.snapshotAuthContext(codexNativeFetchHeaders)
         if (authContext.isEmpty()) return
         CodexNativeAuthContextStore(applicationContext).save(authContext)
@@ -1638,7 +1840,12 @@ open class WebLoginActivity : Activity() {
 
     private fun restoreCodexNativeAuthContext() {
         if (providerId != ProviderId.CODEX) return
-        val restoredHeaders = CodexNativeAuthContextStore(applicationContext).restore()
+        val binding = exactLoginBinding
+        val restoredHeaders = if (binding != null) {
+            exactLoginComposition?.coordinator?.restore(binding).orEmpty()
+        } else {
+            CodexNativeAuthContextStore(applicationContext).restore()
+        }
         if (restoredHeaders.isEmpty()) return
         codexNativeFetchHeaders.putAll(restoredHeaders)
     }
@@ -1682,8 +1889,29 @@ open class WebLoginActivity : Activity() {
         source: String = ProviderUsageCollectionService.SOURCE_LOGIN
     ) {
         if (finished) return
+        val composition = exactLoginComposition
+        val binding = exactLoginBinding
+        if (composition != null && binding != null) {
+            val context = when (providerId) {
+                ProviderId.CODEX -> CodexNativeHeaderStore.snapshotAuthContext(codexNativeFetchHeaders)
+                ProviderId.CLAUDE -> ClaudeNativeHeaderStore.snapshotRequestContext(claudeNativeFetchHeaders)
+                else -> emptyMap()
+            }
+            when (composition.coordinator.complete(binding, context)) {
+                LoginCallbackResult.Accepted -> setExactLoginResult(EXACT_RESULT_SUCCESS)
+                LoginCallbackResult.Stale,
+                LoginCallbackResult.PersistenceFailed -> {
+                    composition.coordinator.fail(binding)
+                    setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
+                }
+            }
+            finished = true
+            loginCookieManager().flush()
+            finish()
+            return
+        }
         finished = true
-        CookieManager.getInstance().flush()
+        loginCookieManager().flush()
         captureDebugProviderSessionCookies("trusted_usage_payload", includeNativeAuthContext = true)
         ProviderUsageCollectionService.start(
             context = applicationContext,
@@ -1698,7 +1926,7 @@ open class WebLoginActivity : Activity() {
     private fun finishGlmNoSubscription(errorKind: String) {
         if (finished) return
         finished = true
-        CookieManager.getInstance().flush()
+        loginCookieManager().flush()
         captureDebugProviderSessionCookies("connected_without_plan")
         captureGlmWebSessionCookieHeader()
         val repository = LocalUsageRepository(applicationContext)
@@ -1714,6 +1942,10 @@ open class WebLoginActivity : Activity() {
 
     private fun finishConnectedWithoutUsage(message: String, errorKind: String) {
         if (finished) return
+        if (exactLoginBinding != null) {
+            finishSuccessfulLogin(null)
+            return
+        }
         if (isGoogleProvider()) {
             finishGoogleUsagePending(
                 "Provider session reached, but trusted usage payload was not available yet.",
@@ -1744,7 +1976,7 @@ open class WebLoginActivity : Activity() {
     }
 
     private fun markGoogleUsagePendingAndStartCollection(message: String, errorKind: String) {
-        CookieManager.getInstance().flush()
+        loginCookieManager().flush()
         captureDebugProviderSessionCookies("google_usage_pending")
         val repository = LocalUsageRepository(applicationContext)
         repository.markGoogleUsagePending(providerId, message)
@@ -1759,6 +1991,15 @@ open class WebLoginActivity : Activity() {
 
     private fun failKeepingPrevious(message: String, errorKind: String) {
         if (finished) return
+        val composition = exactLoginComposition
+        val binding = exactLoginBinding
+        if (composition != null && binding != null) {
+            composition.coordinator.fail(binding)
+            setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
+            finished = true
+            finish()
+            return
+        }
         if (shouldKeepGoogleLoginRetryPending(errorKind, message)) {
             finishGoogleUsagePending(
                 "Provider session reached, but trusted usage payload was not available yet.",
@@ -1799,6 +2040,7 @@ open class WebLoginActivity : Activity() {
 
     private fun captureDebugProviderSessionCookies(reason: String, includeNativeAuthContext: Boolean = false) {
         if (providerId == ProviderId.GEMINI) return
+        if (exactLoginBinding != null) return
         val nativeAuthContext = if (includeNativeAuthContext && providerId == ProviderId.CODEX) {
             CodexNativeHeaderStore.snapshotAuthContext(codexNativeFetchHeaders)
         } else {
@@ -1807,7 +2049,7 @@ open class WebLoginActivity : Activity() {
         DebugProviderSessionCookieStore.capture(
             applicationContext,
             providerId,
-            CookieManager.getInstance(),
+            loginCookieManager(),
             reason,
             nativeAuthContext = nativeAuthContext
         )
@@ -1817,7 +2059,7 @@ open class WebLoginActivity : Activity() {
         if (providerId != ProviderId.GLM) return null
         val cookieHeader = GoogleWebSessionCodeAssistFetcher.mergeCookieHeaders(
             GlmProviderUrls.WEB_COOKIE_URLS.map { url ->
-                runCatching { CookieManager.getInstance().getCookie(url) }.getOrNull()
+                runCatching { loginCookieManager().getCookie(url) }.getOrNull()
             }
         )
         val cookieCount = GoogleWebSessionCodeAssistFetcher.parseCookieHeader(cookieHeader).size
@@ -1844,7 +2086,7 @@ open class WebLoginActivity : Activity() {
         if (providerId == ProviderId.GLM && glmRetainedWebSessionCookieHeader.isNotBlank()) {
             return glmRetainedWebSessionCookieHeader
         }
-        return CookieManager.getInstance().getCookie(url)
+        return loginCookieManager().getCookie(url)
     }
 
     private fun glmNativeFetchHeadersFor(url: String): Map<String, String> {
@@ -1888,7 +2130,7 @@ open class WebLoginActivity : Activity() {
     }
 
     private fun cookiesFor(url: String): Map<String, String> {
-        return CookieManager.getInstance().getCookie(url)
+        return loginCookieManager().getCookie(url)
             ?.split(";")
             ?.mapNotNull { cookie ->
                 val parts = cookie.trim().split("=", limit = 2)
@@ -1983,7 +2225,16 @@ open class WebLoginActivity : Activity() {
 
     companion object {
         private const val EXTRA_PROVIDER_ID = "providerId"
+        const val EXTRA_PROVIDER_ACCOUNT_ID = "com.aiquota.mobile.extra.LOGIN_PROVIDER_ACCOUNT_ID"
+        const val EXTRA_EXACT_LOGIN_STATUS = "com.aiquota.mobile.extra.LOGIN_STATUS"
+        const val EXTRA_ACCOUNT_GENERATION = "com.aiquota.mobile.extra.LOGIN_GENERATION"
+        const val EXTRA_SESSION_REVISION = "com.aiquota.mobile.extra.LOGIN_SESSION_REVISION"
         private const val EXTRA_START_URL = "startUrl"
+        private const val STATE_EXACT_GENERATION = "exactGeneration"
+        private const val STATE_EXACT_SESSION_REVISION = "exactSessionRevision"
+        const val EXACT_RESULT_SUCCESS = "SUCCESS"
+        const val EXACT_RESULT_REAUTH_REQUIRED = "REAUTH_REQUIRED"
+        const val EXACT_RESULT_REJECTED = "REJECTED"
         private const val BRIDGE_NAME = "AIQuotaCollectorBridge"
         private const val CURSOR_NATIVE_FETCH_TIMEOUT_MS = 20_000
         private val ABOUT_BLANK_NATIVE_LOGIN_PROVIDERS = setOf(
@@ -2009,16 +2260,37 @@ open class WebLoginActivity : Activity() {
 
         fun createIntent(context: Context, providerId: ProviderId): Intent {
             val definition = ProviderDefinitionRegistry.definitionFor(providerId)
-            return createIntent(context, providerId, definition.loginStartUrl)
+            return createIntent(
+                context,
+                ProviderAccountId(providerId, com.aiquota.mobile.accounts.AccountKey.reservedDefault()),
+                definition.loginStartUrl,
+            )
         }
 
-        fun createIntent(context: Context, providerId: ProviderId, startUrl: String): Intent {
-            val loginActivityClass = when (providerId) {
+        fun createIntent(context: Context, providerId: ProviderId, startUrl: String): Intent =
+            createIntent(
+                context,
+                ProviderAccountId(providerId, com.aiquota.mobile.accounts.AccountKey.reservedDefault()),
+                startUrl,
+            )
+
+        fun createIntent(context: Context, accountId: ProviderAccountId): Intent {
+            val definition = ProviderDefinitionRegistry.definitionFor(accountId.providerId)
+            return createIntent(context, accountId, definition.loginStartUrl)
+        }
+
+        fun createIntent(
+            context: Context,
+            accountId: ProviderAccountId,
+            startUrl: String,
+        ): Intent {
+            val loginActivityClass = when (accountId.providerId) {
                 ProviderId.GLM -> GlmWebLoginActivity::class.java
                 else -> WebLoginActivity::class.java
             }
             return Intent(context, loginActivityClass)
-                .putExtra(EXTRA_PROVIDER_ID, providerId.storageId)
+                .putExtra(EXTRA_PROVIDER_ID, accountId.providerId.storageId)
+                .putExtra(EXTRA_PROVIDER_ACCOUNT_ID, ProviderAccountIdStorageCodec.encode(accountId))
                 .putExtra(EXTRA_START_URL, startUrl)
         }
 

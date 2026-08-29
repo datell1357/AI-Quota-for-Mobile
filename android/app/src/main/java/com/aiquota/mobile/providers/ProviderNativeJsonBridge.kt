@@ -2,6 +2,7 @@ package com.aiquota.mobile.providers
 
 import android.util.Log
 import android.webkit.CookieManager
+import com.aiquota.mobile.accounts.ExactProfileCookieSource
 import com.aiquota.mobile.local.ProviderId
 import java.net.HttpURLConnection
 import java.net.URI
@@ -10,6 +11,14 @@ import java.nio.charset.StandardCharsets
 import org.json.JSONArray
 import org.json.JSONObject
 import org.json.JSONTokener
+
+data class ProviderNativeJsonRequest(
+    val providerId: ProviderId,
+    val url: String,
+    val userAgent: String,
+    val requestHeaders: Map<String, String>,
+    val cookieSource: ExactProfileCookieSource,
+)
 
 object ProviderNativeJsonBridge {
     fun isAllowedJsonUrl(providerId: ProviderId, url: String): Boolean {
@@ -22,35 +31,30 @@ object ProviderNativeJsonBridge {
         url: String,
         userAgent: String = ProviderWebViewUserAgent.loginUserAgent(),
         requestHeaders: Map<String, String> = emptyMap()
-    ): String {
-        if (!isAllowedJsonUrl(providerId, url)) {
-            return wrappedError(url, "blocked_provider_json_endpoint").toString()
+    ): String = fetchJson(
+        ProviderNativeJsonRequest(
+            providerId,
+            url,
+            userAgent,
+            requestHeaders,
+            legacyGlobalCookieSource(),
+        )
+    )
+
+    fun fetchJson(request: ProviderNativeJsonRequest): String {
+        if (!isAllowedJsonUrl(request.providerId, request.url)) {
+            return wrappedError(request.url, "blocked_provider_json_endpoint").toString()
         }
-        val uri = runCatching { URI(url) }.getOrNull()
-            ?: return wrappedError(url, "invalid_url").toString()
+        val uri = runCatching { URI(request.url) }.getOrNull()
+            ?: return wrappedError(request.url, "invalid_url").toString()
         val origin = "${uri.scheme}://${uri.host}"
-        val requestUserAgent = userAgent.takeIf { it.isNotBlank() } ?: ProviderWebViewUserAgent.loginUserAgent()
+        val headers = assembledHeaders(request, origin)
         return runCatching {
-            val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+            val connection = (URL(request.url).openConnection() as HttpURLConnection).apply {
                 connectTimeout = NETWORK_TIMEOUT_MS
                 readTimeout = NETWORK_TIMEOUT_MS
                 requestMethod = "GET"
-                setRequestProperty("Accept", "application/json, text/html")
-                setRequestProperty("User-Agent", requestUserAgent)
-                setRequestProperty("Referer", "$origin/")
-                setRequestProperty("X-Requested-With", "XMLHttpRequest")
-                requestHeaders
-                    .filterKeys(::isForwardableHeader)
-                    .filterValues(String::isNotBlank)
-                    .forEach { (name, value) -> setRequestProperty(name, value) }
-                if (!requestHeaders.keys.any { it.equals("Cookie", ignoreCase = true) }) {
-                    firstNonBlankCookie(
-                        CookieManager.getInstance().getCookie(url),
-                        CookieManager.getInstance().getCookie(origin)
-                    )
-                        ?.takeIf(String::isNotBlank)
-                        ?.let { setRequestProperty("Cookie", it) }
-                }
+                headers.forEach { (name, value) -> setRequestProperty(name, value) }
             }
             val status = connection.responseCode
             val stream = if (status in 200..299) connection.inputStream else connection.errorStream
@@ -58,17 +62,17 @@ object ProviderNativeJsonBridge {
             connection.disconnect()
             Log.d(
                 TAG,
-                "nativeJson provider=${providerId.storageId} status=$status " +
+                "nativeJson provider=${request.providerId.storageId} status=$status " +
                     "url=${uri.host.orEmpty()}${uri.path.orEmpty()} cookieHost=${uri.host.orEmpty()}"
             )
-            wrappedResponse(url, status, text).toString()
+            wrappedResponse(request.url, status, text).toString()
         }.getOrElse { error ->
             Log.d(
                 TAG,
-                "nativeJson provider=${providerId.storageId} error=${error.javaClass.simpleName} " +
+                "nativeJson provider=${request.providerId.storageId} error=${error.javaClass.simpleName} " +
                     "url=${uri.host.orEmpty()}${uri.path.orEmpty()}"
             )
-            wrappedError(url, error.javaClass.simpleName).toString()
+            wrappedError(request.url, error.javaClass.simpleName).toString()
         }
     }
 
@@ -88,6 +92,40 @@ object ProviderNativeJsonBridge {
             .put("ok", false)
             .put("url", url)
             .put("error", error)
+    }
+
+    private fun assembledHeaders(
+        request: ProviderNativeJsonRequest,
+        origin: String,
+    ): Map<String, String> = buildMap {
+        put("Accept", "application/json, text/html")
+        put(
+            "User-Agent",
+            request.userAgent.takeIf(String::isNotBlank) ?: ProviderWebViewUserAgent.loginUserAgent(),
+        )
+        put("Referer", "$origin/")
+        put("X-Requested-With", "XMLHttpRequest")
+        request.requestHeaders
+            .filterKeys(::isForwardableHeader)
+            .filterValues(String::isNotBlank)
+            .forEach(::put)
+        if (keys.none { it.equals("Cookie", ignoreCase = true) }) {
+            request.cookieSource.cookieHeader(request.url, origin)
+                ?.takeIf(String::isNotBlank)
+                ?.let { put("Cookie", it) }
+        }
+    }
+
+    internal fun assembledHeadersForTest(request: ProviderNativeJsonRequest): Map<String, String> {
+        val uri = requireNotNull(runCatching { URI(request.url) }.getOrNull())
+        return assembledHeaders(request, "${uri.scheme}://${uri.host}")
+    }
+
+    internal fun legacyGlobalCookieSource() = ExactProfileCookieSource { requestUrl, origin ->
+        firstNonBlankCookie(
+            CookieManager.getInstance().getCookie(requestUrl),
+            CookieManager.getInstance().getCookie(origin),
+        )
     }
 
     private fun isForwardableHeader(name: String): Boolean {
