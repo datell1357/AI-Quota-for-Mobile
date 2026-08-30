@@ -7,6 +7,8 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.Message
 import android.os.SystemClock
 import android.util.Log
@@ -281,10 +283,9 @@ open class WebLoginActivity : Activity() {
         popupViews.toList().forEach(::destroyPopupWindow)
         val lease = namedProfileLease
         val composition = exactLoginComposition
-        if (lease != null && !mainWebViewDestroyed) {
-            lease.closeAcknowledged { composition?.close() }
-            namedProfileLease = null
-            exactLoginComposition = null
+        if (lease != null) {
+            if (!finished) lease.markPersistenceReady()
+            closeExactLeaseAndComposition(lease, composition, finishAfterClose = false)
         } else {
             if (::webView.isInitialized && !mainWebViewDestroyed) webView.destroy()
             composition?.close()
@@ -1905,6 +1906,7 @@ open class WebLoginActivity : Activity() {
             when (composition.coordinator.complete(binding, context)) {
                 LoginCallbackResult.Accepted -> {
                     if (publishExactLoginSnapshot(binding, rawPayload)) {
+                        namedProfileLease?.markPersistenceReady()
                         setExactLoginResult(EXACT_RESULT_SUCCESS)
                     } else {
                         composition.coordinator.fail(binding)
@@ -1946,20 +1948,48 @@ open class WebLoginActivity : Activity() {
             finish()
             return
         }
+        closeExactLeaseAndComposition(lease, composition, finishAfterClose = true, binding = binding)
+    }
+
+    private fun closeExactLeaseAndComposition(
+        lease: NamedProfileLease,
+        composition: AndroidExactAccountLoginComposition?,
+        finishAfterClose: Boolean,
+        binding: AccountLoginSessionBinding? = null,
+        attempt: Int = 0,
+    ) {
         lease.closeAcknowledged { result ->
             when (result) {
                 LeaseCloseResult.Closed,
                 LeaseCloseResult.AlreadyClosed -> {
-                    namedProfileLease = null
-                    exactLoginComposition = null
-                    composition.close()
-                    finish()
+                    if (namedProfileLease === lease) namedProfileLease = null
+                    if (composition != null && exactLoginComposition === composition) {
+                        exactLoginComposition = null
+                        composition.close()
+                    }
+                    if (finishAfterClose && binding != null) finish()
                 }
                 LeaseCloseResult.AlreadyClosing,
                 is LeaseCloseResult.RetryableFailure -> {
-                    composition.coordinator.fail(binding)
-                    setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
-                    finish()
+                    if (attempt < EXACT_LEASE_CLOSE_MAX_RETRIES) {
+                        Handler(Looper.getMainLooper()).postDelayed(
+                            {
+                                closeExactLeaseAndComposition(
+                                    lease,
+                                    composition,
+                                    finishAfterClose,
+                                    binding,
+                                    attempt + 1,
+                                )
+                            },
+                            EXACT_LEASE_CLOSE_RETRY_DELAY_MS,
+                        )
+                    } else {
+                        Log.w(
+                            "AIQuotaLogin",
+                            "provider=${providerId.storageId} exactLeaseClosePending=true",
+                        )
+                    }
                 }
             }
         }
@@ -2308,6 +2338,8 @@ open class WebLoginActivity : Activity() {
         const val EXACT_RESULT_REJECTED = "REJECTED"
         private const val BRIDGE_NAME = "AIQuotaCollectorBridge"
         private const val CURSOR_NATIVE_FETCH_TIMEOUT_MS = 20_000
+        private const val EXACT_LEASE_CLOSE_MAX_RETRIES = 3
+        private const val EXACT_LEASE_CLOSE_RETRY_DELAY_MS = 100L
         private val ABOUT_BLANK_NATIVE_LOGIN_PROVIDERS = setOf(
             ProviderId.GROK,
             ProviderId.KIMI,

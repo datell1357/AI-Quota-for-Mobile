@@ -47,6 +47,7 @@ import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import java.time.Instant
@@ -114,6 +115,7 @@ class ProviderBackgroundRefreshService : Service() {
     private lateinit var repository: LocalUsageRepository
     private var running = false
     private var refreshInProgress = false
+    private var refreshCycleJob: Job? = null
     private var tickScheduled = false
     private var nextRequestId = 0L
     private var activeWebJob: ServiceWebRefreshJob? = null
@@ -155,14 +157,22 @@ class ProviderBackgroundRefreshService : Service() {
     private val tickRunnable = Runnable {
         tickScheduled = false
         if (!running) return@Runnable
-        serviceScope.launch {
+        refreshCycleJob = serviceScope.launch {
             val startedAt = System.currentTimeMillis()
-            runRefreshCycle()
-            val elapsedMillis = System.currentTimeMillis() - startedAt
-            val nextDelayMillis = if (hasPendingManualRefresh()) 0L else {
-                ProviderRefreshPlan.nextAutoRefreshDelayMillis(elapsedMillis)
+            try {
+                runRefreshCycleResiliently(
+                    runCycle = ::runRefreshCycle,
+                    isRunning = { running },
+                    hasPendingManualRefresh = ::hasPendingManualRefresh,
+                    elapsedMillis = { System.currentTimeMillis() - startedAt },
+                    schedule = ::scheduleNextTick,
+                    onFailure = { error ->
+                        Log.e(TAG, "refreshCycleFailed=${error::class.java.simpleName}")
+                    },
+                )
+            } finally {
+                refreshCycleJob = null
             }
-            scheduleNextTick(nextDelayMillis)
         }
     }
 
@@ -196,9 +206,14 @@ class ProviderBackgroundRefreshService : Service() {
         unregisterNetworkCallback()
         unregisterSessionResetReceiver()
         stopRefreshLoop()
-        exactRefreshCoordinator?.close()
-        exactRefreshCoordinator = null
-        serviceScope.cancel()
+        val activeCycle = refreshCycleJob
+        serviceScope.launch {
+            closeAfterRefreshCycle(activeCycle) {
+                exactRefreshCoordinator?.close()
+                exactRefreshCoordinator = null
+            }
+            serviceScope.cancel()
+        }
         super.onDestroy()
     }
 
@@ -250,7 +265,6 @@ class ProviderBackgroundRefreshService : Service() {
             }
             ProviderServiceIntentTarget.Rejected -> {
                 pendingManualProviderId = null
-                pendingExactManualRefreshes.clear()
                 WidgetRefreshFeedback.clearWidgetRefresh(applicationContext, pendingManualWidgetId)
                 pendingManualWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
                 return
@@ -478,20 +492,28 @@ class ProviderBackgroundRefreshService : Service() {
                     attempt,
                     coordinator,
                 ) { onTimeout ->
-                    try {
-                        coordinator.withExactCollectorOperation(attempt) { operation ->
-                            collectWebProviderUsage(
-                                attempt.job,
-                                automaticRefresh = manualAccountId == null,
-                                onTimeout = onTimeout,
-                                exactOperation = operation,
+                    if (exactHiddenCollectionNeedsNamedProfile(attempt.accountId.providerId)) {
+                        try {
+                            coordinator.withExactCollectorOperation(attempt) { operation ->
+                                collectWebProviderUsage(
+                                    attempt.job,
+                                    automaticRefresh = manualAccountId == null,
+                                    onTimeout = onTimeout,
+                                    exactOperation = operation,
+                                )
+                            }
+                        } catch (error: ExactProviderCollectorUnavailable) {
+                            ServiceRefreshOutcome.Failure(
+                                ProviderRefreshFailure.interactiveAuthRequired(
+                                    "Exact account Profile lease is unavailable (${error.message.orEmpty()})."
+                                )
                             )
                         }
-                    } catch (error: ExactProviderCollectorUnavailable) {
-                        ServiceRefreshOutcome.Failure(
-                            ProviderRefreshFailure.interactiveAuthRequired(
-                                "Exact account Profile lease is unavailable (${error.message.orEmpty()})."
-                            )
+                    } else {
+                        collectWebProviderUsage(
+                            attempt.job,
+                            automaticRefresh = manualAccountId == null,
+                            onTimeout = onTimeout,
                         )
                     }
                 }.also { exactDispatch = it }.outcome
@@ -1728,7 +1750,7 @@ class ProviderBackgroundRefreshService : Service() {
             if (!isNativeFetchBridgePageAllowed(ownerProviderId)) {
                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
             }
-            val active = currentWebJobFor(ownerAccountId)
+            val active = activeJob()
                 ?: return JSONObject().put("ok", false).put("error", "no_active_refresh_job").toString()
             val headers = requestHeadersForJob(active, url)
             return fetchProviderJsonForJob(active, url, collectorUserAgent, headers)
@@ -1742,7 +1764,7 @@ class ProviderBackgroundRefreshService : Service() {
             if (!isNativeFetchBridgePageAllowed(ownerProviderId)) {
                 return JSONObject().put("ok", false).put("error", "blocked_bridge_page").toString()
             }
-            val active = currentWebJobFor(ownerAccountId)
+            val active = activeJob()
                 ?: return JSONObject().put("ok", false).put("error", "no_active_refresh_job").toString()
             return ProviderNativeUsagePayloadFetcher.bridgeUsagePayloadWithFetcher(
                 providerId = ownerProviderId,
@@ -1771,7 +1793,7 @@ class ProviderBackgroundRefreshService : Service() {
         }
 
         private fun isNativeFetchBridgePageAllowed(providerId: ProviderId): Boolean {
-            val active = currentWebJobFor(ownerAccountId) ?: return false
+            val active = activeJob() ?: return false
             if (active.job.providerId != providerId) return false
             val pageUrl = webJobLastUrls[active.requestId].orEmpty().ifBlank { active.job.startUrl }
             return ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, pageUrl)

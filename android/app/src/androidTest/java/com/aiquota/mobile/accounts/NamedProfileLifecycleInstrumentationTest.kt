@@ -249,6 +249,7 @@ private fun verifySameRunWalIsolation(reverse: Boolean) {
                 scenario.onActivity { activity ->
                     row = manager.ensureBinding(id)
                     lease = manager.acquire(id)
+                    lease.markPersistenceReady()
                     fixture =
                         WalFixture(
                             lease.requireAndroidWebView(),
@@ -260,6 +261,7 @@ private fun verifySameRunWalIsolation(reverse: Boolean) {
                     lease.requireAndroidWebView().post(fixture::start)
                 }
                 fixture.awaitInitialized()
+                scenario.onActivity { lease.markPersistenceReady() }
                 val after = LevelDbWalCertification.currentProfileDirectories(appWebView)
                 mapped[id] =
                     LevelDbWalCertification.mapCreatedProfile(
@@ -288,6 +290,7 @@ private fun verifySameRunWalIsolation(reverse: Boolean) {
                 lateinit var fixture: WalFixture
                 scenario.onActivity { activity ->
                     lease = manager.acquire(id)
+                    lease.markPersistenceReady()
                     fixture =
                         WalFixture(
                             lease.requireAndroidWebView(),
@@ -301,6 +304,7 @@ private fun verifySameRunWalIsolation(reverse: Boolean) {
                     lease.requireAndroidWebView().post(fixture::start)
                 }
                 fixture.awaitInitialized()
+                scenario.onActivity { lease.markPersistenceReady() }
                 LevelDbWalCertification.arm(
                         mapped.getValue(id),
                         mapped.getValue(sibling),
@@ -533,6 +537,7 @@ private fun verifyDefaultAndBinding() {
                     )
                 val row = manager.ensureBinding(D)
                 lease = manager.acquire(D)
+                lease.markPersistenceReady()
                 val webView = lease.requireAndroidWebView()
                 assertEquals(row.profileName.storageValue(), WebViewCompat.getProfile(webView).name)
                 webView.webViewClient =
@@ -637,6 +642,7 @@ private fun verifyMissingProfileRequiresExactReauth() {
                         )
                     val siblingBinding = manager.ensureBinding(A)
                     siblingLease = manager.acquire(A)
+                    siblingLease.markPersistenceReady()
                     seeded =
                         Fixture(
                             siblingLease.requireAndroidWebView(),
@@ -700,6 +706,7 @@ private fun verifyMissingProfileRequiresExactReauth() {
                 val readClosed = CountDownLatch(1)
                 scenario.onActivity { activity ->
                     siblingLease = manager.acquire(A)
+                    siblingLease.markPersistenceReady()
                     val siblingBinding = requireNotNull(manager.binding(A))
                     siblingRead =
                         Fixture(
@@ -799,6 +806,7 @@ private fun verifyProductionCatalog(reverse: Boolean) {
                     NamedProfileLifecycleManager(store, AndroidXNamedProfilePlatform(activity))
                 val row = manager.ensureBinding(selected)
                 lease = manager.acquire(selected)
+                lease.markPersistenceReady()
                 assertEquals(1, manager.liveLeaseCount(selected))
                 assertEquals(baseline.get() + 1, ProfileStore.getInstance().allProfileNames.size)
                 val selectedWebView = lease.requireAndroidWebView()
@@ -1081,6 +1089,7 @@ private fun phase1(
                 ra = m.ensureBinding(A)
                 rb = m.ensureBinding(B)
                 la = m.acquire(A)
+                la.markPersistenceReady()
                 fa =
                     Fixture(
                         la.requireAndroidWebView(),
@@ -1095,6 +1104,7 @@ private fun phase1(
             val sa = fa.await()
             scenario.onActivity { a ->
                 lb = m.acquire(B)
+                lb.markPersistenceReady()
                 fb =
                     Fixture(
                         lb.requireAndroidWebView(),
@@ -1206,6 +1216,7 @@ private fun readPhase(
             scenario.onActivity { a ->
                 erasedFixture.destroy()
                 survivorLease = m.acquire(survivor)
+                survivorLease.markPersistenceReady()
                 val marker = markers.getValue(survivor)
                 survivorFixture =
                     Fixture(

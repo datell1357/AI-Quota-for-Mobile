@@ -55,6 +55,31 @@ class NamedProfileLifecycleManagerTest {
     }
 
     @Test
+    fun `three managers share leases before resumed erasure`() {
+        val store = InMemoryNamedProfileLifecycleStore()
+        val platform = FakePlatform()
+        val leaseOwner = manager(store, platform)
+        val deletionOwner = manager(store, platform)
+        val resumeOwner = manager(store, platform)
+        val accountId = id(1)
+
+        leaseOwner.ensureBinding(accountId)
+        val lease = leaseOwner.acquire(accountId)
+        assertEquals(ErasureRequestResult.ERASURE_PENDING, deletionOwner.requestErasure(accountId))
+
+        assertEquals(1, resumeOwner.resumePendingErasures { _, _ -> })
+        assertEquals(0, platform.eraseCount)
+
+        lease.close()
+
+        assertEquals(1, platform.eraseCount)
+        assertEquals(
+            ProfileLifecycleState.DATA_ERASURE_COMPLETED_CONTAINER_RETAINED,
+            store.read(accountId)?.state,
+        )
+    }
+
+    @Test
     fun `pending crash resumes idempotently and terminal never leases or reuses`() {
         val p = FakePlatform()
         val s = InMemoryNamedProfileLifecycleStore()

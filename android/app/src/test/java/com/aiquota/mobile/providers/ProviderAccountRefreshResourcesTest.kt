@@ -1,12 +1,15 @@
 package com.aiquota.mobile.providers
 
 import com.aiquota.mobile.accounts.AccountKey
+import com.aiquota.mobile.accounts.LeaseCloseResult
 import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.local.ProviderId
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
@@ -18,6 +21,55 @@ import org.junit.Test
 
 class ProviderAccountRefreshResourcesTest {
     @Test
+    fun serviceShutdownClosesStoreOnlyAfterActiveCycleCleanup() = runBlocking {
+        val events = mutableListOf<String>()
+        val activeCycle = launch(start = CoroutineStart.UNDISPATCHED) {
+            try {
+                awaitCancellation()
+            } finally {
+                events += "lease-closed"
+            }
+        }
+
+        closeAfterRefreshCycle(activeCycle) { events += "store-closed" }
+
+        assertEquals(listOf("lease-closed", "store-closed"), events)
+    }
+
+    @Test
+    fun failedCycleSchedulesQueuedManualWorkImmediately() = runBlocking {
+        val scheduled = mutableListOf<Long>()
+        val failure = InjectedAuthorityFault()
+
+        runRefreshCycleResiliently(
+            runCycle = { throw failure },
+            isRunning = { true },
+            hasPendingManualRefresh = { true },
+            elapsedMillis = { 25L },
+            schedule = scheduled::add,
+            onFailure = { assertSame(failure, it) },
+        )
+
+        assertEquals(listOf(0L), scheduled)
+    }
+
+    @Test
+    fun exactLeaseCloseRetriesTransientQuiesceFailure() = runBlocking {
+        val results = ArrayDeque<LeaseCloseResult>().apply {
+            addLast(LeaseCloseResult.RetryableFailure("renderer"))
+            addLast(LeaseCloseResult.Closed)
+        }
+        var attempts = 0
+
+        closeExactLeaseWithRetry { callback ->
+            attempts++
+            callback(results.removeFirst())
+        }
+
+        assertEquals(2, attempts)
+    }
+
+    @Test
     fun exactManualRefreshQueuePreservesDistinctPendingAccountsAndWidgetTargets() {
         val queue = ExactManualRefreshQueue()
         val first = account(1)
@@ -28,6 +80,19 @@ class ProviderAccountRefreshResourcesTest {
 
         assertEquals(ExactManualRefreshRequest(first, 101), queue.poll())
         assertEquals(ExactManualRefreshRequest(second, 202), queue.poll())
+        assertNull(queue.poll())
+    }
+
+    @Test
+    fun exactManualRefreshQueuePreservesEveryWidgetTargetForTheSameAccount() {
+        val queue = ExactManualRefreshQueue()
+        val account = account(1)
+
+        queue.enqueue(account, 101)
+        queue.enqueue(account, 202)
+
+        assertEquals(ExactManualRefreshRequest(account, 101), queue.poll())
+        assertEquals(ExactManualRefreshRequest(account, 202), queue.poll())
         assertNull(queue.poll())
     }
 

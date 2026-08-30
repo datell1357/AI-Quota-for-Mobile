@@ -12,7 +12,6 @@ import com.aiquota.mobile.accounts.AndroidNamedProfileLifecycleStore
 import com.aiquota.mobile.accounts.AndroidXNamedProfilePlatform
 import com.aiquota.mobile.accounts.MainProcessAccountAuthority
 import com.aiquota.mobile.accounts.LeaseAcquireResult
-import com.aiquota.mobile.accounts.LeaseCloseResult
 import com.aiquota.mobile.accounts.NamedProfileLease
 import com.aiquota.mobile.accounts.NamedProfileLifecycleManager
 import com.aiquota.mobile.accounts.ProfileLifecycleState
@@ -24,11 +23,8 @@ import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderUsageSnapshot
 import android.webkit.WebView
 import java.security.SecureRandom
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 
 internal class AndroidProviderAccountRefreshCoordinator(
@@ -115,9 +111,15 @@ internal class AndroidProviderAccountRefreshCoordinator(
     fun reset() = scheduler.resetCycle()
 
     override fun close() {
-        scheduler.resetCycle()
-        profileStore.close()
-        authority.close()
+        try {
+            scheduler.resetCycle()
+        } finally {
+            try {
+                profileStore.close()
+            } finally {
+                authority.close()
+            }
+        }
     }
 
     private fun cards(
@@ -170,20 +172,7 @@ internal class AndroidProviderAccountRefreshCoordinator(
 
     private suspend fun closeExactLease(lease: NamedProfileLease) {
         withContext(NonCancellable + Dispatchers.Main.immediate) {
-            suspendCancellableCoroutine<Unit> { continuation ->
-                lease.closeAcknowledged { result ->
-                    when (result) {
-                        LeaseCloseResult.Closed,
-                        LeaseCloseResult.AlreadyClosed -> continuation.resume(Unit)
-                        LeaseCloseResult.AlreadyClosing -> continuation.resumeWithException(
-                            ExactProviderCollectorUnavailable("PROFILE_ALREADY_CLOSING")
-                        )
-                        is LeaseCloseResult.RetryableFailure -> continuation.resumeWithException(
-                            ExactProviderCollectorUnavailable("PROFILE_CLOSE_FAILED:${result.reason}")
-                        )
-                    }
-                }
-            }
+            closeExactLeaseWithRetry(close = lease::closeAcknowledged)
         }
     }
 

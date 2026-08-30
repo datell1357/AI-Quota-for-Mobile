@@ -262,6 +262,8 @@ interface NamedProfileSessionResource {
     val webStorage: Any
     val serviceWorkerController: Any
 
+    fun markPersistenceReady() = Unit
+
     fun quiesce(callback: (SessionQuiesceResult) -> Unit)
 
     fun destroy()
@@ -340,6 +342,8 @@ internal constructor(
 
     val serviceWorkerController
         get() = resource.serviceWorkerController
+
+    fun markPersistenceReady() = resource.markPersistenceReady()
 
     internal fun beginClose(): LeaseCloseResult? =
         when (state) {
@@ -469,7 +473,12 @@ class NamedProfileLifecycleManager(
         onResult: (ProviderAccountId, ProfileDataErasureResult) -> Unit
     ): Int = mutate {
         val p = store.readAll().filter { it.state == ProfileLifecycleState.ERASURE_PENDING }
-        p.forEach { x -> startErase(x.accountId) { r -> onResult(x.accountId, r) } }
+        p.forEach { x ->
+            pendingCallbacks.getOrPut(x.accountId, ::mutableListOf).add { r ->
+                onResult(x.accountId, r)
+            }
+            if (leases[x.accountId].isNullOrEmpty()) startErase(x.accountId)
+        }
         p.size
     }
 
@@ -519,12 +528,13 @@ class NamedProfileLifecycleManager(
         }
     }
 
-    private fun startErase(id: ProviderAccountId, done: (ProfileDataErasureResult) -> Unit = {}) {
-        if (!erasing.add(id)) return
+    private fun startErase(id: ProviderAccountId) {
+        if (!leases[id].isNullOrEmpty() || !erasing.add(id)) return
         val c = platform.probeCapability()
         if (c !is NamedProfileCapability.Supported) {
             erasing.remove(id)
-            done(ProfileDataErasureResult.Failed("UNSUPPORTED"))
+            val callbacks = pendingCallbacks.remove(id).orEmpty()
+            callbacks.forEach { it(ProfileDataErasureResult.Failed("UNSUPPORTED")) }
             return
         }
         val row = requireNotNull(store.read(id))
@@ -537,7 +547,6 @@ class NamedProfileLifecycleManager(
             }
             val callbacks = pendingCallbacks.remove(id).orEmpty()
             callbacks.forEach { it(r) }
-            done(r)
         }
     }
 

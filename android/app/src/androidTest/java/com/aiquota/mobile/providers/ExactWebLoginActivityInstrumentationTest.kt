@@ -119,9 +119,6 @@ class ExactWebLoginActivityInstrumentationTest {
         ActivityScenario.launch<WebLoginActivity>(fixture.intent()).use { scenario ->
             scenario.onActivity { activity ->
                 before = requireNotNull(activity.exactBindingForTest())
-                activity.mainWebViewForTest().evaluateJavascript(
-                    "window.__AIQ_PROFILE_PERSISTENCE_READY__=true"
-                ) {}
             }
             scenario.recreate()
             scenario.onActivity { activity ->
@@ -400,6 +397,6 @@ class ExactWebLoginActivityInstrumentationTest {
         const val SYNTHETIC_URL = "https://appassets.androidplatform.net/task14-correction/page.html"
         const val CODEX_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage"
         const val IDLE_URL = "data:text/html,<html><body>task14-idle</body></html>"
-        const val HTML = "<!doctype html><script>window.__AIQ_PROFILE_PERSISTENCE_READY__=true</script>task14"
+        const val HTML = "<!doctype html>task14"
     }
 }

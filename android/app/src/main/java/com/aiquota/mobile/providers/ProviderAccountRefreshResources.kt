@@ -2,14 +2,20 @@ package com.aiquota.mobile.providers
 
 import com.aiquota.mobile.accounts.AccountKey
 import com.aiquota.mobile.accounts.AccountLoginSessionBinding
+import com.aiquota.mobile.accounts.LeaseCloseResult
 import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
 import com.aiquota.mobile.local.ProviderId
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 data class ExactProviderCollectorResources<W : Any, L : Any>(
     val binding: AccountLoginSessionBinding,
@@ -44,17 +50,13 @@ internal data class ExactManualRefreshRequest(
 )
 
 internal class ExactManualRefreshQueue {
-    private val requests = linkedMapOf<ProviderAccountId, Int>()
+    private val requests = ArrayDeque<ExactManualRefreshRequest>()
 
     fun enqueue(accountId: ProviderAccountId, widgetId: Int) {
-        requests[accountId] = widgetId
+        requests.addLast(ExactManualRefreshRequest(accountId, widgetId))
     }
 
-    fun poll(): ExactManualRefreshRequest? {
-        val entry = requests.entries.firstOrNull() ?: return null
-        requests.remove(entry.key)
-        return ExactManualRefreshRequest(entry.key, entry.value)
-    }
+    fun poll(): ExactManualRefreshRequest? = requests.removeFirstOrNull()
 
     fun clear() = requests.clear()
 
@@ -62,6 +64,59 @@ internal class ExactManualRefreshQueue {
 }
 
 internal class ExactProviderCollectorUnavailable(reason: String) : IllegalStateException(reason)
+
+internal fun exactHiddenCollectionNeedsNamedProfile(providerId: ProviderId): Boolean =
+    providerId in NAMED_PROFILE_PROVIDERS
+
+internal suspend fun closeAfterRefreshCycle(activeCycle: Job?, close: () -> Unit) {
+    activeCycle?.cancelAndJoin()
+    close()
+}
+
+internal suspend fun closeExactLeaseWithRetry(
+    maxAttempts: Int = 3,
+    close: ((LeaseCloseResult) -> Unit) -> Unit,
+) {
+    require(maxAttempts > 0)
+    repeat(maxAttempts) { attempt ->
+        val result = suspendCancellableCoroutine<LeaseCloseResult> { continuation ->
+            close(continuation::resume)
+        }
+        when (result) {
+            LeaseCloseResult.Closed,
+            LeaseCloseResult.AlreadyClosed -> return
+            LeaseCloseResult.AlreadyClosing ->
+                throw ExactProviderCollectorUnavailable("PROFILE_ALREADY_CLOSING")
+            is LeaseCloseResult.RetryableFailure -> if (attempt == maxAttempts - 1) {
+                throw ExactProviderCollectorUnavailable("PROFILE_CLOSE_FAILED:${result.reason}")
+            }
+        }
+    }
+}
+
+internal suspend fun runRefreshCycleResiliently(
+    runCycle: suspend () -> Unit,
+    isRunning: () -> Boolean,
+    hasPendingManualRefresh: () -> Boolean,
+    elapsedMillis: () -> Long,
+    schedule: (Long) -> Unit,
+    onFailure: (Throwable) -> Unit,
+) {
+    try {
+        runCycle()
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (error: Throwable) {
+        onFailure(error)
+    } finally {
+        if (isRunning()) {
+            val delayMillis = if (hasPendingManualRefresh()) 0L else {
+                ProviderRefreshPlan.nextAutoRefreshDelayMillis(elapsedMillis())
+            }
+            schedule(delayMillis)
+        }
+    }
+}
 
 internal fun persistReauthenticationThenCancel(
     persist: () -> Unit,

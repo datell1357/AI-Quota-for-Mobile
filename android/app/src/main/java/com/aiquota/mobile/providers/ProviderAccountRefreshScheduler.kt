@@ -170,12 +170,16 @@ class ProviderAccountRefreshScheduler(
     }
 
     fun resetCycle() {
-        active?.let { authority.abandon(it.lease, requeue = false) }
-        active = null
-        queued.clear()
-        attemptsInBatch = 0
-        pendingCards.clear()
-        pendingExactTarget = null
+        val current = active
+        try {
+            current?.let { authority.abandon(it.lease, requeue = false) }
+        } finally {
+            active = null
+            queued.clear()
+            attemptsInBatch = 0
+            pendingCards.clear()
+            pendingExactTarget = null
+        }
     }
 
     private fun fairBatch(cards: List<ProviderRefreshCard>): List<ProviderRefreshCard> {

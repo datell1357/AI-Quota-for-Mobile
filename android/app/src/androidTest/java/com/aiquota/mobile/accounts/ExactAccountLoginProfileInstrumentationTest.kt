@@ -73,6 +73,8 @@ class ExactAccountLoginProfileInstrumentationTest {
 
             scenario.onActivity {
                 bPopup.destroy()
+                aLease.markPersistenceReady()
+                bLease.markPersistenceReady()
                 aLease.closeAcknowledged { result ->
                     closeResults[0] = result
                     closes.countDown()
@@ -117,7 +119,7 @@ class ExactAccountLoginProfileInstrumentationTest {
         val B = id(2)
         const val URL = "https://appassets.androidplatform.net/task14/page.html"
         const val TIMEOUT = 20L
-        const val HTML = "<!doctype html><script>window.__AIQ_PROFILE_PERSISTENCE_READY__=true</script>task14"
+        const val HTML = "<!doctype html>task14"
 
         fun id(value: Int) = ProviderAccountId(
             ProviderId.CODEX,

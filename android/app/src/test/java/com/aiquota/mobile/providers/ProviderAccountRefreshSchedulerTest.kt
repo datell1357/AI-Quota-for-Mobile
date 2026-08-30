@@ -28,6 +28,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class ProviderAccountRefreshSchedulerTest {
@@ -295,6 +296,21 @@ class ProviderAccountRefreshSchedulerTest {
         )
     }
 
+    @Test
+    fun resetClearsSchedulerStateEvenWhenAuthorityAbandonThrows() {
+        val first = card(id(ProviderId.CLAUDE, 1), 0)
+        val second = card(id(ProviderId.CODEX, 2), 1)
+        val authority = FakeAttemptAuthority(listOf(first, second))
+        val scheduler = scheduler(authority, MemoryCursor())
+        scheduler.trigger(listOf(first))
+        authority.abandonFailure = IllegalStateException("injected abandon failure")
+
+        assertThrows(IllegalStateException::class.java) { scheduler.resetCycle() }
+
+        val next = scheduler.trigger(listOf(second)) as ProviderRefreshTriggerResult.Launched
+        assertEquals(second.accountId, next.attempt.accountId)
+    }
+
     private fun scheduler(
         authority: FakeAttemptAuthority,
         cursor: MemoryCursor,
@@ -342,6 +358,7 @@ private class FakeAttemptAuthority(
     var beginCount = 0
     var activeCount = 0
     var maxActiveCount = 0
+    var abandonFailure: Throwable? = null
 
     override fun begin(card: ProviderRefreshCard, nonce: AttemptNonce): AttemptLease? {
         val current = accounts[card.accountId] ?: return null
@@ -377,6 +394,10 @@ private class FakeAttemptAuthority(
         if (active[lease.accountId] != lease) return false
         active.remove(lease.accountId)
         activeCount--
+        abandonFailure?.let { failure ->
+            abandonFailure = null
+            throw failure
+        }
         abandoned += lease.accountId to requeue
         events?.add("abandon:${ProviderAccountIdStorageCodec.encode(lease.accountId)}:$requeue")
         return true
