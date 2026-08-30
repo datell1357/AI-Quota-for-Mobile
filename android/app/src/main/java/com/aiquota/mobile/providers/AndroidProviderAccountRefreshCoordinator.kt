@@ -172,7 +172,10 @@ internal class AndroidProviderAccountRefreshCoordinator(
 
     private suspend fun closeExactLease(lease: NamedProfileLease) {
         withContext(NonCancellable + Dispatchers.Main.immediate) {
-            closeExactLeaseWithRetry(close = lease::closeAcknowledged)
+            closeExactLeaseWithRetry(
+                close = lease::closeAcknowledged,
+                abort = lease::abortAcknowledged,
+            )
         }
     }
 

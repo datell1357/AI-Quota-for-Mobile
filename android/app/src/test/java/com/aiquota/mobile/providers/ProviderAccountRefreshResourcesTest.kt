@@ -70,6 +70,33 @@ class ProviderAccountRefreshResourcesTest {
     }
 
     @Test
+    fun exactLeaseCloseAbortsAfterPersistentQuiesceFailure() = runBlocking {
+        var closeAttempts = 0
+        var abortAttempts = 0
+        var failed = false
+
+        try {
+            closeExactLeaseWithRetry(
+                close = { callback ->
+                    closeAttempts++
+                    callback(LeaseCloseResult.RetryableFailure("renderer"))
+                },
+                abort = { callback ->
+                    abortAttempts++
+                    callback(LeaseCloseResult.Closed)
+                },
+            )
+        } catch (error: ExactProviderCollectorUnavailable) {
+            failed = true
+            assertEquals("PROFILE_CLOSE_FAILED:renderer", error.message)
+        }
+
+        assertTrue(failed)
+        assertEquals(3, closeAttempts)
+        assertEquals(1, abortAttempts)
+    }
+
+    @Test
     fun exactManualRefreshQueuePreservesDistinctPendingAccountsAndWidgetTargets() {
         val queue = ExactManualRefreshQueue()
         val first = account(1)
@@ -94,6 +121,19 @@ class ProviderAccountRefreshResourcesTest {
         assertEquals(ExactManualRefreshRequest(account, 101), queue.poll())
         assertEquals(ExactManualRefreshRequest(account, 202), queue.poll())
         assertNull(queue.poll())
+    }
+
+    @Test
+    fun failedExactManualRefreshReturnsToTheFrontOfTheQueue() {
+        val queue = ExactManualRefreshQueue()
+        val first = ExactManualRefreshRequest(account(1), 101)
+        val second = account(2)
+
+        queue.enqueue(second, 202)
+        queue.requeueFirst(first)
+
+        assertEquals(first, queue.poll())
+        assertEquals(ExactManualRefreshRequest(second, 202), queue.poll())
     }
 
     @Test

@@ -27,6 +27,32 @@ class ProviderWebCollectorScriptsTest {
                 "Claude",
             )
         )
+        assertFalse(
+            ProviderWebCollectorScripts.shouldRunCollectorFromResource(
+                ProviderId.CODEX,
+                "http://chatgpt.com/",
+                "https://chatgpt.com/backend-api/me",
+            )
+        )
+        assertFalse(
+            ProviderWebCollectorScripts.shouldAcceptCollectorError(
+                ProviderId.CODEX,
+                "http://chatgpt.com/",
+                """{"provider":"codex","errorKind":"codex_auth_required"}""",
+            )
+        )
+        assertFalse(
+            ProviderWebCollectorScripts.shouldRunCollectorOnResource(
+                ProviderId.CLAUDE,
+                "https://evil.claude.ai/api/organizations",
+            )
+        )
+        assertFalse(
+            ProviderWebCollectorScripts.shouldRunCollectorOnResource(
+                ProviderId.CODEX,
+                "https://evil.chatgpt.com/backend-api/me",
+            )
+        )
     }
 
     @Test

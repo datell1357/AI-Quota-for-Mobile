@@ -89,6 +89,9 @@ class ProviderDefinitionRegistryTest {
         assertTrue(ProviderDefinitionRegistry.isAllowed(ProviderId.CURSOR, "https://accounts.google.com/o/oauth2/v2/auth"))
 
         assertFalse(ProviderDefinitionRegistry.isAllowed(ProviderId.CLAUDE, "https://firebase.googleapis.com/"))
+        assertFalse(ProviderDefinitionRegistry.isAllowed(ProviderId.CLAUDE, "http://claude.ai/"))
+        assertFalse(ProviderDefinitionRegistry.isAllowed(ProviderId.CLAUDE, "https://evil.claude.ai/"))
+        assertFalse(ProviderDefinitionRegistry.isAllowed(ProviderId.CODEX, "https://evil.chatgpt.com/"))
         assertFalse(ProviderDefinitionRegistry.isAllowed(ProviderId.CODEX, "http://localhost:1455/auth/callback?code=abc"))
         assertFalse(ProviderDefinitionRegistry.isAllowed(ProviderId.CODEX, "https://cloudfunctions.net/relay"))
         assertFalse(ProviderDefinitionRegistry.isAllowed(ProviderId.CODEX, "https://platform.openai.com/usage"))

@@ -45,6 +45,7 @@ import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -468,6 +469,21 @@ class ProviderBackgroundRefreshService : Service() {
                 ProviderCardNotificationRuntime.evaluate(applicationContext, BuildConfig.MULTI_ACCOUNT_ENABLED)
             }
             RefreshCycleMeter.log(TAG, meterStart, jobs.size)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
+                exactManualRequest?.let(pendingExactManualRefreshes::requeueFirst)
+                runCatching {
+                    withContext(Dispatchers.IO) { exactRefreshCoordinator?.reset() }
+                }.exceptionOrNull()?.let(error::addSuppressed)
+            } else {
+                if (pendingManualProviderId == null) pendingManualProviderId = manualProviderId
+                if (pendingManualWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+                    pendingManualWidgetId = manualWidgetId
+                }
+            }
+            throw error
         } finally {
             if (manualWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
                 WidgetRefreshFeedback.clearWidgetRefresh(applicationContext, manualWidgetId)
@@ -1187,7 +1203,7 @@ class ProviderBackgroundRefreshService : Service() {
     }
 
     private fun retainedWebViewFor(active: ServiceWebRefreshJob): WebView? {
-        return if (active.job.binding != null) {
+        return if (jobUsesNamedProfileSession(active.job)) {
             active.exactOperation?.webView
         } else {
             retainedWebViews[active.job.providerId]
@@ -1195,7 +1211,7 @@ class ProviderBackgroundRefreshService : Service() {
     }
 
     private fun flushCookies(active: ServiceWebRefreshJob) {
-        if (active.job.binding != null) {
+        if (jobUsesNamedProfileSession(active.job)) {
             active.exactOperation?.profileLease?.requireAndroidCookieManager()?.flush()
         } else {
             CookieManager.getInstance().flush()
@@ -1654,7 +1670,7 @@ class ProviderBackgroundRefreshService : Service() {
                         "summary=${payloadSignal(rawPayload)}"
                 )
                 flushCookies(active)
-                if (active.job.binding == null) ProviderSessionReviveStore.clear(ownerProviderId)
+                if (jobUsesSharedWebSession(active.job)) ProviderSessionReviveStore.clear(ownerProviderId)
                 completeWebJob(active.requestId, ServiceRefreshOutcome.Payload(rawPayload))
             }
         }
@@ -1704,7 +1720,7 @@ class ProviderBackgroundRefreshService : Service() {
                     }
                     return@post
                 }
-                if (active.job.binding == null && ProviderSessionReviveStore.arm(ownerProviderId, errorKind)) {
+                if (jobUsesSharedWebSession(active.job) && ProviderSessionReviveStore.arm(ownerProviderId, errorKind)) {
                     Log.i(
                         TAG,
                         "sessionReviveArmed provider=${ownerProviderId.storageId} errorKind=$errorKind"
@@ -2008,7 +2024,7 @@ class ProviderBackgroundRefreshService : Service() {
         if (providerId != ProviderId.CODEX) return
         if (!ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CODEX, url)) return
         val active = currentWebJobFor(ownerAccountId) ?: return
-        if (active.job.binding != null && active.job.providerId == ProviderId.CODEX) {
+        if (jobUsesNamedProfileSession(active.job) && active.job.providerId == ProviderId.CODEX) {
             if (!CodexNativeHeaderStore.capture(
                     active.exactNativeFetchHeaders,
                     url,
@@ -2046,7 +2062,7 @@ class ProviderBackgroundRefreshService : Service() {
         if (providerId != ProviderId.CLAUDE) return
         if (!ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CLAUDE, url)) return
         val active = currentWebJobFor(ownerAccountId) ?: return
-        if (active.job.binding != null && active.job.providerId == ProviderId.CLAUDE) {
+        if (jobUsesNamedProfileSession(active.job) && active.job.providerId == ProviderId.CLAUDE) {
             if (!ClaudeNativeHeaderStore.capture(
                     active.exactNativeFetchHeaders,
                     url,
@@ -2087,7 +2103,7 @@ class ProviderBackgroundRefreshService : Service() {
     }
 
     private fun hasAnyClaudeNativeFetchHeaders(active: ServiceWebRefreshJob): Boolean {
-        val headers = if (active.job.binding != null) {
+        val headers = if (jobUsesNamedProfileSession(active.job)) {
             active.exactNativeFetchHeaders
         } else {
             claudeNativeFetchHeaders
@@ -2104,7 +2120,7 @@ class ProviderBackgroundRefreshService : Service() {
     }
 
     private fun saveClaudeNativeRequestContext(active: ServiceWebRefreshJob) {
-        val storedHeaders = if (active.job.binding != null) {
+        val storedHeaders = if (jobUsesNamedProfileSession(active.job)) {
             active.exactNativeFetchHeaders
         } else {
             claudeNativeFetchHeaders
@@ -2120,7 +2136,7 @@ class ProviderBackgroundRefreshService : Service() {
     }
 
     private fun saveCodexNativeAuthContext(active: ServiceWebRefreshJob) {
-        val storedHeaders = if (active.job.binding != null) {
+        val storedHeaders = if (jobUsesNamedProfileSession(active.job)) {
             active.exactNativeFetchHeaders
         } else {
             codexNativeFetchHeaders
@@ -2495,13 +2511,14 @@ class ProviderBackgroundRefreshService : Service() {
      * 소비는 잡을 만들 때 한 번만 한다.
      */
     private fun webSessionWarmUpUrl(job: ProviderRefreshJob): String? {
-        if (job.binding != null) return null
-        return when (job.providerId) {
+        if (!jobUsesSharedWebSession(job)) return null
+        return sharedWebSessionWarmUpUrl(
+            job = job,
             // github.com 홈은 한 번 로드에 90KB에 가깝다(실측). 쿠키가 살아 있는 동안에는
             // 다시 받을 이유가 없으므로 워밍업을 건너뛴다.
-            ProviderId.COPILOT -> "https://github.com/".takeIf { CopilotWarmUpState.needsWarmUp() }
-            else -> ProviderSessionReviveStore.pendingReviveUrl(job.providerId)
-        }?.takeUnless { it == job.startUrl }
+            copilotNeedsWarmUp = CopilotWarmUpState.needsWarmUp(),
+            pendingReviveUrl = ProviderSessionReviveStore.pendingReviveUrl(job.providerId),
+        )
     }
 
     /** Copilot 워밍업은 수집이 실패했을 때만 다시 하도록 표시한다. */

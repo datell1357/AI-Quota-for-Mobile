@@ -335,7 +335,11 @@ object ProviderWebCollectorScripts {
     )
 
     private fun isClaudeHost(host: String): Boolean {
-        return host == "claude.ai" || host.endsWith(".claude.ai")
+        return host == "claude.ai" || host == "www.claude.ai"
+    }
+
+    private fun isCodexHost(host: String): Boolean {
+        return host == "chatgpt.com" || host == "mobile.chatgpt.com" || host == "chat.openai.com"
     }
 
     fun shouldRunCollectorOnResource(providerId: ProviderId, url: String): Boolean {
@@ -353,7 +357,7 @@ object ProviderWebCollectorScripts {
                         (path.startsWith("/api/bootstrap/") && path.endsWith("/current_user_access")) ||
                         (path.startsWith("/api/organizations/") && path.endsWith("/subscription_details")))
             ProviderId.CODEX ->
-                (host == "chatgpt.com" || host.endsWith(".chatgpt.com") || host == "chat.openai.com") &&
+                isCodexHost(host) &&
                     (path == "/api/auth/session" ||
                         path == "/backend-api/subscriptions" ||
                         path == "/backend-api/wham/usage" ||
@@ -447,7 +451,7 @@ object ProviderWebCollectorScripts {
                     !path.contains("login") &&
                     !path.contains("logout")
             ProviderId.CODEX ->
-                (host == "chatgpt.com" || host.endsWith(".chatgpt.com") || host == "chat.openai.com") &&
+                isCodexHost(host) &&
                     path != "/auth/login"
             else -> shouldRunCollector(providerId, pageUrl, emptyMap(), "")
         }
@@ -476,9 +480,10 @@ object ProviderWebCollectorScripts {
     private fun isTrustedRootAuthCollectorError(providerId: ProviderId, pageUrl: String, rawError: String?): Boolean {
         if (providerId != ProviderId.CODEX || rawError.isNullOrBlank()) return false
         val uri = runCatching { URI(pageUrl) }.getOrNull() ?: return false
+        if (!uri.scheme.equals("https", ignoreCase = true)) return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
         val path = uri.path.orEmpty().lowercase(Locale.US)
-        if ((host != "chatgpt.com" && !host.endsWith(".chatgpt.com")) || (path != "/" && path.isNotBlank())) return false
+        if (!isCodexHost(host) || (path != "/" && path.isNotBlank())) return false
         val payloadProvider = runCatching {
             JSONObject(rawError)
                 .optString("provider")
@@ -494,9 +499,10 @@ object ProviderWebCollectorScripts {
     private fun isCodexChatGptRoot(providerId: ProviderId, pageUrl: String): Boolean {
         if (providerId != ProviderId.CODEX) return false
         val uri = runCatching { URI(pageUrl) }.getOrNull() ?: return false
+        if (!uri.scheme.equals("https", ignoreCase = true)) return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
         val path = uri.path.orEmpty().lowercase(Locale.US)
-        return (host == "chatgpt.com" || host.endsWith(".chatgpt.com") || host == "chat.openai.com") &&
+        return isCodexHost(host) &&
             (path == "/" || path.isBlank())
     }
 

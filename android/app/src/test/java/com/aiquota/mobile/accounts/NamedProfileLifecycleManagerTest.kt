@@ -196,6 +196,26 @@ class NamedProfileLifecycleManagerTest {
     }
 
     @Test
+    fun `aborting a stalled closing lease releases it exactly once`() {
+        val p = FakePlatform().apply { deferQuiesce = true }
+        val m = manager(platform = p)
+        val id = id(1)
+        m.ensureBinding(id)
+        val lease = m.acquire(id)
+        var closeResult: LeaseCloseResult? = null
+        lease.closeAcknowledged { closeResult = it }
+
+        lease.abortAcknowledged { assertEquals(LeaseCloseResult.Closed, it) }
+
+        assertEquals(LeaseState.CLOSED, lease.stateForTest())
+        assertEquals(0, m.liveLeaseCount(id))
+        assertEquals(1, p.destroyCount)
+        p.completeNextQuiesce()
+        assertEquals(LeaseCloseResult.AlreadyClosed, closeResult)
+        assertEquals(1, p.destroyCount)
+    }
+
+    @Test
     fun `duplicate closing closed and shutdown with live leases are deterministic`() {
         val p = FakePlatform().apply { deferQuiesce = true }
         val m = manager(platform = p)
@@ -323,6 +343,28 @@ class NamedProfileLifecycleManagerTest {
         m.requestErasure(id)
         assertEquals(1, p.eraseCount)
         p.completeDeferred()
+        assertEquals(
+            ProfileLifecycleState.DATA_ERASURE_COMPLETED_CONTAINER_RETAINED,
+            m.binding(id)!!.state,
+        )
+    }
+
+    @Test
+    fun `session cleanup and requested erasure share one in-flight deletion`() {
+        val p = FakePlatform().apply { deferErase = true }
+        val m = manager(platform = p)
+        val id = id(1)
+        val results = mutableListOf<ProfileDataErasureResult>()
+        m.ensureBinding(id)
+
+        assertTrue(m.clearSessionData(id, results::add))
+        assertEquals(ErasureRequestResult.ERASURE_PENDING, m.requestErasure(id, results::add))
+        assertEquals(1, p.eraseCount)
+
+        p.completeDeferred()
+
+        assertEquals(listOf(ProfileDataErasureResult.Completed, ProfileDataErasureResult.Completed), results)
+        assertEquals(1, p.eraseCount)
         assertEquals(
             ProfileLifecycleState.DATA_ERASURE_COMPLETED_CONTAINER_RETAINED,
             m.binding(id)!!.state,

@@ -315,7 +315,7 @@ open class WebLoginActivity : Activity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 cookieManager.setAcceptThirdPartyCookies(this, capabilities.acceptThirdPartyCookies)
             }
-            addJavascriptInterface(UsageBridge(), BRIDGE_NAME)
+            addJavascriptInterface(UsageBridge(this), BRIDGE_NAME)
             webChromeClient = LoginWebChromeClient()
             webViewClient = LoginWebViewClient()
         }
@@ -430,6 +430,10 @@ open class WebLoginActivity : Activity() {
         }
     }
 
+    private fun noteBridgePageUrl(view: WebView, url: String?) {
+        if (::webView.isInitialized && view === webView) noteBridgePageUrl(url)
+    }
+
     private fun createExactPopupWebView(): WebView? {
         val lease = namedProfileLease ?: return null
         return lease.createAndroidPopupWebView(this).also { popup ->
@@ -474,14 +478,14 @@ open class WebLoginActivity : Activity() {
     private inner class LoginWebViewClient : WebViewClient() {
         override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
             if (isCodexAboutBlankNavigation(url)) {
-                noteBridgePageUrl("about:blank")
+                noteBridgePageUrl(view, "about:blank")
                 return
             }
             if (isClaudeAboutBlankBridgeNavigation(url)) {
-                noteBridgePageUrl("about:blank")
+                noteBridgePageUrl(view, "about:blank")
                 return
             }
-            noteBridgePageUrl(url)
+            noteBridgePageUrl(view, url)
             scheduleGlmBlankPageRecovery(view, url)
             rememberGoogleOAuthStartUrl(url)
             if (maybeRecoverGoogleCookieMismatch(view, url)) return
@@ -501,15 +505,15 @@ open class WebLoginActivity : Activity() {
             val url = request.url.toString()
             Log.d("AIQuotaLogin", "provider=${providerId.storageId} navigate=${safeUrlForLog(url)}")
             if (isCodexAboutBlankNavigation(url)) {
-                noteBridgePageUrl("about:blank")
+                noteBridgePageUrl(view, "about:blank")
                 return false
             }
             if (isClaudeAboutBlankBridgeNavigation(url)) {
-                noteBridgePageUrl("about:blank")
+                noteBridgePageUrl(view, "about:blank")
                 return false
             }
             if (request.isForMainFrame) {
-                noteBridgePageUrl(url)
+                noteBridgePageUrl(view, url)
                 rememberGoogleOAuthStartUrl(url)
                 if (maybeRecoverGoogleCookieMismatch(view, url)) return true
                 ProviderLoginUrlRewriter.rewriteMainFrameUrl(providerId, url)?.let { rewrittenUrl ->
@@ -609,7 +613,7 @@ open class WebLoginActivity : Activity() {
 
         override fun onLoadResource(view: WebView, url: String) {
             val pageUrl = view.url ?: url
-            noteBridgePageUrl(pageUrl)
+            noteBridgePageUrl(view, pageUrl)
             if (providerId == ProviderId.CLAUDE && maybeStartClaudeNativeCollection(view, url, "resource")) return
             if (!ProviderWebCollectorScripts.shouldRunCollectorFromResource(providerId, pageUrl, url)) return
             if (providerId == ProviderId.CODEX) {
@@ -629,7 +633,7 @@ open class WebLoginActivity : Activity() {
             } else {
                 url
             }
-            noteBridgePageUrl(effectiveUrl)
+            noteBridgePageUrl(view, effectiveUrl)
             logFirstPageFinished(url)
             if (maybeRecoverGoogleCookieMismatch(view, effectiveUrl)) return
             if (handleLoginCompleteNavigation(view, effectiveUrl)) return
@@ -795,11 +799,18 @@ open class WebLoginActivity : Activity() {
         return false
     }
 
-    private inner class UsageBridge {
+    private inner class UsageBridge(
+        private val ownerView: WebView,
+    ) {
+        private fun activePageUrl(): String? {
+            if (!::webView.isInitialized || ownerView !== webView || finished) return null
+            return ownerView.url?.takeIf(String::isNotBlank) ?: currentBridgePageUrl.takeIf(String::isNotBlank)
+        }
+
         @JavascriptInterface
         fun postUsagePayload(rawPayload: String) {
             runOnUiThread {
-                val pageUrl = webView.url.orEmpty()
+                val pageUrl = activePageUrl() ?: return@runOnUiThread
                 if (!ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, pageUrl, rawPayload)) {
                     Log.w("AIQuotaCollector", "provider=${providerId.storageId} collectorMode=webview-js ignoredPayload page=${pathOf(pageUrl)}")
                     return@runOnUiThread
@@ -813,7 +824,7 @@ open class WebLoginActivity : Activity() {
         @JavascriptInterface
         fun postCollectorError(rawError: String) {
             runOnUiThread {
-                val pageUrl = webView.url.orEmpty()
+                val pageUrl = activePageUrl() ?: return@runOnUiThread
                 if (!ProviderWebCollectorScripts.shouldAcceptCollectorError(providerId, pageUrl, rawError)) {
                     Log.w("AIQuotaCollector", "provider=${providerId.storageId} collectorMode=webview-js ignoredError page=${pathOf(pageUrl)}")
                     return@runOnUiThread
@@ -928,7 +939,7 @@ open class WebLoginActivity : Activity() {
         }
 
         private fun isNativeFetchBridgePageAllowed(expectedProviderId: ProviderId): Boolean {
-            val pageUrl = currentBridgePageUrl
+            val pageUrl = activePageUrl() ?: return false
             return providerId == expectedProviderId &&
                 ProviderWebCollectorScripts.shouldAcceptCollectorPayload(expectedProviderId, pageUrl)
         }
@@ -1679,7 +1690,7 @@ open class WebLoginActivity : Activity() {
         pageText: String,
         resourceTriggered: Boolean = false
     ) {
-        if (finished) return
+        if (finished || view !== webView) return
         // 이 provider들은 about:blank로 옮겨가는 즉시 네이티브로 수집한다. 스크립트를 주입하면
         // 같은 요청이 한 번 더 나갈 뿐이라 어느 경로에서 불려도 넣지 않는다.
         if (ABOUT_BLANK_NATIVE_LOGIN_PROVIDERS.contains(providerId)) return
@@ -1984,10 +1995,7 @@ open class WebLoginActivity : Activity() {
                             EXACT_LEASE_CLOSE_RETRY_DELAY_MS,
                         )
                     } else {
-                        Log.w(
-                            "AIQuotaLogin",
-                            "provider=${providerId.storageId} exactLeaseClosePending=true",
-                        )
+                        abortExactLeaseAndComposition(lease, composition, finishAfterClose, binding)
                     }
                 }
                 is LeaseCloseResult.RetryableFailure -> {
@@ -2005,22 +2013,31 @@ open class WebLoginActivity : Activity() {
                             EXACT_LEASE_CLOSE_RETRY_DELAY_MS,
                         )
                     } else {
-                        binding?.let {
-                            composition?.coordinator?.fail(it)
-                            setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
-                        }
-                        lease.abortAcknowledged { aborted ->
-                            if (aborted == LeaseCloseResult.Closed || aborted == LeaseCloseResult.AlreadyClosed) {
-                                if (namedProfileLease === lease) namedProfileLease = null
-                                if (composition != null && exactLoginComposition === composition) {
-                                    exactLoginComposition = null
-                                    composition.close()
-                                }
-                                if (finishAfterClose && binding != null) finish()
-                            }
-                        }
+                        abortExactLeaseAndComposition(lease, composition, finishAfterClose, binding)
                     }
                 }
+            }
+        }
+    }
+
+    private fun abortExactLeaseAndComposition(
+        lease: NamedProfileLease,
+        composition: AndroidExactAccountLoginComposition?,
+        finishAfterClose: Boolean,
+        binding: AccountLoginSessionBinding?,
+    ) {
+        binding?.let {
+            composition?.coordinator?.fail(it)
+            setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
+        }
+        lease.abortAcknowledged { aborted ->
+            if (aborted == LeaseCloseResult.Closed || aborted == LeaseCloseResult.AlreadyClosed) {
+                if (namedProfileLease === lease) namedProfileLease = null
+                if (composition != null && exactLoginComposition === composition) {
+                    exactLoginComposition = null
+                    composition.close()
+                }
+                if (finishAfterClose && binding != null) finish()
             }
         }
     }

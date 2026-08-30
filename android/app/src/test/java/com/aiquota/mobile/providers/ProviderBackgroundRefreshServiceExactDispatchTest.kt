@@ -47,12 +47,38 @@ class ProviderBackgroundRefreshServiceExactDispatchTest {
     @Test
     fun scheduledSingletonJobKeepsSharedSessionWhileClaudeAndCodexRequireNamedProfile() {
         val cursorJob = attempt(binding(ProviderId.CURSOR, 1, generation = 1)).job
+        val copilotJob = attempt(binding(ProviderId.COPILOT, 4, generation = 1)).job
+        val kiroJob = attempt(binding(ProviderId.KIRO, 5, generation = 1)).job
         val claudeJob = attempt(binding(ProviderId.CLAUDE, 2, generation = 1)).job
         val codexJob = attempt(binding(ProviderId.CODEX, 3, generation = 1)).job
 
         assertFalse(jobUsesNamedProfileSession(cursorJob))
+        assertTrue(jobUsesSharedWebSession(copilotJob))
+        assertTrue(jobUsesSharedWebSession(kiroJob))
         assertTrue(jobUsesNamedProfileSession(claudeJob))
         assertTrue(jobUsesNamedProfileSession(codexJob))
+        assertFalse(jobUsesSharedWebSession(claudeJob))
+        assertFalse(jobUsesSharedWebSession(codexJob))
+    }
+
+    @Test
+    fun boundSingletonJobsKeepCopilotWarmUpAndKiroSessionRevive() {
+        val copilotJob = attempt(binding(ProviderId.COPILOT, 4, generation = 1)).job
+        val kiroJob = attempt(binding(ProviderId.KIRO, 5, generation = 1)).job
+        val codexJob = attempt(binding(ProviderId.CODEX, 3, generation = 1)).job
+        val kiroReviveUrl = "https://app.kiro.dev/settings/account"
+
+        assertEquals(
+            "https://github.com/",
+            sharedWebSessionWarmUpUrl(copilotJob, copilotNeedsWarmUp = true, pendingReviveUrl = null),
+        )
+        assertEquals(
+            kiroReviveUrl,
+            sharedWebSessionWarmUpUrl(kiroJob, copilotNeedsWarmUp = false, pendingReviveUrl = kiroReviveUrl),
+        )
+        assertNull(
+            sharedWebSessionWarmUpUrl(codexJob, copilotNeedsWarmUp = true, pendingReviveUrl = kiroReviveUrl),
+        )
     }
 
     @Test

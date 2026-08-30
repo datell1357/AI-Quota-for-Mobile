@@ -353,6 +353,13 @@ internal constructor(
             LeaseState.CLOSED -> LeaseCloseResult.AlreadyClosed
         }
 
+    internal fun beginAbort(): LeaseCloseResult? =
+        when (state) {
+            LeaseState.OPEN -> null.also { state = LeaseState.CLOSING }
+            LeaseState.CLOSING -> null
+            LeaseState.CLOSED -> LeaseCloseResult.AlreadyClosed
+        }
+
     internal fun reopen() {
         check(state == LeaseState.CLOSING)
         state = LeaseState.OPEN
@@ -455,7 +462,21 @@ class NamedProfileLifecycleManager(
         if (row.state != ProfileLifecycleState.ACTIVE || !leases[id].isNullOrEmpty()) {
             return@mutate false
         }
-        platform.eraseProfileData(row.profileName, onResult)
+        if (!erasing.add(id)) return@mutate false
+        platform.eraseProfileData(row.profileName) { result ->
+            platform.requireUiThread()
+            erasing.remove(id)
+            if (store.read(id)?.state == ProfileLifecycleState.ERASURE_PENDING) {
+                if (result == ProfileDataErasureResult.Completed) {
+                    afterEraseCallbackBeforeReceipt(id)
+                    store.complete(id)
+                    pendingCallbacks.remove(id).orEmpty().forEach { it(result) }
+                } else {
+                    startErase(id)
+                }
+            }
+            onResult(result)
+        }
         true
     }
 
@@ -494,6 +515,10 @@ class NamedProfileLifecycleManager(
         }
         l.resource.quiesce { result ->
             platform.requireUiThread()
+            if (l.stateForTest() == LeaseState.CLOSED) {
+                callback(LeaseCloseResult.AlreadyClosed)
+                return@quiesce
+            }
             if (result is SessionQuiesceResult.Failed) {
                 l.reopen()
                 callback(LeaseCloseResult.RetryableFailure(result.reason))
@@ -515,7 +540,7 @@ class NamedProfileLifecycleManager(
     }
 
     private fun abortRelease(l: NamedProfileLease, callback: (LeaseCloseResult) -> Unit) = mutate {
-        l.beginClose()?.let {
+        l.beginAbort()?.let {
             callback(it)
             return@mutate
         }

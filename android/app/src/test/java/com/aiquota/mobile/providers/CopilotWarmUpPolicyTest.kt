@@ -12,12 +12,15 @@ class CopilotWarmUpPolicyTest {
     private val service = File(
         "src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt"
     ).readText()
+    private val resources = File(
+        "src/main/java/com/aiquota/mobile/providers/ProviderAccountRefreshResources.kt"
+    ).readText()
 
     @Test
     fun warmUpIsSkippedWhileSessionLooksHealthy() {
         assertTrue(
             "워밍업 여부는 정책 함수가 정한다",
-            service.contains("ProviderId.COPILOT -> \"https://github.com/\".takeIf { CopilotWarmUpState.needsWarmUp() }")
+            resources.contains("ProviderId.COPILOT -> \"https://github.com/\".takeIf { copilotNeedsWarmUp }")
         )
         assertTrue(
             "프로세스가 새로 뜨면 세션 상태를 모르므로 한 번은 워밍업한다",

@@ -129,7 +129,7 @@ test("Android web collectors remain for visible-session providers", () => {
   const definitions = source("android/app/src/main/java/com/aiquota/mobile/providers/ProviderDefinitions.kt");
 
   assert.match(webLogin, /settings\.javaScriptEnabled = true/);
-  assert.match(webLogin, /addJavascriptInterface\(UsageBridge\(\), BRIDGE_NAME\)/);
+  assert.match(webLogin, /addJavascriptInterface\(UsageBridge\(this\), BRIDGE_NAME\)/);
   assert.match(webLogin, /ProviderWebCollectorScripts\.build/);
   assert.match(webLogin, /finishSuccessfulLogin\(rawPayload\)/);
   assert.match(collectionService, /class ProviderUsageCollectionService : Service\(\)/);

@@ -405,9 +405,7 @@ object ProviderDefinitionRegistry {
     }
 
     private fun isHostAllowed(host: String, allowedHosts: Set<String>): Boolean {
-        return allowedHosts.any { allowed ->
-            host == allowed || host.endsWith(".$allowed")
-        }
+        return host in allowedHosts
     }
 
     private fun codexDefinition(providerId: ProviderId): ProviderDefinition {
@@ -436,9 +434,9 @@ object ProviderDefinitionRegistry {
     }
 
     private fun hostOf(url: String): String? {
-        return runCatching { URI(url).host }
-            .getOrNull()
-            ?.lowercase(Locale.US)
+        val uri = runCatching { URI(url) }.getOrNull() ?: return null
+        if (!uri.scheme.equals("https", ignoreCase = true)) return null
+        return uri.host?.lowercase(Locale.US)
     }
 
     private val GOOGLE_ACCOUNT_HOST =

@@ -56,6 +56,10 @@ internal class ExactManualRefreshQueue {
         requests.addLast(ExactManualRefreshRequest(accountId, widgetId))
     }
 
+    fun requeueFirst(request: ExactManualRefreshRequest) {
+        requests.addFirst(request)
+    }
+
     fun poll(): ExactManualRefreshRequest? = requests.removeFirstOrNull()
 
     fun clear() = requests.clear()
@@ -71,6 +75,21 @@ internal fun exactHiddenCollectionNeedsNamedProfile(providerId: ProviderId): Boo
 internal fun jobUsesNamedProfileSession(job: ProviderRefreshJob): Boolean =
     job.binding != null && exactHiddenCollectionNeedsNamedProfile(job.providerId)
 
+internal fun jobUsesSharedWebSession(job: ProviderRefreshJob): Boolean =
+    !jobUsesNamedProfileSession(job)
+
+internal fun sharedWebSessionWarmUpUrl(
+    job: ProviderRefreshJob,
+    copilotNeedsWarmUp: Boolean,
+    pendingReviveUrl: String?,
+): String? {
+    if (!jobUsesSharedWebSession(job)) return null
+    return when (job.providerId) {
+        ProviderId.COPILOT -> "https://github.com/".takeIf { copilotNeedsWarmUp }
+        else -> pendingReviveUrl
+    }?.takeUnless { it == job.startUrl }
+}
+
 internal suspend fun closeAfterRefreshCycle(activeCycle: Job?, close: () -> Unit) {
     activeCycle?.cancelAndJoin()
     close()
@@ -78,9 +97,18 @@ internal suspend fun closeAfterRefreshCycle(activeCycle: Job?, close: () -> Unit
 
 internal suspend fun closeExactLeaseWithRetry(
     maxAttempts: Int = 3,
+    abort: (((LeaseCloseResult) -> Unit) -> Unit)? = null,
     close: ((LeaseCloseResult) -> Unit) -> Unit,
 ) {
     require(maxAttempts > 0)
+    suspend fun abortAndThrow(reason: String): Nothing {
+        abort?.let { abortLease ->
+            suspendCancellableCoroutine<LeaseCloseResult> { continuation ->
+                abortLease(continuation::resume)
+            }
+        }
+        throw ExactProviderCollectorUnavailable(reason)
+    }
     repeat(maxAttempts) { attempt ->
         val result = suspendCancellableCoroutine<LeaseCloseResult> { continuation ->
             close(continuation::resume)
@@ -89,9 +117,9 @@ internal suspend fun closeExactLeaseWithRetry(
             LeaseCloseResult.Closed,
             LeaseCloseResult.AlreadyClosed -> return
             LeaseCloseResult.AlreadyClosing ->
-                throw ExactProviderCollectorUnavailable("PROFILE_ALREADY_CLOSING")
+                abortAndThrow("PROFILE_ALREADY_CLOSING")
             is LeaseCloseResult.RetryableFailure -> if (attempt == maxAttempts - 1) {
-                throw ExactProviderCollectorUnavailable("PROFILE_CLOSE_FAILED:${result.reason}")
+                abortAndThrow("PROFILE_CLOSE_FAILED:${result.reason}")
             }
         }
     }
