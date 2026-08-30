@@ -46,6 +46,16 @@ class WebLoginActivityNativeBridgeTest {
                 "https://example.com/backend-api/wham/usage"
             )
         )
+        assertFalse(
+            CodexNativeCollectionRoutes.shouldStartFromResource(
+                "https://evil.chatgpt.com/backend-api/wham/usage"
+            )
+        )
+        assertFalse(
+            CodexNativeCollectionRoutes.shouldStartFromResource(
+                "http://chatgpt.com/backend-api/wham/usage"
+            )
+        )
     }
 
     @Test
@@ -128,6 +138,10 @@ class WebLoginActivityNativeBridgeTest {
         assertTrue(source.contains("loadClaudeAboutBlankBridgeDocument(view)"))
         assertTrue(source.contains("view.loadDataWithBaseURL("))
         assertTrue(source.contains("isClaudeAboutBlankBridgeNavigation(url)"))
+        assertTrue(source.contains("activeClaudeBridgeGeneration"))
+        assertTrue(source.contains("UsageBridge(view, nextClaudeBridgeGeneration)"))
+        assertTrue(source.contains("UUID.randomUUID()"))
+        assertTrue(source.contains("invalidateClaudeBridgeDocument()"))
     }
 
     @Test

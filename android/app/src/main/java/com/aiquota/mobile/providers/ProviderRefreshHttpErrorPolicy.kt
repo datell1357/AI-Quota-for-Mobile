@@ -27,8 +27,9 @@ object ProviderRefreshHttpErrorPolicy {
         if (providerId != ProviderId.CODEX) return false
         if (statusCode != 401 && statusCode != 403) return false
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        if (!uri.scheme.equals("https", ignoreCase = true)) return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
-        return host == "chatgpt.com" || host.endsWith(".chatgpt.com") || host == "auth.openai.com"
+        return ProviderLoginStrategy.isCodexHost(host) || host == "auth.openai.com"
     }
 
     private val CURSOR_AUTH_EXCHANGE_HOSTS = setOf(

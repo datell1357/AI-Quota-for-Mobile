@@ -64,6 +64,22 @@ class ProviderRefreshHttpErrorPolicyTest {
     }
 
     @Test
+    fun untrustedCodexOriginsDoNotTriggerInteractiveAuth() {
+        listOf(
+            "https://evil.chatgpt.com/codex/cloud/settings/analytics",
+            "http://chatgpt.com/codex/cloud/settings/analytics",
+        ).forEach { url ->
+            val failure = ProviderRefreshHttpErrorPolicy.failureForMainFrameHttpError(
+                ProviderId.CODEX,
+                url,
+                403,
+            )
+
+            assertEquals(ProviderRefreshFailureKind.TRANSIENT_HTTP, failure.kind)
+        }
+    }
+
+    @Test
     fun nonCodexMainFrameForbiddenStaysTransientHttp() {
         val failure = ProviderRefreshHttpErrorPolicy.failureForMainFrameHttpError(
             ProviderId.CLAUDE,

@@ -174,6 +174,29 @@ class NamedProfileLifecycleManagerTest {
     }
 
     @Test
+    fun `failed destroy during normal close reopens lease and retry closes without leak`() {
+        val p = FakePlatform().apply { destroyFailures.add(IllegalStateException("renderer")) }
+        val m = manager(platform = p)
+        val id = id(1)
+        m.ensureBinding(id)
+        val lease = m.acquire(id)
+        var result: LeaseCloseResult? = null
+
+        lease.closeAcknowledged { result = it }
+
+        assertEquals(LeaseCloseResult.RetryableFailure("DESTROY_FAILED:IllegalStateException"), result)
+        assertEquals(LeaseState.OPEN, lease.stateForTest())
+        assertEquals(1, m.liveLeaseCount(id))
+
+        lease.closeAcknowledged { result = it }
+
+        assertEquals(LeaseCloseResult.Closed, result)
+        assertEquals(LeaseState.CLOSED, lease.stateForTest())
+        assertEquals(0, m.liveLeaseCount(id))
+        assertEquals(2, p.destroyCount)
+    }
+
+    @Test
     fun `aborting after persistent quiesce failure releases lease`() {
         val p = FakePlatform().apply {
             repeat(4) { quiesceResults.add(SessionQuiesceResult.Failed("renderer")) }

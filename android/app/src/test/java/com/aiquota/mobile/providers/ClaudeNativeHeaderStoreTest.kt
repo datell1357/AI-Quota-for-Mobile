@@ -64,6 +64,16 @@ class ClaudeNativeHeaderStoreTest {
     }
 
     @Test
+    fun ignoresUntrustedClaudeOrigins() {
+        val stored = mutableMapOf<String, Map<String, String>>()
+        val headers = mapOf("Authorization" to "Bearer test")
+
+        assertFalse(ClaudeNativeHeaderStore.capture(stored, "https://evil.claude.ai/api/organizations/org_123/usage", headers, "claude:*"))
+        assertFalse(ClaudeNativeHeaderStore.capture(stored, "http://claude.ai/api/organizations/org_123/usage", headers, "claude:*"))
+        assertTrue(stored.isEmpty())
+    }
+
+    @Test
     fun persistedClaudeRequestContextKeepsOnlyReplaySafeHeaders() {
         val payload = ClaudeNativeRequestContextStore.encodeForTest(
             mapOf(

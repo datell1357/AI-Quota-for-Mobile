@@ -11,6 +11,7 @@ import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.SessionRevision
 import com.aiquota.mobile.local.ProviderId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,6 +19,16 @@ import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class CodexNativeHeaderStoreTest {
+    @Test
+    fun captureRejectsUntrustedCodexOrigins() {
+        val storedHeaders = mutableMapOf<String, Map<String, String>>()
+        val headers = mapOf("Authorization" to "Bearer auth")
+
+        assertFalse(CodexNativeHeaderStore.capture(storedHeaders, "https://evil.chatgpt.com/backend-api/wham/usage", headers, "fallback"))
+        assertFalse(CodexNativeHeaderStore.capture(storedHeaders, "http://chatgpt.com/backend-api/wham/usage", headers, "fallback"))
+        assertTrue(storedHeaders.isEmpty())
+    }
+
     @Test
     fun captureKeepsAuthenticatedEndpointAndFallbackHeadersAfterUnauthenticatedCapture() {
         val storedHeaders = mutableMapOf<String, Map<String, String>>()

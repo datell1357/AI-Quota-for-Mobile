@@ -44,9 +44,10 @@ internal object CodexNativeHeaderStore {
 
     private fun keyFor(url: String): String? {
         val uri = runCatching { URI(url) }.getOrNull() ?: return null
+        if (!uri.scheme.equals("https", ignoreCase = true)) return null
         val host = uri.host.orEmpty().lowercase(Locale.US)
         val path = uri.path.orEmpty().lowercase(Locale.US)
-        if (host != "chatgpt.com" && !host.endsWith(".chatgpt.com")) return null
+        if (!ProviderLoginStrategy.isCodexHost(host)) return null
         return "$host$path"
     }
 

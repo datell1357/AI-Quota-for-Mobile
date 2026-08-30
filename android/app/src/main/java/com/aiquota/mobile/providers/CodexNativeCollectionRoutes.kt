@@ -6,8 +6,9 @@ import java.util.Locale
 internal object CodexNativeCollectionRoutes {
     fun shouldStartFromResource(url: String): Boolean {
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        if (!uri.scheme.equals("https", ignoreCase = true)) return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
-        if (host != "chatgpt.com" && !host.endsWith(".chatgpt.com")) return false
+        if (!ProviderLoginStrategy.isCodexHost(host)) return false
         val path = uri.path.orEmpty().lowercase(Locale.US)
         return path == "/backend-api/wham/usage"
     }

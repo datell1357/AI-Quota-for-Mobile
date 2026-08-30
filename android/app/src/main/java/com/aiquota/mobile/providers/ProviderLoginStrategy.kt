@@ -70,6 +70,7 @@ object ProviderLoginStrategy {
 
     fun shouldStartClaudeNativeCollection(url: String): Boolean {
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        if (!uri.scheme.equals("https", ignoreCase = true)) return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
         if (!isClaudeHost(host)) return false
         val path = uri.path.orEmpty().lowercase(Locale.US)
@@ -78,6 +79,7 @@ object ProviderLoginStrategy {
 
     fun shouldStartClaudeNativeCollectionFromResource(url: String): Boolean {
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        if (!uri.scheme.equals("https", ignoreCase = true)) return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
         if (!isClaudeHost(host)) return false
         val path = uri.path.orEmpty().lowercase(Locale.US)
@@ -136,12 +138,12 @@ object ProviderLoginStrategy {
             host.endsWith("gemini.google.com") ||
             host.endsWith("github.com") ||
             host.endsWith("githubassets.com") ||
-            host.endsWith("auth.openai.com") ||
-            host.endsWith("chatgpt.com") ||
+            host == "auth.openai.com" ||
+            isCodexHost(host) ||
             host.endsWith("z.ai") ||
             host.endsWith("api.z.ai") ||
             host.endsWith("opencode.ai") ||
-            host.endsWith("claude.ai") ||
+            isClaudeHost(host) ||
             host.endsWith("antigravity.google") ||
             host.endsWith("cursor.com") ||
             host.endsWith("cursor.sh") ||
@@ -152,14 +154,18 @@ object ProviderLoginStrategy {
         return GOOGLE_ACCOUNT_HOST.matches(host)
     }
 
-    private fun isClaudeHost(host: String): Boolean {
-        return host == "claude.ai" || host.endsWith(".claude.ai")
+    internal fun isCodexHost(host: String): Boolean {
+        return host == "chatgpt.com" || host == "mobile.chatgpt.com" || host == "chat.openai.com"
+    }
+
+    internal fun isClaudeHost(host: String): Boolean {
+        return host == "claude.ai" || host == "www.claude.ai"
     }
 
     fun isBlockingHttpError(url: String, statusCode: Int): Boolean {
         val host = runCatching { URI(url).host.orEmpty().lowercase(Locale.US) }.getOrDefault("")
         if (statusCode < 400) return false
-        if (host.endsWith("claude.ai")) return false
+        if (isClaudeHost(host)) return false
         if (host == "authenticator.cursor.sh" && (statusCode == 401 || statusCode == 403)) return false
         return host.isNotBlank()
     }

@@ -46,8 +46,9 @@ internal object ClaudeNativeHeaderStore {
 
     private fun keyFor(url: String): String? {
         val uri = runCatching { URI(url) }.getOrNull() ?: return null
+        if (!uri.scheme.equals("https", ignoreCase = true)) return null
         val host = uri.host.orEmpty().lowercase(Locale.US)
-        if (host != "claude.ai" && !host.endsWith(".claude.ai")) return null
+        if (!ProviderLoginStrategy.isClaudeHost(host)) return null
         val path = uri.path.orEmpty().lowercase(Locale.US)
         return "$host$path"
     }

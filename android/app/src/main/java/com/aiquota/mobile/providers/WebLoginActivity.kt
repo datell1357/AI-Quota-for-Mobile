@@ -50,6 +50,7 @@ import java.net.URL
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
@@ -124,6 +125,10 @@ open class WebLoginActivity : Activity() {
     private val geminiUsageRpcIds = linkedSetOf<String>()
     private val popupViews = mutableSetOf<WebView>()
     private var activeClaudeBridgeView: WebView? = null
+    private var activeClaudeBridgeGeneration: Long? = null
+    private var activeClaudeBridgeName: String? = null
+    private var nextClaudeBridgeGeneration = 0L
+    private var claudeBridgeLoadPending = false
     private val exactPopupProfileNames = mutableMapOf<WebView, String>()
     private val collectorInjectionKeys = mutableSetOf<String>()
     private val loginScope = MainScope()
@@ -261,6 +266,7 @@ open class WebLoginActivity : Activity() {
     }
 
     override fun onDestroy() {
+        invalidateClaudeBridgeDocument()
         if (::topBanner.isInitialized) topBanner.destroy()
         if (::providerId.isInitialized && !finished && !isChangingConfigurations) {
             val binding = exactLoginBinding
@@ -434,7 +440,7 @@ open class WebLoginActivity : Activity() {
     private fun noteBridgePageUrl(view: WebView, url: String?) {
         if (::webView.isInitialized && view === webView) {
             if (activeClaudeBridgeView === view && !isClaudeAboutBlankBridgeNavigation(url.orEmpty())) {
-                activeClaudeBridgeView = null
+                invalidateClaudeBridgeDocument()
             }
             noteBridgePageUrl(url)
         }
@@ -487,10 +493,12 @@ open class WebLoginActivity : Activity() {
                 noteBridgePageUrl(view, "about:blank")
                 return
             }
-            if (isClaudeAboutBlankBridgeNavigation(url)) {
+            if (isPendingClaudeBridgeNavigation(view, url)) {
+                claudeBridgeLoadPending = false
                 noteBridgePageUrl(view, "about:blank")
                 return
             }
+            if (activeClaudeBridgeView === view) invalidateClaudeBridgeDocument()
             noteBridgePageUrl(view, url)
             scheduleGlmBlankPageRecovery(view, url)
             rememberGoogleOAuthStartUrl(url)
@@ -514,11 +522,11 @@ open class WebLoginActivity : Activity() {
                 noteBridgePageUrl(view, "about:blank")
                 return false
             }
-            if (isClaudeAboutBlankBridgeNavigation(url)) {
-                noteBridgePageUrl(view, "about:blank")
+            if (isPendingClaudeBridgeNavigation(view, url)) {
                 return false
             }
             if (request.isForMainFrame) {
+                if (activeClaudeBridgeView === view) invalidateClaudeBridgeDocument()
                 noteBridgePageUrl(view, url)
                 rememberGoogleOAuthStartUrl(url)
                 if (maybeRecoverGoogleCookieMismatch(view, url)) return true
@@ -807,9 +815,15 @@ open class WebLoginActivity : Activity() {
 
     private inner class UsageBridge(
         private val ownerView: WebView,
+        private val claudeBridgeGeneration: Long? = null,
     ) {
         private fun activePageUrl(): String? {
             if (!::webView.isInitialized || ownerView !== webView || finished) return null
+            if (providerId == ProviderId.CLAUDE && claudeNativeCollectionStarted &&
+                (claudeBridgeGeneration == null || claudeBridgeGeneration != activeClaudeBridgeGeneration)
+            ) {
+                return null
+            }
             return activeLoginBridgePageUrl(
                 logicalPageUrl = currentBridgePageUrl,
                 ownerPageUrl = ownerView.url,
@@ -1553,10 +1567,15 @@ open class WebLoginActivity : Activity() {
         if (providerId != ProviderId.CODEX || finished || codexPostLoginUsageRedirected || codexNativeCollectionStarted) return false
         val page = runCatching { URI(pageUrl) }.getOrNull() ?: return false
         val resource = runCatching { URI(resourceUrl) }.getOrNull() ?: return false
+        if (!page.scheme.equals("https", ignoreCase = true) ||
+            !resource.scheme.equals("https", ignoreCase = true)
+        ) {
+            return false
+        }
         val pageHost = page.host.orEmpty().lowercase(Locale.US)
         val resourceHost = resource.host.orEmpty().lowercase(Locale.US)
-        if (pageHost != "chatgpt.com" && !pageHost.endsWith(".chatgpt.com")) return false
-        if (resourceHost != "chatgpt.com" && !resourceHost.endsWith(".chatgpt.com")) return false
+        if (!ProviderLoginStrategy.isCodexHost(pageHost)) return false
+        if (!ProviderLoginStrategy.isCodexHost(resourceHost)) return false
         val pagePath = page.path.orEmpty().lowercase(Locale.US)
         if (pagePath.startsWith("/codex/cloud/settings/analytics") || pagePath.startsWith("/codex/settings/usage")) return false
         if (pagePath.startsWith("/auth") || pagePath.startsWith("/login")) return false
@@ -1603,18 +1622,48 @@ open class WebLoginActivity : Activity() {
     private fun isClaudeAboutBlankBridgeNavigation(url: String): Boolean {
         return providerId == ProviderId.CLAUDE &&
             claudeNativeCollectionStarted &&
+            !claudeBridgeLoadPending &&
+            (url == "about:blank" || url == CLAUDE_ABOUT_BLANK_BASE_URL)
+    }
+
+    private fun isPendingClaudeBridgeNavigation(view: WebView, url: String): Boolean {
+        return providerId == ProviderId.CLAUDE &&
+            claudeBridgeLoadPending &&
+            activeClaudeBridgeView === view &&
             (url == "about:blank" || url == CLAUDE_ABOUT_BLANK_BASE_URL)
     }
 
     private fun loadClaudeAboutBlankBridgeDocument(view: WebView) {
+        invalidateClaudeBridgeDocument()
+        nextClaudeBridgeGeneration += 1
+        activeClaudeBridgeGeneration = nextClaudeBridgeGeneration
         activeClaudeBridgeView = view
+        claudeBridgeLoadPending = true
+        view.removeJavascriptInterface(BRIDGE_NAME)
+        val bridgeName = "${BRIDGE_NAME}_${UUID.randomUUID().toString().replace("-", "")}"
+        activeClaudeBridgeName = bridgeName
+        view.addJavascriptInterface(UsageBridge(view, nextClaudeBridgeGeneration), bridgeName)
+        val bridgeHtml = "<!doctype html><html><head><meta charset=\"utf-8\"><script>" +
+            "window.$BRIDGE_NAME=window.$bridgeName;</script></head><body></body></html>"
         view.loadDataWithBaseURL(
             CLAUDE_ABOUT_BLANK_BASE_URL,
-            CLAUDE_ABOUT_BLANK_HTML,
+            bridgeHtml,
             "text/html",
             "UTF-8",
             "about:blank"
         )
+    }
+
+    private fun invalidateClaudeBridgeDocument() {
+        val bridgeView = activeClaudeBridgeView
+        val bridgeName = activeClaudeBridgeName
+        if (bridgeView != null && bridgeName != null) {
+            bridgeView.removeJavascriptInterface(bridgeName)
+        }
+        activeClaudeBridgeView = null
+        activeClaudeBridgeGeneration = null
+        activeClaudeBridgeName = null
+        claudeBridgeLoadPending = false
     }
 
     private fun recoverCodexFromLocalAuthCallback(view: WebView, url: String) {
@@ -2434,7 +2483,6 @@ open class WebLoginActivity : Activity() {
         private const val CODEX_NATIVE_HEADER_FALLBACK_KEY = "*"
         private const val CLAUDE_NATIVE_HEADER_WILDCARD_KEY = "claude:*"
         private const val CLAUDE_ABOUT_BLANK_BASE_URL = "https://claude.ai/"
-        private const val CLAUDE_ABOUT_BLANK_HTML = "<!doctype html><html><head><meta charset=\"utf-8\"></head><body></body></html>"
         private const val PAGE_CAPTURE_SCRIPT =
             "(function(){return (document.documentElement.innerText||document.title||'').slice(0,12000);})()"
 

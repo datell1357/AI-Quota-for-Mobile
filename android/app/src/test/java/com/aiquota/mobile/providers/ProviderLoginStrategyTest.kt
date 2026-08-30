@@ -110,6 +110,8 @@ class ProviderLoginStrategyTest {
         assertFalse(ProviderLoginStrategy.shouldStartClaudeNativeCollection("https://claude.ai/logout"))
         assertFalse(ProviderLoginStrategy.shouldStartClaudeNativeCollection("https://accounts.google.com/signin"))
         assertFalse(ProviderLoginStrategy.shouldStartClaudeNativeCollection("https://example.com/chat/abc123"))
+        assertFalse(ProviderLoginStrategy.shouldStartClaudeNativeCollection("https://evil.claude.ai/chat/abc123"))
+        assertFalse(ProviderLoginStrategy.shouldStartClaudeNativeCollection("http://claude.ai/chat/abc123"))
         assertFalse(
             ProviderLoginStrategy.shouldStartClaudeNativeCollectionFromResource(
                 "https://claude.ai/api/organizations/discoverable"
