@@ -437,21 +437,71 @@ fun AIQuotaAppShell(
         }
     }
 
+    fun refreshExactCard(accountId: ProviderAccountId) {
+        cardRuntime.requestRefresh(accountId)
+    }
+
     fun connectExactCard(accountId: ProviderAccountId) {
-        if (accountId.providerId !in setOf(ProviderId.CLAUDE, ProviderId.CODEX)) {
-            connectProvider(accountId.providerId)
+        val card = cardRuntime.state.card(accountId) ?: run {
+            route = AppRoute.Home
             return
         }
         route = AppRoute.ProviderDetail(accountId)
+        ProviderCollectionCaches.invalidate(accountId.providerId)
         val connector = connectorRegistry.connectorFor(accountId.providerId)
         val startUrl = connector.startUrl
-        if (startUrl.isBlank() || !ProviderHostAllowlist.isAllowed(accountId.providerId, startUrl)) {
+        val isSingleInstanceSpecial = accountId.providerId == ProviderId.GLM ||
+            accountId.providerId == ProviderId.ANTIGRAVITY
+        val now = Instant.now().toString()
+        if (!isSingleInstanceSpecial &&
+            (startUrl.isBlank() || !ProviderHostAllowlist.isAllowed(accountId.providerId, startUrl))
+        ) {
+            cardRuntime.writeSnapshot(
+                accountId,
+                ProviderUsageSnapshot.unavailable(
+                    providerId = accountId.providerId,
+                    message = launchContext.getString(
+                        R.string.provider_login_unavailable_message,
+                        accountId.providerId.displayName
+                    )
+                ).copy(updatedAt = now)
+            )
             return
         }
-        runCatching {
-            val loginIntent = WebLoginActivity.createIntent(launchContext, accountId, startUrl)
-            if (launchContext !is Activity) loginIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            launchContext.startActivity(loginIntent)
+        cardRuntime.writeSnapshot(
+            accountId,
+            card.displayRecord.snapshot.copy(
+                connectionState = ProviderConnectionState.CONNECTING,
+                refreshState = ProviderRefreshState.REFRESHING,
+                updatedAt = snapshotUpdatedAtForStatusTransition(card.displayRecord.snapshot, now),
+                statusUpdatedAt = now,
+                message = launchContext.getString(R.string.provider_login_opened_message)
+            )
+        )
+        scheduleTransientStateExpiryRefresh()
+        coroutineScope.launch {
+            providerSessionResetter.awaitProviderWebSessionCleanup(accountId.providerId)
+            val launchResult = runCatching {
+                val loginIntent = when (accountId.providerId) {
+                    ProviderId.GLM -> GlmApiKeyActivity.createIntent(launchContext)
+                    ProviderId.ANTIGRAVITY -> AntigravityLoopbackOAuthActivity.createIntent(launchContext)
+                    else -> WebLoginActivity.createIntent(launchContext, accountId, startUrl)
+                }
+                if (launchContext !is Activity) loginIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                launchContext.startActivity(loginIntent)
+            }
+            launchResult.exceptionOrNull()?.let {
+                cardRuntime.writeSnapshot(
+                    accountId,
+                    ProviderUsageSnapshot(
+                        providerId = accountId.providerId,
+                        connectionState = ProviderConnectionState.ERROR,
+                        refreshState = ProviderRefreshState.IDLE,
+                        updatedAt = now,
+                        message = launchContext.getString(R.string.provider_login_open_failed_message)
+                    )
+                )
+            }
         }
     }
 
@@ -890,6 +940,7 @@ fun AIQuotaAppShell(
                                     gaugeColors = cardRuntime.gaugeColors,
                                     onCardSelected = ::selectExactCard,
                                     onConnectCard = ::connectExactCard,
+                                    onRefreshCard = ::refreshExactCard,
                                     onReorderCard = cardRuntime::reorder,
                                     onAddWidget = { showDashboardWidgetPicker = true },
                                     onOpenSettings = { route = AppRoute.Settings },

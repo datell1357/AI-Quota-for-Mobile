@@ -7,6 +7,33 @@ import org.junit.Test
 
 class AIQuotaAppShellAuthRoutingTest {
     @Test
+    fun exactConnectRetainsAccountLifecycleAndCannotUseProviderCompatibilityFallback() {
+        val source = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
+        val exactConnect = source.substringAfter("fun connectExactCard")
+            .substringBefore("fun disconnectProvider")
+
+        assertFalse(exactConnect.contains("connectProvider("))
+        assertFalse(exactConnect.contains("compatibilityAccount("))
+        assertTrue(exactConnect.contains("ProviderCollectionCaches.invalidate(accountId.providerId)"))
+        assertTrue(exactConnect.contains("providerSessionResetter.awaitProviderWebSessionCleanup(accountId.providerId)"))
+        assertTrue(exactConnect.contains("WebLoginActivity.createIntent(launchContext, accountId, startUrl)"))
+    }
+
+    @Test
+    fun exactConnectSchedulesTransientStateExpiryAfterStartingExactCard() {
+        val source = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
+        val exactConnect = source.substringAfter("fun connectExactCard")
+            .substringBefore("fun disconnectProvider")
+
+        val writeIndex = exactConnect.indexOf(
+            "cardRuntime.writeSnapshot(\n            accountId,\n            card.displayRecord.snapshot.copy("
+        )
+        val scheduleIndex = exactConnect.indexOf("scheduleTransientStateExpiryRefresh()")
+        assertTrue(writeIndex >= 0)
+        assertTrue(scheduleIndex > writeIndex)
+    }
+
+    @Test
     fun copilotMissingNativePayloadDoesNotBypassRecoverableFailurePolicy() {
         val source = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
 

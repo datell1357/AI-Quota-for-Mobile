@@ -307,7 +307,7 @@ fun UnifiedDashboardScreen(
                                 dropPlacement = dashboardDropPlacement(
                                     visibleIndex = visibleIndex,
                                     visibleCount = previewProviders.size,
-                                    draggedProvider = draggedProvider,
+                                    isDragging = draggedProvider != null,
                                     dropSlotIndex = dropSlotIndex
                                 ),
                                 previewTargetIndex = previewDragTargetIndex,
@@ -368,7 +368,7 @@ fun UnifiedDashboardScreen(
                                 dropPlacement = dashboardDropPlacement(
                                     visibleIndex = visibleIndex,
                                     visibleCount = previewProviders.size,
-                                    draggedProvider = draggedProvider,
+                                    isDragging = draggedProvider != null,
                                     dropSlotIndex = dropSlotIndex
                                 ),
                                 previewTargetIndex = previewDragTargetIndex,
@@ -428,6 +428,7 @@ fun UnifiedDashboardScreen(
     gaugeColors: Map<ProviderAccountId, String>,
     onCardSelected: (ProviderAccountId) -> Unit,
     onConnectCard: (ProviderAccountId) -> Unit,
+    onRefreshCard: (ProviderAccountId) -> Unit = {},
     onReorderCard: (ProviderAccountId, Int) -> Unit,
     onAddWidget: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -444,6 +445,7 @@ fun UnifiedDashboardScreen(
         gaugeColors = gaugeColors,
         onCardSelected = onCardSelected,
         onConnectCard = onConnectCard,
+        onRefreshCard = onRefreshCard,
         onReorderCard = onReorderCard,
         onAddWidget = onAddWidget,
         onOpenSettings = onOpenSettings,
@@ -538,7 +540,7 @@ internal fun EmptyDashboardState(layoutMetrics: AppLayoutMetrics) {
 }
 
 @Composable
-private fun DashboardDragOverlay(
+internal fun DashboardDragOverlay(
     providerId: ProviderId,
     snapshot: ProviderUsageSnapshot,
     gaugeColorHex: String?,
@@ -603,9 +605,12 @@ internal fun ProviderUsageCard(
     modifier: Modifier,
     isPlaceholder: Boolean = false,
     dragEnabled: Boolean = true,
+    showConnectAction: Boolean = snapshot.shouldShowDashboardConnectAction(),
+    showRefreshAction: Boolean = false,
     forceDraggingVisual: Boolean = false,
     onProviderSelected: (ProviderId) -> Unit,
     onConnectProvider: (ProviderId) -> Unit,
+    onRefreshProvider: (ProviderId) -> Unit = {},
     onReorderProvider: (ProviderId, Int) -> Unit,
     onCardCenterChanged: (ProviderId, DashboardCardCenter) -> Unit,
     onDragStateChanged: (ProviderId, Boolean) -> Unit,
@@ -892,7 +897,7 @@ internal fun ProviderUsageCard(
                     // 연결 버튼은 카드 우하단에 겹쳐 그려진다. 카드형처럼 폭이 좁으면 본문이
                     // 버튼 자리까지 내려와 글자가 가려지므로 그만큼 아래 여백을 준다.
                     val connectActionInset = if (
-                        snapshot.shouldShowDashboardConnectAction() &&
+                        showConnectAction &&
                         layoutMetrics.dashboardGridColumnCount > 1 &&
                         isCompactDashboardCard
                     ) {
@@ -957,7 +962,7 @@ internal fun ProviderUsageCard(
                         }
                     }
 
-                    if (snapshot.shouldShowDashboardConnectAction()) {
+                    if (showConnectAction) {
                         Button(
                             onClick = { onConnectProvider(providerId) },
                             modifier = Modifier
@@ -977,6 +982,33 @@ internal fun ProviderUsageCard(
                         ) {
                             Text(
                                 text = stringResource(R.string.provider_connect),
+                                style = if (isDenseCardText) {
+                                    MaterialTheme.typography.labelSmall
+                                } else {
+                                    LocalTextStyle.current
+                                }
+                            )
+                        }
+                    } else if (showRefreshAction) {
+                        Button(
+                            onClick = { onRefreshProvider(providerId) },
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .then(
+                                    if (isDenseCardText) {
+                                        Modifier.defaultMinSize(minWidth = 64.dp, minHeight = 28.dp)
+                                    } else {
+                                        Modifier
+                                    }
+                                ),
+                            contentPadding = if (isDenseCardText) {
+                                PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                            } else {
+                                ButtonDefaults.ContentPadding
+                            }
+                        ) {
+                            Text(
+                                text = stringResource(R.string.provider_refresh),
                                 style = if (isDenseCardText) {
                                     MaterialTheme.typography.labelSmall
                                 } else {
@@ -1177,13 +1209,13 @@ internal fun dashboardAutoScrollDelta(
     }
 }
 
-private fun dashboardDropPlacement(
+internal fun dashboardDropPlacement(
     visibleIndex: Int,
     visibleCount: Int,
-    draggedProvider: ProviderId?,
+    isDragging: Boolean,
     dropSlotIndex: Int?
 ): DashboardDropPlacement? {
-    if (draggedProvider == null || dropSlotIndex == null || visibleCount <= 0) return null
+    if (!isDragging || dropSlotIndex == null || visibleCount <= 0) return null
     return when {
         dropSlotIndex == visibleIndex -> DashboardDropPlacement.Top
         dropSlotIndex == visibleCount && visibleIndex == visibleCount - 1 -> DashboardDropPlacement.Bottom

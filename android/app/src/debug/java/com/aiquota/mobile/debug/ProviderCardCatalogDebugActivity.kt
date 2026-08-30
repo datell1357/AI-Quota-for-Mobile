@@ -1,15 +1,18 @@
 package com.aiquota.mobile.debug
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -18,6 +21,21 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.aiquota.mobile.accounts.AccountAuthState
+import com.aiquota.mobile.accounts.AccountGeneration
+import com.aiquota.mobile.accounts.AccountKey
+import com.aiquota.mobile.accounts.AccountRecord
+import com.aiquota.mobile.accounts.AccountState
+import com.aiquota.mobile.accounts.AccountDeletionState
+import com.aiquota.mobile.accounts.DisplayVersion
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
+import com.aiquota.mobile.accounts.ProviderCardDisplayRecord
+import com.aiquota.mobile.accounts.SessionRevision
+import com.aiquota.mobile.accounts.VersionedDisplayRecord
 import com.aiquota.mobile.local.AppTheme
 import com.aiquota.mobile.local.DashboardViewMode
 import com.aiquota.mobile.local.ProviderConnectionState
@@ -52,6 +70,10 @@ class ProviderCardCatalogDebugActivity : ComponentActivity() {
             else -> DashboardViewMode.LIST
         }
         val populated = !dataset.equals(DATASET_EMPTY, ignoreCase = true)
+        val exact = exactFixture(dataset)
+        if (exact != null && intent.getBooleanExtra(EXTRA_RESET_EXACT_FIXTURE, false)) {
+            resetExactFixtureOrder(applicationContext, dataset.orEmpty())
+        }
 
         setContent {
             ProviderCardCatalogDebugTheme {
@@ -62,7 +84,12 @@ class ProviderCardCatalogDebugActivity : ComponentActivity() {
                         .windowInsetsPadding(WindowInsets.safeDrawing),
                     color = AIQuotaTheme.colors.appBackground
                 ) {
-                    if (dataset.equals(DATASET_ONBOARDING, ignoreCase = true)) {
+                    if (exact != null) {
+                        ExactProviderCardCatalogPreview(
+                            dataset = dataset.orEmpty(),
+                            initialViewMode = initialViewMode,
+                        )
+                    } else if (dataset.equals(DATASET_ONBOARDING, ignoreCase = true)) {
                         ProviderOnboardingPreviewSurface()
                     } else {
                         UnifiedDashboardScreen(
@@ -84,17 +111,191 @@ class ProviderCardCatalogDebugActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        recreate()
+    }
+
     companion object {
         const val EXTRA_DATASET = "com.aiquota.mobile.debug.extra.DATASET"
         const val EXTRA_VIEW_MODE = "com.aiquota.mobile.debug.extra.VIEW_MODE"
+        const val EXTRA_RESET_EXACT_FIXTURE = "com.aiquota.mobile.debug.extra.RESET_EXACT_FIXTURE"
         const val DATASET_POPULATED = "populated"
         const val DATASET_EMPTY = "empty"
         const val DATASET_ONBOARDING = "onboarding"
+        const val DATASET_EXACT_HAPPY = "exact-happy"
+        const val DATASET_EXACT_REFRESH = "exact-refresh"
+        const val DATASET_EXACT_ZERO = "exact-zero"
+        const val DATASET_EXACT_ONE = "exact-one"
+        const val DATASET_EXACT_EDGE = "exact-edge"
+        const val DATASET_EXACT_REAUTH = "exact-reauth"
         const val VIEW_MODE_LIST = "list"
         const val VIEW_MODE_GRID = "grid"
         const val VIEW_MODE_CARD = "card"
     }
 }
+
+@Composable
+private fun ExactProviderCardCatalogPreview(dataset: String, initialViewMode: DashboardViewMode) {
+    val context = LocalContext.current.applicationContext
+    val fixture = remember(dataset) { loadExactFixture(context, dataset) }
+    var cards by remember(dataset) { mutableStateOf(fixture) }
+    var viewMode by remember(dataset, initialViewMode) { mutableStateOf(initialViewMode) }
+    var selectedAlias by remember(dataset) { mutableStateOf<String?>(null) }
+    var busyAccountIds by remember(dataset) { mutableStateOf<Set<ProviderAccountId>>(emptySet()) }
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = AIQuotaTheme.colors.appBackground,
+    ) {
+        androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
+            UnifiedDashboardScreen(
+                cards = cards,
+                busyAccountIds = busyAccountIds,
+                errors = emptyMap(),
+                gaugeColors = emptyMap(),
+                onCardSelected = { accountId ->
+                    selectedAlias = cards.firstOrNull { it.accountId == accountId }?.alias
+                },
+                onConnectCard = { accountId ->
+                    selectedAlias = cards.firstOrNull { it.accountId == accountId }?.alias?.let { alias ->
+                        "Connect requested ${ProviderAccountIdStorageCodec.encode(accountId)} $alias"
+                    }
+                },
+                onRefreshCard = { accountId ->
+                    busyAccountIds = setOf(accountId)
+                    selectedAlias = cards.firstOrNull { it.accountId == accountId }?.alias?.let { "Refresh requested $it" }
+                },
+                onReorderCard = { accountId, targetIndex ->
+                    val ordered = cards.map(ProviderCardDisplayRecord::accountId).toMutableList()
+                    if (ordered.remove(accountId)) {
+                        ordered.add(targetIndex.coerceIn(0, ordered.size), accountId)
+                        val byId = cards.associateBy(ProviderCardDisplayRecord::accountId)
+                        cards = ordered.mapIndexed { index, id -> byId.getValue(id).copy(activeRank = index) }
+                        saveExactFixtureOrder(context, dataset, ordered)
+                    }
+                },
+                onAddWidget = {},
+                onOpenSettings = {},
+                viewMode = viewMode,
+                onSelectViewMode = { viewMode = it },
+                modifier = Modifier.fillMaxSize(),
+            )
+            selectedAlias?.let { alias ->
+                Text(
+                    text = "Selected $alias",
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp),
+                    color = AIQuotaTheme.colors.textPrimary,
+                )
+            }
+        }
+    }
+}
+
+private fun loadExactFixture(context: android.content.Context, dataset: String): List<ProviderCardDisplayRecord> {
+    val base = exactFixture(dataset).orEmpty()
+    val preferences = context.getSharedPreferences(EXACT_FIXTURE_PREFERENCES, android.content.Context.MODE_PRIVATE)
+    val byId = base.associateBy(ProviderCardDisplayRecord::accountId)
+    val saved = preferences.getString(exactFixtureOrderKey(dataset), null)
+        .orEmpty()
+        .split("\n")
+        .mapNotNull(ProviderAccountIdStorageCodec::decodeOrNull)
+        .filter { it in byId }
+    val ordered = (saved + base.map(ProviderCardDisplayRecord::accountId)).distinct()
+    return ordered.mapIndexed { index, id -> byId.getValue(id).copy(activeRank = index) }
+}
+
+private fun resetExactFixtureOrder(context: android.content.Context, dataset: String) {
+    context.getSharedPreferences(EXACT_FIXTURE_PREFERENCES, android.content.Context.MODE_PRIVATE)
+        .edit()
+        .remove(exactFixtureOrderKey(dataset))
+        .commit()
+}
+
+private fun saveExactFixtureOrder(
+    context: android.content.Context,
+    dataset: String,
+    ordered: List<ProviderAccountId>,
+) {
+    context.getSharedPreferences(EXACT_FIXTURE_PREFERENCES, android.content.Context.MODE_PRIVATE)
+        .edit()
+        .putString(exactFixtureOrderKey(dataset), ordered.joinToString("\n", transform = ProviderAccountIdStorageCodec::encode))
+        .apply()
+}
+
+private fun exactFixtureOrderKey(dataset: String): String = "order:$dataset"
+
+private const val EXACT_FIXTURE_PREFERENCES = "task21_exact_dashboard_fixture"
+
+private fun exactFixture(dataset: String?): List<ProviderCardDisplayRecord>? {
+    val normalized = dataset?.trim()?.lowercase() ?: return null
+    val cards = when (normalized) {
+        ProviderCardCatalogDebugActivity.DATASET_EXACT_HAPPY -> listOf(
+            exactCard(ProviderId.CLAUDE, "Claude", ACCOUNT_ONE, AccountAuthState.AUTHENTICATED),
+            exactCard(ProviderId.CODEX, "Codex", ACCOUNT_TWO, AccountAuthState.AUTHENTICATED),
+            exactCard(ProviderId.CODEX, "Codex 2", ACCOUNT_THREE, AccountAuthState.AUTHENTICATED),
+        )
+        ProviderCardCatalogDebugActivity.DATASET_EXACT_REFRESH -> listOf(
+            exactCard(ProviderId.CODEX, "Codex", ACCOUNT_TWO, AccountAuthState.AUTHENTICATED),
+            exactCard(ProviderId.CODEX, "Codex 2", ACCOUNT_THREE, AccountAuthState.AUTHENTICATED),
+        )
+        ProviderCardCatalogDebugActivity.DATASET_EXACT_ZERO -> emptyList()
+        ProviderCardCatalogDebugActivity.DATASET_EXACT_ONE -> listOf(
+            exactCard(ProviderId.CODEX, "Codex Work Account With A Very Long Alias Name", ACCOUNT_TWO, AccountAuthState.AUTHENTICATED),
+        )
+        ProviderCardCatalogDebugActivity.DATASET_EXACT_EDGE -> listOf(
+            exactCard(ProviderId.CLAUDE, "Claude", ACCOUNT_ONE, AccountAuthState.AUTHENTICATED),
+            exactCard(ProviderId.CODEX, "Codex", ACCOUNT_TWO, AccountAuthState.AUTHENTICATED),
+        )
+        ProviderCardCatalogDebugActivity.DATASET_EXACT_REAUTH -> listOf(
+            exactCard(ProviderId.CODEX, "Codex", ACCOUNT_TWO, AccountAuthState.AUTHENTICATED),
+            exactCard(ProviderId.CODEX, "Codex 2", ACCOUNT_THREE, AccountAuthState.REAUTH_REQUIRED, includeUsage = false),
+        )
+        else -> return null
+    }
+    return cards.mapIndexed { index, card -> card.copy(activeRank = index) }
+}
+
+private fun exactCard(
+    providerId: ProviderId,
+    alias: String,
+    accountKey: AccountKey,
+    authState: AccountAuthState,
+    includeUsage: Boolean = true,
+): ProviderCardDisplayRecord {
+    val id = ProviderAccountId(providerId, accountKey)
+    val version = DisplayVersion.of(accountKey.hashCode().toLong().and(Long.MAX_VALUE).coerceAtLeast(1))
+    val account = AccountRecord(
+        id = id,
+        state = AccountState.ACTIVE,
+        authState = authState,
+        deletionState = AccountDeletionState.NONE,
+        generation = AccountGeneration.of(1),
+        sessionRevision = SessionRevision.of(1),
+        alias = alias,
+        modifiedVersion = version,
+    )
+    val snapshot = ProviderUsageSnapshot(
+        providerId = providerId,
+        connectionState = if (authState == AccountAuthState.REAUTH_REQUIRED) {
+            ProviderConnectionState.INTERACTIVE_AUTH_REQUIRED
+        } else {
+            ProviderConnectionState.CONNECTED
+        },
+        planLabel = "Synthetic",
+        account = alias,
+        updatedAt = FIXED_UPDATED_AT,
+        statusUpdatedAt = FIXED_UPDATED_AT,
+        lines = if (includeUsage) listOf(
+            ProviderUsageLine(label = "Quota", remainingPercent = 0.72f, remainingText = "72% left"),
+        ) else emptyList(),
+    )
+    return ProviderCardDisplayRecord(VersionedDisplayRecord(account, snapshot, version), activeRank = 0)
+}
+
+private val ACCOUNT_ONE = AccountKey.parseOpaque("acct_00000000000000000000000000000001")
+private val ACCOUNT_TWO = AccountKey.parseOpaque("acct_00000000000000000000000000000002")
+private val ACCOUNT_THREE = AccountKey.parseOpaque("acct_00000000000000000000000000000003")
 
 @Composable
 internal fun ProviderCardCatalogDebugTheme(content: @Composable () -> Unit) {

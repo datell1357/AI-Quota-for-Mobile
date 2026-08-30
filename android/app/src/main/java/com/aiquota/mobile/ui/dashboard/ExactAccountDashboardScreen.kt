@@ -1,6 +1,7 @@
 package com.aiquota.mobile.ui.dashboard
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,9 +28,12 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +49,7 @@ import com.aiquota.mobile.ui.AppLayoutMetrics
 import com.aiquota.mobile.ui.dashboardProviderCardHeightDp
 import com.aiquota.mobile.ui.forDashboardViewMode
 import com.aiquota.mobile.ui.rememberAppLayoutMetrics
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /** Existing dashboard chrome with exact account-card interaction keys. Visual redesign stays in Todo 21/22. */
@@ -56,6 +61,7 @@ internal fun ExactDashboardCardsContent(
     gaugeColors: Map<ProviderAccountId, String>,
     onCardSelected: (ProviderAccountId) -> Unit,
     onConnectCard: (ProviderAccountId) -> Unit,
+    onRefreshCard: (ProviderAccountId) -> Unit,
     onReorderCard: (ProviderAccountId, Int) -> Unit,
     onAddWidget: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -68,18 +74,49 @@ internal fun ExactDashboardCardsContent(
     val layoutMetrics = rememberAppLayoutMetrics().forDashboardViewMode(viewMode)
     val colors = AIQuotaTheme.colors
     val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
     val content = providerCardDashboardContent(cards, busyAccountIds, errors)
     val contentById = content.associateBy(ProviderCardDashboardContent::accountId)
     val orderedIds = content.map(ProviderCardDashboardContent::accountId)
     val centers = remember { mutableStateMapOf<ProviderAccountId, DashboardCardCenter>() }
     var draggedAccount by remember { mutableStateOf<ProviderAccountId?>(null) }
     var previewTargetIndex by remember { mutableStateOf<Int?>(null) }
+    var dropSlotIndex by remember { mutableStateOf<Int?>(null) }
+    var dashboardRootPosition by remember { mutableStateOf(DashboardCardCenter(0f, 0f)) }
+    var dragOverlayBounds by remember { mutableStateOf<DashboardCardBounds?>(null) }
+    var dragOverlayOffsetX by remember { mutableStateOf(0f) }
+    var dragOverlayOffsetY by remember { mutableStateOf(0f) }
     val previewIds = ProviderCardOrder.previewExactVisibleOrder(orderedIds, draggedAccount, previewTargetIndex)
     val visibleCenters = previewIds.map { centers[it] ?: DashboardCardCenter(Float.NaN, Float.NaN) }
 
-    BoxWithConstraints(modifier = modifier) {
+    BoxWithConstraints(
+        modifier = modifier.onGloballyPositioned { coordinates ->
+            val position = coordinates.positionInRoot()
+            dashboardRootPosition = DashboardCardCenter(position.x, position.y)
+        }
+    ) {
+        val density = androidx.compose.ui.platform.LocalDensity.current
         val cardHeightDp = dashboardProviderCardHeightDp(maxHeight.value.roundToInt(), layoutMetrics)
         val columns = layoutMetrics.dashboardGridColumnCount.coerceAtLeast(1)
+        val viewportTopY = dashboardRootPosition.y
+        val viewportBottomY = dashboardRootPosition.y + with(density) { maxHeight.toPx() }
+        val edgeThresholdPx = with(density) { 96.dp.toPx() }
+        val onAutoScroll: (Float) -> Unit = { draggedCenterY ->
+            val delta = dashboardAutoScrollDelta(
+                draggedCenterY = draggedCenterY,
+                viewportTopY = viewportTopY,
+                viewportBottomY = viewportBottomY,
+                edgeThresholdPx = edgeThresholdPx,
+            )
+            if (delta != 0f) {
+                coroutineScope.launch { scrollState.scrollBy(delta) }
+            }
+        }
+        val onDragOverlayChanged: (DashboardCardBounds?, Float, Float) -> Unit = { bounds, offsetX, offsetY ->
+            dragOverlayBounds = bounds
+            dragOverlayOffsetX = offsetX
+            dragOverlayOffsetY = offsetY
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -154,7 +191,7 @@ internal fun ExactDashboardCardsContent(
                 ProviderCatalogEmptyState(layoutMetrics, onAddProvider)
             } else if (columns == 1) {
                 previewIds.forEachIndexed { index, accountId ->
-                    key(accountId) {
+                    key(ProviderAccountIdStorageCodec.encode(accountId)) {
                         ExactProviderUsageCard(
                             content = contentById.getValue(accountId),
                             index = index,
@@ -162,16 +199,31 @@ internal fun ExactDashboardCardsContent(
                             cardHeightDp = cardHeightDp,
                             layoutMetrics = layoutMetrics,
                             previewTargetIndex = previewTargetIndex,
+                            dropSlotIndex = dropSlotIndex,
+                            isPlaceholder = accountId == draggedAccount,
+                            isDragging = draggedAccount != null,
                             gaugeColor = gaugeColors[accountId],
+                            showConnectAction = contentById.getValue(accountId).showConnectAction,
+                            showRefreshAction = contentById.getValue(accountId).showRefreshAction,
                             onCardSelected = onCardSelected,
                             onConnectCard = onConnectCard,
+                            onRefreshCard = onRefreshCard,
                             onReorderCard = onReorderCard,
                             onCenter = { center -> centers[accountId] = center },
                             onDragging = { dragging ->
                                 draggedAccount = accountId.takeIf { dragging }
-                                if (!dragging) previewTargetIndex = null
+                                if (dragging) {
+                                    previewTargetIndex = orderedIds.indexOf(accountId).takeIf { it >= 0 }
+                                } else {
+                                    previewTargetIndex = null
+                                    dropSlotIndex = null
+                                }
                             },
+                            onDropSlot = { dropSlotIndex = it },
                             onPreviewTarget = { previewTargetIndex = it },
+                            onDragOverlayChanged = onDragOverlayChanged,
+                            onAutoScroll = onAutoScroll,
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
@@ -186,6 +238,11 @@ internal fun ExactDashboardCardsContent(
                     verticalArrangement = Arrangement.spacedBy(layoutMetrics.sectionSpacingDp.dp),
                 ) {
                     itemsIndexed(previewIds, key = { _, id -> ProviderAccountIdStorageCodec.encode(id) }) { index, accountId ->
+                        val cardModifier = if (accountId == draggedAccount) {
+                            Modifier.fillMaxWidth()
+                        } else {
+                            Modifier.animateItem().fillMaxWidth()
+                        }
                         ExactProviderUsageCard(
                             content = contentById.getValue(accountId),
                             index = index,
@@ -193,19 +250,52 @@ internal fun ExactDashboardCardsContent(
                             cardHeightDp = cardHeightDp,
                             layoutMetrics = layoutMetrics,
                             previewTargetIndex = previewTargetIndex,
+                            dropSlotIndex = dropSlotIndex,
+                            isPlaceholder = accountId == draggedAccount,
+                            isDragging = draggedAccount != null,
                             gaugeColor = gaugeColors[accountId],
+                            showConnectAction = contentById.getValue(accountId).showConnectAction,
+                            showRefreshAction = contentById.getValue(accountId).showRefreshAction,
                             onCardSelected = onCardSelected,
                             onConnectCard = onConnectCard,
+                            onRefreshCard = onRefreshCard,
                             onReorderCard = onReorderCard,
                             onCenter = { center -> centers[accountId] = center },
                             onDragging = { dragging ->
                                 draggedAccount = accountId.takeIf { dragging }
-                                if (!dragging) previewTargetIndex = null
+                                if (dragging) {
+                                    previewTargetIndex = orderedIds.indexOf(accountId).takeIf { it >= 0 }
+                                } else {
+                                    previewTargetIndex = null
+                                    dropSlotIndex = null
+                                }
                             },
+                            onDropSlot = { dropSlotIndex = it },
                             onPreviewTarget = { previewTargetIndex = it },
+                            onDragOverlayChanged = onDragOverlayChanged,
+                            onAutoScroll = onAutoScroll,
+                            modifier = cardModifier,
                         )
                     }
                 }
+            }
+        }
+        val overlayAccount = draggedAccount
+        val overlayBounds = dragOverlayBounds
+        if (overlayAccount != null && overlayBounds != null) {
+            val overlayContent = contentById[overlayAccount]
+            if (overlayContent != null) {
+                DashboardDragOverlay(
+                    providerId = overlayAccount.providerId,
+                    snapshot = overlayContent.snapshot,
+                    gaugeColorHex = gaugeColors[overlayAccount],
+                    bounds = overlayBounds,
+                    offsetX = dragOverlayOffsetX,
+                    offsetY = dragOverlayOffsetY,
+                    rootPosition = dashboardRootPosition,
+                    cardHeightDp = cardHeightDp,
+                    layoutMetrics = layoutMetrics,
+                )
             }
         }
     }
@@ -221,13 +311,23 @@ private fun ExactProviderUsageCard(
     cardHeightDp: Int,
     layoutMetrics: AppLayoutMetrics,
     previewTargetIndex: Int?,
+    dropSlotIndex: Int?,
+    isPlaceholder: Boolean,
+    isDragging: Boolean,
     gaugeColor: String?,
+    showConnectAction: Boolean,
+    showRefreshAction: Boolean,
     onCardSelected: (ProviderAccountId) -> Unit,
     onConnectCard: (ProviderAccountId) -> Unit,
+    onRefreshCard: (ProviderAccountId) -> Unit,
     onReorderCard: (ProviderAccountId, Int) -> Unit,
     onCenter: (DashboardCardCenter) -> Unit,
     onDragging: (Boolean) -> Unit,
+    onDropSlot: (Int?) -> Unit,
     onPreviewTarget: (Int?) -> Unit,
+    onDragOverlayChanged: (DashboardCardBounds?, Float, Float) -> Unit,
+    onAutoScroll: (Float) -> Unit,
+    modifier: Modifier,
 ) {
     val id = content.accountId
     ProviderUsageCard(
@@ -236,20 +336,29 @@ private fun ExactProviderUsageCard(
         snapshot = content.snapshot,
         visibleIndex = index,
         visibleCardCenters = centers,
-        dropPlacement = null,
+        dropPlacement = dashboardDropPlacement(
+            visibleIndex = index,
+            visibleCount = centers.size,
+            isDragging = isDragging,
+            dropSlotIndex = dropSlotIndex,
+        ),
         previewTargetIndex = previewTargetIndex,
         cardHeightDp = cardHeightDp,
         layoutMetrics = layoutMetrics,
         gaugeColorHex = gaugeColor,
-        modifier = Modifier.fillMaxWidth(),
+        showConnectAction = showConnectAction,
+        showRefreshAction = showRefreshAction,
+        modifier = modifier,
+        isPlaceholder = isPlaceholder,
         onProviderSelected = { onCardSelected(id) },
         onConnectProvider = { onConnectCard(id) },
+        onRefreshProvider = { onRefreshCard(id) },
         onReorderProvider = { _, target -> onReorderCard(id, target) },
         onCardCenterChanged = { _, center -> onCenter(center) },
         onDragStateChanged = { _, dragging -> onDragging(dragging) },
-        onDropSlotChanged = {},
+        onDropSlotChanged = onDropSlot,
         onPreviewTargetChanged = onPreviewTarget,
-        onDragOverlayChanged = { _, _, _ -> },
-        onAutoScroll = {},
+        onDragOverlayChanged = onDragOverlayChanged,
+        onAutoScroll = onAutoScroll,
     )
 }
