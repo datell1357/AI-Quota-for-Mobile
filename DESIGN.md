@@ -1,6 +1,6 @@
 # AI Quota Android Design System
 
-This document is the visual and interaction contract for the provider-account card catalog approved in Task 6. It extracts the existing Android dashboard rather than redesigning it. Every statement labeled **Current** is grounded in the cited source or visual artifact. Every statement labeled **Future contract** is an approved requirement for Tasks 7-23 and is not a claim about the current build.
+This document began as the Task 6 visual and interaction contract for the provider-account card catalog. Tasks 7-25 have now implemented and qualified that contract in debug builds. Statements labeled **Future contract** below describe the approved design basis; the operational source of truth for the shipped branch is [Provider-card operation](docs/provider-card-operation.md), with remaining debt listed in Section 8.3.
 
 Source paths are repository-relative unless absolute. The approved plan is `../.omo/plans/provider-card-catalog-ui.md`; durable owner decisions are `/Users/yeoreum/.omo/memory/agents/ai-quota-f8cc5df1/repo/reference/projects/ai-quota/multi-account-decisions.md`.
 
@@ -121,6 +121,7 @@ The existing system is formula-based rather than a fixed named spacing scale. Ta
 - **Current:** `Scaffold` owns fixed top and bottom regions. Its padded content hosts the active route. `android/app/src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt:726-757`.
 - **Current:** The dashboard's padded `Column` is the sole vertical scroll owner. `android/app/src/main/java/com/aiquota/mobile/ui/dashboard/UnifiedDashboardScreen.kt:235-244`.
 - **Current:** A dashboard grid does not own another vertical scroll. Its exact calculated height is placed inside the outer scroll owner and `userScrollEnabled` is false. `android/app/src/main/java/com/aiquota/mobile/ui/dashboard/UnifiedDashboardScreen.kt:338-348`.
+- **Current provider-card catalog:** `ExactDashboardCardsContent` keeps dashboard controls outside one bounded `LazyVerticalGrid`. The grid lazily composes an unbounded catalog, brings a newly added card into view, and avoids the eager 1,000-card heap failure. `android/app/src/main/java/com/aiquota/mobile/ui/dashboard/ExactAccountDashboardScreen.kt`.
 - **Current:** Bottom navigation owns horizontal scrolling for a route list that exceeds available width and includes navigation-bar insets. `android/app/src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt:1176-1212`.
 - **Current:** Widget configuration owns document-style vertical scroll through one `ScrollView`. `android/app/src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt:202-214`.
 - **Future contract:** Onboarding, Add, naming, Remove, and confirmation are modal layers over the shell. A modal sheet may own its own bounded vertical scroll for long provider/card lists. It must not create an unnamed nested scroll region. The underlying dashboard does not scroll while a modal is active.
@@ -322,32 +323,19 @@ Task 6 verification is QA-by-read only because this change creates no rendered b
 
 Reference review record: image metadata reports `English_Screenshot.png` at 1403x1121 pixels and `Korean_Screenshot.png` at 1402x1122 pixels. Both show the same Windows 11 promotional composition and a dark phone-home widget with localized surrounding copy; CJK line wrapping remains materially taller in Korean. Because neither image shows the Compose dashboard, fidelity means preserving the app's source-defined dashboard and using the screenshots only to validate bilingual product context, icon/gauge recognizability, and CJK stress.
 
-### 8.3 Accepted debt at Task 6 boundary
+### 8.3 Accepted debt after Task 25 qualification
 
-| Debt | Current location/evidence | Why accepted now | Owner / exit |
-| --- | --- | --- | --- |
-| Current header Settings and view-mode controls are 40dp, below the 48dp future contract | `UnifiedDashboardScreen.kt:101,271-272,446-448` | Task 6 is contract/RED surface only and may not change production UI | Tasks 19 and 23 make affected actions at least 48dp and verify semantics bounds |
-| Current drag handle visual/semantic bounds are 32dp by 22dp | `UnifiedDashboardScreen.kt:994-1006` | Existing visual characterization must remain unchanged in Task 6 | Tasks 21 and 23 add 48dp target and semantic reorder actions without enlarging the glyph |
-| Dense Connect explicitly permits 64dp by 28dp minimum | `UnifiedDashboardScreen.kt:921-934` | Existing compact-card behavior is pinned before catalog UI changes | Tasks 21 and 23 provide a 48dp semantic target and verify 200% font |
-| Widget visibility `+`/`-` controls are 28dp and use symbol text | `DashboardWidgetConfigureActivity.kt:34-35,295-304,352-361` | Adjacent legacy surface is out of Task 6's only-file scope | Tasks 16, 22, and 23 replace exact-card management affordances with localized 48dp semantics |
-| Reduced-motion alternatives are not explicit for dashboard/widget reorder | Current motion citations in Section 6 | Production behavior cannot change in Task 6 | Tasks 19-23 add reduced-motion paths and semantic reorder |
-| Windows/macOS soft-boundary and selected macOS navigation contrast | `AIQuotaDesignTokens.kt:66-115`; `ProviderCatalogContrastTest.kt` | Resolved in Task 23 Lane A by remapping existing darker semantic roles; focused checks enforce 3:1 boundaries and 4.5:1 selected-navigation text | Re-run the focused checks when the palette changes |
-| The app exposes two light visual themes; declared macOS dark constants are not wired as a dark theme | `AIQuotaDesignTokens.kt:27-36,92-125`; `AIQuotaAppShell.kt:863-876` | Task 6 cannot invent a dark palette or alter theme behavior | Task 23 validates the actual Windows/macOS themes; a true dark-theme owner decision remains outside Tasks 6-23 unless separately approved |
-| Populated grid clips Kiro's one-line primary `Connection needs attention` status to `Connection needs` without an ellipsis; the full explanation remains visible in the secondary message and accessibility XML retains the complete source value | `UnifiedDashboardScreen.kt:889-894`; Task 6 real-surface evidence `task-6-real-surface-qa/populated-grid.png` and `populated-grid.xml` | The production renderer predates Task 6, and Task 6 must pin the faithful current surface without changing behavior | Task 23 adds an explicit overflow treatment or responsive status layout and verifies the complete state visually and semantically at narrow widths and 200% font |
-| Current UI is provider-keyed and collapses snapshots with `associateBy(providerId)` | `UnifiedDashboardScreen.kt:190-197`; shell routes at `AIQuotaAppShell.kt:757-805` | This is the explicit pre-catalog baseline | Tasks 7-17 establish exact-card authority/wiring; Tasks 18-23 consume it |
-| Required catalog/settings localization and Korean provider terminology | `values/strings.xml`; `values-ko/strings.xml`; `ProviderCatalogResourceContractTest.kt` | Resolved in Task 23 Lane A: EN/KO keys stay in parity, catalog/removal/auth/version resources are present, and Korean visible values do not leak the English provider term | UI lanes still wire the version resource and complete live-surface localization verification |
+| Debt or boundary | Current evidence | Exit condition |
+| --- | --- | --- |
+| The app exposes two qualified light visual themes; declared macOS dark constants are not a wired dark theme | `AIQuotaDesignTokens.kt`; Task 23 visual matrix | A separately approved dark-theme design and rendered QA matrix |
+| Automated QA uses synthetic login/session fixtures and does not contact real providers | Task 24 qualification receipts | Explicit manual real-account authorization for each provider |
+| Platform-tree accessibility tests require their dedicated instrumentation runner | Task 23 semantics `GREEN.txt` | Keep the dedicated runner documented; do not fold it into a runner that cannot host the remote platform tree |
+| Release provider-card catalog remains disabled | `android/app/build.gradle.kts` | Separate release decision with real Firebase/signing prerequisites and release QA |
 
-No other accessibility or visual debt is accepted by this contract. New debt requires an explicit entry with affected users, location, reason, owner, and exit condition.
+No other accessibility or visual debt is accepted. New debt requires an explicit entry with affected users, location, reason, owner, and exit condition.
 
-### 8.4 Task boundary and implementation handoff
+### 8.4 Operational handoff
 
-- **Task 6 DESIGN-only sub-artifact:** This document completes only the `DESIGN.md` portion of Task 6 and does not alter UI behavior. Top-level Task 6 remains incomplete until the Compose UI-test dependencies, debug real-surface driver seam, current dashboard/header/list/grid characterization PIN, onboarding/Add/Remove/naming/empty-state RED semantics tests, and compiling instrumentation runner have landed. `../.omo/plans/provider-card-catalog-ui.md:149-154`.
-- **Tasks 7-11:** Persist catalog identity/rank/alias metadata, enforce provider multiplicity and naming, migrate connected/usage providers, coordinate exact deletion, and key preferences by `ProviderAccountId`.
-- **Tasks 12-17:** Replace provider-only shell projection and carry exact identity through routes, login/reauth, collectors, widgets, and notifications. No alias/rank identity and no default/sibling fallback.
-- **Tasks 18-20:** Implement onboarding/Later/empty, Settings/Add/Remove/naming, and irreversible exact-card removal against Sections 2-7.
-- **Tasks 21-22:** Render/reorder/connect/refresh/reauth exact cards and update detail/settings/widget/notification management without exposing opaque IDs.
-- **Task 23:** Complete English/Korean resources, 48dp semantics, focus/Back/live-region behavior, reduced motion, narrow/wide/list/grid, both current themes, CJK, 200% font, TalkBack, and D-pad verification. `../.omo/plans/provider-card-catalog-ui.md:303-308`.
-- **Non-negotiable behavior across Tasks 7-23:** No automatic login from onboarding/Add, no automatic real-provider request, no sibling/default fallback, no identity derived from alias/provider/email/rank, no multi-instance provider other than Claude/Codex, no destructive Undo, and no release-flag enablement. `../.omo/plans/provider-card-catalog-ui.md:41-49`.
-- **Task 23 visual scope:** No decorative motion or unrelated redesign. `../.omo/plans/provider-card-catalog-ui.md:303-308`.
+Tasks 7-25 implemented the identity, migration, exact routing, onboarding, Add, Remove, dashboard, adjacent surfaces, localization, accessibility, and emulator qualification described here. The evidence index, operator command, release boundary, and known local prerequisites are maintained in [Provider-card operation](docs/provider-card-operation.md).
 
-This contract is complete only when future implementation evidence traces each visible value to Sections 2-7, every state in Section 5.6 is exercised through the real Android surface, and any deviation is first recorded here as an approved contract update or accepted debt.
+The non-negotiable behavior remains unchanged: no automatic login from onboarding/Add, no automated real-provider request, no sibling/default fallback, no identity derived from alias/provider/email/rank, no multi-instance provider other than Claude/Codex, no destructive Undo, and no release-flag enablement. Any deviation requires a separately approved contract update.

@@ -34,10 +34,16 @@ android/app/build/outputs/bundle/release/app-release.aab
 | --- | --- |
 | Claude | Supported |
 | Codex | Supported |
+| Cursor | Supported |
+| Grok | Supported |
+| Kiro | Supported |
+| OpenCode | Supported |
+| GLM | Supported |
+| Antigravity | Supported |
 | Gemini | Supported |
 | GitHub Copilot | Supported |
-| Antigravity | Supported |
-| Cursor | Supported |
+
+Debug builds expose the provider-card catalog. Claude and Codex can have multiple independently named cards; every other listed provider is single-card. Release builds keep this catalog disabled until a separate release decision. See [Provider-card operation](docs/provider-card-operation.md).
 
 ### Android Package
 
@@ -129,10 +135,16 @@ android/app/build/outputs/bundle/release/app-release.aab
 | --- | --- |
 | Claude | 지원 |
 | Codex | 지원 |
+| Cursor | 지원 |
+| Grok | 지원 |
+| Kiro | 지원 |
+| OpenCode | 지원 |
+| GLM | 지원 |
+| Antigravity | 지원 |
 | Gemini | 지원 |
 | GitHub Copilot | 지원 |
-| Antigravity | 지원 |
-| Cursor | 지원 |
+
+Debug 빌드에서는 provider-card catalog를 사용할 수 있습니다. Claude와 Codex는 서로 독립적으로 이름을 붙인 여러 카드를 지원하고, 나머지 Provider는 한 개의 카드만 지원합니다. Release 빌드에서는 별도의 출시 결정 전까지 이 기능이 비활성화됩니다. 자세한 내용은 [Provider-card 운영 안내](docs/provider-card-operation.md)를 참고하세요.
 
 ### Android 패키지
 
