@@ -98,7 +98,7 @@ internal suspend fun runRefreshCycleResiliently(
     runCycle: suspend () -> Unit,
     isRunning: () -> Boolean,
     hasPendingManualRefresh: () -> Boolean,
-    elapsedMillis: () -> Long,
+    automaticDelayMillis: () -> Long,
     schedule: (Long) -> Unit,
     onFailure: (Throwable) -> Unit,
 ) {
@@ -110,9 +110,7 @@ internal suspend fun runRefreshCycleResiliently(
         onFailure(error)
     } finally {
         if (isRunning()) {
-            val delayMillis = if (hasPendingManualRefresh()) 0L else {
-                ProviderRefreshPlan.nextAutoRefreshDelayMillis(elapsedMillis())
-            }
+            val delayMillis = if (hasPendingManualRefresh()) 0L else automaticDelayMillis()
             schedule(delayMillis)
         }
     }

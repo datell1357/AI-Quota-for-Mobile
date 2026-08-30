@@ -45,7 +45,7 @@ class ProviderAccountRefreshResourcesTest {
             runCycle = { throw failure },
             isRunning = { true },
             hasPendingManualRefresh = { true },
-            elapsedMillis = { 25L },
+            automaticDelayMillis = { 25L },
             schedule = scheduled::add,
             onFailure = { assertSame(failure, it) },
         )

@@ -164,7 +164,11 @@ class ProviderBackgroundRefreshService : Service() {
                     runCycle = ::runRefreshCycle,
                     isRunning = { running },
                     hasPendingManualRefresh = ::hasPendingManualRefresh,
-                    elapsedMillis = { System.currentTimeMillis() - startedAt },
+                    automaticDelayMillis = {
+                        ProviderRefreshPlan.nextAutoRefreshDelayMillis(
+                            System.currentTimeMillis() - startedAt,
+                        )
+                    },
                     schedule = ::scheduleNextTick,
                     onFailure = { error ->
                         Log.e(TAG, "refreshCycleFailed=${error::class.java.simpleName}")
