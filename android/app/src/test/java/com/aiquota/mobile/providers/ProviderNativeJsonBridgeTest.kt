@@ -41,6 +41,34 @@ class ProviderNativeJsonBridgeTest {
     }
 
     @Test
+    fun nativeJsonBridgeRejectsNonHttpsAndLookalikeClaudeHosts() {
+        assertFalse(
+            ProviderNativeJsonBridge.isAllowedJsonUrl(
+                ProviderId.CLAUDE,
+                "https://evilclaude.ai/api/organizations"
+            )
+        )
+        assertFalse(
+            ProviderNativeJsonBridge.isAllowedJsonUrl(
+                ProviderId.CLAUDE,
+                "http://claude.ai/api/organizations"
+            )
+        )
+        listOf(
+            ProviderId.CODEX to "http://chatgpt.com/backend-api/wham/usage",
+            ProviderId.GLM to "http://api.z.ai/api/monitor/usage/quota/limit",
+            ProviderId.OPENCODE to "http://opencode.ai/billing/credits",
+            ProviderId.CURSOR to "http://cursor.com/api/usage",
+            ProviderId.COPILOT to "http://github.com/github-copilot/chat/entitlement",
+        ).forEach { (providerId, url) ->
+            assertFalse(
+                "native bridge must reject non-HTTPS endpoint for ${providerId.storageId}",
+                ProviderNativeJsonBridge.isAllowedJsonUrl(providerId, url)
+            )
+        }
+    }
+
+    @Test
     fun nativeJsonBridgeFallsBackToOriginCookieWhenPathCookieIsBlank() {
         assertEquals(
             "auth=origin",

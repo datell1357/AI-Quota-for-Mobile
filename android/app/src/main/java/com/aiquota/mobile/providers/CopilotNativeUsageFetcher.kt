@@ -291,6 +291,7 @@ object CopilotNativeUsageFetcher {
 
     private fun copilotEndpoint(url: String): String? {
         val uri = runCatching { URI(url) }.getOrNull() ?: return null
+        if (!uri.scheme.equals("https", ignoreCase = true)) return null
         val host = uri.host.orEmpty().lowercase()
         val path = uri.path.orEmpty()
         val allowed = when (host) {

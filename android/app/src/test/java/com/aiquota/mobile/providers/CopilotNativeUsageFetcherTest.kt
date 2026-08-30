@@ -177,6 +177,13 @@ class CopilotNativeUsageFetcherTest {
     }
 
     @Test
+    fun nativeCopilotFetcherRejectsNonHttpsEndpointsBeforeNetworkAccess() {
+        assertFalse(CopilotNativeUsageFetcher.isInternalUserUrl("http://github.com/copilot_internal/user"))
+        val result = CopilotNativeUsageFetcher.fetchJson("http://github.com/github-copilot/chat/entitlement")
+        assertTrue(result.contains("blocked_copilot_endpoint"))
+    }
+
+    @Test
     fun productionCopilotFetcherDoesNotUseSettingsOrBillingHtmlFallback() {
         val source = File("src/main/java/com/aiquota/mobile/providers/CopilotNativeUsageFetcher.kt").readText()
 

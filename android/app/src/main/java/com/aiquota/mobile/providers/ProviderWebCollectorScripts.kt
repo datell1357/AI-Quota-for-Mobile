@@ -13,7 +13,7 @@ object ProviderWebCollectorScripts {
         val path = uri.path.orEmpty().lowercase(Locale.US)
         return when (providerId) {
             ProviderId.CLAUDE ->
-                host.endsWith("claude.ai") && path.contains("login") ||
+                isClaudeHost(host) && path.contains("login") ||
                     host == "accounts.google.com"
             ProviderId.CODEX ->
                 host == "auth.openai.com" ||
@@ -147,7 +147,7 @@ object ProviderWebCollectorScripts {
         val text = pageText.lowercase(Locale.US)
         return when (providerId) {
             ProviderId.CLAUDE ->
-                host.endsWith("claude.ai") &&
+                isClaudeHost(host) &&
                     !path.contains("login") &&
                     !path.contains("logout") &&
                     (cookies["lastActiveOrg"].isNullOrBlank().not() || path == "/" || path == "/new" || text.contains("claude"))
@@ -331,13 +331,18 @@ object ProviderWebCollectorScripts {
         "authenticator.cursor.sh"
     )
 
+    private fun isClaudeHost(host: String): Boolean {
+        return host == "claude.ai" || host.endsWith(".claude.ai")
+    }
+
     fun shouldRunCollectorOnResource(providerId: ProviderId, url: String): Boolean {
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        if (!uri.scheme.equals("https", ignoreCase = true)) return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
         val path = uri.path.orEmpty().lowercase(Locale.US)
         return when (providerId) {
             ProviderId.CLAUDE ->
-                host.endsWith("claude.ai") &&
+                isClaudeHost(host) &&
                     (path == "/api/account_profile" ||
                         path == "/api/organizations" ||
                         path == "/api/organizations/me" ||
@@ -430,11 +435,12 @@ object ProviderWebCollectorScripts {
             return false
         }
         val uri = runCatching { URI(pageUrl) }.getOrNull() ?: return false
+        if (!uri.scheme.equals("https", ignoreCase = true)) return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
         val path = uri.path.orEmpty().lowercase(Locale.US)
         return when (providerId) {
             ProviderId.CLAUDE ->
-                host.endsWith("claude.ai") &&
+                isClaudeHost(host) &&
                     !path.contains("login") &&
                     !path.contains("logout")
             ProviderId.CODEX ->

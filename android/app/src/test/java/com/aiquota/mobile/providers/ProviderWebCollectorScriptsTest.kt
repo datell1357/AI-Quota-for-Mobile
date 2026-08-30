@@ -458,6 +458,31 @@ class ProviderWebCollectorScriptsTest {
     }
 
     @Test
+    fun collectorNetworkTrustBoundaryRequiresHttpsAndExactClaudeHost() {
+        assertTrue(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CLAUDE, "https://www.claude.ai/api/organizations"))
+        assertTrue(ProviderWebCollectorScripts.isRefreshLoginPage(ProviderId.CLAUDE, "https://www.claude.ai/login"))
+
+        assertFalse(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CLAUDE, "https://evilclaude.ai/api/organizations"))
+        assertFalse(ProviderWebCollectorScripts.isRefreshLoginPage(ProviderId.CLAUDE, "https://evilclaude.ai/login"))
+        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CLAUDE, "https://evilclaude.ai/new"))
+
+        listOf(
+            ProviderId.CLAUDE to "http://claude.ai/api/organizations",
+            ProviderId.CODEX to "http://chatgpt.com/backend-api/wham/usage",
+            ProviderId.GLM to "http://api.z.ai/api/monitor/usage/quota/limit",
+            ProviderId.OPENCODE to "http://opencode.ai/billing/credits",
+            ProviderId.CURSOR to "http://cursor.com/api/usage",
+            ProviderId.COPILOT to "http://github.com/github-copilot/chat/entitlement",
+        ).forEach { (providerId, url) ->
+            assertFalse(
+                "collector must reject non-HTTPS resource for ${providerId.storageId}",
+                ProviderWebCollectorScripts.shouldRunCollectorOnResource(providerId, url)
+            )
+        }
+        assertFalse(ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ProviderId.CLAUDE, "http://claude.ai/new"))
+    }
+
+    @Test
     fun codexCollectorCanStartFromAuthenticatedChatGptResources() {
         assertFalse(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CODEX, "https://chatgpt.com/backend-api/codex/api/codex/usage"))
         assertFalse(ProviderWebCollectorScripts.shouldRunCollectorOnResource(ProviderId.CODEX, "https://chatgpt.com/backend-api/api/codex/usage"))
