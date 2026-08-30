@@ -125,14 +125,14 @@ private class AndroidSession(
         cookieManager.getCookie(url)?.takeIf(String::isNotBlank)
             ?: cookieManager.getCookie(origin)?.takeIf(String::isNotBlank)
     }
-    private val observedRequest = AtomicBoolean()
-    private val observedBeacon = AtomicBoolean()
     private var finished = false
     private var committed = false
     private var visual = false
     private var quiesceAttempt = 0L
     @Volatile
     private var activeAttempt: Long? = null
+    @Volatile
+    private var observations: QuiesceObservations? = null
     private var callback: ((SessionQuiesceResult) -> Unit)? = null
     private var prior: WebViewClient? = null
 
@@ -141,20 +141,18 @@ private class AndroidSession(
         persistenceReady = true
     }
 
-    private val loader =
+    private fun loaderFor(attempt: Long, attemptObservations: QuiesceObservations) =
         WebViewAssetLoader.Builder()
             .setDomain(HOST)
             .addPathHandler("/neutral/") { path ->
-                val attempt = activeAttempt
                 when {
                     path.startsWith("beacon") -> {
-                        if (attempt == null) return@addPathHandler response("text/plain", "cancelled")
-                        observedBeacon.set(true)
+                        attemptObservations.recordBeacon()
                         postCheck(attempt)
                         response("text/plain", "ok")
                     }
                     else -> {
-                        if (attempt != null) observedRequest.set(true)
+                        attemptObservations?.recordRequest()
                         response("text/html", HTML)
                     }
                 }
@@ -164,12 +162,13 @@ private class AndroidSession(
     override fun quiesce(callback: (SessionQuiesceResult) -> Unit) {
         ui()
         check(this.callback == null)
-        observedRequest.set(false)
-        observedBeacon.set(false)
         finished = false
         committed = false
         visual = false
         val attempt = ++quiesceAttempt
+        val attemptObservations = QuiesceObservations(attempt)
+        val attemptLoader = loaderFor(attempt, attemptObservations)
+        observations = attemptObservations
         activeAttempt = attempt
         this.callback = callback
         val previousClient = WebViewCompat.getWebViewClient(webView)
@@ -180,8 +179,9 @@ private class AndroidSession(
                     v: WebView,
                     r: WebResourceRequest,
                 ): WebResourceResponse? {
-                    if (activeAttempt != attempt) return previousClient?.shouldInterceptRequest(v, r)
-                    return loader.shouldInterceptRequest(r.url) ?: previousClient?.shouldInterceptRequest(v, r)
+                    if (activeAttempt != attempt) return null
+                    return attemptLoader.shouldInterceptRequest(r.url)
+                        ?: previousClient?.shouldInterceptRequest(v, r)
                 }
 
                 override fun onPageStarted(v: WebView, u: String, b: Bitmap?) {
@@ -223,14 +223,15 @@ private class AndroidSession(
         }
     }
 
-    private fun postCheck(attempt: Long) = webView.post {
+    private fun postCheck(attempt: Long) = Handler(Looper.getMainLooper()).post {
         if (activeAttempt == attempt) check(attempt)
     }
 
     private fun check(attempt: Long) {
         ui()
         if (activeAttempt != attempt) return
-        if (!finished || !committed || !observedRequest.get() || !observedBeacon.get() || visual)
+        val attemptObservations = observations?.takeIf { it.attempt == attempt } ?: return
+        if (!finished || !committed || !attemptObservations.complete() || visual)
             return
         visual = true
         WebViewCompat.postVisualStateCallback(webView, 15L) {
@@ -252,6 +253,7 @@ private class AndroidSession(
         if (activeAttempt != attempt) return
         val cb = callback ?: return
         activeAttempt = null
+        observations = null
         callback = null
         prior?.let { webView.webViewClient = it }
         prior = null
@@ -266,6 +268,7 @@ private class AndroidSession(
         ui()
         val cb = callback ?: return
         activeAttempt = null
+        observations = null
         quiesceAttempt += 1
         callback = null
         runCatching { webView.stopLoading() }
@@ -296,6 +299,17 @@ private class AndroidSession(
         fun response(m: String, b: String) =
             WebResourceResponse(m, "UTF-8", ByteArrayInputStream(b.toByteArray()))
     }
+}
+
+internal class QuiesceObservations(val attempt: Long) {
+    private val observedRequest = AtomicBoolean()
+    private val observedBeacon = AtomicBoolean()
+
+    fun recordRequest() = observedRequest.set(true)
+
+    fun recordBeacon() = observedBeacon.set(true)
+
+    fun complete() = observedRequest.get() && observedBeacon.get()
 }
 
 fun NamedProfileLease.createAndroidPopupWebView(context: Context): WebView {
