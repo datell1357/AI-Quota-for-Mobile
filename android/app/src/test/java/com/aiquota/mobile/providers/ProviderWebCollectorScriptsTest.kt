@@ -21,6 +21,14 @@ class ProviderWebCollectorScriptsTest {
         )
         assertFalse(
             ProviderWebCollectorScripts.shouldRunCollector(
+                ProviderId.CODEX,
+                "https://evil.chatgpt.com/",
+                emptyMap(),
+                "Codex usage",
+            )
+        )
+        assertFalse(
+            ProviderWebCollectorScripts.shouldRunCollector(
                 ProviderId.CLAUDE,
                 "http://claude.ai/new",
                 mapOf("lastActiveOrg" to "org"),
@@ -45,6 +53,13 @@ class ProviderWebCollectorScriptsTest {
             ProviderWebCollectorScripts.isRefreshLoginPage(
                 ProviderId.CODEX,
                 "https://evil.chatgpt.com/auth/login",
+            )
+        )
+        assertFalse(
+            ProviderWebCollectorScripts.isRefreshLoginPage(
+                ProviderId.CODEX,
+                "https://evil.chatgpt.com/",
+                "Sign in",
             )
         )
         assertFalse(

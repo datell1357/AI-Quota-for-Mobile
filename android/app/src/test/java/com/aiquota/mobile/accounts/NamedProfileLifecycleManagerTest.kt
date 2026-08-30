@@ -216,8 +216,8 @@ class NamedProfileLifecycleManagerTest {
     }
 
     @Test
-    fun `abort releases lease even when resource destruction throws`() {
-        val p = FakePlatform().apply { destroyFailure = IllegalStateException("renderer") }
+    fun `abort retains lease after destroy failure and releases it on retry`() {
+        val p = FakePlatform().apply { destroyFailures.add(IllegalStateException("renderer")) }
         val m = manager(platform = p)
         val id = id(1)
         m.ensureBinding(id)
@@ -227,9 +227,16 @@ class NamedProfileLifecycleManagerTest {
         lease.abortAcknowledged { result = it }
 
         assertEquals(LeaseCloseResult.RetryableFailure("DESTROY_FAILED:IllegalStateException"), result)
+        assertEquals(LeaseState.OPEN, lease.stateForTest())
+        assertEquals(1, m.liveLeaseCount(id))
+        assertEquals(1, p.destroyCount)
+
+        lease.abortAcknowledged { result = it }
+
+        assertEquals(LeaseCloseResult.Closed, result)
         assertEquals(LeaseState.CLOSED, lease.stateForTest())
         assertEquals(0, m.liveLeaseCount(id))
-        assertEquals(1, p.destroyCount)
+        assertEquals(2, p.destroyCount)
     }
 
     @Test
@@ -441,7 +448,7 @@ private class FakePlatform : NamedProfilePlatform {
     var eraseResult: ProfileDataErasureResult = ProfileDataErasureResult.Completed
     var deferErase = false
     var destroyCount = 0
-    var destroyFailure: RuntimeException? = null
+    val destroyFailures = ArrayDeque<RuntimeException>()
     var probeCount = 0
     val capabilities = ArrayDeque<NamedProfileCapability>()
     val quiesceResults = ArrayDeque<SessionQuiesceResult>()
@@ -488,7 +495,7 @@ private class FakePlatform : NamedProfilePlatform {
 
             override fun destroy() {
                 destroyCount++
-                destroyFailure?.let { throw it }
+                if (destroyFailures.isNotEmpty()) throw destroyFailures.removeFirst()
             }
         }
     }

@@ -102,12 +102,23 @@ internal suspend fun closeExactLeaseWithRetry(
 ) {
     require(maxAttempts > 0)
     suspend fun abortAndThrow(reason: String): Nothing {
-        abort?.let { abortLease ->
-            suspendCancellableCoroutine<LeaseCloseResult> { continuation ->
+        val abortLease = abort ?: throw ExactProviderCollectorUnavailable(reason)
+        var abortFailure: LeaseCloseResult? = null
+        repeat(maxAttempts) {
+            val result = suspendCancellableCoroutine<LeaseCloseResult> { continuation ->
                 abortLease(continuation::resume)
             }
+            when (result) {
+                LeaseCloseResult.Closed,
+                LeaseCloseResult.AlreadyClosed -> throw ExactProviderCollectorUnavailable(reason)
+                LeaseCloseResult.AlreadyClosing,
+                is LeaseCloseResult.RetryableFailure -> abortFailure = result
+            }
         }
-        throw ExactProviderCollectorUnavailable(reason)
+        val suffix = (abortFailure as? LeaseCloseResult.RetryableFailure)?.reason
+            ?.let { ":ABORT_FAILED:$it" }
+            .orEmpty()
+        throw ExactProviderCollectorUnavailable("$reason$suffix")
     }
     repeat(maxAttempts) { attempt ->
         val result = suspendCancellableCoroutine<LeaseCloseResult> { continuation ->

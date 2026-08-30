@@ -545,6 +545,11 @@ class NamedProfileLifecycleManager(
             return@mutate
         }
         val destroyFailure = runCatching { l.resource.destroy() }.exceptionOrNull()
+        if (destroyFailure != null) {
+            l.reopen()
+            callback(LeaseCloseResult.RetryableFailure("DESTROY_FAILED:${destroyFailure.javaClass.simpleName}"))
+            return@mutate
+        }
         val active = leases[l.accountId]
         active?.remove(l)
         if (active?.isEmpty() == true) leases.remove(l.accountId)
@@ -555,10 +560,7 @@ class NamedProfileLifecycleManager(
         ) {
             startErase(l.accountId)
         }
-        callback(
-            destroyFailure?.let { LeaseCloseResult.RetryableFailure("DESTROY_FAILED:${it.javaClass.simpleName}") }
-                ?: LeaseCloseResult.Closed
-        )
+        callback(LeaseCloseResult.Closed)
     }
 
     fun shutdown(callback: (List<LeaseCloseResult>) -> Unit) {

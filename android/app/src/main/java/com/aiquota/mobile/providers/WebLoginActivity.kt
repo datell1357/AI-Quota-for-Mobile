@@ -123,6 +123,7 @@ open class WebLoginActivity : Activity() {
     private val claudeNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
     private val geminiUsageRpcIds = linkedSetOf<String>()
     private val popupViews = mutableSetOf<WebView>()
+    private var activeClaudeBridgeView: WebView? = null
     private val exactPopupProfileNames = mutableMapOf<WebView, String>()
     private val collectorInjectionKeys = mutableSetOf<String>()
     private val loginScope = MainScope()
@@ -431,7 +432,12 @@ open class WebLoginActivity : Activity() {
     }
 
     private fun noteBridgePageUrl(view: WebView, url: String?) {
-        if (::webView.isInitialized && view === webView) noteBridgePageUrl(url)
+        if (::webView.isInitialized && view === webView) {
+            if (activeClaudeBridgeView === view && !isClaudeAboutBlankBridgeNavigation(url.orEmpty())) {
+                activeClaudeBridgeView = null
+            }
+            noteBridgePageUrl(url)
+        }
     }
 
     private fun createExactPopupWebView(): WebView? {
@@ -804,7 +810,11 @@ open class WebLoginActivity : Activity() {
     ) {
         private fun activePageUrl(): String? {
             if (!::webView.isInitialized || ownerView !== webView || finished) return null
-            return ownerView.url?.takeIf(String::isNotBlank) ?: currentBridgePageUrl.takeIf(String::isNotBlank)
+            return activeLoginBridgePageUrl(
+                logicalPageUrl = currentBridgePageUrl,
+                ownerPageUrl = ownerView.url,
+                localBridgeDocumentActive = activeClaudeBridgeView === ownerView,
+            )
         }
 
         @JavascriptInterface
@@ -1597,6 +1607,7 @@ open class WebLoginActivity : Activity() {
     }
 
     private fun loadClaudeAboutBlankBridgeDocument(view: WebView) {
+        activeClaudeBridgeView = view
         view.loadDataWithBaseURL(
             CLAUDE_ABOUT_BLANK_BASE_URL,
             CLAUDE_ABOUT_BLANK_HTML,
@@ -2025,22 +2036,38 @@ open class WebLoginActivity : Activity() {
         composition: AndroidExactAccountLoginComposition?,
         finishAfterClose: Boolean,
         binding: AccountLoginSessionBinding?,
+        attempt: Int = 0,
     ) {
         binding?.let {
             composition?.coordinator?.fail(it)
             setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
         }
         lease.abortAcknowledged { aborted ->
-            if (aborted == LeaseCloseResult.Closed ||
-                aborted == LeaseCloseResult.AlreadyClosed ||
-                aborted is LeaseCloseResult.RetryableFailure
-            ) {
+            if (aborted == LeaseCloseResult.Closed || aborted == LeaseCloseResult.AlreadyClosed) {
                 if (namedProfileLease === lease) namedProfileLease = null
                 if (composition != null && exactLoginComposition === composition) {
                     exactLoginComposition = null
                     composition.close()
                 }
                 if (finishAfterClose && binding != null) finish()
+            } else if (attempt < EXACT_LEASE_CLOSE_MAX_RETRIES) {
+                Handler(Looper.getMainLooper()).postDelayed(
+                    {
+                        abortExactLeaseAndComposition(
+                            lease,
+                            composition,
+                            finishAfterClose,
+                            binding,
+                            attempt + 1,
+                        )
+                    },
+                    EXACT_LEASE_CLOSE_RETRY_DELAY_MS,
+                )
+            } else {
+                Log.e(
+                    "AIQuotaLogin",
+                    "provider=${providerId.storageId} exactLeaseAbortPending=true",
+                )
             }
         }
     }
@@ -2465,4 +2492,14 @@ open class WebLoginActivity : Activity() {
             } ?: GeminiUsagePageRoutes.USAGE_URL
         }
     }
+}
+
+internal fun activeLoginBridgePageUrl(
+    logicalPageUrl: String,
+    ownerPageUrl: String?,
+    localBridgeDocumentActive: Boolean,
+): String? = if (localBridgeDocumentActive) {
+    "about:blank"
+} else {
+    logicalPageUrl.takeIf(String::isNotBlank) ?: ownerPageUrl?.takeIf(String::isNotBlank)
 }

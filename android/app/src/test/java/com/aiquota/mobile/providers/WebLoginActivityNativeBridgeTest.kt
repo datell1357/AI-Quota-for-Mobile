@@ -2,11 +2,24 @@ package com.aiquota.mobile.providers
 
 import com.aiquota.mobile.local.ProviderId
 import java.io.File
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WebLoginActivityNativeBridgeTest {
+    @Test
+    fun locallyLoadedClaudeBridgeKeepsItsLogicalAboutBlankPage() {
+        assertEquals(
+            "about:blank",
+            activeLoginBridgePageUrl(
+                logicalPageUrl = "https://claude.ai/",
+                ownerPageUrl = "https://claude.ai/",
+                localBridgeDocumentActive = true,
+            ),
+        )
+    }
+
     @Test
     fun codexNativeCollectionStartsOnlyFromAuthenticatedWhamUsageResource() {
         assertTrue(

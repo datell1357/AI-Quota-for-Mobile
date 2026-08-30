@@ -78,7 +78,7 @@ object ProviderWebCollectorScripts {
         val host = uri.host.orEmpty().lowercase(Locale.US)
         val path = uri.path.orEmpty().lowercase(Locale.US)
         if (providerId == ProviderId.CODEX) {
-            if (host != "chatgpt.com" && !host.endsWith(".chatgpt.com")) return false
+            if (!isCodexHost(host)) return false
             if (path != "/" && path.isNotBlank()) return false
             return looksLikeChatGptLoginText(pageText)
         }
@@ -155,7 +155,7 @@ object ProviderWebCollectorScripts {
                     !path.contains("logout") &&
                     (cookies["lastActiveOrg"].isNullOrBlank().not() || path == "/" || path == "/new" || text.contains("claude"))
             ProviderId.CODEX ->
-                (host == "chatgpt.com" || host.endsWith(".chatgpt.com") || host == "chat.openai.com") &&
+                isCodexHost(host) &&
                     path != "/auth/login" &&
                     (path != "/" || pageText.isNotBlank()) &&
                     !looksLikeChatGptLoginText(pageText)
