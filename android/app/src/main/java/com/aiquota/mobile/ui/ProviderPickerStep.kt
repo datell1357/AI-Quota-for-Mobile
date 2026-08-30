@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.unit.dp
 import com.aiquota.mobile.R
 import com.aiquota.mobile.accounts.ProviderAccountId
@@ -59,7 +60,7 @@ internal fun ProviderPickerStep(
         )
         Text(
             text = androidx.compose.ui.res.stringResource(R.string.provider_picker_body),
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Paragraph),
             color = AIQuotaTheme.colors.textMuted,
         )
         LazyColumn(

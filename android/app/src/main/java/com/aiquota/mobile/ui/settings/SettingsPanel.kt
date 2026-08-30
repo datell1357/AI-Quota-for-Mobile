@@ -8,11 +8,14 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -22,6 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -31,19 +35,29 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.R
 import com.aiquota.mobile.accounts.AccountAuthState
@@ -65,6 +79,7 @@ import com.aiquota.mobile.support.BugReportRequest
 import com.aiquota.mobile.ui.AIQuotaTheme
 import com.aiquota.mobile.ui.compactProviderLineBreakStyle
 import com.aiquota.mobile.ui.provider.ProviderIconImage
+import kotlinx.coroutines.delay
 import com.aiquota.mobile.ui.rememberAppLayoutMetrics
 
 @Composable
@@ -383,13 +398,38 @@ private fun ExactCardConnectionRow(
 ) {
     val colors = AIQuotaTheme.colors
     val action = settingsConnectionAction(card.authState, card.displayRecord.snapshot)
+    val renameFieldFocusRequester = remember(card.accountId) { FocusRequester() }
+    val renameTriggerFocusRequester = remember(card.accountId) { FocusRequester() }
+    val deleteTriggerFocusRequester = remember(card.accountId) { FocusRequester() }
     var showRename by remember(card.accountId) { mutableStateOf(false) }
+    var renameFocusReturnPending by remember(card.accountId) { mutableStateOf(false) }
     var alias by remember(card.accountId, card.alias) { mutableStateOf(card.alias) }
     var renameError by remember { mutableStateOf<Int?>(null) }
     var renameExpectedVersion by remember { mutableStateOf<DisplayVersion?>(null) }
     var showDelete by remember { mutableStateOf(false) }
+    var deleteFocusReturnPending by remember(card.accountId) { mutableStateOf(false) }
     var deleteExpectedVersion by remember { mutableStateOf<DisplayVersion?>(null) }
     var deleteError by remember { mutableStateOf<Int?>(null) }
+    var deleteBusy by remember { mutableStateOf(false) }
+    var deletePending by remember { mutableStateOf(false) }
+    val renameErrorMessage = renameError?.let { stringResource(it) }
+    val deletePendingStatus = stringResource(R.string.provider_removal_status_pending)
+    LaunchedEffect(showRename, renameFocusReturnPending) {
+        if (!showRename && renameFocusReturnPending) {
+            withFrameNanos { }
+            delay(100L)
+            renameTriggerFocusRequester.requestFocus()
+            renameFocusReturnPending = false
+        }
+    }
+    LaunchedEffect(showDelete, deleteFocusReturnPending) {
+        if (!showDelete && deleteFocusReturnPending) {
+            withFrameNanos { }
+            delay(100L)
+            deleteTriggerFocusRequester.requestFocus()
+            deleteFocusReturnPending = false
+        }
+    }
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -409,44 +449,74 @@ private fun ExactCardConnectionRow(
                 )
             }
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            OutlinedButton(
-                modifier = Modifier.weight(1f),
-                enabled = action != SettingsConnectionAction.NONE,
-                onClick = {
-                    if (action == SettingsConnectionAction.CONNECT) onConnect(card.accountId)
-                    else if (action == SettingsConnectionAction.DISCONNECT) onDisconnect(card.accountId)
-                },
-            ) {
-                Text(
-                    stringResource(
-                        if (action == SettingsConnectionAction.CONNECT) R.string.provider_connect
-                        else R.string.provider_disconnect
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val stackActions = maxWidth < 420.dp || androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.5f
+            val connectAction: @Composable (Modifier) -> Unit = { buttonModifier ->
+                OutlinedButton(
+                    modifier = buttonModifier.heightIn(min = 48.dp),
+                    enabled = action != SettingsConnectionAction.NONE,
+                    onClick = {
+                        if (action == SettingsConnectionAction.CONNECT) onConnect(card.accountId)
+                        else if (action == SettingsConnectionAction.DISCONNECT) onDisconnect(card.accountId)
+                    },
+                ) {
+                    Text(
+                        stringResource(
+                            if (action == SettingsConnectionAction.CONNECT) R.string.provider_connect
+                            else R.string.provider_disconnect
+                        )
                     )
-                )
+                }
             }
-            TextButton(
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    renameError = null
-                    renameExpectedVersion = card.displayRecord.version
-                    showRename = true
-                },
-            ) {
-                Text(stringResource(R.string.settings_rename_selected_device))
+            val renameAction: @Composable (Modifier) -> Unit = { buttonModifier ->
+                TextButton(
+                    modifier = buttonModifier
+                        .heightIn(min = 48.dp)
+                        .focusRequester(renameTriggerFocusRequester)
+                        .focusable(),
+                    onClick = {
+                        renameError = null
+                        renameExpectedVersion = card.displayRecord.version
+                        renameFocusReturnPending = true
+                        showRename = true
+                    },
+                ) {
+                    Text(stringResource(R.string.settings_rename_selected_device))
+                }
             }
-            TextButton(
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    deleteError = null
-                    deleteExpectedVersion = card.displayRecord.version
-                    showDelete = true
-                },
-            ) {
-                Text(stringResource(R.string.provider_catalog_remove_action))
+            val deleteAction: @Composable (Modifier) -> Unit = { buttonModifier ->
+                TextButton(
+                    modifier = buttonModifier
+                        .heightIn(min = 48.dp)
+                        .focusRequester(deleteTriggerFocusRequester)
+                        .focusable(),
+                    onClick = {
+                        deleteError = null
+                        deleteBusy = false
+                        deletePending = false
+                        deleteExpectedVersion = card.displayRecord.version
+                        deleteFocusReturnPending = true
+                        showDelete = true
+                    },
+                ) {
+                    Text(stringResource(R.string.provider_catalog_remove_action))
+                }
+            }
+            if (stackActions) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    connectAction(Modifier.fillMaxWidth())
+                    renameAction(Modifier.fillMaxWidth())
+                    deleteAction(Modifier.fillMaxWidth())
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    connectAction(Modifier.weight(1f))
+                    renameAction(Modifier.weight(1f))
+                    deleteAction(Modifier.weight(1f))
+                }
             }
         }
     }
@@ -461,34 +531,76 @@ private fun ExactCardConnectionRow(
                     modifier = Modifier.padding(18.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    LaunchedEffect(Unit) { renameFieldFocusRequester.requestFocus() }
                     Text(stringResource(R.string.provider_naming_title, card.accountId.providerId.displayName))
                     OutlinedTextField(
                         value = alias,
-                        onValueChange = { alias = it },
+                        onValueChange = {
+                            alias = it
+                            renameError = null
+                        },
+                        modifier = Modifier
+                            .focusRequester(renameFieldFocusRequester)
+                            .semantics {
+                                if (renameErrorMessage != null) error(renameErrorMessage)
+                            },
                         label = { Text(stringResource(R.string.provider_naming_label)) },
+                        supportingText = {
+                            renameErrorMessage?.let { message ->
+                                Text(
+                                    text = message,
+                                    modifier = Modifier.semantics {
+                                        liveRegion = LiveRegionMode.Polite
+                                        error(message)
+                                    },
+                                )
+                            }
+                        },
+                        isError = renameErrorMessage != null,
                         singleLine = true,
                     )
-                    renameError?.let { error ->
-                        Text(
-                            text = stringResource(error),
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        TextButton(onClick = { showRename = false }) {
-                            Text(stringResource(R.string.provider_enrollment_cancel))
-                        }
-                        Button(onClick = {
-                            renameExpectedVersion?.let { expectedVersion ->
-                                when (val result = onRename(card.accountId, alias, expectedVersion)) {
-                                    is ProviderCardRenameResult.Renamed -> showRename = false
-                                    is ProviderCardRenameResult.Rejected -> renameError = settingsRenameErrorResource(result.rejection)
-                                    null -> showRename = false
-                                }
+                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                        val stackActions = maxWidth < 420.dp ||
+                            androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.5f
+                        val cancelAction: @Composable (Modifier) -> Unit = { buttonModifier ->
+                            TextButton(
+                                modifier = buttonModifier.heightIn(min = 48.dp),
+                                onClick = { showRename = false },
+                            ) {
+                                Text(stringResource(R.string.provider_enrollment_cancel))
                             }
-                        }) {
-                            Text(stringResource(R.string.provider_enrollment_add))
+                        }
+                        val confirmAction: @Composable (Modifier) -> Unit = { buttonModifier ->
+                            Button(
+                                modifier = buttonModifier.heightIn(min = 48.dp),
+                                onClick = {
+                                    renameExpectedVersion?.let { expectedVersion ->
+                                        when (val result = onRename(card.accountId, alias, expectedVersion)) {
+                                            is ProviderCardRenameResult.Renamed -> showRename = false
+                                            is ProviderCardRenameResult.Rejected -> {
+                                                renameError = settingsRenameErrorResource(result.rejection)
+                                            }
+                                            null -> showRename = false
+                                        }
+                                    }
+                                },
+                            ) {
+                                Text(stringResource(R.string.provider_enrollment_add))
+                            }
+                        }
+                        if (stackActions) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                cancelAction(Modifier.fillMaxWidth())
+                                confirmAction(Modifier.fillMaxWidth())
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                            ) {
+                                cancelAction(Modifier)
+                                confirmAction(Modifier)
+                            }
                         }
                     }
                 }
@@ -497,7 +609,11 @@ private fun ExactCardConnectionRow(
     }
     if (showDelete) {
         AlertDialog(
-            onDismissRequest = { showDelete = false },
+            onDismissRequest = { if (!deleteBusy) showDelete = false },
+            properties = DialogProperties(
+                dismissOnBackPress = !deleteBusy,
+                dismissOnClickOutside = !deleteBusy,
+            ),
             title = { Text(stringResource(R.string.provider_removal_confirmation_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -512,9 +628,20 @@ private fun ExactCardConnectionRow(
                         )
                     )
                     Text(stringResource(R.string.provider_removal_confirmation_consequence))
-                    deleteError?.let { error ->
+                    if (deleteBusy || deletePending) {
                         Text(
-                            text = stringResource(error),
+                            text = stringResource(R.string.provider_removal_status_pending),
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        )
+                    }
+                    deleteError?.let { error ->
+                        val message = stringResource(error)
+                        Text(
+                            text = message,
+                            modifier = Modifier.semantics {
+                                liveRegion = LiveRegionMode.Polite
+                                error(message)
+                            },
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                         )
@@ -522,21 +649,63 @@ private fun ExactCardConnectionRow(
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    deleteExpectedVersion?.let { expectedVersion ->
-                        when (val result = onDelete(card.accountId, expectedVersion)) {
-                            is ProviderCardDeletionResult.Rejected -> {
-                                deleteError = settingsDeleteErrorResource(result.reason)
+                Button(
+                    onClick = {
+                        deleteExpectedVersion?.let { expectedVersion ->
+                            deleteBusy = true
+                            when (val result = onDelete(card.accountId, expectedVersion)) {
+                                is ProviderCardDeletionResult.Completed -> {
+                                    deleteBusy = false
+                                    deletePending = false
+                                    showDelete = false
+                                }
+                                is ProviderCardDeletionResult.InProgress -> {
+                                    deleteError = null
+                                    deleteBusy = false
+                                    deletePending = true
+                                }
+                                is ProviderCardDeletionResult.Failed -> {
+                                    deleteBusy = false
+                                    deletePending = false
+                                    deleteError = R.string.provider_removal_status_failed
+                                }
+                                is ProviderCardDeletionResult.Rejected -> {
+                                    deleteError = settingsDeleteErrorResource(result.reason)
+                                    deleteBusy = false
+                                    deletePending = false
+                                }
+                                null -> {
+                                    deleteBusy = false
+                                    deletePending = false
+                                    showDelete = false
+                                }
                             }
-                            else -> showDelete = false
                         }
+                    },
+                    enabled = !deleteBusy,
+                    modifier = Modifier.heightIn(min = 48.dp),
+                ) {
+                    if (deleteBusy) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .semantics {
+                                    liveRegion = LiveRegionMode.Polite
+                                    contentDescription = deletePendingStatus
+                                },
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        Text(stringResource(R.string.provider_removal_confirm))
                     }
-                }) {
-                    Text(stringResource(R.string.provider_removal_confirm))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDelete = false }) {
+                TextButton(
+                    onClick = { showDelete = false },
+                    enabled = !deleteBusy,
+                    modifier = Modifier.heightIn(min = 48.dp),
+                ) {
                     Text(stringResource(R.string.provider_removal_cancel))
                 }
             },
@@ -572,6 +741,14 @@ private fun ThemeSettingsSection(
     val colors = AIQuotaTheme.colors
     val currentThemeLabel = stringResource(themeLabelResource(currentTheme))
     var showThemeOptions by rememberSaveable { mutableStateOf(false) }
+    val themeTriggerFocusRequester = remember { FocusRequester() }
+    var themeFocusReturnPending by remember { mutableStateOf(false) }
+    LaunchedEffect(showThemeOptions, themeFocusReturnPending) {
+        if (!showThemeOptions && themeFocusReturnPending) {
+            themeTriggerFocusRequester.requestFocus()
+            themeFocusReturnPending = false
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -600,7 +777,13 @@ private fun ThemeSettingsSection(
                         color = colors.textMuted
                     )
                 }
-                OutlinedButton(onClick = { showThemeOptions = !showThemeOptions }) {
+                OutlinedButton(
+                    modifier = Modifier.focusRequester(themeTriggerFocusRequester),
+                    onClick = {
+                        themeFocusReturnPending = true
+                        showThemeOptions = !showThemeOptions
+                    },
+                ) {
                     Text(stringResource(R.string.settings_theme_button))
                 }
             }
@@ -715,6 +898,14 @@ private fun SupportSettingsSection(
     val layoutMetrics = rememberAppLayoutMetrics()
     val colors = AIQuotaTheme.colors
     var showBugReportDialog by rememberSaveable { mutableStateOf(false) }
+    val bugReportTriggerFocusRequester = remember { FocusRequester() }
+    var bugReportFocusReturnPending by remember { mutableStateOf(false) }
+    LaunchedEffect(showBugReportDialog, bugReportFocusReturnPending) {
+        if (!showBugReportDialog && bugReportFocusReturnPending) {
+            bugReportTriggerFocusRequester.requestFocus()
+            bugReportFocusReturnPending = false
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -737,13 +928,18 @@ private fun SupportSettingsSection(
                 color = colors.textMuted
             )
             Text(
-                text = "버전 : ${BuildConfig.VERSION_NAME}(${BuildConfig.VERSION_CODE})",
+                text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.textMuted
             )
             OutlinedButton(
-                onClick = { showBugReportDialog = true },
-                modifier = Modifier.fillMaxWidth()
+                onClick = {
+                    bugReportFocusReturnPending = true
+                    showBugReportDialog = true
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(bugReportTriggerFocusRequester),
             ) {
                 Text(stringResource(R.string.settings_bug_report_button))
             }

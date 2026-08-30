@@ -2,6 +2,7 @@ package com.aiquota.mobile.ui
 
 import android.os.ParcelFileDescriptor
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
@@ -20,6 +21,7 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aiquota.mobile.R
@@ -61,6 +63,33 @@ class ProviderRemovalUiTest {
         removalRow("Codex").assertIsOff().performClick().assertIsOn()
         composeRule.onNodeWithText(text(R.string.provider_removal_selected_count, 1)).assertIsDisplayed()
         continueButton().assertIsEnabled()
+    }
+
+    @Test
+    fun removalRowAnnouncesFullIdentityAndResultIsPolite() {
+        dismissFirstRun()
+        addProvider(ProviderId.CODEX)
+        openRemoval()
+
+        val row = removalRow("Codex")
+        val rowNode = row.fetchSemanticsNode()
+        assertEquals(
+            text(R.string.provider_removal_named_card, "Codex", "Codex"),
+            rowNode.config[SemanticsProperties.ContentDescription].singleOrNull(),
+        )
+        assertTrue(rowNode.boundsInRoot.width >= 48f)
+        assertTrue(rowNode.boundsInRoot.height >= 48f)
+        row.assertIsOff().performClick().assertIsOn()
+
+        continueButton().performClick()
+        confirmRemove().performClick()
+        composeRule.waitForIdle()
+
+        val result = resultItem("Codex", "Codex", R.string.provider_removal_status_completed)
+        assertEquals(
+            LiveRegionMode.Polite,
+            result.fetchSemanticsNode().config[SemanticsProperties.LiveRegion],
+        )
     }
 
     @Test
@@ -145,9 +174,10 @@ class ProviderRemovalUiTest {
         openRemoval()
         removalRow("Codex").performClick()
 
-        composeRule.runOnIdle {
-            composeRule.activity.onBackPressedDispatcher.onBackPressed()
-        }
+        ParcelFileDescriptor.AutoCloseInputStream(
+            InstrumentationRegistry.getInstrumentation().uiAutomation
+                .executeShellCommand("input keyevent 4")
+        ).use { input -> input.readBytes() }
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText(text(R.string.provider_removal_title)).assertDoesNotExist()
@@ -240,8 +270,12 @@ class ProviderRemovalUiTest {
         confirmRemove().performClick()
         composeRule.waitForIdle()
 
-        resultItem("Codex", "Codex", R.string.provider_removal_status_completed).assertIsDisplayed()
-        resultItem("Codex 2", "Codex", R.string.provider_removal_status_failed).assertIsDisplayed()
+        resultItem("Codex", "Codex", R.string.provider_removal_status_completed)
+            .performScrollTo()
+            .assertIsDisplayed()
+        resultItem("Codex 2", "Codex", R.string.provider_removal_status_failed)
+            .performScrollTo()
+            .assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.provider_removal_close)).performClick()
         composeRule.waitForIdle()
         assertTrue(composeRule.activity.removedAccountIds == setOf(codexId))
@@ -268,8 +302,14 @@ class ProviderRemovalUiTest {
     }
 
     private fun removalRow(alias: String) = composeRule.onNode(
-        hasContentDescriptionExactly(alias) and role(Role.Checkbox)
+        hasContentDescriptionExactly(text(R.string.provider_removal_named_card, alias, providerFor(alias))) and
+            role(Role.Checkbox)
     )
+
+    private fun providerFor(alias: String): String = when (alias) {
+        "Claude" -> ProviderId.CLAUDE.displayName
+        else -> ProviderId.CODEX.displayName
+    }
 
     private fun resultItem(alias: String, provider: String, status: Int) = composeRule.onNodeWithText(
         text(R.string.provider_removal_result_item, alias, provider, text(status)),

@@ -297,7 +297,7 @@ class UnifiedDashboardDragReorderTest {
 
         assertTrue(
             "The dragged dashboard card must float as an overlay; it should not also run LazyGrid placement animation.",
-            gridItemBody.contains("val cardModifier = if (providerId == draggedProvider)") &&
+            gridItemBody.contains("val cardModifier = if (providerId == draggedProvider || !animationsEnabled)") &&
                 gridItemBody.contains("modifier = cardModifier")
         )
     }

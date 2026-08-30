@@ -56,9 +56,9 @@ Sources: `android/app/src/main/java/com/aiquota/mobile/ui/AIQuotaDesignTokens.kt
 | Card chrome | `#E7E4DC` | `#EFE9DE` | Provider card outer surface |
 | Title bar | `#432DD7` | `#F5F0E8` | Existing window title treatment |
 | Content / alternate content | `#FFFFFF` / `#FFFFFF` | `#FAF9F5` / `#F5F0E8` | Card body and path row |
-| Border / soft border | `#1C293C` / `#FFFFFF` | `#E6DFD8` / `#E6DFD8` | Preserve theme-specific contrast, including the current Windows soft-border limitation |
+| Border / soft border | `#1C293C` / `#1C293C` | `#E6DFD8` / `#6C6A64` | Both soft-boundary roles meet the 3:1 non-text contrast target |
 | Primary / active | `#432DD7` / `#2F1FAA` | `#CC785C` / `#A9583E` | Interactive emphasis and focus treatment |
-| Selected / unselected navigation | `#FDC800` / `#E7E4DC` | `#CC785C` / `#EFE9DE` | Selection must also have semantic state, not color alone |
+| Selected / unselected navigation | `#FDC800` / `#E7E4DC` | `#A9583E` / `#EFE9DE` | Selection must also have semantic state, not color alone; macOS selected navigation uses the darker active role for white text |
 | Progress / track | `#432DD7` / `#E7E4DC` | `#CC785C` / `#E8E0D2` | Gauges retain the user-selected provider override when present |
 | Shadow | `#1C293C` at 24% | `#141413` at 8% | Use only at existing elevation levels |
 
@@ -170,7 +170,9 @@ All provider artwork uses `ContentScale.Fit` inside its container. Preserve thes
 | Grok | 0.80 | Kimi | 0.80 |
 | Kiro | 0.78 |  |  |
 
-Source: `android/app/src/main/java/com/aiquota/mobile/ui/provider/ProviderIcon.kt:52-82`.
+Source: `android/app/src/main/java/com/aiquota/mobile/ui/provider/ProviderIcon.kt:52-83`.
+
+`ProviderIconImage` is decorative by default (`contentDescription = null`). A caller opts into an accessible description when the icon conveys information not already exposed by surrounding semantics.
 
 ## 5. Components & State Contracts
 
@@ -288,7 +290,7 @@ Sources: `android/app/src/main/java/com/aiquota/mobile/ui/dashboard/UnifiedDashb
 
 ### 8.1 Binding accessibility constraints
 
-- Target WCAG 2.2 AA behavior for the Android surface: readable text contrast, 3:1 non-text contrast for meaningful boundaries/focus, and 4.5:1 normal-text contrast where applicable. Contrast must be measured in both current themes before Task 23 closes.
+- Target WCAG 2.2 AA behavior for the Android surface: readable text contrast, 3:1 non-text contrast for meaningful boundaries/focus, and 4.5:1 normal-text contrast where applicable. `ProviderCatalogContrastTest` measures the Windows/macOS soft boundaries and the rendered white macOS selected-navigation text.
 - Every new Settings, Add, Remove, Later, row, field, checkbox/radio, Cancel, Connect/Reconnect, destructive confirm, retry, and dialog action has at least a 48dp by 48dp semantic touch target. Visual glyphs may remain smaller inside that target. The plan explicitly requires 48dp header actions at `../.omo/plans/provider-card-catalog-ui.md:30,266-270`.
 - Icon-only actions have localized content descriptions. Add and Remove descriptions include the action purpose, not only `+` or `-`.
 - Roles are explicit and singular: action `Button`, provider picker row `RadioButton`, removal row `Checkbox`, and progress/busy semantics for long operations. A selectable row is one focus stop, not a row plus a duplicate child control.
@@ -329,11 +331,11 @@ Reference review record: image metadata reports `English_Screenshot.png` at 1403
 | Dense Connect explicitly permits 64dp by 28dp minimum | `UnifiedDashboardScreen.kt:921-934` | Existing compact-card behavior is pinned before catalog UI changes | Tasks 21 and 23 provide a 48dp semantic target and verify 200% font |
 | Widget visibility `+`/`-` controls are 28dp and use symbol text | `DashboardWidgetConfigureActivity.kt:34-35,295-304,352-361` | Adjacent legacy surface is out of Task 6's only-file scope | Tasks 16, 22, and 23 replace exact-card management affordances with localized 48dp semantics |
 | Reduced-motion alternatives are not explicit for dashboard/widget reorder | Current motion citations in Section 6 | Production behavior cannot change in Task 6 | Tasks 19-23 add reduced-motion paths and semantic reorder |
-| Windows `borderSoft` maps to white on white in some surfaces | `AIQuotaDesignTokens.kt:66-89` | Existing token mapping is characterization, not silently redesigned | Task 23 measures contrast; remap an existing role if needed and update this debt record |
+| Windows/macOS soft-boundary and selected macOS navigation contrast | `AIQuotaDesignTokens.kt:66-115`; `ProviderCatalogContrastTest.kt` | Resolved in Task 23 Lane A by remapping existing darker semantic roles; focused checks enforce 3:1 boundaries and 4.5:1 selected-navigation text | Re-run the focused checks when the palette changes |
 | The app exposes two light visual themes; declared macOS dark constants are not wired as a dark theme | `AIQuotaDesignTokens.kt:27-36,92-125`; `AIQuotaAppShell.kt:863-876` | Task 6 cannot invent a dark palette or alter theme behavior | Task 23 validates the actual Windows/macOS themes; a true dark-theme owner decision remains outside Tasks 6-23 unless separately approved |
 | Populated grid clips Kiro's one-line primary `Connection needs attention` status to `Connection needs` without an ellipsis; the full explanation remains visible in the secondary message and accessibility XML retains the complete source value | `UnifiedDashboardScreen.kt:889-894`; Task 6 real-surface evidence `task-6-real-surface-qa/populated-grid.png` and `populated-grid.xml` | The production renderer predates Task 6, and Task 6 must pin the faithful current surface without changing behavior | Task 23 adds an explicit overflow treatment or responsive status layout and verifies the complete state visually and semantically at narrow widths and 200% font |
 | Current UI is provider-keyed and collapses snapshots with `associateBy(providerId)` | `UnifiedDashboardScreen.kt:190-197`; shell routes at `AIQuotaAppShell.kt:757-805` | This is the explicit pre-catalog baseline | Tasks 7-17 establish exact-card authority/wiring; Tasks 18-23 consume it |
-| Onboarding, catalog Add/Remove/naming, exact-card semantics, and required localized strings are absent | Current resources retain old empty state at `values/strings.xml:94-95` and `values-ko/strings.xml:94-95` | Their absence is the intended RED surface for Task 6 | Tasks 18-23 implement and verify the matrix; no phrase-presence test is permitted |
+| Required catalog/settings localization and Korean provider terminology | `values/strings.xml`; `values-ko/strings.xml`; `ProviderCatalogResourceContractTest.kt` | Resolved in Task 23 Lane A: EN/KO keys stay in parity, catalog/removal/auth/version resources are present, and Korean visible values do not leak the English provider term | UI lanes still wire the version resource and complete live-surface localization verification |
 
 No other accessibility or visual debt is accepted by this contract. New debt requires an explicit entry with affected users, location, reason, owner, and exit condition.
 

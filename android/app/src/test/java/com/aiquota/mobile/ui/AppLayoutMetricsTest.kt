@@ -1,5 +1,6 @@
 ﻿package com.aiquota.mobile.ui
 
+import com.aiquota.mobile.local.DashboardViewMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -98,5 +99,34 @@ class AppLayoutMetricsTest {
             "Dashboard card height must keep three provider cards visible on compact phones.",
             cardHeight <= 187
         )
+    }
+
+    @Test
+    fun dashboardFixedAreasScaleForLargeFontConfiguration() {
+        val regular = appLayoutMetrics(screenWidthDp = 411, screenHeightDp = 800, fontScale = 1f)
+        val large = appLayoutMetrics(screenWidthDp = 411, screenHeightDp = 800, fontScale = 2f)
+
+        assertEquals(1f, regular.fontScale)
+        assertEquals(2f, large.fontScale)
+        assertTrue(large.dashboardTitleHeightDp > regular.dashboardTitleHeightDp)
+        assertTrue(large.dashboardCardMinHeightDp > regular.dashboardCardMinHeightDp)
+        assertTrue(
+            large.forDashboardViewMode(DashboardViewMode.CARD).dashboardCardMinHeightDp >
+                regular.forDashboardViewMode(DashboardViewMode.CARD).dashboardCardMinHeightDp
+        )
+    }
+
+    @Test
+    fun cardModeUsesOneReadableColumnAtAccessibilityFontScale() {
+        val metrics = appLayoutMetrics(
+            screenWidthDp = 375,
+            screenHeightDp = 667,
+            fontScale = 2f,
+        ).forDashboardViewMode(DashboardViewMode.CARD)
+
+        assertEquals(1, metrics.dashboardGridColumnCount)
+        assertEquals(2, metrics.dashboardVisibleProviderCount)
+        assertEquals(false, metrics.dashboardCompactCard)
+        assertEquals(false, metrics.dashboardDenseText)
     }
 }

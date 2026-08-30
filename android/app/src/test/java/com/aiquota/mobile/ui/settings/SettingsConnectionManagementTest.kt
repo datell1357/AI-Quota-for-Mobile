@@ -171,6 +171,29 @@ class SettingsConnectionManagementTest {
     }
 
     @Test
+    fun settingsVersionUsesLocalizedResourceAndBuildConfigValues() {
+        val source = File("src/main/java/com/aiquota/mobile/ui/settings/SettingsPanel.kt").readText()
+
+        assertTrue(
+            source.contains(
+                "stringResource(R.string.settings_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)"
+            )
+        )
+        assertFalse(source.contains("text = \"버전 : "))
+    }
+
+    @Test
+    fun settingsDialogsReturnFocusToTheirInvokingControls() {
+        val source = File("src/main/java/com/aiquota/mobile/ui/settings/SettingsPanel.kt").readText()
+        val rows = source.substringAfter("private fun ExactCardConnectionRow")
+            .substringBefore("private fun settingsDeleteErrorResource")
+
+        assertTrue(rows.contains("renameTriggerFocusRequester"))
+        assertTrue(rows.contains("deleteTriggerFocusRequester"))
+        assertTrue(rows.contains("requestFocus()"))
+    }
+
+    @Test
     fun enabledEmptyExactRuntimeDoesNotRenderLegacyProviderControls() {
         assertFalse(settingsUsesLegacyConnectionControls(exactCardRuntimeEnabled = true))
         assertTrue(settingsUsesLegacyConnectionControls(exactCardRuntimeEnabled = false))

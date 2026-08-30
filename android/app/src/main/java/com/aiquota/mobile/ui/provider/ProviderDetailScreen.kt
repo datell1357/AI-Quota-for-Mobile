@@ -12,18 +12,24 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -38,6 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,15 +52,29 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.focusable
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.LineHeightStyle
@@ -366,6 +387,30 @@ private fun ProviderSummaryBlock(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var deleteExpectedVersion by remember { mutableStateOf<DisplayVersion?>(null) }
     var deleteError by remember { mutableStateOf<Int?>(null) }
+    val personalSettingsFocusRequester = remember { FocusRequester() }
+    val renameTriggerFocusRequester = remember { FocusRequester() }
+    val deleteTriggerFocusRequester = remember { FocusRequester() }
+    var personalSettingsFocusReturnPending by remember { mutableStateOf(false) }
+    var renameFocusReturnPending by remember { mutableStateOf(false) }
+    var deleteFocusReturnPending by remember { mutableStateOf(false) }
+    LaunchedEffect(showPersonalSettings, personalSettingsFocusReturnPending) {
+        if (!showPersonalSettings && personalSettingsFocusReturnPending) {
+            personalSettingsFocusRequester.requestFocus()
+            personalSettingsFocusReturnPending = false
+        }
+    }
+    LaunchedEffect(showRenameDialog, renameFocusReturnPending) {
+        if (!showRenameDialog && renameFocusReturnPending) {
+            renameTriggerFocusRequester.requestFocus()
+            renameFocusReturnPending = false
+        }
+    }
+    LaunchedEffect(showDeleteDialog, deleteFocusReturnPending) {
+        if (!showDeleteDialog && deleteFocusReturnPending) {
+            deleteTriggerFocusRequester.requestFocus()
+            deleteFocusReturnPending = false
+        }
+    }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -379,6 +424,7 @@ private fun ProviderSummaryBlock(
             )
             Text(
                 text = cardAlias,
+                modifier = Modifier.semantics { contentDescription = cardAlias },
                 style = compactProviderLineBreakStyle(snapshot.providerId, MaterialTheme.typography.labelMedium),
                 color = if (colors.theme == AppTheme.MACOS) colors.titleText else colors.textPrimary,
                 maxLines = 1,
@@ -453,8 +499,13 @@ private fun ProviderSummaryBlock(
                 )
             }
             OutlinedButton(
-                onClick = { showPersonalSettings = true },
-                modifier = Modifier.fillMaxWidth()
+                onClick = {
+                    personalSettingsFocusReturnPending = true
+                    showPersonalSettings = true
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(personalSettingsFocusRequester),
             ) {
                 Text(
                     text = stringResource(R.string.provider_personal_settings),
@@ -468,9 +519,12 @@ private fun ProviderSummaryBlock(
                         renameValue = cardAlias
                         renameError = null
                         renameExpectedVersion = cardVersion
+                        renameFocusReturnPending = true
                         showRenameDialog = true
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(renameTriggerFocusRequester),
                 ) {
                     Text(
                         text = stringResource(R.string.settings_rename_selected_device),
@@ -480,11 +534,15 @@ private fun ProviderSummaryBlock(
                 }
             }
             if (onDelete != null && cardVersion != null) {
-                TextButton(onClick = {
-                    deleteError = null
-                    deleteExpectedVersion = cardVersion
-                    showDeleteDialog = true
-                }) {
+                TextButton(
+                    modifier = Modifier.focusRequester(deleteTriggerFocusRequester),
+                    onClick = {
+                        deleteError = null
+                        deleteExpectedVersion = cardVersion
+                        deleteFocusReturnPending = true
+                        showDeleteDialog = true
+                    },
+                ) {
                     Text(stringResource(R.string.provider_catalog_remove_action))
                 }
             }
@@ -531,8 +589,13 @@ private fun ProviderSummaryBlock(
                         singleLine = true,
                     )
                     renameError?.let { error ->
+                        val errorText = stringResource(error)
                         Text(
-                            text = stringResource(error),
+                            text = errorText,
+                            modifier = Modifier.semantics {
+                                liveRegion = LiveRegionMode.Polite
+                                error(errorText)
+                            },
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                         )
@@ -578,8 +641,13 @@ private fun ProviderSummaryBlock(
                     )
                     Text(stringResource(R.string.provider_removal_confirmation_consequence))
                     deleteError?.let { error ->
+                        val errorText = stringResource(error)
                         Text(
-                            text = stringResource(error),
+                            text = errorText,
+                            modifier = Modifier.semantics {
+                                liveRegion = LiveRegionMode.Polite
+                                error(errorText)
+                            },
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                         )
@@ -726,39 +794,46 @@ private fun ProviderResetAlertBell(
 ) {
     val colors = AIQuotaTheme.colors
     val tint = if (enabled) colors.primary else colors.textMuted
-    Canvas(
+    val accessibilityLabel = stringResource(R.string.provider_reset_notification_setting_title)
+    Box(
         modifier = Modifier
-            .size(18.dp)
-            .clickable(onClick = onToggle)
+            .size(48.dp)
+            .toggleable(value = enabled, role = Role.Switch) { onToggle() }
+            .semantics {
+                contentDescription = accessibilityLabel
+            },
+        contentAlignment = Alignment.Center,
     ) {
-        val w = size.width
-        val h = size.height
-        val stroke = Stroke(width = w * 0.09f)
+        Canvas(modifier = Modifier.size(18.dp)) {
+            val w = size.width
+            val h = size.height
+            val stroke = Stroke(width = w * 0.09f)
 
-        // Bell body: dome on top of a flared rim.
-        val body = Path().apply {
-            moveTo(w * 0.24f, h * 0.63f)
-            lineTo(w * 0.24f, h * 0.45f)
-            cubicTo(w * 0.24f, h * 0.24f, w * 0.36f, h * 0.16f, w * 0.50f, h * 0.16f)
-            cubicTo(w * 0.64f, h * 0.16f, w * 0.76f, h * 0.24f, w * 0.76f, h * 0.45f)
-            lineTo(w * 0.76f, h * 0.63f)
-            lineTo(w * 0.84f, h * 0.73f)
-            lineTo(w * 0.16f, h * 0.73f)
-            close()
-        }
-        drawPath(path = body, color = tint, style = stroke)
-        // Clapper.
-        drawCircle(color = tint, radius = w * 0.08f, center = Offset(w * 0.50f, h * 0.82f))
-        // Top nub.
-        drawCircle(color = tint, radius = w * 0.05f, center = Offset(w * 0.50f, h * 0.12f))
+            // Bell body: dome on top of a flared rim.
+            val body = Path().apply {
+                moveTo(w * 0.24f, h * 0.63f)
+                lineTo(w * 0.24f, h * 0.45f)
+                cubicTo(w * 0.24f, h * 0.24f, w * 0.36f, h * 0.16f, w * 0.50f, h * 0.16f)
+                cubicTo(w * 0.64f, h * 0.16f, w * 0.76f, h * 0.24f, w * 0.76f, h * 0.45f)
+                lineTo(w * 0.76f, h * 0.63f)
+                lineTo(w * 0.84f, h * 0.73f)
+                lineTo(w * 0.16f, h * 0.73f)
+                close()
+            }
+            drawPath(path = body, color = tint, style = stroke)
+            // Clapper.
+            drawCircle(color = tint, radius = w * 0.08f, center = Offset(w * 0.50f, h * 0.82f))
+            // Top nub.
+            drawCircle(color = tint, radius = w * 0.05f, center = Offset(w * 0.50f, h * 0.12f))
 
-        if (!enabled) {
-            drawLine(
-                color = tint,
-                start = Offset(w * 0.86f, h * 0.14f),
-                end = Offset(w * 0.14f, h * 0.86f),
-                strokeWidth = w * 0.11f
-            )
+            if (!enabled) {
+                drawLine(
+                    color = tint,
+                    start = Offset(w * 0.86f, h * 0.14f),
+                    end = Offset(w * 0.14f, h * 0.86f),
+                    strokeWidth = w * 0.11f
+                )
+            }
         }
     }
 }
@@ -767,6 +842,7 @@ private fun ProviderResetAlertBell(
  * Per-provider personal settings: reset alerts, Claude auto-start, and the gauge colour
  * picker (shown inline here instead of behind its own button).
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProviderPersonalSettingsDialog(
     providerId: ProviderId,
@@ -784,6 +860,14 @@ private fun ProviderPersonalSettingsDialog(
 ) {
     var input by remember(selectedColor) { mutableStateOf(selectedColor.orEmpty()) }
     var showGradientPicker by remember { mutableStateOf(false) }
+    val gradientTriggerFocusRequester = remember { FocusRequester() }
+    var gradientFocusReturnPending by remember { mutableStateOf(false) }
+    LaunchedEffect(showGradientPicker, gradientFocusReturnPending) {
+        if (!showGradientPicker && gradientFocusReturnPending) {
+            gradientTriggerFocusRequester.requestFocus()
+            gradientFocusReturnPending = false
+        }
+    }
     val normalizedInput = ProviderGaugeColor.normalize(input)
     val showError = input.isNotBlank() && normalizedInput == null
 
@@ -845,7 +929,11 @@ private fun ProviderPersonalSettingsDialog(
                 ProviderGaugeColorPalette(
                     selectedColor = normalizedInput ?: selectedColor,
                     onColorSelected = { input = it },
-                    onGradientClick = { showGradientPicker = true }
+                    onGradientClick = {
+                        gradientFocusReturnPending = true
+                        showGradientPicker = true
+                    },
+                    gradientFocusRequester = gradientTriggerFocusRequester,
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -881,10 +969,10 @@ private fun ProviderPersonalSettingsDialog(
                         content = {}
                     )
                 }
-                Row(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     TextButton(onClick = { onApplyColor(null) }) {
                         Text(
@@ -953,6 +1041,9 @@ private fun ProviderPersonalSettingsToggle(
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
+            modifier = Modifier
+                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                .semantics { contentDescription = "$title. $description" },
             colors = SwitchDefaults.colors(
                 checkedThumbColor = colors.panel,
                 checkedTrackColor = colors.primary,
@@ -1004,7 +1095,8 @@ private fun ProviderUsageThresholdToggle(
         // Compact numeric threshold input, sized to match the on/off switch to its right.
         Box(
             modifier = Modifier
-                .height(32.dp)
+                .heightIn(min = 48.dp)
+                .widthIn(min = 48.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .border(BorderStroke(1.dp, colors.border), RoundedCornerShape(8.dp))
                 .padding(horizontal = 8.dp),
@@ -1030,7 +1122,10 @@ private fun ProviderUsageThresholdToggle(
                     ),
                     cursorBrush = SolidColor(colors.primary),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.width(20.dp)
+                    modifier = Modifier
+                        .widthIn(min = 48.dp)
+                        .heightIn(min = 48.dp)
+                        .semantics { contentDescription = "$title. $description" }
                 )
                 Text(
                     text = stringResource(R.string.provider_usage_threshold_percent_label),
@@ -1042,6 +1137,9 @@ private fun ProviderUsageThresholdToggle(
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
+            modifier = Modifier
+                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                .semantics { contentDescription = "$title. $description" },
             colors = SwitchDefaults.colors(
                 checkedThumbColor = colors.panel,
                 checkedTrackColor = colors.primary,
@@ -1175,17 +1273,22 @@ private fun ProviderUsageThresholdToggle(
 //
 @Composable
 private fun ProviderGaugeGradientButton(
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(8.dp)
+    val accessibilityLabel = stringResource(R.string.provider_usage_color_button)
 
     Box(
-        modifier = Modifier
-            .width(34.dp)
+        modifier = modifier
+            .width(48.dp)
             .height(152.dp)
             .clip(shape)
             .background(Brush.verticalGradient(GaugeGradientColors))
-            .clickable(onClick = onClick)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics {
+                contentDescription = accessibilityLabel
+            }
     ) {
         Surface(
             modifier = Modifier.fillMaxWidth().height(152.dp),
@@ -1210,6 +1313,7 @@ private fun ProviderGaugeGradientPickerDialog(
     }
     val selectedHex = pickerColorAt(pickerPosition)
     val selectedPreviewColor = ProviderGaugeColor.toArgbOrNull(selectedHex)?.let(::Color) ?: colors.progress
+    val accessibilityLabel = stringResource(R.string.provider_usage_color_button)
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -1222,7 +1326,9 @@ private fun ProviderGaugeGradientPickerDialog(
             shadowElevation = if (colors.theme == AppTheme.MACOS) 12.dp else 2.dp
         ) {
             Column(
-                modifier = Modifier.padding(18.dp),
+                modifier = Modifier
+                    .padding(18.dp)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Row(
@@ -1252,6 +1358,34 @@ private fun ProviderGaugeGradientPickerDialog(
                         .clip(RoundedCornerShape(10.dp))
                         .background(Brush.horizontalGradient(GaugeGradientColors))
                         .onSizeChanged { pickerSize = it }
+                        .focusable()
+                        .semantics {
+                            contentDescription = accessibilityLabel
+                        }
+                        .onKeyEvent { event ->
+                            if (event.type != KeyEventType.KeyDown) {
+                                false
+                            } else {
+                                val step = 0.05f
+                                val delta = when (event.key) {
+                                    Key.DirectionLeft -> Offset(-step, 0f)
+                                    Key.DirectionRight -> Offset(step, 0f)
+                                    Key.DirectionUp -> Offset(0f, -step)
+                                    Key.DirectionDown -> Offset(0f, step)
+                                    else -> Offset.Zero
+                                }
+                                if (delta == Offset.Zero) {
+                                    false
+                                } else {
+                                    pickerPosition = Offset(
+                                        x = (pickerPosition.x + delta.x).coerceIn(0f, 1f),
+                                        y = (pickerPosition.y + delta.y).coerceIn(0f, 1f),
+                                    )
+                                    onColorSelected(pickerColorAt(pickerPosition))
+                                    true
+                                }
+                            }
+                        }
                         .pointerInput(pickerSize) {
                             detectTapGestures { position ->
                                 pickerPosition = normalizedPickerPosition(position, pickerSize)
@@ -1321,27 +1455,30 @@ private fun ProviderGaugeGradientPickerDialog(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProviderGaugeColorPalette(
     selectedColor: String?,
     onColorSelected: (String) -> Unit,
-    onGradientClick: () -> Unit
+    onGradientClick: () -> Unit,
+    gradientFocusRequester: FocusRequester,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            ProviderGaugeColor.palette.chunked(6).forEach { rowColors ->
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    rowColors.forEach { hexColor ->
-                        ProviderGaugeColorSwatch(
-                            hexColor = hexColor,
-                            selected = hexColor.equals(selectedColor, ignoreCase = true),
-                            onClick = { onColorSelected(hexColor) }
-                        )
-                    }
-                }
-            }
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        ProviderGaugeColor.palette.forEach { hexColor ->
+            ProviderGaugeColorSwatch(
+                hexColor = hexColor,
+                selected = hexColor.equals(selectedColor, ignoreCase = true),
+                onClick = { onColorSelected(hexColor) }
+            )
         }
-        ProviderGaugeGradientButton(onClick = onGradientClick)
+        ProviderGaugeGradientButton(
+            onClick = onGradientClick,
+            modifier = Modifier.focusRequester(gradientFocusRequester),
+        )
     }
 }
 
@@ -1354,19 +1491,28 @@ private fun ProviderGaugeColorSwatch(
     val colors = AIQuotaTheme.colors
     val swatchArgb = ProviderGaugeColor.toArgbOrNull(hexColor)
     val swatchColor = swatchArgb?.let(::Color) ?: Color.Transparent
-    Surface(
+    val swatchDescription = "${stringResource(R.string.provider_usage_color_title)} $hexColor"
+    Box(
         modifier = Modifier
-            .size(32.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(6.dp),
-        color = swatchColor,
-        border = BorderStroke(
-            width = if (selected) 3.dp else 1.dp,
-            color = if (selected) colors.primary else colors.border
-        )
+            .size(48.dp)
+            .selectable(
+                selected = selected,
+                role = Role.RadioButton,
+                onClick = onClick,
+            )
+            .semantics { contentDescription = swatchDescription },
+        contentAlignment = Alignment.Center,
     ) {
-        if (selected) {
-            Box(contentAlignment = Alignment.Center) {
+        Surface(
+            modifier = Modifier.size(32.dp),
+            shape = RoundedCornerShape(6.dp),
+            color = swatchColor,
+            border = BorderStroke(
+                width = if (selected) 3.dp else 1.dp,
+                color = if (selected) colors.primary else colors.border
+            )
+        ) {
+            if (selected) {
                 Text(
                     text = "✓",
                     style = MaterialTheme.typography.titleSmall,

@@ -136,8 +136,9 @@ class DashboardWidgetConfigureActivityTest {
             hiddenRow.indexOf("providerIconRes(providerId)") < hiddenRow.indexOf("providerVisibilityButton(")
         )
         assertTrue(
-            "Visibility controls should be smaller than the drag handle.",
-            activitySource.contains("WIDGET_CONFIGURE_VISIBILITY_BUTTON_SIZE_DP = 28") &&
+            "Visibility and reorder controls should retain 48dp accessibility targets.",
+            activitySource.contains("WIDGET_CONFIGURE_VISIBILITY_BUTTON_SIZE_DP = 48") &&
+                activitySource.contains("WIDGET_CONFIGURE_DRAG_HANDLE_SIZE_DP = 48") &&
                 activitySource.contains("WIDGET_CONFIGURE_VISIBILITY_BUTTON_TEXT_SIZE_SP = 16f")
         )
     }
@@ -370,6 +371,28 @@ class DashboardWidgetConfigureActivityTest {
             !actionMoveBody.contains("removeCallbacks") &&
                 !actionMoveBody.contains("touchSlop")
         )
+    }
+
+    @Test
+    fun widgetVisibilityAndReorderActionsExposeLocalized48dpTargets() {
+        val activitySource = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
+
+        assertTrue(activitySource.contains("WIDGET_CONFIGURE_VISIBILITY_BUTTON_SIZE_DP = 48"))
+        assertTrue(activitySource.contains("WIDGET_CONFIGURE_DRAG_HANDLE_SIZE_DP = 48"))
+        assertTrue(activitySource.contains("widget_configure_remove_provider"))
+        assertTrue(activitySource.contains("widget_configure_add_provider"))
+        assertTrue(activitySource.contains("provider_reorder_handle"))
+        assertTrue(activitySource.contains("isFocusable = true"))
+    }
+
+    @Test
+    fun reducedMotionWidgetReorderCommitsFinalTranslationsImmediately() {
+        val activitySource = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
+        val animationBody = activitySource.substringAfter("private fun animateProviderRowTranslation").substringBefore("private fun resetProviderRowTranslations")
+
+        assertTrue(activitySource.contains("Settings.Global.ANIMATOR_DURATION_SCALE"))
+        assertTrue(animationBody.contains("if (!animationsEnabled())"))
+        assertTrue(animationBody.contains("row.translationY = targetTranslation"))
     }
 
     @Test

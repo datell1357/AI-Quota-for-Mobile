@@ -51,7 +51,8 @@ fun providerIconRes(providerId: String): Int {
 @Composable
 fun ProviderIconImage(
     providerId: ProviderId,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null
 ) {
     Box(
         modifier = modifier,
@@ -59,7 +60,7 @@ fun ProviderIconImage(
     ) {
         Image(
             painter = painterResource(providerIconRes(providerId)),
-            contentDescription = providerId.displayName,
+            contentDescription = contentDescription,
             contentScale = ContentScale.Fit,
             modifier = Modifier.fillMaxSize(providerIconVisualScale(providerId))
         )

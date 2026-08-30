@@ -76,6 +76,7 @@
     <string name="settings_live_refresh_status_running">Running</string>
     <string name="settings_live_refresh_status_stopped">Stopped</string>
     <string name="provider_connect">Connect</string>
+    <string name="provider_reconnect">Reconnect</string>
     <string name="provider_action_coming_soon">Coming soon</string>
     <string name="provider_refresh">Refresh</string>
     <string name="provider_disconnect">Disconnect</string>
@@ -217,6 +218,7 @@
     <string name="settings_theme_picker_title">Choose theme</string>
     <string name="settings_support_title">Support</string>
     <string name="settings_support_body">Report bugs with safe diagnostics that exclude sensitive values.</string>
+    <string name="settings_version">Version: %1$s (%2$d)</string>
     <string name="settings_bug_report_button">Report a bug</string>
     <string name="settings_bug_report_title">Report a bug</string>
     <string name="settings_bug_report_body">Your mail app will open. Review the message before sending it.</string>

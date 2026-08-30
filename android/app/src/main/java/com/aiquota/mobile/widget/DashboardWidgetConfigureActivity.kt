@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
+import android.provider.Settings
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -31,8 +32,9 @@ import com.aiquota.mobile.ui.dashboard.ProviderCardOrder
 import com.aiquota.mobile.ui.provider.providerIconRes
 import kotlin.math.abs
 
-private const val WIDGET_CONFIGURE_VISIBILITY_BUTTON_SIZE_DP = 28
+private const val WIDGET_CONFIGURE_VISIBILITY_BUTTON_SIZE_DP = 48
 private const val WIDGET_CONFIGURE_VISIBILITY_BUTTON_TEXT_SIZE_SP = 16f
+private const val WIDGET_CONFIGURE_DRAG_HANDLE_SIZE_DP = 48
 
 class DashboardWidgetConfigureActivity : ComponentActivity() {
     private var appWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
@@ -312,10 +314,15 @@ class DashboardWidgetConfigureActivity : ComponentActivity() {
                     imageTintList = ColorStateList.valueOf(style.mutedTextColor)
                     scaleType = ImageView.ScaleType.CENTER
                     contentDescription = getString(R.string.provider_reorder_handle)
+                    isClickable = true
+                    isFocusable = true
                     setPadding(6.dp(), 6.dp(), 6.dp(), 6.dp())
                     setOnTouchListener(providerDragTouchListener(providerId))
                 },
-                LinearLayout.LayoutParams(44.dp(), 44.dp())
+                LinearLayout.LayoutParams(
+                    WIDGET_CONFIGURE_DRAG_HANDLE_SIZE_DP.dp(),
+                    WIDGET_CONFIGURE_DRAG_HANDLE_SIZE_DP.dp()
+                )
             )
         }
     }
@@ -564,6 +571,12 @@ class DashboardWidgetConfigureActivity : ComponentActivity() {
         rowTranslationAnimators.remove(row)?.cancel()
         rowTranslationTargets[row] = targetTranslation
 
+        if (!animationsEnabled()) {
+            row.translationY = targetTranslation
+            rowTranslationTargets.remove(row)
+            return
+        }
+
         val startTranslation = row.translationY
         if (abs(startTranslation - targetTranslation) < 0.5f) {
             row.translationY = targetTranslation
@@ -596,6 +609,14 @@ class DashboardWidgetConfigureActivity : ComponentActivity() {
         }
         rowTranslationAnimators[row] = animator
         animator.start()
+    }
+
+    private fun animationsEnabled(): Boolean {
+        return Settings.Global.getFloat(
+            contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f
+        ) > 0f
     }
 
     private fun resetProviderRowTranslations() {

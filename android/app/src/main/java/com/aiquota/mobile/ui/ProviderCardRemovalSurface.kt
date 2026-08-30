@@ -1,6 +1,7 @@
 package com.aiquota.mobile.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,22 +15,27 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
@@ -57,6 +63,7 @@ internal fun ProviderCardRemovalSurface(
     var selectedIds by remember { mutableStateOf<Set<ProviderAccountId>>(emptySet()) }
     var confirmingCards by remember { mutableStateOf<List<ProviderCardDisplayRecord>>(emptyList()) }
     var confirming by remember { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf(false) }
     var resultById by remember { mutableStateOf<Map<ProviderAccountId, RemovalCardResult>>(emptyMap()) }
     val cardsById = cards.associateBy(ProviderCardDisplayRecord::accountId)
     val visibleSelectedIds = selectedIds.intersect(cardsById.keys)
@@ -66,6 +73,7 @@ internal fun ProviderCardRemovalSurface(
         confirmingCards = emptyList()
         confirming = false
         resultById = emptyMap()
+        deleting = false
         onDismiss()
     }
 
@@ -76,8 +84,10 @@ internal fun ProviderCardRemovalSurface(
         )
         confirming -> ProviderCardRemovalConfirmationDialog(
             selectedCards = confirmingCards,
+            deleting = deleting,
             onDismiss = ::dismiss,
             onConfirm = {
+                deleting = true
                 val results = confirmingCards.associate { card ->
                     val snapshot = RemovalCardSnapshot(
                         accountId = card.accountId,
@@ -91,6 +101,7 @@ internal fun ProviderCardRemovalSurface(
                     )
                 }
                 resultById = results
+                deleting = false
             },
         )
         else -> ProviderCardRemovalSelectionDialog(
@@ -150,12 +161,18 @@ private fun ProviderCardRemovalSelectionDialog(
     onDismiss: () -> Unit,
     onContinue: () -> Unit,
 ) {
+    val headingFocusRequester = remember { FocusRequester() }
     AlertDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true),
         title = {
+            LaunchedEffect(Unit) { headingFocusRequester.requestFocus() }
             Text(
                 text = stringResource(R.string.provider_removal_title),
+                modifier = Modifier
+                    .focusRequester(headingFocusRequester)
+                    .focusable()
+                    .semantics { heading() },
                 fontWeight = FontWeight.Bold,
             )
         },
@@ -182,12 +199,16 @@ private fun ProviderCardRemovalSelectionDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onContinue, enabled = selectedIds.isNotEmpty()) {
+            Button(
+                onClick = onContinue,
+                enabled = selectedIds.isNotEmpty(),
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) {
                 Text(stringResource(R.string.provider_removal_continue))
             }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.provider_removal_cancel))
             }
         },
@@ -200,6 +221,11 @@ private fun ProviderCardRemovalRow(
     selected: Boolean,
     onToggle: (ProviderAccountId, Boolean) -> Unit,
 ) {
+    val identityDescription = stringResource(
+        R.string.provider_removal_named_card,
+        card.alias,
+        card.accountId.providerId.displayName,
+    )
     val colors = AIQuotaTheme.colors
     Surface(
         modifier = Modifier
@@ -212,7 +238,7 @@ private fun ProviderCardRemovalRow(
             )
             .clearAndSetSemantics {
                 role = Role.Checkbox
-                contentDescription = card.alias
+                contentDescription = identityDescription
                 toggleableState = if (selected) ToggleableState.On else ToggleableState.Off
             }
             .semantics {
@@ -249,18 +275,29 @@ private fun ProviderCardRemovalRow(
 @Composable
 private fun ProviderCardRemovalConfirmationDialog(
     selectedCards: List<ProviderCardDisplayRecord>,
+    deleting: Boolean,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
+    val headingFocusRequester = remember { FocusRequester() }
+    val pendingStatus = stringResource(R.string.provider_removal_status_pending)
     val names = selectedCards.map { card ->
         stringResource(R.string.provider_removal_named_card, card.alias, card.accountId.providerId.displayName)
     }.joinToString(", ")
     AlertDialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true),
+        properties = DialogProperties(
+            dismissOnBackPress = !deleting,
+            dismissOnClickOutside = !deleting,
+        ),
         title = {
+            LaunchedEffect(Unit) { headingFocusRequester.requestFocus() }
             Text(
                 text = stringResource(R.string.provider_removal_confirmation_title),
+                modifier = Modifier
+                    .focusRequester(headingFocusRequester)
+                    .focusable()
+                    .semantics { heading() },
                 fontWeight = FontWeight.Bold,
             )
         },
@@ -280,12 +317,28 @@ private fun ProviderCardRemovalConfirmationDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onConfirm, enabled = selectedCards.isNotEmpty()) {
-                Text(stringResource(R.string.provider_removal_confirm))
+            Button(
+                onClick = onConfirm,
+                enabled = selectedCards.isNotEmpty() && !deleting,
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) {
+                if (deleting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .size(20.dp)
+                            .semantics {
+                                liveRegion = LiveRegionMode.Polite
+                                contentDescription = pendingStatus
+                            },
+                        strokeWidth = 2.dp,
+                    )
+                } else {
+                    Text(stringResource(R.string.provider_removal_confirm))
+                }
             }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.provider_removal_cancel))
             }
         },
@@ -297,10 +350,19 @@ private fun ProviderCardRemovalResultDialog(
     resultById: Map<ProviderAccountId, RemovalCardResult>,
     onDismiss: () -> Unit,
 ) {
+    val headingFocusRequester = remember { FocusRequester() }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(stringResource(R.string.provider_removal_results_title), fontWeight = FontWeight.Bold)
+            LaunchedEffect(Unit) { headingFocusRequester.requestFocus() }
+            Text(
+                stringResource(R.string.provider_removal_results_title),
+                modifier = Modifier
+                    .focusRequester(headingFocusRequester)
+                    .focusable()
+                    .semantics { heading() },
+                fontWeight = FontWeight.Bold,
+            )
         },
         text = {
             Column(
@@ -308,19 +370,41 @@ private fun ProviderCardRemovalResultDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 resultById.values.forEach { result ->
-                    Text(
-                        stringResource(
-                            R.string.provider_removal_result_item,
-                            result.snapshot.alias,
-                            result.snapshot.providerName,
-                            stringResource(result.outcome.statusResource()),
+                    val status = stringResource(result.outcome.statusResource())
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics { liveRegion = LiveRegionMode.Polite },
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            stringResource(
+                                R.string.provider_removal_result_item,
+                                result.snapshot.alias,
+                                result.snapshot.providerName,
+                                status,
+                            ),
+                            modifier = Modifier.semantics {
+                                liveRegion = LiveRegionMode.Polite
+                            },
                         )
-                    )
+                        if (result.outcome == RemovalResult.PENDING) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .semantics {
+                                        liveRegion = LiveRegionMode.Polite
+                                        contentDescription = status
+                                    },
+                                strokeWidth = 2.dp,
+                            )
+                        }
+                    }
                 }
             }
         },
         confirmButton = {
-            Button(onClick = onDismiss) {
+            Button(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.provider_removal_close))
             }
         },

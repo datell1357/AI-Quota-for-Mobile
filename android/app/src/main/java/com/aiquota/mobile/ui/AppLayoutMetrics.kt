@@ -39,18 +39,21 @@ data class AppLayoutMetrics(
     /** 카드형 전용. 카드가 작아 글자까지 한 단계 줄이고 사용량 라벨도 짧게 쓴다. */
     val dashboardDenseText: Boolean = false,
     /** 태블릿 폭(600dp 이상)인지. 카드형 열 수처럼 폭에 따라 갈리는 판단에 쓴다. */
-    val isTablet: Boolean = false
+    val isTablet: Boolean = false,
+    val fontScale: Float = 1f
 )
 
 fun appLayoutMetrics(
     screenWidthDp: Int,
-    screenHeightDp: Int
+    screenHeightDp: Int,
+    fontScale: Float = 1f
 ): AppLayoutMetrics {
     val compactWidth = screenWidthDp.coerceAtLeast(320)
     val compactHeight = screenHeightDp.coerceAtLeast(480)
     val widthScale = (compactWidth / 411f).coerceIn(1f, 1.8f)
     val heightScale = (compactHeight / 800f).coerceIn(0.95f, 1.25f)
     val isTablet = compactWidth >= 600
+    val accessibilityFontScale = fontScale.coerceIn(1f, 2f)
 
     fun scaled(base: Int, max: Int): Int {
         return (base * widthScale * heightScale).roundToInt().coerceAtMost(max)
@@ -108,10 +111,15 @@ fun appLayoutMetrics(
         cardSpacingDp = if (isTablet) scaled(10, 14) else scaled(7, 10),
         dashboardVisibleProviderCount = dashboardVisibleProviderCount,
         dashboardGridColumnCount = dashboardGridColumnCount,
-        dashboardTitleHeightDp = if (isTablet) scaled(38, 48) else scaled(36, 42),
-        dashboardCardMinHeightDp = if (isTablet) scaled(180, 220) else scaled(176, 220),
+        dashboardTitleHeightDp = (
+            (if (isTablet) scaled(38, 48) else scaled(36, 42)) * accessibilityFontScale
+        ).roundToInt().coerceAtLeast(48),
+        dashboardCardMinHeightDp = (
+            (if (isTablet) scaled(180, 220) else scaled(176, 220)) * accessibilityFontScale
+        ).roundToInt(),
         dashboardCompactCard = dashboardGridColumnCount == 1,
-        isTablet = isTablet
+        isTablet = isTablet,
+        fontScale = accessibilityFontScale
     )
 }
 
@@ -121,19 +129,26 @@ fun appLayoutMetrics(
  */
 fun AppLayoutMetrics.forDashboardViewMode(mode: DashboardViewMode): AppLayoutMetrics {
     if (mode != DashboardViewMode.CARD) return this
-    val columnCount = if (isTablet) {
+    val accessibilityPhoneLayout = !isTablet && fontScale >= 1.5f
+    val columnCount = if (accessibilityPhoneLayout) {
+        1
+    } else if (isTablet) {
         DASHBOARD_CARD_MODE_TABLET_COLUMN_COUNT
     } else {
         DASHBOARD_CARD_MODE_COLUMN_COUNT
     }
     return copy(
         dashboardGridColumnCount = columnCount,
-        dashboardVisibleProviderCount = DASHBOARD_CARD_MODE_VISIBLE_COUNT,
+        dashboardVisibleProviderCount = if (accessibilityPhoneLayout) 2 else DASHBOARD_CARD_MODE_VISIBLE_COUNT,
         // 폰은 3행이라 카드를 낮춰야 여섯 개가 들어간다. 태블릿은 2행이라 낮출 필요가 없다.
-        dashboardCardMinHeightDp = if (isTablet) dashboardCardMinHeightDp else (dashboardCardMinHeightDp * 3) / 5,
+        dashboardCardMinHeightDp = if (isTablet || accessibilityPhoneLayout) {
+            dashboardCardMinHeightDp
+        } else {
+            (dashboardCardMinHeightDp * 3) / 5
+        },
         // 카드 폭이 좁아지므로 넓은 카드용 여백·글자 크기를 그대로 쓰면 내용이 겹치거나 잘린다.
-        dashboardCompactCard = true,
-        dashboardDenseText = true
+        dashboardCompactCard = !accessibilityPhoneLayout,
+        dashboardDenseText = !accessibilityPhoneLayout
     )
 }
 
@@ -161,6 +176,7 @@ fun rememberAppLayoutMetrics(): AppLayoutMetrics {
     val configuration = LocalConfiguration.current
     return appLayoutMetrics(
         screenWidthDp = configuration.screenWidthDp,
-        screenHeightDp = configuration.screenHeightDp
+        screenHeightDp = configuration.screenHeightDp,
+        fontScale = configuration.fontScale
     )
 }

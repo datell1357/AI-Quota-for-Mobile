@@ -73,9 +73,9 @@ class ProviderOnboardingUiTest {
     fun laterShowsEmptyPromptAndAddReopensTheSamePicker() {
         composeRule.onNodeWithText(text(R.string.provider_onboarding_later)).performClick()
         composeRule.onNodeWithText(text(R.string.provider_catalog_empty_prompt)).assertIsDisplayed()
-        composeRule.onNode(
+        composeRule.onAllNodes(
             hasTextExactly(text(R.string.provider_catalog_add)) and hasClickAction()
-        ).performClick()
+        )[0].performClick()
         composeRule.onNodeWithText(text(R.string.provider_picker_title)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.provider_enrollment_cancel)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.provider_enrollment_next)).assertIsNotEnabled()
@@ -88,9 +88,9 @@ class ProviderOnboardingUiTest {
         composeRule.waitForIdle()
         assertEmptyCatalog()
 
-        composeRule.onNode(
+        composeRule.onAllNodes(
             hasTextExactly(text(R.string.provider_catalog_add)) and hasClickAction()
-        ).performClick()
+        )[0].performClick()
         openNaming(firstRun = false)
         composeRule.onNodeWithText(text(R.string.provider_enrollment_cancel)).performClick()
         assertEmptyCatalog()

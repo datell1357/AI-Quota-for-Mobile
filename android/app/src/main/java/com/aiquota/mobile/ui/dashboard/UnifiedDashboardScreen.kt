@@ -1,5 +1,6 @@
 ﻿package com.aiquota.mobile.ui.dashboard
 
+import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -50,16 +51,20 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -100,7 +105,8 @@ import kotlin.math.roundToInt
 
 private val ExplorerAccentColor = AIQuotaColors.SurfaceRaised
 /** 대시보드 상단 행의 정사각형 버튼(설정·목록형·카드형) 한 변. */
-private val DashboardHeaderButtonSize = 40.dp
+private val DashboardHeaderButtonSize = 48.dp
+private val DashboardSemanticTouchTargetSize = 48.dp
 private const val DashboardGaugeBaseHeightDp = 4f
 private const val DashboardGaugeMaxScale = 2f
 private const val DashboardGaugeFullExtraHeightDp = 80f
@@ -128,6 +134,16 @@ internal data class DashboardCardBounds(
             x = left + (width / 2f),
             y = top + (height / 2f)
         )
+}
+
+@Composable
+internal fun dashboardAnimationsEnabled(): Boolean {
+    val context = LocalContext.current
+    return Settings.Global.getFloat(
+        context.contentResolver,
+        Settings.Global.ANIMATOR_DURATION_SCALE,
+        1f
+    ) > 0f
 }
 
 internal enum class DashboardDropPlacement {
@@ -210,6 +226,7 @@ fun UnifiedDashboardScreen(
         }
     ) {
         val density = LocalDensity.current
+        val animationsEnabled = dashboardAnimationsEnabled()
         val cardHeightDp = dashboardProviderCardHeightDp(
             viewportHeightDp = maxHeight.value.roundToInt(),
             layoutMetrics = layoutMetrics
@@ -353,7 +370,7 @@ fun UnifiedDashboardScreen(
                             items = previewProviders,
                             key = { _, providerId -> providerId.name }
                         ) { visibleIndex, providerId ->
-                            val cardModifier = if (providerId == draggedProvider) {
+                            val cardModifier = if (providerId == draggedProvider || !animationsEnabled) {
                                 Modifier.fillMaxWidth()
                             } else {
                                 Modifier
@@ -437,6 +454,7 @@ fun UnifiedDashboardScreen(
     modifier: Modifier = Modifier,
     onAddProvider: () -> Unit = {},
     onRemoveProvider: () -> Unit = {},
+    removeProviderFocusRequester: FocusRequester? = null,
 ) {
     ExactDashboardCardsContent(
         cards = cards,
@@ -453,6 +471,7 @@ fun UnifiedDashboardScreen(
         onSelectViewMode = onSelectViewMode,
         onAddProvider = onAddProvider,
         onRemoveProvider = onRemoveProvider,
+        removeProviderFocusRequester = removeProviderFocusRequester,
         modifier = modifier,
     )
 }
@@ -617,7 +636,9 @@ internal fun ProviderUsageCard(
     onDropSlotChanged: (Int?) -> Unit,
     onPreviewTargetChanged: (Int?) -> Unit,
     onDragOverlayChanged: (DashboardCardBounds?, Float, Float) -> Unit,
-    onAutoScroll: (Float) -> Unit
+    onAutoScroll: (Float) -> Unit,
+    onMoveUp: (() -> Unit)? = null,
+    onMoveDown: (() -> Unit)? = null,
 ) {
     val colors = AIQuotaTheme.colors
     val isCompactDashboardCard = layoutMetrics.dashboardCompactCard
@@ -633,11 +654,13 @@ internal fun ProviderUsageCard(
     } else {
         MaterialTheme.typography.bodyMedium
     }
-    val titleBarHeight = when {
+    val titleBarBaseHeight = when {
         colors.theme == com.aiquota.mobile.local.AppTheme.MACOS && isCompactDashboardCard -> 26.dp
         colors.theme == com.aiquota.mobile.local.AppTheme.MACOS -> 30.dp
         else -> 22.dp
     }
+    val titleBarHeight = (titleBarBaseHeight * layoutMetrics.fontScale)
+        .coerceAtLeast(DashboardSemanticTouchTargetSize)
     val locationRowVerticalPadding = if (isCompactDashboardCard) 3.dp else 4.dp
     val cardContentPadding = if (isCompactDashboardCard) {
         (layoutMetrics.cardPaddingDp - 3).coerceAtLeast(6).dp
@@ -657,6 +680,19 @@ internal fun ProviderUsageCard(
         baseSpacingDp = baseUsageColumnSpacingDp
     ).dp
     val dashboardGaugeHeight = dashboardGaugeHeightDp(cardHeightDp, layoutMetrics).dp
+    val windowTitle = snapshot.displayName.ifBlank { dashboardProviderWindowTitle(providerId) }
+    val statusLabel = snapshot.statusLabel()
+    val primaryActionLabel = when {
+        showConnectAction -> stringResource(R.string.provider_connect)
+        showRefreshAction -> stringResource(R.string.provider_refresh)
+        else -> null
+    }
+    val cardSemanticsLabel = dashboardCardSemanticsLabel(
+        alias = windowTitle,
+        provider = providerId.displayName,
+        state = statusLabel,
+        action = primaryActionLabel,
+    )
     var dragOffsetX by remember(interactionKey) { mutableStateOf(0f) }
     var dragOffsetY by remember(interactionKey) { mutableStateOf(0f) }
     var cardCenter by remember(interactionKey) {
@@ -667,6 +703,28 @@ internal fun ProviderUsageCard(
     var dragOriginCenter by remember(interactionKey) { mutableStateOf<DashboardCardCenter?>(null) }
     var isDragging by remember(interactionKey) { mutableStateOf(false) }
     var dragStartVisibleIndex by remember(interactionKey) { mutableStateOf<Int?>(null) }
+    val reorderActions = if (!isPlaceholder && dragEnabled && !isDragging) {
+        buildList {
+            if (visibleIndex > 0 && onMoveUp != null) {
+                add(
+                    CustomAccessibilityAction(stringResource(R.string.provider_move_up)) {
+                        onMoveUp()
+                        true
+                    }
+                )
+            }
+            if (visibleIndex < visibleCardCenters.lastIndex && onMoveDown != null) {
+                add(
+                    CustomAccessibilityAction(stringResource(R.string.provider_move_down)) {
+                        onMoveDown()
+                        true
+                    }
+                )
+            }
+        }
+    } else {
+        emptyList()
+    }
     val currentVisibleIndex by rememberUpdatedState(visibleIndex)
     val currentVisibleCardCenters by rememberUpdatedState(visibleCardCenters)
     val currentPreviewTargetIndex by rememberUpdatedState(previewTargetIndex)
@@ -786,7 +844,18 @@ internal fun ProviderUsageCard(
                 scaleY = if (effectiveDragging) 1.035f else 1f
                 alpha = cardAlpha
             }
-            .clickable(enabled = !isPlaceholder && dragEnabled) { onProviderSelected(providerId) }
+            .clickable(
+                enabled = !isPlaceholder && dragEnabled,
+                role = Role.Button,
+                onClick = { onProviderSelected(providerId) }
+            )
+            .semantics {
+                if (!isPlaceholder && dragEnabled) {
+                    contentDescription = cardSemanticsLabel
+                    role = Role.Button
+                    customActions = reorderActions
+                }
+            }
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -799,7 +868,6 @@ internal fun ProviderUsageCard(
                 if (effectiveDragging) colors.primary else colors.border
             )
         ) {
-            val windowTitle = snapshot.displayName.ifBlank { dashboardProviderWindowTitle(providerId) }
             Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
@@ -931,10 +999,11 @@ internal fun ProviderUsageCard(
                             verticalArrangement = Arrangement.spacedBy(usageColumnSpacing)
                         ) {
                             Text(
-                                text = snapshot.statusLabel(),
+                                text = statusLabel,
                                 style = cardTitleStyle,
                                 color = if (colors.theme == com.aiquota.mobile.local.AppTheme.MACOS) colors.titleText else colors.textPrimary,
-                                maxLines = 1
+                                maxLines = if (layoutMetrics.fontScale >= 1.5f) 2 else 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             if (snapshot.lines.isEmpty()) {
                                 Text(
@@ -968,11 +1037,10 @@ internal fun ProviderUsageCard(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
                                 .then(
-                                    if (isDenseCardText) {
-                                        Modifier.defaultMinSize(minWidth = 64.dp, minHeight = 28.dp)
-                                    } else {
-                                        Modifier
-                                    }
+                                    Modifier.defaultMinSize(
+                                        minWidth = 64.dp,
+                                        minHeight = DashboardSemanticTouchTargetSize
+                                    )
                                 ),
                             contentPadding = if (isDenseCardText) {
                                 PaddingValues(horizontal = 12.dp, vertical = 4.dp)
@@ -995,11 +1063,10 @@ internal fun ProviderUsageCard(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
                                 .then(
-                                    if (isDenseCardText) {
-                                        Modifier.defaultMinSize(minWidth = 64.dp, minHeight = 28.dp)
-                                    } else {
-                                        Modifier
-                                    }
+                                    Modifier.defaultMinSize(
+                                        minWidth = 64.dp,
+                                        minHeight = DashboardSemanticTouchTargetSize
+                                    )
                                 ),
                             contentPadding = if (isDenseCardText) {
                                 PaddingValues(horizontal = 12.dp, vertical = 4.dp)
@@ -1034,6 +1101,15 @@ internal fun dashboardProviderIdentityLabel(providerId: ProviderId): String {
         else -> providerId.displayName
     }
 }
+
+internal fun dashboardCardSemanticsLabel(
+    alias: String,
+    provider: String,
+    state: String,
+    action: String?,
+): String = listOf(alias, provider, state, action)
+    .filter { !it.isNullOrBlank() }
+    .joinToString(", ") { it.orEmpty() }
 
 internal fun dashboardProviderWindowTitle(providerId: ProviderId): String {
     return providerId.displayName
@@ -1073,7 +1149,7 @@ private fun DashboardDragHandle(modifier: Modifier, isDragging: Boolean) {
                 contentDescription = handleDescription
                 role = Role.Button
             }
-            .size(width = 32.dp, height = 22.dp),
+            .requiredSize(DashboardHeaderButtonSize),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -1278,6 +1354,7 @@ private fun UsageLinePreview(
     gaugeColorHex: String?
 ) {
     val colors = AIQuotaTheme.colors
+    val largeFont = LocalDensity.current.fontScale >= 1.5f
     val locale = java.util.Locale.getDefault()
     val gaugeColor = remember(gaugeColorHex, colors.progress) {
         ProviderGaugeColor.toArgbOrNull(gaugeColorHex)?.let(::Color) ?: colors.progress
@@ -1315,7 +1392,7 @@ private fun UsageLinePreview(
                 style = labelStyle,
                 fontWeight = FontWeight.Medium,
                 color = if (colors.theme == com.aiquota.mobile.local.AppTheme.MACOS) colors.titleText else colors.textPrimary,
-                maxLines = 1,
+                maxLines = if (largeFont) 2 else 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
@@ -1350,7 +1427,7 @@ private fun UsageLinePreview(
                 modifier = Modifier.fillMaxWidth(),
                 style = resetStyle,
                 color = if (colors.theme == com.aiquota.mobile.local.AppTheme.MACOS) colors.textMuted else colors.textSecondary,
-                maxLines = 1,
+                maxLines = if (largeFont) 2 else 1,
                 textAlign = TextAlign.End,
                 overflow = TextOverflow.Ellipsis
             )

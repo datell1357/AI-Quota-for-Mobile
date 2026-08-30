@@ -32,6 +32,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.painterResource
@@ -69,6 +71,7 @@ internal fun ExactDashboardCardsContent(
     onSelectViewMode: (DashboardViewMode) -> Unit,
     onAddProvider: () -> Unit,
     onRemoveProvider: () -> Unit,
+    removeProviderFocusRequester: FocusRequester? = null,
     modifier: Modifier = Modifier,
 ) {
     val layoutMetrics = rememberAppLayoutMetrics().forDashboardViewMode(viewMode)
@@ -96,6 +99,7 @@ internal fun ExactDashboardCardsContent(
         }
     ) {
         val density = androidx.compose.ui.platform.LocalDensity.current
+        val animationsEnabled = dashboardAnimationsEnabled()
         val cardHeightDp = dashboardProviderCardHeightDp(maxHeight.value.roundToInt(), layoutMetrics)
         val columns = layoutMetrics.dashboardGridColumnCount.coerceAtLeast(1)
         val viewportTopY = dashboardRootPosition.y
@@ -166,7 +170,13 @@ internal fun ExactDashboardCardsContent(
                     }
                     IconButton(
                         onClick = onRemoveProvider,
-                        modifier = Modifier.size(DashboardCatalogActionSize),
+                        modifier = Modifier
+                            .size(DashboardCatalogActionSize)
+                            .then(
+                                if (removeProviderFocusRequester == null) Modifier else {
+                                    Modifier.focusRequester(removeProviderFocusRequester)
+                                },
+                            ),
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_remove_provider),
@@ -238,7 +248,7 @@ internal fun ExactDashboardCardsContent(
                     verticalArrangement = Arrangement.spacedBy(layoutMetrics.sectionSpacingDp.dp),
                 ) {
                     itemsIndexed(previewIds, key = { _, id -> ProviderAccountIdStorageCodec.encode(id) }) { index, accountId ->
-                        val cardModifier = if (accountId == draggedAccount) {
+                        val cardModifier = if (accountId == draggedAccount || !animationsEnabled) {
                             Modifier.fillMaxWidth()
                         } else {
                             Modifier.animateItem().fillMaxWidth()
@@ -354,6 +364,8 @@ private fun ExactProviderUsageCard(
         onConnectProvider = { onConnectCard(id) },
         onRefreshProvider = { onRefreshCard(id) },
         onReorderProvider = { _, target -> onReorderCard(id, target) },
+        onMoveUp = { onReorderCard(id, index - 1) },
+        onMoveDown = { onReorderCard(id, index + 1) },
         onCardCenterChanged = { _, center -> onCenter(center) },
         onDragStateChanged = { _, dragging -> onDragging(dragging) },
         onDropSlotChanged = onDropSlot,

@@ -64,6 +64,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -215,12 +216,21 @@ fun AIQuotaAppShell(
     var liveRefreshPromptDismissed by remember { mutableStateOf(false) }
     var showDashboardWidgetPicker by remember { mutableStateOf(false) }
     var showProviderRemoval by remember { mutableStateOf(false) }
+    var restoreProviderRemovalFocus by remember { mutableStateOf(false) }
+    val providerRemovalFocusRequester = remember { FocusRequester() }
     val liveRefreshState = settingsLiveRefreshState(
         notificationEnabled = liveMonitoringEnabled,
         canPostNotifications = canPostNotifications,
         heartbeatStale = refreshStateRepository.isHeartbeatStale(liveRefreshStatusNowMillis)
     )
     val themeColors = aiQuotaThemeColors(currentTheme)
+
+    LaunchedEffect(showProviderRemoval, restoreProviderRemovalFocus) {
+        if (!showProviderRemoval && restoreProviderRemovalFocus) {
+            providerRemovalFocusRequester.requestFocus()
+            restoreProviderRemovalFocus = false
+        }
+    }
 
     fun refreshSnapshots() {
         snapshots = localUsageRepository.readSnapshots()
@@ -964,7 +974,11 @@ fun AIQuotaAppShell(
                                     viewMode = dashboardViewMode,
                                     onSelectViewMode = selectViewMode,
                                     onAddProvider = { providerEnrollment?.openExplicitAdd() },
-                                    onRemoveProvider = { showProviderRemoval = true },
+                                    onRemoveProvider = {
+                                        restoreProviderRemovalFocus = false
+                                        showProviderRemoval = true
+                                    },
+                                    removeProviderFocusRequester = providerRemovalFocusRequester,
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             } else {
@@ -1152,7 +1166,10 @@ fun AIQuotaAppShell(
                         ProviderCardRemovalSurface(
                             cards = cardRuntime.state.catalog.cards,
                             visible = showProviderRemoval,
-                            onDismiss = { showProviderRemoval = false },
+                            onDismiss = {
+                                showProviderRemoval = false
+                                restoreProviderRemovalFocus = true
+                            },
                             onDelete = { accountId, expectedVersion ->
                                 deleteExactCard(accountId, expectedVersion)
                             },
