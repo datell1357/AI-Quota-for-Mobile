@@ -1011,7 +1011,9 @@ class MainProcessAccountAuthority private constructor(
                             )
                         }
                 },
-                modernProcessName = ::modernProcessName,
+                modernProcessName = {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) modernProcessName() else ""
+                },
             )
         }
 

@@ -7,24 +7,23 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,11 +75,12 @@ internal fun ExactDashboardCardsContent(
 ) {
     val layoutMetrics = rememberAppLayoutMetrics().forDashboardViewMode(viewMode)
     val colors = AIQuotaTheme.colors
-    val scrollState = rememberScrollState()
+    val scrollState = rememberLazyGridState()
     val coroutineScope = rememberCoroutineScope()
     val content = providerCardDashboardContent(cards, busyAccountIds, errors)
     val contentById = content.associateBy(ProviderCardDashboardContent::accountId)
     val orderedIds = content.map(ProviderCardDashboardContent::accountId)
+    var previousAccountIds by remember { mutableStateOf(orderedIds) }
     val centers = remember { mutableStateMapOf<ProviderAccountId, DashboardCardCenter>() }
     var draggedAccount by remember { mutableStateOf<ProviderAccountId?>(null) }
     var previewTargetIndex by remember { mutableStateOf<Int?>(null) }
@@ -91,6 +91,14 @@ internal fun ExactDashboardCardsContent(
     var dragOverlayOffsetY by remember { mutableStateOf(0f) }
     val previewIds = ProviderCardOrder.previewExactVisibleOrder(orderedIds, draggedAccount, previewTargetIndex)
     val visibleCenters = previewIds.map { centers[it] ?: DashboardCardCenter(Float.NaN, Float.NaN) }
+
+    LaunchedEffect(orderedIds) {
+        val addedIndex = orderedIds.indexOfLast { it !in previousAccountIds }
+        if (previousAccountIds.isNotEmpty() && addedIndex >= 0) {
+            scrollState.scrollToItem(addedIndex)
+        }
+        previousAccountIds = orderedIds
+    }
 
     BoxWithConstraints(
         modifier = modifier.onGloballyPositioned { coordinates ->
@@ -124,12 +132,10 @@ internal fun ExactDashboardCardsContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
                 .padding(
                     horizontal = layoutMetrics.contentHorizontalPaddingDp.dp,
                     vertical = layoutMetrics.contentVerticalPaddingDp.dp,
                 ),
-            verticalArrangement = Arrangement.spacedBy(layoutMetrics.sectionSpacingDp.dp),
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -196,57 +202,18 @@ internal fun ExactDashboardCardsContent(
                     DashboardViewModeButtons(viewMode, onSelectViewMode)
                 }
             }
-
-            if (previewIds.isEmpty()) {
-                ProviderCatalogEmptyState(layoutMetrics, onAddProvider)
-            } else if (columns == 1) {
-                previewIds.forEachIndexed { index, accountId ->
-                    key(ProviderAccountIdStorageCodec.encode(accountId)) {
-                        ExactProviderUsageCard(
-                            content = contentById.getValue(accountId),
-                            index = index,
-                            centers = visibleCenters,
-                            cardHeightDp = cardHeightDp,
-                            layoutMetrics = layoutMetrics,
-                            previewTargetIndex = previewTargetIndex,
-                            dropSlotIndex = dropSlotIndex,
-                            isPlaceholder = accountId == draggedAccount,
-                            isDragging = draggedAccount != null,
-                            gaugeColor = gaugeColors[accountId],
-                            showConnectAction = contentById.getValue(accountId).showConnectAction,
-                            showRefreshAction = contentById.getValue(accountId).showRefreshAction,
-                            onCardSelected = onCardSelected,
-                            onConnectCard = onConnectCard,
-                            onRefreshCard = onRefreshCard,
-                            onReorderCard = onReorderCard,
-                            onCenter = { center -> centers[accountId] = center },
-                            onDragging = { dragging ->
-                                draggedAccount = accountId.takeIf { dragging }
-                                if (dragging) {
-                                    previewTargetIndex = orderedIds.indexOf(accountId).takeIf { it >= 0 }
-                                } else {
-                                    previewTargetIndex = null
-                                    dropSlotIndex = null
-                                }
-                            },
-                            onDropSlot = { dropSlotIndex = it },
-                            onPreviewTarget = { previewTargetIndex = it },
-                            onDragOverlayChanged = onDragOverlayChanged,
-                            onAutoScroll = onAutoScroll,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(columns),
+                state = scrollState,
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(layoutMetrics.sectionSpacingDp.dp),
+                verticalArrangement = Arrangement.spacedBy(layoutMetrics.sectionSpacingDp.dp),
+            ) {
+                if (previewIds.isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        ProviderCatalogEmptyState(layoutMetrics, onAddProvider)
                     }
-                }
-            } else {
-                val rows = ((previewIds.size + columns - 1) / columns).coerceAtLeast(1)
-                val gridHeight = cardHeightDp * rows + layoutMetrics.sectionSpacingDp * (rows - 1)
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(columns),
-                    modifier = Modifier.fillMaxWidth().height(gridHeight.dp),
-                    userScrollEnabled = false,
-                    horizontalArrangement = Arrangement.spacedBy(layoutMetrics.sectionSpacingDp.dp),
-                    verticalArrangement = Arrangement.spacedBy(layoutMetrics.sectionSpacingDp.dp),
-                ) {
+                } else {
                     itemsIndexed(previewIds, key = { _, id -> ProviderAccountIdStorageCodec.encode(id) }) { index, accountId ->
                         val cardModifier = if (accountId == draggedAccount || !animationsEnabled) {
                             Modifier.fillMaxWidth()

@@ -41,7 +41,9 @@ object GlmIsolatedWebViewProfile {
                         )
                     }
                 },
-                modernProcessName = ApplicationProcessName::value,
+                modernProcessName = {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) ApplicationProcessName.value() else ""
+                },
             )
         if (!isGlmIsolatedProcess) return false
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {

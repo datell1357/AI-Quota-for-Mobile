@@ -24,6 +24,8 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.accounts.AccountUsageRepository
 import com.aiquota.mobile.accounts.ProviderAccountId
@@ -242,12 +244,12 @@ class ProviderBackgroundRefreshService : Service() {
     private fun registerSessionResetReceiver() {
         if (sessionResetReceiverRegistered) return
         val filter = IntentFilter(ACTION_PROVIDER_SESSION_RESET)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(sessionResetReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            @Suppress("DEPRECATION")
-            registerReceiver(sessionResetReceiver, filter)
-        }
+        ContextCompat.registerReceiver(
+            this,
+            sessionResetReceiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
         sessionResetReceiverRegistered = true
     }
 
@@ -283,20 +285,20 @@ class ProviderBackgroundRefreshService : Service() {
         UsageSurfaceRefresher.refresh(applicationContext, repository)
     }
 
+    @SuppressLint("ForegroundServiceType")
     private fun startForegroundNotification(): Boolean {
         return runCatching {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(
-                    UsageLimitNotificationController.NOTIFICATION_ID,
-                    UsageLimitNotificationController.foregroundNotification(this),
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-                )
+            val serviceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
             } else {
-                startForeground(
-                    UsageLimitNotificationController.NOTIFICATION_ID,
-                    UsageLimitNotificationController.foregroundNotification(this)
-                )
+                0
             }
+            ServiceCompat.startForeground(
+                this,
+                UsageLimitNotificationController.NOTIFICATION_ID,
+                UsageLimitNotificationController.foregroundNotification(this),
+                serviceType,
+            )
         }.onFailure { error ->
             Log.e(TAG, "failedToStartForeground=${error::class.java.simpleName}")
         }.isSuccess
@@ -1288,8 +1290,8 @@ class ProviderBackgroundRefreshService : Service() {
                 view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
                     if (currentWebJobFor(ProviderId.GEMINI)?.requestId != requestId) return@evaluateJavascript
                     val pageText = decodeJsString(encoded)
-                if (ProviderWebCollectorScripts.isRefreshLoginPage(ProviderId.GEMINI, pageUrl, pageText)) {
-                    val failure = ProviderRefreshFailure.interactiveAuthRequired(LOGIN_PAGE_REACHED_MESSAGE)
+                    if (ProviderWebCollectorScripts.isRefreshLoginPage(ProviderId.GEMINI, pageUrl, pageText)) {
+                        val failure = ProviderRefreshFailure.interactiveAuthRequired(LOGIN_PAGE_REACHED_MESSAGE)
                         Log.d(TAG, "terminalCheck provider=gemini kind=${failure.kind} url=${hostOf(pageUrl)}${pathOf(pageUrl)} page=${pageSignal(pageText)}")
                         completeWebJob(requestId, ServiceRefreshOutcome.Failure(failure))
                     }

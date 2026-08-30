@@ -127,11 +127,11 @@ private fun rows(db: SQLiteDatabase) = buildList {
 
 private fun Cursor.decode(): AccountProfileBinding {
     if (
-        getType(0) != 3 ||
-            getType(1) != 3 ||
-            getType(2) != 3 ||
-            getType(3) != 3 ||
-            getType(4) !in setOf(0, 3)
+        getType(0) != Cursor.FIELD_TYPE_STRING ||
+            getType(1) != Cursor.FIELD_TYPE_STRING ||
+            getType(2) != Cursor.FIELD_TYPE_STRING ||
+            getType(3) != Cursor.FIELD_TYPE_STRING ||
+            getType(4) !in setOf(Cursor.FIELD_TYPE_NULL, Cursor.FIELD_TYPE_STRING)
     )
         bad()
     val p = ProviderId.fromStorageId(getString(0)) ?: bad()

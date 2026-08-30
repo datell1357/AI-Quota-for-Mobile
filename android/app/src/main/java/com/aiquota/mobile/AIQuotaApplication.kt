@@ -19,7 +19,9 @@ class AIQuotaApplication : Application() {
             currentPid = Process.myPid(),
             currentUid = Process.myUid(),
             candidates = ::legacyProcessCandidates,
-            modernProcessName = ::modernProcessName,
+            modernProcessName = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) modernProcessName() else ""
+            },
         )
         if (currentProcessName != packageName) return
         if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
