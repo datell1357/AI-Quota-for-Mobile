@@ -53,6 +53,7 @@ object ProviderNativeJsonBridge {
             val connection = (URL(request.url).openConnection() as HttpURLConnection).apply {
                 connectTimeout = NETWORK_TIMEOUT_MS
                 readTimeout = NETWORK_TIMEOUT_MS
+                instanceFollowRedirects = false
                 requestMethod = "GET"
                 headers.forEach { (name, value) -> setRequestProperty(name, value) }
             }

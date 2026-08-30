@@ -42,6 +42,12 @@ class ProviderWebCollectorScriptsTest {
             )
         )
         assertFalse(
+            ProviderWebCollectorScripts.isRefreshLoginPage(
+                ProviderId.CODEX,
+                "https://evil.chatgpt.com/auth/login",
+            )
+        )
+        assertFalse(
             ProviderWebCollectorScripts.shouldRunCollectorOnResource(
                 ProviderId.CLAUDE,
                 "https://evil.claude.ai/api/organizations",

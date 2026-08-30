@@ -2,6 +2,7 @@ package com.aiquota.mobile.providers
 
 import com.aiquota.mobile.accounts.ExactProfileCookieSource
 import com.aiquota.mobile.local.ProviderId
+import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -9,6 +10,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProviderNativeJsonBridgeTest {
+    @Test
+    fun nativeJsonBridgeNeverForwardsCredentialsAcrossAutomaticRedirects() {
+        val source = File("src/main/java/com/aiquota/mobile/providers/ProviderNativeJsonBridge.kt").readText()
+
+        assertTrue(source.contains("instanceFollowRedirects = false"))
+    }
+
     @Test
     fun nativeJsonBridgeAllowsScopedProviderEndpoints() {
         assertTrue(ProviderNativeJsonBridge.isAllowedJsonUrl(ProviderId.CLAUDE, "https://claude.ai/api/organizations"))

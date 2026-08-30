@@ -216,6 +216,23 @@ class NamedProfileLifecycleManagerTest {
     }
 
     @Test
+    fun `abort releases lease even when resource destruction throws`() {
+        val p = FakePlatform().apply { destroyFailure = IllegalStateException("renderer") }
+        val m = manager(platform = p)
+        val id = id(1)
+        m.ensureBinding(id)
+        val lease = m.acquire(id)
+        var result: LeaseCloseResult? = null
+
+        lease.abortAcknowledged { result = it }
+
+        assertEquals(LeaseCloseResult.RetryableFailure("DESTROY_FAILED:IllegalStateException"), result)
+        assertEquals(LeaseState.CLOSED, lease.stateForTest())
+        assertEquals(0, m.liveLeaseCount(id))
+        assertEquals(1, p.destroyCount)
+    }
+
+    @Test
     fun `duplicate closing closed and shutdown with live leases are deterministic`() {
         val p = FakePlatform().apply { deferQuiesce = true }
         val m = manager(platform = p)
@@ -424,6 +441,7 @@ private class FakePlatform : NamedProfilePlatform {
     var eraseResult: ProfileDataErasureResult = ProfileDataErasureResult.Completed
     var deferErase = false
     var destroyCount = 0
+    var destroyFailure: RuntimeException? = null
     var probeCount = 0
     val capabilities = ArrayDeque<NamedProfileCapability>()
     val quiesceResults = ArrayDeque<SessionQuiesceResult>()
@@ -470,6 +488,7 @@ private class FakePlatform : NamedProfilePlatform {
 
             override fun destroy() {
                 destroyCount++
+                destroyFailure?.let { throw it }
             }
         }
     }

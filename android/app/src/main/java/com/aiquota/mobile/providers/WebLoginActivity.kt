@@ -2031,7 +2031,10 @@ open class WebLoginActivity : Activity() {
             setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
         }
         lease.abortAcknowledged { aborted ->
-            if (aborted == LeaseCloseResult.Closed || aborted == LeaseCloseResult.AlreadyClosed) {
+            if (aborted == LeaseCloseResult.Closed ||
+                aborted == LeaseCloseResult.AlreadyClosed ||
+                aborted is LeaseCloseResult.RetryableFailure
+            ) {
                 if (namedProfileLease === lease) namedProfileLease = null
                 if (composition != null && exactLoginComposition === composition) {
                     exactLoginComposition = null

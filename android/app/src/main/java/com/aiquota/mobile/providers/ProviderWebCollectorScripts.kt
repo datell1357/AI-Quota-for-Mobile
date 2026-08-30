@@ -19,7 +19,7 @@ object ProviderWebCollectorScripts {
             ProviderId.CODEX ->
                 host == "auth.openai.com" ||
                     host == "accounts.google.com" ||
-                    ((host == "chatgpt.com" || host.endsWith(".chatgpt.com")) && path == "/auth/login")
+                    (isCodexHost(host) && path == "/auth/login")
             ProviderId.GLM ->
                 host == "accounts.google.com" ||
                     ((host == "z.ai" || host == "www.z.ai") &&
