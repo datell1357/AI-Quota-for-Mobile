@@ -114,6 +114,8 @@
     <string name="provider_removal_status_pending">Cleanup pending</string>
     <string name="provider_removal_status_failed">Failed; card retained</string>
     <string name="provider_removal_status_rejected">Not removed; request rejected</string>
+    <string name="provider_removal_error_stale">This card changed. Close and reopen the dialog before trying again.</string>
+    <string name="provider_removal_error_missing">This card is no longer available.</string>
     <string name="provider_picker_title">Choose a provider</string>
     <string name="provider_picker_body">Select one AI provider to add to your dashboard.</string>
     <string name="provider_picker_already_added">Already added</string>
@@ -145,6 +147,10 @@
     <string name="provider_updated">Updated %1$s</string>
     <string name="provider_usage_title">Usage</string>
     <string name="provider_personal_settings">Settings</string>
+    <string name="provider_rename_error_alias_conflict">That card name is already in use.</string>
+    <string name="provider_rename_error_stale">This card changed. Close and reopen it before renaming.</string>
+    <string name="provider_rename_error_missing">This card is no longer available.</string>
+    <string name="provider_rename_error_inactive">This card is no longer active.</string>
     <string name="provider_usage_color_button">Change color</string>
     <string name="provider_reset_notification_setting_title">Reset alerts</string>
     <string name="provider_reset_notification_setting_description">Get notified when usage resets.</string>
@@ -200,6 +206,7 @@
     <string name="glm_connection_status_payload_unavailable">GLM usage payload was not available: %1$s</string>
     <string name="settings_connection_management_title">Connection management</string>
     <string name="settings_connection_management_body">Disconnect provider sessions on this device.</string>
+    <string name="settings_connection_management_empty">No provider cards on this device.</string>
     <string name="settings_disconnect_all_providers">Disconnect all</string>
     <string name="settings_theme_title">Theme</string>
     <string name="settings_theme_body">Current theme: %1$s</string>

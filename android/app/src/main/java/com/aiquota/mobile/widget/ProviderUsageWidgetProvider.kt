@@ -12,6 +12,7 @@ import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.R
 import com.aiquota.mobile.local.ProviderCardPreferencesRepository
 import com.aiquota.mobile.local.ProviderPreferencesRepository
+import com.aiquota.mobile.accounts.ProviderAccountId
 
 class ProviderUsageWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
@@ -52,6 +53,13 @@ class ProviderUsageWidgetProvider : AppWidgetProvider() {
         fun updateWidget(context: Context, appWidgetId: Int) {
             if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return
             updateWidgets(context.applicationContext, AppWidgetManager.getInstance(context), intArrayOf(appWidgetId))
+        }
+
+        fun updateExactCard(context: Context, accountId: ProviderAccountId) {
+            val repository = ProviderCardPreferencesRepository(context.applicationContext)
+            repository.providerWidgetIds(accountId).forEach { appWidgetId ->
+                updateWidget(context, appWidgetId)
+            }
         }
 
         fun isActiveWidget(context: Context, appWidgetId: Int): Boolean {

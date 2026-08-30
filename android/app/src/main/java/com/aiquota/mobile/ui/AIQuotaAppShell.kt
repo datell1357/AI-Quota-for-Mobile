@@ -77,10 +77,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.aiquota.mobile.R
 import com.aiquota.mobile.accounts.AccountKey
+import com.aiquota.mobile.accounts.DisplayVersion
 import com.aiquota.mobile.accounts.MainProcessAccountFeature
 import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.ProviderCardDeletionResult
 import com.aiquota.mobile.accounts.ProviderCardDisplayRecord
+import com.aiquota.mobile.accounts.ProviderCardRenameResult
 import com.aiquota.mobile.local.AppTheme
 import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.local.ProviderConnectionState
@@ -239,6 +241,21 @@ fun AIQuotaAppShell(
         }
         return result
     }
+
+    fun deleteExactCard(accountId: ProviderAccountId, expectedVersion: DisplayVersion): ProviderCardDeletionResult {
+        MainProcessAccountFeature.start(appContext)
+        val result = MainProcessAccountFeature.deletionApi().delete(accountId, expectedVersion)
+        cardRuntime.reload()
+        if (result is ProviderCardDeletionResult.Completed &&
+            (route as? AppRoute.ProviderDetail)?.accountId == accountId
+        ) {
+            route = AppRoute.Home
+        }
+        return result
+    }
+
+    fun renameExactCard(accountId: ProviderAccountId, alias: String): ProviderCardRenameResult? =
+        cardRuntime.rename(accountId, alias)
 
     LaunchedEffect(routeRequest) {
         routeRequest?.let { requestedRoute -> route = resolveRoute(requestedRoute) }
@@ -468,7 +485,7 @@ fun AIQuotaAppShell(
             )
             return
         }
-        cardRuntime.writeSnapshot(
+        if (!cardRuntime.writeSnapshot(
             accountId,
             card.displayRecord.snapshot.copy(
                 connectionState = ProviderConnectionState.CONNECTING,
@@ -477,7 +494,7 @@ fun AIQuotaAppShell(
                 statusUpdatedAt = now,
                 message = launchContext.getString(R.string.provider_login_opened_message)
             )
-        )
+        )) return
         scheduleTransientStateExpiryRefresh()
         coroutineScope.launch {
             providerSessionResetter.awaitProviderWebSessionCleanup(accountId.providerId)
@@ -972,6 +989,9 @@ fun AIQuotaAppShell(
                             }
                         }
                         is AppRoute.ProviderDetail -> {
+                            val exactCard = if (cardRuntime.enabled) {
+                                cardRuntime.state.card(currentRoute.accountId)
+                            } else null
                             val exactDetail = if (cardRuntime.enabled) {
                                 cardRuntime.detailBinding(currentRoute.accountId)
                             } else null
@@ -985,6 +1005,8 @@ fun AIQuotaAppShell(
                             ProviderDetailScreen(
                                 accountId = currentRoute.accountId,
                                 snapshot = snapshot,
+                                cardAlias = exactDetail?.snapshot?.displayName ?: snapshot.displayName
+                                    ?: currentRoute.providerId.displayName,
                                 isHidden = !cardRuntime.enabled && currentRoute.providerId in hiddenProviders,
                                 isBusy = exactDetail?.busy ?: (busyProvider == currentRoute.providerId),
                                 onConnect = {
@@ -1001,7 +1023,9 @@ fun AIQuotaAppShell(
                                     }
                                 },
                                 onAddWidget = {
-                                    if (exactDetail?.singleReserved == true || !cardRuntime.enabled) {
+                                    if (exactId != null) {
+                                        requestProviderWidget(exactId)
+                                    } else if (!cardRuntime.enabled) {
                                         requestProviderWidget(currentRoute.accountId)
                                     }
                                 },
@@ -1052,6 +1076,16 @@ fun AIQuotaAppShell(
                                         setProviderGaugeColor(currentRoute.providerId, color)
                                     }
                                 },
+                                onRename = if (exactId != null) {
+                                    { alias, expectedVersion ->
+                                        cardRuntime.rename(exactId, alias, expectedVersion)
+                                    }
+                                } else null,
+                                cardVersion = exactCard?.displayRecord?.version,
+                                authState = exactDetail?.authState,
+                                onDelete = if (exactId != null && exactCard != null) {
+                                    { expectedVersion -> deleteExactCard(exactId, expectedVersion) }
+                                } else null,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -1065,9 +1099,25 @@ fun AIQuotaAppShell(
                             onOpenBatteryOptimizationSettings = ::openBatteryOptimizationSettings,
                             providerOrder = providerOrder,
                             snapshots = snapshots,
+                            exactCardRuntimeEnabled = cardRuntime.enabled,
+                            providerCards = cardRuntime.state.catalog.cards,
                             onConnectProvider = ::connectProvider,
                             onDisconnectProvider = ::disconnectProvider,
                             onDisconnectAllProviders = ::disconnectAllProviders,
+                            onConnectCard = ::connectExactCard,
+                            onDisconnectCard = { accountId ->
+                                if (accountId.providerId in setOf(ProviderId.CLAUDE, ProviderId.CODEX)) {
+                                    disconnectExactNamedCard(accountId)
+                                } else {
+                                    disconnectExactSingleCard(accountId)
+                                }
+                            },
+                            onRenameCard = { accountId, alias, expectedVersion ->
+                                cardRuntime.rename(accountId, alias, expectedVersion)
+                            },
+                            onDeleteCard = { accountId, expectedVersion ->
+                                deleteExactCard(accountId, expectedVersion)
+                            },
                             currentTheme = currentTheme,
                             onThemeSelected = ::applyTheme,
                             onReportBug = ::reportBug,
@@ -1103,7 +1153,9 @@ fun AIQuotaAppShell(
                             cards = cardRuntime.state.catalog.cards,
                             visible = showProviderRemoval,
                             onDismiss = { showProviderRemoval = false },
-                            onDelete = ::deleteExactCard,
+                            onDelete = { accountId, expectedVersion ->
+                                deleteExactCard(accountId, expectedVersion)
+                            },
                         )
                     }
                     providerEnrollment?.Content()

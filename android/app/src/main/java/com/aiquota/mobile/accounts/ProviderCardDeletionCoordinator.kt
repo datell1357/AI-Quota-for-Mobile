@@ -12,9 +12,21 @@ class ProviderCardDeletionCoordinator internal constructor(
     private val tokens: ProviderCardDeletionTokenFactory = ProviderCardDeletionTokenFactory.SECURE,
 ) : ProviderCardDeletionApi {
     override fun delete(accountId: ProviderAccountId): ProviderCardDeletionResult =
-        when (val begin = authority.beginProviderCardDeletion(accountId)) {
+        deleteAfterBegin(authority.beginProviderCardDeletion(accountId))
+
+    override fun delete(
+        accountId: ProviderAccountId,
+        expectedVersion: DisplayVersion,
+    ): ProviderCardDeletionResult = deleteAfterBegin(
+        authority.beginProviderCardDeletion(accountId, expectedVersion)
+    )
+
+    private fun deleteAfterBegin(begin: BeginProviderCardDeletionResult): ProviderCardDeletionResult =
+        when (begin) {
             BeginProviderCardDeletionResult.Missing ->
                 ProviderCardDeletionResult.Rejected(ProviderCardDeletionRejection.ACCOUNT_MISSING)
+            BeginProviderCardDeletionResult.Stale ->
+                ProviderCardDeletionResult.Rejected(ProviderCardDeletionRejection.VERSION_MISMATCH)
             is BeginProviderCardDeletionResult.Ready -> continueAfterBegin(begin.record)
         }
 

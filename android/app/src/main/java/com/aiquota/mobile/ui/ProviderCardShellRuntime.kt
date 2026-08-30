@@ -5,14 +5,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.aiquota.mobile.accounts.AccountRefreshRequest
+import com.aiquota.mobile.accounts.AccountAuthState
 import com.aiquota.mobile.accounts.AccountUsageRepository
 import com.aiquota.mobile.accounts.AccountUsageWrite
+import com.aiquota.mobile.accounts.DisplayVersion
 import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.ProviderCardCatalogLoader
 import com.aiquota.mobile.accounts.ProviderCardCatalogPolicy
 import com.aiquota.mobile.accounts.ProviderCardDisplayRecord
 import com.aiquota.mobile.accounts.ProviderCardMultiplicity
 import com.aiquota.mobile.accounts.ProviderCardProviderPolicy
+import com.aiquota.mobile.accounts.ProviderCardRenameResult
+import com.aiquota.mobile.accounts.RenameProviderCardRequest
 import com.aiquota.mobile.accounts.ReorderProviderCardsRequest
 import com.aiquota.mobile.accounts.ReorderProviderCardsResult
 import com.aiquota.mobile.local.LocalUsageRepository
@@ -21,12 +25,16 @@ import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderUsageSnapshot
 import com.aiquota.mobile.providers.ProviderConnectorRegistry
 import com.aiquota.mobile.providers.ProviderSessionResetter
+import com.aiquota.mobile.notification.ProviderNotificationAliasUpdater
+import com.aiquota.mobile.providers.ProviderCardNotificationSnapshot
+import com.aiquota.mobile.widget.ProviderUsageWidgetProvider
 import com.aiquota.mobile.ui.dashboard.ProviderCardOrder
 import kotlinx.coroutines.CancellationException
 
 data class ProviderCardDetailBinding(
     val accountId: ProviderAccountId,
     val snapshot: ProviderUsageSnapshot,
+    val authState: AccountAuthState,
     val busy: Boolean,
     val gaugeColor: String?,
     val singleReserved: Boolean,
@@ -34,6 +42,7 @@ data class ProviderCardDetailBinding(
 
 /** Feature-enabled Task 12 runtime. It owns exact repositories and immutable shell transitions. */
 class ProviderCardShellRuntime private constructor(
+    private val appContext: Context,
     private val usageRepository: AccountUsageRepository?,
     private val preferencesRepository: ProviderCardPreferencesRepository,
 ) : AutoCloseable {
@@ -65,11 +74,12 @@ class ProviderCardShellRuntime private constructor(
         val card = state.card(accountId) ?: return null
         val policy = ProviderCardCatalogPolicy.classify(accountId.providerId) as? ProviderCardProviderPolicy.Released
         return ProviderCardDetailBinding(
-            accountId,
-            card.routedDetailSnapshot(),
-            accountId in state.busyAccountIds,
-            gaugeColors[accountId],
-            policy?.multiplicity == ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT,
+            accountId = accountId,
+            snapshot = card.routedDetailSnapshot(),
+            authState = card.authState,
+            busy = accountId in state.busyAccountIds,
+            gaugeColor = gaugeColors[accountId],
+            singleReserved = policy?.multiplicity == ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT,
         )
     }
 
@@ -81,6 +91,42 @@ class ProviderCardShellRuntime private constructor(
             is ReorderProviderCardsResult.Reordered -> reload()
             is ReorderProviderCardsResult.Rejected -> state = state.setError(accountId, result.reason.name)
         }
+    }
+
+    fun rename(accountId: ProviderAccountId, alias: String): ProviderCardRenameResult? {
+        val card = state.card(accountId) ?: return null
+        return rename(accountId, alias, card.displayRecord.version)
+    }
+
+    fun rename(
+        accountId: ProviderAccountId,
+        alias: String,
+        expectedVersion: DisplayVersion,
+    ): ProviderCardRenameResult? {
+        val repository = usageRepository ?: return null
+        if (state.card(accountId) == null) return null
+        val result = repository.rename(RenameProviderCardRequest(accountId, alias, expectedVersion))
+        if (result is ProviderCardRenameResult.Renamed) {
+            reload()
+            val updated = state.card(accountId)
+            if (updated != null) {
+                ProviderUsageWidgetProvider.updateExactCard(appContext, accountId)
+                ProviderNotificationAliasUpdater.update(
+                    appContext,
+                    ProviderCardNotificationSnapshot(
+                        accountId = accountId,
+                        alias = updated.alias,
+                        generation = updated.generation,
+                        sessionRevision = updated.sessionRevision,
+                        version = updated.displayRecord.version,
+                        snapshot = updated.displayRecord.snapshot,
+                    ),
+                )
+            }
+        } else if (result is ProviderCardRenameResult.Rejected) {
+            state = state.setError(accountId, result.rejection.toString())
+        }
+        return result
     }
 
     fun beginDisconnect(accountId: ProviderAccountId): ProviderCardOperation {
@@ -128,9 +174,9 @@ class ProviderCardShellRuntime private constructor(
         return started.operation.takeIf { state.operation(accountId) == it }
     }
 
-    fun writeSnapshot(accountId: ProviderAccountId, snapshot: ProviderUsageSnapshot) {
-        val repository = usageRepository ?: return
-        val card = state.card(accountId) ?: return
+    fun writeSnapshot(accountId: ProviderAccountId, snapshot: ProviderUsageSnapshot): Boolean {
+        val repository = usageRepository ?: return false
+        val card = state.card(accountId) ?: return false
         val current = state.operation(accountId)
         val operation = if (current?.kind == ProviderCardOperationKind.REFRESH) {
             current
@@ -140,18 +186,20 @@ class ProviderCardShellRuntime private constructor(
             started.operation
         }
         val account = card.displayRecord.account
+        val result = repository.write(
+            AccountUsageWrite(
+                accountId,
+                card.displayRecord.version,
+                account.generation,
+                account.sessionRevision,
+                snapshot,
+            )
+        )
         state = state.applySnapshotWrite(
             operation,
-            repository.write(
-                AccountUsageWrite(
-                    accountId,
-                    card.displayRecord.version,
-                    account.generation,
-                    account.sessionRevision,
-                    snapshot,
-                )
-            ),
+            result,
         )
+        return result is com.aiquota.mobile.accounts.AccountUsageWriteResult.Committed
     }
 
     fun resetNotificationEnabled(accountId: ProviderAccountId): Boolean {
@@ -202,6 +250,7 @@ class ProviderCardShellRuntime private constructor(
         fun open(context: Context, enabled: Boolean): ProviderCardShellRuntime {
             val appContext = context.applicationContext
             return ProviderCardShellRuntime(
+                appContext = appContext,
                 usageRepository = if (enabled) AccountUsageRepository.open(appContext) else null,
                 preferencesRepository = ProviderCardPreferencesRepository(appContext),
             )

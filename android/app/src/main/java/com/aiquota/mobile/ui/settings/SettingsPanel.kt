@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -28,6 +29,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +46,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.R
+import com.aiquota.mobile.accounts.AccountAuthState
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.ProviderCardDeletionRejection
+import com.aiquota.mobile.accounts.ProviderCardDeletionResult
+import com.aiquota.mobile.accounts.ProviderCardDisplayRecord
+import com.aiquota.mobile.accounts.ProviderCardRenameRejection
+import com.aiquota.mobile.accounts.ProviderCardRenameResult
+import com.aiquota.mobile.accounts.DisplayVersion
 import com.aiquota.mobile.local.AppTheme
 import com.aiquota.mobile.local.ProviderConnectionState
 import com.aiquota.mobile.local.ProviderId
@@ -68,9 +78,15 @@ fun SettingsPanel(
     onOpenBatteryOptimizationSettings: () -> Unit = {},
     providerOrder: List<ProviderId> = ProviderId.defaultOrder(),
     snapshots: List<ProviderUsageSnapshot> = emptyList(),
+    exactCardRuntimeEnabled: Boolean = false,
+    providerCards: List<ProviderCardDisplayRecord> = emptyList(),
     onConnectProvider: (ProviderId) -> Unit = {},
     onDisconnectProvider: (ProviderId) -> Unit = {},
     onDisconnectAllProviders: () -> Unit = {},
+    onConnectCard: (ProviderAccountId) -> Unit = {},
+    onDisconnectCard: (ProviderAccountId) -> Unit = {},
+    onRenameCard: (ProviderAccountId, String, DisplayVersion) -> ProviderCardRenameResult? = { _, _, _ -> null },
+    onDeleteCard: (ProviderAccountId, DisplayVersion) -> ProviderCardDeletionResult? = { _, _ -> null },
     currentTheme: AppTheme = AppTheme.DEFAULT,
     onThemeSelected: (AppTheme) -> Unit = {},
     onReportBug: (BugReportRequest) -> Unit = {},
@@ -106,7 +122,13 @@ fun SettingsPanel(
             snapshots = snapshots,
             onConnectProvider = onConnectProvider,
             onDisconnectProvider = onDisconnectProvider,
-            onDisconnectAllProviders = onDisconnectAllProviders
+            onDisconnectAllProviders = onDisconnectAllProviders,
+            exactCardRuntimeEnabled = exactCardRuntimeEnabled,
+            providerCards = providerCards,
+            onConnectCard = onConnectCard,
+            onDisconnectCard = onDisconnectCard,
+            onRenameCard = onRenameCard,
+            onDeleteCard = onDeleteCard,
         )
         SupportSettingsSection(
             onReportBug = onReportBug
@@ -228,7 +250,13 @@ private fun ConnectionManagementSection(
     snapshots: List<ProviderUsageSnapshot>,
     onConnectProvider: (ProviderId) -> Unit,
     onDisconnectProvider: (ProviderId) -> Unit,
-    onDisconnectAllProviders: () -> Unit
+    onDisconnectAllProviders: () -> Unit,
+    exactCardRuntimeEnabled: Boolean,
+    providerCards: List<ProviderCardDisplayRecord>,
+    onConnectCard: (ProviderAccountId) -> Unit,
+    onDisconnectCard: (ProviderAccountId) -> Unit,
+    onRenameCard: (ProviderAccountId, String, DisplayVersion) -> ProviderCardRenameResult?,
+    onDeleteCard: (ProviderAccountId, DisplayVersion) -> ProviderCardDeletionResult?,
 ) {
     val layoutMetrics = rememberAppLayoutMetrics()
     val colors = AIQuotaTheme.colors
@@ -258,69 +286,280 @@ private fun ConnectionManagementSection(
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.textMuted
             )
-            Button(
-                onClick = onDisconnectAllProviders,
-                enabled = hasDisconnectableProvider,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.settings_disconnect_all_providers))
-            }
-            orderedProviders.forEach { providerId ->
-                val snapshot = snapshotsByProvider[providerId]
-                val action = settingsConnectionAction(providerId, snapshot)
-                val actionTextColor = settingsConnectionActionTextColor(
-                    action = action,
-                    connectColor = colors.primary,
-                    disconnectColor = colors.textMuted,
-                    disabledColor = colors.textMuted
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+            if (settingsUsesLegacyConnectionControls(exactCardRuntimeEnabled)) {
+                Button(
+                    onClick = onDisconnectAllProviders,
+                    enabled = hasDisconnectableProvider,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    ProviderIconImage(
-                        providerId = providerId,
-                        modifier = Modifier.size(28.dp)
+                    Text(stringResource(R.string.settings_disconnect_all_providers))
+                }
+                orderedProviders.forEach { providerId ->
+                    val snapshot = snapshotsByProvider[providerId]
+                    val action = settingsConnectionAction(providerId, snapshot)
+                    val actionTextColor = settingsConnectionActionTextColor(
+                        action = action,
+                        connectColor = colors.primary,
+                        disconnectColor = colors.textMuted,
+                        disabledColor = colors.textMuted
                     )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = providerId.displayName,
-                            style = compactProviderLineBreakStyle(providerId, MaterialTheme.typography.bodyLarge),
-                            fontWeight = FontWeight.Medium
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        ProviderIconImage(
+                            providerId = providerId,
+                            modifier = Modifier.size(28.dp)
                         )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = providerId.displayName,
+                                style = compactProviderLineBreakStyle(providerId, MaterialTheme.typography.bodyLarge),
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = stringResource(settingsConnectionStatusLabel(providerId, snapshot)),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colors.textMuted
+                            )
+                        }
+                        OutlinedButton(
+                            enabled = action != SettingsConnectionAction.NONE,
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = actionTextColor
+                            ),
+                            onClick = {
+                                when (action) {
+                                    SettingsConnectionAction.CONNECT -> onConnectProvider(providerId)
+                                    SettingsConnectionAction.DISCONNECT -> onDisconnectProvider(providerId)
+                                    SettingsConnectionAction.NONE -> Unit
+                                }
+                            }
+                        ) {
+                            Text(
+                                stringResource(
+                                    when (action) {
+                                        SettingsConnectionAction.CONNECT -> R.string.provider_connect
+                                        SettingsConnectionAction.DISCONNECT -> R.string.provider_disconnect
+                                        SettingsConnectionAction.NONE -> R.string.provider_action_coming_soon
+                                    }
+                                )
+                            )
+                        }
+                    }
+                }
+            } else if (providerCards.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.settings_connection_management_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.textMuted,
+                )
+            } else {
+                providerCards.forEach { card ->
+                    ExactCardConnectionRow(
+                        card = card,
+                        onConnect = onConnectCard,
+                        onDisconnect = onDisconnectCard,
+                        onRename = onRenameCard,
+                        onDelete = onDeleteCard,
+                    )
+                }
+            }
+        }
+    }
+}
+
+internal fun settingsUsesLegacyConnectionControls(exactCardRuntimeEnabled: Boolean): Boolean =
+    !exactCardRuntimeEnabled
+
+@Composable
+private fun ExactCardConnectionRow(
+    card: ProviderCardDisplayRecord,
+    onConnect: (ProviderAccountId) -> Unit,
+    onDisconnect: (ProviderAccountId) -> Unit,
+    onRename: (ProviderAccountId, String, DisplayVersion) -> ProviderCardRenameResult?,
+    onDelete: (ProviderAccountId, DisplayVersion) -> ProviderCardDeletionResult?,
+) {
+    val colors = AIQuotaTheme.colors
+    val action = settingsConnectionAction(card.authState, card.displayRecord.snapshot)
+    var showRename by remember(card.accountId) { mutableStateOf(false) }
+    var alias by remember(card.accountId, card.alias) { mutableStateOf(card.alias) }
+    var renameError by remember { mutableStateOf<Int?>(null) }
+    var renameExpectedVersion by remember { mutableStateOf<DisplayVersion?>(null) }
+    var showDelete by remember { mutableStateOf(false) }
+    var deleteExpectedVersion by remember { mutableStateOf<DisplayVersion?>(null) }
+    var deleteError by remember { mutableStateOf<Int?>(null) }
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            ProviderIconImage(providerId = card.accountId.providerId, modifier = Modifier.size(28.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = card.alias, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                Text(
+                    text = card.accountId.providerId.displayName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.textMuted,
+                )
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedButton(
+                modifier = Modifier.weight(1f),
+                enabled = action != SettingsConnectionAction.NONE,
+                onClick = {
+                    if (action == SettingsConnectionAction.CONNECT) onConnect(card.accountId)
+                    else if (action == SettingsConnectionAction.DISCONNECT) onDisconnect(card.accountId)
+                },
+            ) {
+                Text(
+                    stringResource(
+                        if (action == SettingsConnectionAction.CONNECT) R.string.provider_connect
+                        else R.string.provider_disconnect
+                    )
+                )
+            }
+            TextButton(
+                modifier = Modifier.weight(1f),
+                onClick = {
+                    renameError = null
+                    renameExpectedVersion = card.displayRecord.version
+                    showRename = true
+                },
+            ) {
+                Text(stringResource(R.string.settings_rename_selected_device))
+            }
+            TextButton(
+                modifier = Modifier.weight(1f),
+                onClick = {
+                    deleteError = null
+                    deleteExpectedVersion = card.displayRecord.version
+                    showDelete = true
+                },
+            ) {
+                Text(stringResource(R.string.provider_catalog_remove_action))
+            }
+        }
+    }
+    if (showRename) {
+        Dialog(onDismissRequest = { showRename = false }) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = colors.panel,
+                border = BorderStroke(1.dp, colors.borderSoft),
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(stringResource(R.string.provider_naming_title, card.accountId.providerId.displayName))
+                    OutlinedTextField(
+                        value = alias,
+                        onValueChange = { alias = it },
+                        label = { Text(stringResource(R.string.provider_naming_label)) },
+                        singleLine = true,
+                    )
+                    renameError?.let { error ->
                         Text(
-                            text = stringResource(settingsConnectionStatusLabel(providerId, snapshot)),
+                            text = stringResource(error),
+                            color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
-                            color = colors.textMuted
                         )
                     }
-                    OutlinedButton(
-                        enabled = action != SettingsConnectionAction.NONE,
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = actionTextColor
-                        ),
-                        onClick = {
-                            when (action) {
-                                SettingsConnectionAction.CONNECT -> onConnectProvider(providerId)
-                                SettingsConnectionAction.DISCONNECT -> onDisconnectProvider(providerId)
-                                SettingsConnectionAction.NONE -> Unit
-                            }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        TextButton(onClick = { showRename = false }) {
+                            Text(stringResource(R.string.provider_enrollment_cancel))
                         }
-                    ) {
-                        Text(
-                            stringResource(
-                                when (action) {
-                                    SettingsConnectionAction.CONNECT -> R.string.provider_connect
-                                    SettingsConnectionAction.DISCONNECT -> R.string.provider_disconnect
-                                    SettingsConnectionAction.NONE -> R.string.provider_action_coming_soon
+                        Button(onClick = {
+                            renameExpectedVersion?.let { expectedVersion ->
+                                when (val result = onRename(card.accountId, alias, expectedVersion)) {
+                                    is ProviderCardRenameResult.Renamed -> showRename = false
+                                    is ProviderCardRenameResult.Rejected -> renameError = settingsRenameErrorResource(result.rejection)
+                                    null -> showRename = false
                                 }
-                            )
-                        )
+                            }
+                        }) {
+                            Text(stringResource(R.string.provider_enrollment_add))
+                        }
                     }
                 }
             }
         }
+    }
+    if (showDelete) {
+        AlertDialog(
+            onDismissRequest = { showDelete = false },
+            title = { Text(stringResource(R.string.provider_removal_confirmation_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        stringResource(
+                            R.string.provider_removal_confirmation_names,
+                            stringResource(
+                                R.string.provider_removal_named_card,
+                                card.alias,
+                                card.accountId.providerId.displayName,
+                            ),
+                        )
+                    )
+                    Text(stringResource(R.string.provider_removal_confirmation_consequence))
+                    deleteError?.let { error ->
+                        Text(
+                            text = stringResource(error),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    deleteExpectedVersion?.let { expectedVersion ->
+                        when (val result = onDelete(card.accountId, expectedVersion)) {
+                            is ProviderCardDeletionResult.Rejected -> {
+                                deleteError = settingsDeleteErrorResource(result.reason)
+                            }
+                            else -> showDelete = false
+                        }
+                    }
+                }) {
+                    Text(stringResource(R.string.provider_removal_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDelete = false }) {
+                    Text(stringResource(R.string.provider_removal_cancel))
+                }
+            },
+        )
+    }
+}
+
+@StringRes
+private fun settingsDeleteErrorResource(reason: ProviderCardDeletionRejection): Int = when (reason) {
+    ProviderCardDeletionRejection.ACCOUNT_MISSING -> R.string.provider_removal_error_missing
+    ProviderCardDeletionRejection.VERSION_MISMATCH -> R.string.provider_removal_error_stale
+}
+
+@StringRes
+private fun settingsRenameErrorResource(rejection: ProviderCardRenameRejection): Int = when (rejection) {
+    ProviderCardRenameRejection.ACCOUNT_MISSING -> R.string.provider_rename_error_missing
+    ProviderCardRenameRejection.ACCOUNT_INACTIVE -> R.string.provider_rename_error_inactive
+    ProviderCardRenameRejection.VERSION_MISMATCH -> R.string.provider_rename_error_stale
+    is ProviderCardRenameRejection.AliasConflict -> R.string.provider_rename_error_alias_conflict
+    is ProviderCardRenameRejection.AliasValidation -> when (rejection.reason) {
+        com.aiquota.mobile.accounts.ProviderCardAliasValidationReason.BLANK -> R.string.provider_enrollment_error_blank
+        com.aiquota.mobile.accounts.ProviderCardAliasValidationReason.TOO_LONG -> R.string.provider_enrollment_error_too_long
+        com.aiquota.mobile.accounts.ProviderCardAliasValidationReason.CONTROL_CHARACTER -> R.string.provider_enrollment_error_control_character
     }
 }
 
@@ -747,6 +986,17 @@ internal fun settingsConnectionDisconnectable(snapshot: ProviderUsageSnapshot?):
 
 internal fun settingsConnectionAction(providerId: ProviderId, snapshot: ProviderUsageSnapshot?): SettingsConnectionAction {
     return settingsConnectionAction(snapshot)
+}
+
+internal fun settingsConnectionAction(
+    authState: AccountAuthState?,
+    snapshot: ProviderUsageSnapshot?,
+): SettingsConnectionAction {
+    return if (authState != null && authState != AccountAuthState.AUTHENTICATED) {
+        SettingsConnectionAction.CONNECT
+    } else {
+        settingsConnectionAction(snapshot)
+    }
 }
 
 internal fun settingsConnectionAction(snapshot: ProviderUsageSnapshot?): SettingsConnectionAction {

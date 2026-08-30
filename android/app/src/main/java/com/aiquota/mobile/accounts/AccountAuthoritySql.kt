@@ -99,12 +99,102 @@ internal fun activeProviderCardCount(db: SQLiteDatabase, providerId: ProviderId)
         cursor.getLong(0)
     }
 
+internal fun activeProviderCardTotalCount(db: SQLiteDatabase): Long =
+    db.rawQuery(
+        "SELECT COUNT(*) FROM provider_card_catalog WHERE active_rank IS NOT NULL",
+        null,
+    ).use { cursor ->
+        check(cursor.moveToFirst())
+        cursor.getLong(0)
+    }
+
 internal fun activeProviderCardAliasExists(db: SQLiteDatabase, normalizedKey: String): Boolean =
     db.rawQuery(
         "SELECT 1 FROM provider_card_catalog " +
             "WHERE active_rank IS NOT NULL AND alias_normalized_key=? LIMIT 1",
         arrayOf(normalizedKey),
     ).use(Cursor::moveToFirst)
+
+internal fun activeProviderCardAliasExists(
+    db: SQLiteDatabase,
+    normalizedKey: String,
+    excluding: ProviderAccountId,
+): Boolean = db.rawQuery(
+    "SELECT 1 FROM provider_card_catalog " +
+        "WHERE active_rank IS NOT NULL AND alias_normalized_key=? " +
+        "AND NOT (provider_id=? AND account_key=?) LIMIT 1",
+    arrayOf(
+        normalizedKey,
+        excluding.providerId.storageId,
+        excluding.accountKey.storageValue(),
+    ),
+).use(Cursor::moveToFirst)
+
+internal fun updateAccountAlias(
+    db: SQLiteDatabase,
+    accountId: ProviderAccountId,
+    alias: NormalizedProviderCardAlias,
+    version: DisplayVersion,
+) {
+    db.compileStatement(
+        "UPDATE accounts SET alias=?,modified_version=? WHERE provider_id=? AND account_key=?"
+    ).use { statement ->
+        statement.bindString(1, alias.displayValue)
+        statement.bindLong(2, version.value)
+        statement.bindAccountId(3, accountId)
+        check(statement.executeUpdateDelete() == 1) { "Account disappeared during rename" }
+    }
+    db.compileStatement(
+        "UPDATE provider_card_catalog SET alias_normalized_key=? WHERE provider_id=? AND account_key=?"
+    ).use { statement ->
+        statement.bindString(1, alias.normalizedKey)
+        statement.bindAccountId(2, accountId)
+        check(statement.executeUpdateDelete() == 1) { "Provider-card metadata disappeared during rename" }
+    }
+}
+
+internal fun reactivateProviderCard(
+    db: SQLiteDatabase,
+    account: AccountRecord,
+    activeRank: Long,
+    alias: NormalizedProviderCardAlias,
+) {
+    db.compileStatement(
+        "UPDATE accounts SET state='ACTIVE',auth_state='SIGNED_OUT',deletion_state='NONE'," +
+            "generation=?,session_revision=?,alias=?,organization=NULL,remote_identity=NULL,modified_version=? " +
+            "WHERE provider_id=? AND account_key=? AND deletion_state='ERASED'"
+    ).use { statement ->
+        statement.bindLong(1, account.generation.value)
+        statement.bindLong(2, account.sessionRevision.value)
+        statement.bindString(3, alias.displayValue)
+        statement.bindLong(4, account.modifiedVersion.value)
+        statement.bindAccountId(5, account.id)
+        check(statement.executeUpdateDelete() == 1) { "Deleted account disappeared during reactivation" }
+    }
+    db.compileStatement(
+        "UPDATE provider_card_catalog SET active_rank=?,alias_normalized_key=? " +
+            "WHERE provider_id=? AND account_key=?"
+    ).use { statement ->
+        statement.bindLong(1, activeRank)
+        statement.bindString(2, alias.normalizedKey)
+        statement.bindAccountId(3, account.id)
+        check(statement.executeUpdateDelete() == 1) { "Provider-card metadata disappeared during reactivation" }
+    }
+    listOf("snapshots", "demands", "attempts", "nonce_heads", "published_nonces").forEach { table ->
+        db.delete(
+            table,
+            "provider_id=? AND account_key=?",
+            arrayOf(account.id.providerId.storageId, account.id.accountKey.storageValue()),
+        )
+    }
+    check(
+        db.delete(
+            "provider_card_deletion_journal",
+            "provider_id=? AND account_key=?",
+            arrayOf(account.id.providerId.storageId, account.id.accountKey.storageValue()),
+        ) == 1
+    ) { "Deleted account journal disappeared during reactivation" }
+}
 
 internal fun allocateProviderCardAlias(
     db: SQLiteDatabase,

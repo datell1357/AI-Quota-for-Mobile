@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -63,7 +64,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.aiquota.mobile.R
+import com.aiquota.mobile.accounts.AccountAuthState
+import com.aiquota.mobile.accounts.DisplayVersion
 import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.ProviderCardDeletionRejection
+import com.aiquota.mobile.accounts.ProviderCardDeletionResult
+import com.aiquota.mobile.accounts.ProviderCardRenameRejection
+import com.aiquota.mobile.accounts.ProviderCardRenameResult
 import com.aiquota.mobile.local.AppTheme
 import com.aiquota.mobile.local.ProviderGaugeColor
 import com.aiquota.mobile.local.ProviderConnectionAction
@@ -102,6 +109,7 @@ private val ProviderGaugeHeight = 10.4.dp
 fun ProviderDetailScreen(
     accountId: ProviderAccountId,
     snapshot: ProviderUsageSnapshot,
+    cardAlias: String = snapshot.displayName ?: snapshot.providerId.displayName,
     isHidden: Boolean,
     isBusy: Boolean,
     onConnect: () -> Unit,
@@ -117,6 +125,10 @@ fun ProviderDetailScreen(
     onUsageThresholdPercentChange: (Int) -> Unit,
     gaugeColorHex: String?,
     onGaugeColorChange: (String?) -> Unit,
+    onRename: ((String, DisplayVersion) -> ProviderCardRenameResult?)? = null,
+    cardVersion: DisplayVersion? = null,
+    authState: AccountAuthState? = null,
+    onDelete: ((DisplayVersion) -> ProviderCardDeletionResult?)? = null,
     modifier: Modifier = Modifier
 ) {
     val layoutMetrics = rememberAppLayoutMetrics()
@@ -133,6 +145,7 @@ fun ProviderDetailScreen(
     ) {
         ClassicProviderWindow(
             snapshot = snapshot,
+            cardAlias = cardAlias,
             isBusy = isBusy,
             layoutMetrics = layoutMetrics,
             onConnect = onConnect,
@@ -147,7 +160,11 @@ fun ProviderDetailScreen(
             usageThresholdPercent = usageThresholdPercent,
             onUsageThresholdPercentChange = onUsageThresholdPercentChange,
             gaugeColorHex = gaugeColorHex,
-            onGaugeColorChange = onGaugeColorChange
+            onGaugeColorChange = onGaugeColorChange,
+            onRename = onRename,
+            cardVersion = cardVersion,
+            authState = authState,
+            onDelete = onDelete,
         )
     }
 }
@@ -155,6 +172,7 @@ fun ProviderDetailScreen(
 @Composable
 private fun ClassicProviderWindow(
     snapshot: ProviderUsageSnapshot,
+    cardAlias: String,
     isBusy: Boolean,
     layoutMetrics: AppLayoutMetrics,
     onConnect: () -> Unit,
@@ -169,7 +187,11 @@ private fun ClassicProviderWindow(
     usageThresholdPercent: Int,
     onUsageThresholdPercentChange: (Int) -> Unit,
     gaugeColorHex: String?,
-    onGaugeColorChange: (String?) -> Unit
+    onGaugeColorChange: (String?) -> Unit,
+    onRename: ((String, DisplayVersion) -> ProviderCardRenameResult?)?,
+    cardVersion: DisplayVersion?,
+    authState: AccountAuthState?,
+    onDelete: ((DisplayVersion) -> ProviderCardDeletionResult?)?
 ) {
     val colors = AIQuotaTheme.colors
     val windowTitle = providerDetailWindowTitle(snapshot)
@@ -262,21 +284,26 @@ private fun ClassicProviderWindow(
                 ) {
                     ProviderSummaryBlock(
                         snapshot = snapshot,
+                        cardAlias = cardAlias,
                         isBusy = isBusy,
                         layoutMetrics = layoutMetrics,
                         onConnect = onConnect,
                         onDisconnect = onDisconnect,
                         onAddWidget = onAddWidget,
                         resetNotificationEnabled = resetNotificationEnabled,
-            onResetNotificationChange = onResetNotificationChange,
-            autoResetPrimeEnabled = autoResetPrimeEnabled,
-            onAutoResetPrimeChange = onAutoResetPrimeChange,
+                        onResetNotificationChange = onResetNotificationChange,
+                        autoResetPrimeEnabled = autoResetPrimeEnabled,
+                        onAutoResetPrimeChange = onAutoResetPrimeChange,
                         usageThresholdEnabled = usageThresholdEnabled,
                         onUsageThresholdEnabledChange = onUsageThresholdEnabledChange,
                         usageThresholdPercent = usageThresholdPercent,
                         onUsageThresholdPercentChange = onUsageThresholdPercentChange,
                         gaugeColorHex = gaugeColorHex,
-                        onGaugeColorChange = onGaugeColorChange
+                        onGaugeColorChange = onGaugeColorChange,
+                        onRename = onRename,
+                        cardVersion = cardVersion,
+                        authState = authState,
+                        onDelete = onDelete,
                     )
 
                     ClassicSectionTitle(text = stringResource(R.string.provider_usage_title))
@@ -308,6 +335,7 @@ private fun ClassicProviderWindow(
 @Composable
 private fun ProviderSummaryBlock(
     snapshot: ProviderUsageSnapshot,
+    cardAlias: String,
     isBusy: Boolean,
     layoutMetrics: AppLayoutMetrics,
     onConnect: () -> Unit,
@@ -322,11 +350,22 @@ private fun ProviderSummaryBlock(
     usageThresholdPercent: Int,
     onUsageThresholdPercentChange: (Int) -> Unit,
     gaugeColorHex: String?,
-    onGaugeColorChange: (String?) -> Unit
+    onGaugeColorChange: (String?) -> Unit,
+    onRename: ((String, DisplayVersion) -> ProviderCardRenameResult?)?,
+    cardVersion: DisplayVersion?,
+    authState: AccountAuthState?,
+    onDelete: ((DisplayVersion) -> ProviderCardDeletionResult?)?
 ) {
     val colors = AIQuotaTheme.colors
-    val connectionAction = snapshot.primaryConnectionAction()
+    val connectionAction = providerDetailConnectionAction(authState, snapshot)
     var showPersonalSettings by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var renameValue by remember(cardAlias) { mutableStateOf(cardAlias) }
+    var renameError by remember { mutableStateOf<Int?>(null) }
+    var renameExpectedVersion by remember { mutableStateOf<DisplayVersion?>(null) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var deleteExpectedVersion by remember { mutableStateOf<DisplayVersion?>(null) }
+    var deleteError by remember { mutableStateOf<Int?>(null) }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -339,7 +378,7 @@ private fun ProviderSummaryBlock(
                 modifier = Modifier.size(52.dp)
             )
             Text(
-                text = snapshot.providerId.displayName,
+                text = cardAlias,
                 style = compactProviderLineBreakStyle(snapshot.providerId, MaterialTheme.typography.labelMedium),
                 color = if (colors.theme == AppTheme.MACOS) colors.titleText else colors.textPrimary,
                 maxLines = 1,
@@ -423,6 +462,32 @@ private fun ProviderSummaryBlock(
                     overflow = TextOverflow.Ellipsis
                 )
             }
+            if (onRename != null && cardVersion != null) {
+                OutlinedButton(
+                    onClick = {
+                        renameValue = cardAlias
+                        renameError = null
+                        renameExpectedVersion = cardVersion
+                        showRenameDialog = true
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.settings_rename_selected_device),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            if (onDelete != null && cardVersion != null) {
+                TextButton(onClick = {
+                    deleteError = null
+                    deleteExpectedVersion = cardVersion
+                    showDeleteDialog = true
+                }) {
+                    Text(stringResource(R.string.provider_catalog_remove_action))
+                }
+            }
         }
     }
     if (showPersonalSettings) {
@@ -443,6 +508,132 @@ private fun ProviderSummaryBlock(
                 showPersonalSettings = false
             }
         )
+    }
+    if (showRenameDialog && onRename != null) {
+        Dialog(onDismissRequest = { showRenameDialog = false }) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = colors.content,
+                border = BorderStroke(1.dp, colors.border),
+            ) {
+                Column(
+                    modifier = Modifier.padding(layoutMetrics.cardPaddingDp.dp),
+                    verticalArrangement = Arrangement.spacedBy(layoutMetrics.cardSpacingDp.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.provider_naming_title, snapshot.providerId.displayName),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    OutlinedTextField(
+                        value = renameValue,
+                        onValueChange = { renameValue = it },
+                        label = { Text(stringResource(R.string.provider_naming_label)) },
+                        singleLine = true,
+                    )
+                    renameError?.let { error ->
+                        Text(
+                            text = stringResource(error),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(onClick = { showRenameDialog = false }) {
+                            Text(stringResource(R.string.provider_enrollment_cancel))
+                        }
+                        Button(onClick = {
+                            renameExpectedVersion?.let { expectedVersion ->
+                                when (val result = onRename(renameValue, expectedVersion)) {
+                                    is ProviderCardRenameResult.Renamed -> showRenameDialog = false
+                                    is ProviderCardRenameResult.Rejected -> renameError = providerRenameErrorResource(result.rejection)
+                                    null -> showRenameDialog = false
+                                }
+                            }
+                        }) {
+                            Text(stringResource(R.string.provider_enrollment_add))
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (showDeleteDialog && onDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(stringResource(R.string.provider_removal_confirmation_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(layoutMetrics.cardSpacingDp.dp)) {
+                    Text(
+                        stringResource(
+                            R.string.provider_removal_confirmation_names,
+                            stringResource(
+                                R.string.provider_removal_named_card,
+                                cardAlias,
+                                snapshot.providerId.displayName,
+                            ),
+                        )
+                    )
+                    Text(stringResource(R.string.provider_removal_confirmation_consequence))
+                    deleteError?.let { error ->
+                        Text(
+                            text = stringResource(error),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    deleteExpectedVersion?.let { expectedVersion ->
+                        when (val result = onDelete(expectedVersion)) {
+                            is ProviderCardDeletionResult.Rejected -> {
+                                deleteError = providerDeleteErrorResource(result.reason)
+                            }
+                            else -> showDeleteDialog = false
+                        }
+                    }
+                }) {
+                    Text(stringResource(R.string.provider_removal_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(stringResource(R.string.provider_removal_cancel))
+                }
+            },
+        )
+    }
+}
+
+@androidx.annotation.StringRes
+private fun providerDeleteErrorResource(reason: ProviderCardDeletionRejection): Int = when (reason) {
+    ProviderCardDeletionRejection.ACCOUNT_MISSING -> R.string.provider_removal_error_missing
+    ProviderCardDeletionRejection.VERSION_MISMATCH -> R.string.provider_removal_error_stale
+}
+
+internal fun providerDetailConnectionAction(
+    authState: AccountAuthState?,
+    snapshot: ProviderUsageSnapshot,
+): ProviderConnectionAction = if (authState != null && authState != AccountAuthState.AUTHENTICATED) {
+    ProviderConnectionAction.CONNECT
+} else {
+    snapshot.primaryConnectionAction()
+}
+
+@androidx.annotation.StringRes
+private fun providerRenameErrorResource(rejection: ProviderCardRenameRejection): Int = when (rejection) {
+    ProviderCardRenameRejection.ACCOUNT_MISSING -> R.string.provider_rename_error_missing
+    ProviderCardRenameRejection.ACCOUNT_INACTIVE -> R.string.provider_rename_error_inactive
+    ProviderCardRenameRejection.VERSION_MISMATCH -> R.string.provider_rename_error_stale
+    is ProviderCardRenameRejection.AliasConflict -> R.string.provider_rename_error_alias_conflict
+    is ProviderCardRenameRejection.AliasValidation -> when (rejection.reason) {
+        com.aiquota.mobile.accounts.ProviderCardAliasValidationReason.BLANK -> R.string.provider_enrollment_error_blank
+        com.aiquota.mobile.accounts.ProviderCardAliasValidationReason.TOO_LONG -> R.string.provider_enrollment_error_too_long
+        com.aiquota.mobile.accounts.ProviderCardAliasValidationReason.CONTROL_CHARACTER -> R.string.provider_enrollment_error_control_character
     }
 }
 

@@ -1,18 +1,47 @@
 package com.aiquota.mobile.ui
 
 import android.app.UiAutomation
+import android.content.Context
+import android.content.Intent
 import android.graphics.Rect
 import android.os.Bundle
+import android.os.SystemClock
 import android.os.ParcelFileDescriptor
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescriptionExactly
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasTextExactly
+import androidx.compose.ui.test.isDialog
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
+import androidx.test.core.app.ActivityScenario
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.espresso.Espresso.closeSoftKeyboard
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aiquota.mobile.R
+import com.aiquota.mobile.debug.ProviderOnboardingComposeTestActivity
+import java.util.concurrent.TimeoutException
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -25,8 +54,13 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class ProviderCardCatalogUiTest {
+    @get:Rule
+    val composeRule = createEmptyComposeRule()
+
     private val uiAutomation: UiAutomation
         get() = InstrumentationRegistry.getInstrumentation().uiAutomation
+
+    private var composeScenario: ActivityScenario<ProviderOnboardingComposeTestActivity>? = null
 
     private val targetContext
         get() = InstrumentationRegistry.getInstrumentation().targetContext
@@ -34,6 +68,12 @@ class ProviderCardCatalogUiTest {
         get() = targetContext.getString(R.string.dashboard_title)
     private val settings
         get() = targetContext.getString(R.string.nav_settings)
+
+    @After
+    fun closeComposeScenario() {
+        composeScenario?.close()
+        composeScenario = null
+    }
 
     @Test
     fun firstRunOffersGetStartedAndLaterWithoutAutomaticLogin() {
@@ -166,44 +206,51 @@ class ProviderCardCatalogUiTest {
 
     @Test
     fun normalizedAliasCollisionAndMalformedAliasExposeFieldErrors() {
-        launchCatalog(DATASET_POPULATED)
-
-        val addProvider = requireAction(
-            label = ADD_PROVIDER,
-            failureMessage = "Normalized alias collision/error flow missing: Add provider action is required before entering ' Work ', ' work ', and malformed '\\u0007work' aliases"
-        )
-        clickAndAwaitAccessibilityChange(addProvider, "open picker for normalized alias contract")
-
-        val claudeRow = requireNode(
-            failureMessage = "Normalized alias collision/error flow missing: picker must expose Claude as one clickable RadioButton row"
-        ) { node ->
-            node.className?.toString() == RADIO_BUTTON_CLASS &&
-                node.isClickable &&
-                nodeOrDescendantHasExactLabel(node, CLAUDE)
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val intent = Intent(context, ProviderOnboardingComposeTestActivity::class.java).apply {
+            putExtra(ProviderOnboardingComposeTestActivity.EXTRA_DATASET, DATASET_POPULATED)
         }
-        clickAndAwaitAccessibilityChange(claudeRow, "select Claude for alias validation")
+        composeScenario = ActivityScenario.launch(intent)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText(dashboardTitle).assertIsDisplayed()
 
-        val namingField = requireNode(
-            failureMessage = "Naming semantics missing: alias validation requires one editable naming field"
-        ) { node -> node.className?.toString() == EDIT_TEXT_CLASS && node.isEditable }
+        composeRule.onAllNodesWithContentDescription(ADD_PROVIDER)[0]
+            .assertHasClickAction()
+            .performClick()
+        composeRule.onNode(
+            hasContentDescriptionExactly(CLAUDE) and
+                SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)
+        )
+            .assertIsDisplayed()
+            .assertHasClickAction()
+            .performClick()
+        composeRule.onNodeWithText(NEXT)
+            .assertHasClickAction()
+            .performClick()
 
-        setTextAndAwaitAccessibilityChange(namingField, COLLIDING_ALIAS)
-        val confirmAdd = requireAction(
-            label = ADD,
-            failureMessage = "Naming semantics missing: alias validation dialog must expose an exact Add action"
-        )
-        clickAndAwaitAccessibilityChange(confirmAdd, "submit normalized alias collision")
-        requireExactText(
-            ALIAS_COLLISION_ERROR,
-            "Normalized alias collision semantics missing: trimmed case-insensitive ' work ' must expose exact inline collision error"
-        )
+        closeSoftKeyboard()
+        composeRule.waitForIdle()
+        val namingField = composeRule.onNode(hasSetTextAction())
+            .performScrollTo()
+            .assertIsDisplayed()
+        val confirmAdd = composeRule.onNode(
+            hasTextExactly(ADD) and hasClickAction() and hasAnyAncestor(isDialog())
+        ).assertIsDisplayed()
 
-        setTextAndAwaitAccessibilityChange(namingField, MALFORMED_ALIAS)
-        clickAndAwaitAccessibilityChange(confirmAdd, "submit malformed control-character alias")
-        requireExactText(
-            MALFORMED_ALIAS_ERROR,
-            "Malformed alias semantics missing: '\\u0007work' must expose an exact field-associated control-character error"
-        )
+        namingField.performTextInput(COLLIDING_ALIAS)
+        confirmAdd.performClick()
+        composeRule.onNodeWithText(ALIAS_COLLISION_ERROR)
+            .assertIsDisplayed()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Error, ALIAS_COLLISION_ERROR))
+        namingField.assert(SemanticsMatcher.expectValue(SemanticsProperties.Error, ALIAS_COLLISION_ERROR))
+
+        namingField.performTextClearance()
+        namingField.performTextInput(MALFORMED_ALIAS)
+        confirmAdd.performClick()
+        composeRule.onNodeWithText(MALFORMED_ALIAS_ERROR)
+            .assertIsDisplayed()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Error, MALFORMED_ALIAS_ERROR))
+        namingField.assert(SemanticsMatcher.expectValue(SemanticsProperties.Error, MALFORMED_ALIAS_ERROR))
     }
 
     private fun launchCatalog(dataset: String) {
@@ -246,35 +293,51 @@ class ProviderCardCatalogUiTest {
     }
 
     private fun clickAndAwaitAccessibilityChange(node: AccessibilityNodeInfo, actionName: String) {
-        uiAutomation.executeAndWaitForEvent(
-            {
-                assertTrue("Accessibility action failed while attempting to $actionName", node.performAction(AccessibilityNodeInfo.ACTION_CLICK))
-            },
-            { event ->
-                event.packageName?.toString() == APP_PACKAGE &&
-                    event.eventType in CONTENT_CHANGE_EVENT_TYPES
-            },
-            EVENT_TIMEOUT_MS
+        val beforeRoot = activeRoot("Expected a live accessibility root before $actionName")
+        beforeRoot.refresh()
+        val beforeSignature = accessibilitySignature(beforeRoot)
+        assertTrue(
+            "Accessibility action failed while attempting to $actionName",
+            node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
         )
+        awaitFreshAccessibilityTransition(beforeSignature, actionName)
+    }
+
+    private fun awaitFreshAccessibilityTransition(beforeSignature: String, actionName: String) {
+        val deadline = SystemClock.uptimeMillis() + EVENT_TIMEOUT_MS
+        var previousSignature: String? = null
+        while (SystemClock.uptimeMillis() < deadline) {
+            try {
+                uiAutomation.waitForIdle(POST_ACTION_POLL_IDLE_TIMEOUT_MS, POST_ACTION_POLL_GLOBAL_TIMEOUT_MS)
+            } catch (_: TimeoutException) {
+            }
+            val root = uiAutomation.rootInActiveWindow ?: continue
+            assertEquals(
+                "Accessibility root must belong to the target app after $actionName",
+                APP_PACKAGE,
+                root.packageName?.toString()
+            )
+            assertNonEmptyBounds(root, "Accessibility root after $actionName")
+            root.refresh()
+            val currentSignature = accessibilitySignature(root)
+            if (currentSignature != beforeSignature && currentSignature == previousSignature) return
+            previousSignature = currentSignature
+        }
+        fail("Accessibility tree did not settle after $actionName\nLive accessibility tree:\n${dumpTree()}")
     }
 
     private fun setTextAndAwaitAccessibilityChange(node: AccessibilityNodeInfo, value: String) {
         val arguments = Bundle().apply {
             putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, value)
         }
-        uiAutomation.executeAndWaitForEvent(
-            {
-                assertTrue(
-                    "Accessibility set-text action failed for ${printable(value)}",
-                    node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
-                )
-            },
-            { event ->
-                event.packageName?.toString() == APP_PACKAGE &&
-                    event.eventType in TEXT_CHANGE_EVENT_TYPES
-            },
-            EVENT_TIMEOUT_MS
+        val beforeRoot = activeRoot("Expected a live accessibility root before setting ${printable(value)}")
+        beforeRoot.refresh()
+        val beforeSignature = accessibilitySignature(beforeRoot)
+        assertTrue(
+            "Accessibility set-text action failed for ${printable(value)}",
+            node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
         )
+        awaitFreshAccessibilityTransition(beforeSignature, "set alias to ${printable(value)}")
     }
 
     private fun requireAction(label: String, failureMessage: String): AccessibilityNodeInfo {
@@ -327,6 +390,24 @@ class ProviderCardCatalogUiTest {
         }
         visit(activeRoot("Expected a live accessibility root"))
         return result
+    }
+
+    private fun accessibilitySignature(root: AccessibilityNodeInfo): String = buildString {
+        fun appendNode(node: AccessibilityNodeInfo) {
+            append(node.className).append('|')
+            append(node.text).append('|')
+            append(node.contentDescription).append('|')
+            append(node.isClickable).append('|')
+            append(node.isEnabled).append('|')
+            append(node.isEditable).append('|')
+            append(node.isSelected).append('|')
+            append(node.stateDescription).append('|')
+            append(node.childCount).append('\n')
+            for (index in 0 until node.childCount) {
+                node.getChild(index)?.let(::appendNode)
+            }
+        }
+        appendNode(root)
     }
 
     private fun nodeOrDescendantHasExactLabel(node: AccessibilityNodeInfo, label: String): Boolean {
@@ -388,6 +469,7 @@ class ProviderCardCatalogUiTest {
         const val ADD_PROVIDER = "Add provider"
         const val REMOVE_PROVIDER = "Remove provider"
         const val ADD = "Add"
+        const val NEXT = "Next"
         const val CONTINUE = "Continue"
         const val REMOVE = "Remove"
         const val CONNECT = "Connect"
@@ -409,12 +491,13 @@ class ProviderCardCatalogUiTest {
         const val WEB_VIEW_CLASS = "android.webkit.WebView"
 
         const val LAUNCH_IDLE_TIMEOUT_MS = 250L
+        const val POST_ACTION_POLL_IDLE_TIMEOUT_MS = 100L
+        const val POST_ACTION_POLL_GLOBAL_TIMEOUT_MS = 500L
         const val EVENT_TIMEOUT_MS = 10_000L
         const val MAX_DUMP_NODES = 200
         val CONTENT_CHANGE_EVENT_TYPES = setOf(
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED,
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
         )
-        val TEXT_CHANGE_EVENT_TYPES = CONTENT_CHANGE_EVENT_TYPES + AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED
     }
 }

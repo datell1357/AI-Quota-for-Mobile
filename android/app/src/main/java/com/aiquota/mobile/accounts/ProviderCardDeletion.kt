@@ -39,6 +39,7 @@ data class ProviderCardDeletionRecord(
 
 enum class ProviderCardDeletionRejection {
     ACCOUNT_MISSING,
+    VERSION_MISMATCH,
 }
 
 sealed interface ProviderCardDeletionResult {
@@ -50,11 +51,17 @@ sealed interface ProviderCardDeletionResult {
 
 interface ProviderCardDeletionApi {
     fun delete(accountId: ProviderAccountId): ProviderCardDeletionResult
+
+    fun delete(
+        accountId: ProviderAccountId,
+        expectedVersion: DisplayVersion,
+    ): ProviderCardDeletionResult = delete(accountId)
 }
 
 internal sealed interface BeginProviderCardDeletionResult {
     data class Ready(val record: ProviderCardDeletionRecord) : BeginProviderCardDeletionResult
     data object Missing : BeginProviderCardDeletionResult
+    data object Stale : BeginProviderCardDeletionResult
 }
 
 @JvmInline

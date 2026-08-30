@@ -100,9 +100,34 @@ class MainProcessAccountAuthority private constructor(
             }
 
             val reservedId = ProviderAccountId(providerId, AccountKey.reservedDefault())
-            val accountId = if (multiplicity == ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT &&
-                readAccount(db, reservedId) == null
-            ) {
+            val existingReserved = if (multiplicity == ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT) {
+                readAccount(db, reservedId)
+            } else {
+                null
+            }
+            if (existingReserved != null && existingReserved.deletionState != AccountDeletionState.ERASED) {
+                return@transaction ProviderCardAddResult.Rejected(
+                    ProviderCardAddRejection.MultiplicityExceeded(providerId)
+                )
+            }
+            if (existingReserved != null) {
+                val version = readVersion(db).next()
+                val revived = existingReserved.copy(
+                    state = AccountState.ACTIVE,
+                    authState = AccountAuthState.SIGNED_OUT,
+                    deletionState = AccountDeletionState.NONE,
+                    generation = existingReserved.generation.next(),
+                    sessionRevision = existingReserved.sessionRevision.next(),
+                    alias = selectedAlias?.displayValue,
+                    organization = null,
+                    remoteIdentity = null,
+                    modifiedVersion = version,
+                )
+                reactivateProviderCard(db, revived, activeProviderCardTotalCount(db), selectedAlias!!)
+                writeVersion(db, version)
+                return@transaction ProviderCardAddResult.Added(revived)
+            }
+            val accountId = if (multiplicity == ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT) {
                 reservedId
             } else {
                 var candidate = ProviderAccountId(providerId, AccountKey.create())
@@ -515,6 +540,40 @@ class MainProcessAccountAuthority private constructor(
     internal fun accountUsageRecord(accountId: ProviderAccountId): VersionedDisplayRecord? =
         readExactProviderCardRecord(database.readableDatabase, accountId)
 
+    internal fun renameProviderCard(request: RenameProviderCardRequest): ProviderCardRenameResult {
+        val alias = when (val validation = validateProviderCardAlias(request.alias)) {
+            is ProviderCardAliasValidation.Valid -> validation.alias
+            is ProviderCardAliasValidation.Invalid -> return ProviderCardRenameResult.Rejected(
+                ProviderCardRenameRejection.AliasValidation(validation.reason)
+            )
+        }
+        return transaction { db ->
+            val account = readAccount(db, request.accountId)
+                ?: return@transaction ProviderCardRenameResult.Rejected(
+                    ProviderCardRenameRejection.ACCOUNT_MISSING
+                )
+            if (account.state != AccountState.ACTIVE || account.deletionState != AccountDeletionState.NONE) {
+                return@transaction ProviderCardRenameResult.Rejected(
+                    ProviderCardRenameRejection.ACCOUNT_INACTIVE
+                )
+            }
+            if (account.modifiedVersion != request.expectedVersion) {
+                return@transaction ProviderCardRenameResult.Rejected(
+                    ProviderCardRenameRejection.VERSION_MISMATCH
+                )
+            }
+            if (activeProviderCardAliasExists(db, alias.normalizedKey, request.accountId)) {
+                return@transaction ProviderCardRenameResult.Rejected(
+                    ProviderCardRenameRejection.AliasConflict(alias.displayValue)
+                )
+            }
+            val version = readVersion(db).next()
+            updateAccountAlias(db, request.accountId, alias, version)
+            writeVersion(db, version)
+            ProviderCardRenameResult.Renamed(requireNotNull(readAccount(db, request.accountId)))
+        }
+    }
+
     internal fun writeAccountUsage(write: AccountUsageWrite): AccountUsageWriteResult = transaction { db ->
         val account = readAccount(db, write.accountId)
             ?: return@transaction AccountUsageWriteResult.Rejected(AccountUsageWriteRejection.ACCOUNT_MISSING)
@@ -652,8 +711,12 @@ class MainProcessAccountAuthority private constructor(
 
     internal fun beginProviderCardDeletion(
         accountId: ProviderAccountId,
+        expectedVersion: DisplayVersion? = null,
     ): BeginProviderCardDeletionResult = transaction { db ->
         val account = readAccount(db, accountId) ?: return@transaction BeginProviderCardDeletionResult.Missing
+        if (expectedVersion != null && account.modifiedVersion != expectedVersion) {
+            return@transaction BeginProviderCardDeletionResult.Stale
+        }
         readProviderCardDeletion(db, accountId)?.let {
             return@transaction BeginProviderCardDeletionResult.Ready(it)
         }

@@ -30,6 +30,10 @@ class AccountUsageRepository private constructor(
         authority.reorderProviderCards(request)
     }
 
+    fun rename(request: RenameProviderCardRequest): ProviderCardRenameResult = PROCESS_LOCK.withLock {
+        authority.renameProviderCard(request)
+    }
+
     fun requestRefresh(request: AccountRefreshRequest): AccountRefreshRequestResult = PROCESS_LOCK.withLock {
         authority.requestAccountRefresh(request)
     }

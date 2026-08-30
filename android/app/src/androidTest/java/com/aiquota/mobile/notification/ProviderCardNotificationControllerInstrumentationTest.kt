@@ -40,9 +40,10 @@ class ProviderCardNotificationControllerInstrumentationTest {
         context = instrumentation.targetContext
         manager = context.getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            instrumentation.uiAutomation.executeShellCommand(
-                "pm grant ${context.packageName} ${Manifest.permission.POST_NOTIFICATIONS}",
-            ).close()
+            instrumentation.uiAutomation.grantRuntimePermission(
+                context.packageName,
+                Manifest.permission.POST_NOTIFICATIONS,
+            )
         }
         clear()
     }

@@ -43,17 +43,19 @@ import com.aiquota.mobile.R
 import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.ProviderCardDeletionResult
 import com.aiquota.mobile.accounts.ProviderCardDisplayRecord
+import com.aiquota.mobile.accounts.DisplayVersion
 
 @Composable
 internal fun ProviderCardRemovalSurface(
     cards: List<ProviderCardDisplayRecord>,
     visible: Boolean,
     onDismiss: () -> Unit,
-    onDelete: (ProviderAccountId) -> ProviderCardDeletionResult,
+    onDelete: (ProviderAccountId, DisplayVersion) -> ProviderCardDeletionResult,
 ) {
     if (!visible) return
 
     var selectedIds by remember { mutableStateOf<Set<ProviderAccountId>>(emptySet()) }
+    var confirmingCards by remember { mutableStateOf<List<ProviderCardDisplayRecord>>(emptyList()) }
     var confirming by remember { mutableStateOf(false) }
     var resultById by remember { mutableStateOf<Map<ProviderAccountId, RemovalCardResult>>(emptyMap()) }
     val cardsById = cards.associateBy(ProviderCardDisplayRecord::accountId)
@@ -61,6 +63,7 @@ internal fun ProviderCardRemovalSurface(
     val selectedCards = cards.filter { it.accountId in selectedIds }
     fun dismiss() {
         selectedIds = emptySet()
+        confirmingCards = emptyList()
         confirming = false
         resultById = emptyMap()
         onDismiss()
@@ -72,18 +75,19 @@ internal fun ProviderCardRemovalSurface(
             onDismiss = ::dismiss,
         )
         confirming -> ProviderCardRemovalConfirmationDialog(
-            selectedCards = selectedCards,
+            selectedCards = confirmingCards,
             onDismiss = ::dismiss,
             onConfirm = {
-                val results = selectedCards.associate { card ->
+                val results = confirmingCards.associate { card ->
                     val snapshot = RemovalCardSnapshot(
                         accountId = card.accountId,
                         alias = card.alias,
                         providerName = card.accountId.providerId.displayName,
+                        version = card.displayRecord.version,
                     )
                     snapshot.accountId to RemovalCardResult(
                         snapshot = snapshot,
-                        outcome = onDelete(snapshot.accountId).toRemovalResult(),
+                        outcome = onDelete(snapshot.accountId, snapshot.version).toRemovalResult(),
                     )
                 }
                 resultById = results
@@ -96,7 +100,10 @@ internal fun ProviderCardRemovalSurface(
                 selectedIds = if (checked) selectedIds + accountId else selectedIds - accountId
             },
             onDismiss = ::dismiss,
-            onContinue = { confirming = true },
+            onContinue = {
+                confirmingCards = selectedCards.toList()
+                confirming = true
+            },
         )
     }
 
@@ -113,6 +120,7 @@ private data class RemovalCardSnapshot(
     val accountId: ProviderAccountId,
     val alias: String,
     val providerName: String,
+    val version: DisplayVersion,
 )
 
 private data class RemovalCardResult(

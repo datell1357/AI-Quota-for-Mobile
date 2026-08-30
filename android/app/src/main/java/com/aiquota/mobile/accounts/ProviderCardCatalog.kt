@@ -43,6 +43,12 @@ data class AddProviderCardRequest(
     val alias: ProviderCardAliasSelection = ProviderCardAliasSelection.Automatic,
 )
 
+data class RenameProviderCardRequest(
+    val accountId: ProviderAccountId,
+    val alias: String,
+    val expectedVersion: DisplayVersion,
+)
+
 enum class ProviderCardAliasValidationReason {
     BLANK,
     TOO_LONG,
@@ -61,6 +67,19 @@ sealed interface ProviderCardAddRejection {
 sealed interface ProviderCardAddResult {
     data class Added(val account: AccountRecord) : ProviderCardAddResult
     data class Rejected(val rejection: ProviderCardAddRejection) : ProviderCardAddResult
+}
+
+sealed interface ProviderCardRenameRejection {
+    data object ACCOUNT_MISSING : ProviderCardRenameRejection
+    data object ACCOUNT_INACTIVE : ProviderCardRenameRejection
+    data object VERSION_MISMATCH : ProviderCardRenameRejection
+    data class AliasValidation(val reason: ProviderCardAliasValidationReason) : ProviderCardRenameRejection
+    data class AliasConflict(val alias: String) : ProviderCardRenameRejection
+}
+
+sealed interface ProviderCardRenameResult {
+    data class Renamed(val account: AccountRecord) : ProviderCardRenameResult
+    data class Rejected(val rejection: ProviderCardRenameRejection) : ProviderCardRenameResult
 }
 
 class ProviderCardCatalog private constructor(
@@ -93,6 +112,15 @@ class ProviderCardCatalog private constructor(
         }
         return add(AddProviderCardRequest(providerId, selection))
     }
+
+    fun rename(request: RenameProviderCardRequest): ProviderCardRenameResult =
+        authority.renameProviderCard(request)
+
+    fun rename(
+        accountId: ProviderAccountId,
+        alias: String,
+        expectedVersion: DisplayVersion,
+    ): ProviderCardRenameResult = rename(RenameProviderCardRequest(accountId, alias, expectedVersion))
 
     fun page(offset: Int, limit: Int): AccountCatalogPage = authority.catalog(offset, limit)
 

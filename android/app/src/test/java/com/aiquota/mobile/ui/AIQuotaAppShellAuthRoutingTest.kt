@@ -34,6 +34,16 @@ class AIQuotaAppShellAuthRoutingTest {
     }
 
     @Test
+    fun exactConnectFailsClosedWhenVersionedStatusWriteIsRejected() {
+        val source = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
+        val exactConnect = source.substringAfter("fun connectExactCard")
+            .substringBefore("fun disconnectProvider")
+
+        assertTrue(exactConnect.contains("if (!cardRuntime.writeSnapshot("))
+        assertTrue(exactConnect.contains(")) return"))
+    }
+
+    @Test
     fun copilotMissingNativePayloadDoesNotBypassRecoverableFailurePolicy() {
         val source = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
 

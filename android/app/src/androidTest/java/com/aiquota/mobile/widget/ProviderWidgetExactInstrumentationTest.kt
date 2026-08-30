@@ -15,6 +15,8 @@ import com.aiquota.mobile.accounts.DisplayVersion
 import com.aiquota.mobile.accounts.MainProcessAccountAuthority
 import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
+import com.aiquota.mobile.accounts.ProviderCardRenameResult
+import com.aiquota.mobile.accounts.RenameProviderCardRequest
 import com.aiquota.mobile.accounts.SessionRevision
 import com.aiquota.mobile.local.ProviderCardPreferencesRepository
 import com.aiquota.mobile.local.ProviderConnectionState
@@ -101,6 +103,26 @@ class ProviderWidgetExactInstrumentationTest {
             assertTrue(demands.none { it.card.accountId == b })
         }
         android.util.Log.i(TAG, "failure stale=$b sibling=$a demand=0 unavailable=true")
+    }
+
+    @Test
+    fun renamedExactCardPresentationChangesOnlyThatAccountAlias() {
+        seedCards()
+        MainProcessAccountAuthority.open(context).use { authority ->
+            val before = requireNotNull(authority.accountUsageRecord(a))
+            assertTrue(
+                authority.renameProviderCard(
+                    RenameProviderCardRequest(a, "Work", before.account.modifiedVersion)
+                ) is ProviderCardRenameResult.Renamed
+            )
+        }
+
+        val selections = ProviderWidgetCardCatalog.activeSelections(context).associateBy { it.accountId }
+        assertEquals("Work", selections.getValue(a).alias)
+        assertEquals("Codex 2", selections.getValue(b).alias)
+        assertEquals("Work", requireNotNull(ProviderWidgetCardCatalog.activeRecord(context, a)).account.alias)
+        assertEquals("Codex 2", requireNotNull(ProviderWidgetCardCatalog.activeRecord(context, b)).account.alias)
+        android.util.Log.i(TAG, "rename aliasA=Work aliasB=Codex 2 identityA=$a identityB=$b")
     }
 
     private fun seedCards() {

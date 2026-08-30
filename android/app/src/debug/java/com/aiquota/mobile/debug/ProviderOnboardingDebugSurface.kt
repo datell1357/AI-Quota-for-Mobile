@@ -73,11 +73,14 @@ internal class ProviderEnrollmentDebugHost(
         deletionModes[accountId] = mode
     }
 
-    fun delete(accountId: ProviderAccountId): ProviderCardDeletionResult {
+    fun delete(accountId: ProviderAccountId, expectedVersion: DisplayVersion): ProviderCardDeletionResult {
         val card = cards.firstOrNull { it.accountId == accountId }
             ?: return ProviderCardDeletionResult.Rejected(
                 ProviderCardDeletionRejection.ACCOUNT_MISSING
             )
+        if (card.displayRecord.version != expectedVersion) {
+            return ProviderCardDeletionResult.Rejected(ProviderCardDeletionRejection.VERSION_MISMATCH)
+        }
         val mode = deletionModes[accountId]
             ?: if (deletionFailure) ProviderDeletionDebugMode.FAILED else ProviderDeletionDebugMode.COMPLETED
         if (mode == ProviderDeletionDebugMode.REJECTED) {

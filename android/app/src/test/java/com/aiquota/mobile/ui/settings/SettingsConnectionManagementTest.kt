@@ -142,6 +142,41 @@ class SettingsConnectionManagementTest {
     }
 
     @Test
+    fun exactSettingsRowsAreAccountScopedAndDoNotCollapseSiblingProviders() {
+        val source = File("src/main/java/com/aiquota/mobile/ui/settings/SettingsPanel.kt").readText()
+        val managementSection = source.substringAfter("private fun ConnectionManagementSection")
+            .substringBefore("@Composable\nprivate fun ExactCardConnectionRow")
+        val exactRows = source.substringAfter("private fun ExactCardConnectionRow")
+            .substringBefore("@Composable\nprivate fun ThemeSettingsSection")
+
+        assertTrue(managementSection.contains("providerCards.forEach { card"))
+        assertTrue(exactRows.contains("card.accountId"))
+        assertTrue(exactRows.contains("onConnect(card.accountId)"))
+        assertTrue(exactRows.contains("onDisconnect(card.accountId)"))
+        assertFalse(exactRows.contains("associateBy { it.providerId }"))
+    }
+
+    @Test
+    fun exactSettingsRowsExposeIdentityAndActionsWithoutHorizontalClipping() {
+        val source = File("src/main/java/com/aiquota/mobile/ui/settings/SettingsPanel.kt").readText()
+        val exactRow = source.substringAfter("private fun ExactCardConnectionRow")
+            .substringBefore("private fun settingsDeleteErrorResource")
+
+        assertTrue(Regex("Column\\s*\\(\\s*modifier\\s*=\\s*Modifier\\.fillMaxWidth\\(\\)").containsMatchIn(exactRow))
+        assertTrue(exactRow.contains("card.alias"))
+        assertTrue(exactRow.contains("card.accountId.providerId.displayName"))
+        assertTrue(exactRow.contains("provider_connect"))
+        assertTrue(exactRow.contains("settings_rename_selected_device"))
+        assertTrue(exactRow.contains("provider_catalog_remove_action"))
+    }
+
+    @Test
+    fun enabledEmptyExactRuntimeDoesNotRenderLegacyProviderControls() {
+        assertFalse(settingsUsesLegacyConnectionControls(exactCardRuntimeEnabled = true))
+        assertTrue(settingsUsesLegacyConnectionControls(exactCardRuntimeEnabled = false))
+    }
+
+    @Test
     fun settingsShowsBatteryOptimizationRecommendationForLiveRefresh() {
         val source = File("src/main/java/com/aiquota/mobile/ui/settings/SettingsPanel.kt").readText()
         val appShell = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
@@ -177,7 +212,7 @@ class SettingsConnectionManagementTest {
             .substringBefore("Row(")
 
         assertFalse(actionAssignment.contains("if (isBusy)"))
-        assertTrue(actionAssignment.contains("val connectionAction = snapshot.primaryConnectionAction()"))
+        assertTrue(actionAssignment.contains("val connectionAction = providerDetailConnectionAction(authState, snapshot)"))
     }
 
     @Test
