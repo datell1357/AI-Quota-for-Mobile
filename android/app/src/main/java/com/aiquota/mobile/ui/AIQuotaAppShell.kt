@@ -77,7 +77,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.aiquota.mobile.R
 import com.aiquota.mobile.accounts.AccountKey
+import com.aiquota.mobile.accounts.MainProcessAccountFeature
 import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.ProviderCardDeletionResult
 import com.aiquota.mobile.accounts.ProviderCardDisplayRecord
 import com.aiquota.mobile.local.AppTheme
 import com.aiquota.mobile.local.LocalUsageRepository
@@ -210,6 +212,7 @@ fun AIQuotaAppShell(
     var showLiveRefreshPrompt by remember { mutableStateOf(false) }
     var liveRefreshPromptDismissed by remember { mutableStateOf(false) }
     var showDashboardWidgetPicker by remember { mutableStateOf(false) }
+    var showProviderRemoval by remember { mutableStateOf(false) }
     val liveRefreshState = settingsLiveRefreshState(
         notificationEnabled = liveMonitoringEnabled,
         canPostNotifications = canPostNotifications,
@@ -223,6 +226,18 @@ fun AIQuotaAppShell(
 
     fun selectExactCard(accountId: ProviderAccountId) {
         route = resolveRoute(AppRoute.ProviderDetail(accountId))
+    }
+
+    fun deleteExactCard(accountId: ProviderAccountId): ProviderCardDeletionResult {
+        MainProcessAccountFeature.start(appContext)
+        val result = MainProcessAccountFeature.deletionApi().delete(accountId)
+        cardRuntime.reload()
+        if (result is ProviderCardDeletionResult.Completed &&
+            (route as? AppRoute.ProviderDetail)?.accountId == accountId
+        ) {
+            route = AppRoute.Home
+        }
+        return result
     }
 
     LaunchedEffect(routeRequest) {
@@ -881,7 +896,7 @@ fun AIQuotaAppShell(
                                     viewMode = dashboardViewMode,
                                     onSelectViewMode = selectViewMode,
                                     onAddProvider = { providerEnrollment?.openExplicitAdd() },
-                                    onRemoveProvider = {},
+                                    onRemoveProvider = { showProviderRemoval = true },
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             } else {
@@ -1030,6 +1045,14 @@ fun AIQuotaAppShell(
                         DashboardWidgetPickerDialog(
                             onSelect = ::requestDashboardWidget,
                             onDismiss = { showDashboardWidgetPicker = false }
+                        )
+                    }
+                    if (cardRuntime.enabled) {
+                        ProviderCardRemovalSurface(
+                            cards = cardRuntime.state.catalog.cards,
+                            visible = showProviderRemoval,
+                            onDismiss = { showProviderRemoval = false },
+                            onDelete = ::deleteExactCard,
                         )
                     }
                     providerEnrollment?.Content()

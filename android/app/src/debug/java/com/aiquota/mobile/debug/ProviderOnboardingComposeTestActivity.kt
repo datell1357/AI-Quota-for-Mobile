@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.aiquota.mobile.accounts.MainProcessAccountAuthority
+import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.ProviderCardAddResult
 import com.aiquota.mobile.accounts.ProviderCardCatalog
 import com.aiquota.mobile.local.ProviderId
@@ -21,6 +22,21 @@ class ProviderOnboardingComposeTestActivity : ComponentActivity() {
 
     val removeInvocationCount: Int
         get() = host.removeInvocations
+
+    val removedAccountIds: Set<ProviderAccountId>
+        get() = host.removedAccountIds
+
+    fun setDeletionFailure(enabled: Boolean) {
+        host.deletionFailure = enabled
+    }
+
+    fun setDeletionMode(accountId: ProviderAccountId, mode: ProviderDeletionDebugMode) {
+        host.setDeletionMode(accountId, mode)
+    }
+
+    fun dropCardFromDisplay(accountId: ProviderAccountId) {
+        host.dropCardFromDisplay(accountId)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
