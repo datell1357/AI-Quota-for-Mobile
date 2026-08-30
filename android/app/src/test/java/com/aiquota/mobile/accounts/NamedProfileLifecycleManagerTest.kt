@@ -294,6 +294,27 @@ class NamedProfileLifecycleManagerTest {
     }
 
     @Test
+    fun `abort reports cancellation failure and preserves lease for retry`() {
+        val p = FakePlatform().apply { cancelQuiesceFailures.add(IllegalStateException("renderer")) }
+        val m = manager(platform = p)
+        val id = id(1)
+        m.ensureBinding(id)
+        val lease = m.acquire(id)
+        var result: LeaseCloseResult? = null
+
+        lease.abortAcknowledged { result = it }
+
+        assertEquals(LeaseCloseResult.RetryableFailure("QUIESCE_CANCEL_FAILED:IllegalStateException"), result)
+        assertEquals(LeaseState.OPEN, lease.stateForTest())
+        assertEquals(1, m.liveLeaseCount(id))
+        assertEquals(0, p.destroyCount)
+
+        lease.abortAcknowledged { result = it }
+        assertEquals(LeaseCloseResult.Closed, result)
+        assertEquals(0, m.liveLeaseCount(id))
+    }
+
+    @Test
     fun `duplicate closing closed and shutdown with live leases are deterministic`() {
         val p = FakePlatform().apply { deferQuiesce = true }
         val m = manager(platform = p)
@@ -503,6 +524,7 @@ private class FakePlatform : NamedProfilePlatform {
     var deferErase = false
     var destroyCount = 0
     var cancelQuiesceCount = 0
+    val cancelQuiesceFailures = ArrayDeque<RuntimeException>()
     val destroyFailures = ArrayDeque<RuntimeException>()
     var probeCount = 0
     val capabilities = ArrayDeque<NamedProfileCapability>()
@@ -561,6 +583,7 @@ private class FakePlatform : NamedProfilePlatform {
             }
 
             override fun cancelQuiesce() {
+                if (cancelQuiesceFailures.isNotEmpty()) throw cancelQuiesceFailures.removeFirst()
                 pendingQuiesce?.let {
                     cancelQuiesceCount++
                     pendingQuiesce = null

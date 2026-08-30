@@ -571,7 +571,12 @@ class NamedProfileLifecycleManager(
             return@mutate
         }
         val attempt = requireNotNull(start.attempt)
-        l.resource.cancelQuiesce()
+        val cancelFailure = runCatching { l.resource.cancelQuiesce() }.exceptionOrNull()
+        if (cancelFailure != null) {
+            l.reopen(attempt)
+            callback(LeaseCloseResult.RetryableFailure("QUIESCE_CANCEL_FAILED:${cancelFailure.javaClass.simpleName}"))
+            return@mutate
+        }
         val destroyFailure = runCatching { l.resource.destroy() }.exceptionOrNull()
         if (destroyFailure != null) {
             l.reopen(attempt)

@@ -130,6 +130,9 @@ private class AndroidSession(
     private var finished = false
     private var committed = false
     private var visual = false
+    private var quiesceAttempt = 0L
+    @Volatile
+    private var activeAttempt: Long? = null
     private var callback: ((SessionQuiesceResult) -> Unit)? = null
     private var prior: WebViewClient? = null
 
@@ -142,14 +145,16 @@ private class AndroidSession(
         WebViewAssetLoader.Builder()
             .setDomain(HOST)
             .addPathHandler("/neutral/") { path ->
+                val attempt = activeAttempt
                 when {
                     path.startsWith("beacon") -> {
+                        if (attempt == null) return@addPathHandler response("text/plain", "cancelled")
                         observedBeacon.set(true)
-                        postCheck()
+                        postCheck(attempt)
                         response("text/plain", "ok")
                     }
                     else -> {
-                        observedRequest.set(true)
+                        if (attempt != null) observedRequest.set(true)
                         response("text/html", HTML)
                     }
                 }
@@ -164,44 +169,53 @@ private class AndroidSession(
         finished = false
         committed = false
         visual = false
+        val attempt = ++quiesceAttempt
+        activeAttempt = attempt
         this.callback = callback
-        prior = WebViewCompat.getWebViewClient(webView)
+        val previousClient = WebViewCompat.getWebViewClient(webView)
+        prior = previousClient
         webView.webViewClient =
             object : WebViewClient() {
                 override fun shouldInterceptRequest(
                     v: WebView,
                     r: WebResourceRequest,
-                ): WebResourceResponse? =
-                    loader.shouldInterceptRequest(r.url) ?: prior?.shouldInterceptRequest(v, r)
+                ): WebResourceResponse? {
+                    if (activeAttempt != attempt) return previousClient?.shouldInterceptRequest(v, r)
+                    return loader.shouldInterceptRequest(r.url) ?: previousClient?.shouldInterceptRequest(v, r)
+                }
 
                 override fun onPageStarted(v: WebView, u: String, b: Bitmap?) {
-                    prior?.onPageStarted(v, u, b)
+                    if (activeAttempt != attempt) return
+                    previousClient?.onPageStarted(v, u, b)
                 }
 
                 override fun onPageFinished(v: WebView, u: String) {
-                    prior?.onPageFinished(v, u)
-                    if (u == URL) {
+                    if (activeAttempt != attempt) return
+                    previousClient?.onPageFinished(v, u)
+                    if (activeAttempt == attempt && u == URL) {
                         finished = true
-                        check()
+                        check(attempt)
                     }
                 }
 
                 override fun onPageCommitVisible(v: WebView, u: String) {
-                    prior?.onPageCommitVisible(v, u)
-                    if (u == URL) {
+                    if (activeAttempt != attempt) return
+                    previousClient?.onPageCommitVisible(v, u)
+                    if (activeAttempt == attempt && u == URL) {
                         committed = true
-                        check()
+                        check(attempt)
                     }
                 }
             }
         if (!persistenceReady) {
-            finish(SessionQuiesceResult.Failed("PERSISTENCE_NOT_READY"))
+            finish(attempt, SessionQuiesceResult.Failed("PERSISTENCE_NOT_READY"))
             return
         }
         webView.evaluateJavascript(
             "window.addEventListener('pagehide',()=>navigator.sendBeacon('$BEACON','x'),{once:true});true"
         ) {
-            if (it != "true") finish(SessionQuiesceResult.Failed("PAGE_NOT_READY"))
+            if (activeAttempt != attempt) return@evaluateJavascript
+            if (it != "true") finish(attempt, SessionQuiesceResult.Failed("PAGE_NOT_READY"))
             else {
                 trace("webview:navigate-neutral")
                 webView.loadUrl(URL)
@@ -209,28 +223,35 @@ private class AndroidSession(
         }
     }
 
-    private fun postCheck() = webView.post { check() }
+    private fun postCheck(attempt: Long) = webView.post {
+        if (activeAttempt == attempt) check(attempt)
+    }
 
-    private fun check() {
+    private fun check(attempt: Long) {
         ui()
+        if (activeAttempt != attempt) return
         if (!finished || !committed || !observedRequest.get() || !observedBeacon.get() || visual)
             return
         visual = true
         WebViewCompat.postVisualStateCallback(webView, 15L) {
+            if (activeAttempt != attempt) return@postVisualStateCallback
             webView.evaluateJavascript(
                 "location.href==='$URL'&&document.readyState==='complete'&&window.__AIQ_NEUTRAL_READY__===true"
             ) {
+                if (activeAttempt != attempt) return@evaluateJavascript
                 if (it == "true") {
                     cookieManager.flush()
-                    finish(SessionQuiesceResult.CommittedCrossOriginPlatformAsync)
-                } else finish(SessionQuiesceResult.Failed("NEUTRAL_NOT_READY"))
+                    finish(attempt, SessionQuiesceResult.CommittedCrossOriginPlatformAsync)
+                } else finish(attempt, SessionQuiesceResult.Failed("NEUTRAL_NOT_READY"))
             }
         }
     }
 
-    private fun finish(r: SessionQuiesceResult) {
+    private fun finish(attempt: Long, r: SessionQuiesceResult) {
         ui()
+        if (activeAttempt != attempt) return
         val cb = callback ?: return
+        activeAttempt = null
         callback = null
         prior?.let { webView.webViewClient = it }
         prior = null
@@ -244,8 +265,11 @@ private class AndroidSession(
     override fun cancelQuiesce() {
         ui()
         val cb = callback ?: return
+        activeAttempt = null
+        quiesceAttempt += 1
         callback = null
-        prior?.let { webView.webViewClient = it }
+        runCatching { webView.stopLoading() }
+        prior?.let { previous -> runCatching { webView.webViewClient = previous } }
         prior = null
         Handler(Looper.getMainLooper()).post {
             cb(SessionQuiesceResult.Failed("QUIESCE_ABORTED"))

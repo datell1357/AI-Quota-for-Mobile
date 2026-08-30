@@ -842,7 +842,7 @@ open class WebLoginActivity : Activity() {
             }
             return activeLoginBridgePageUrl(
                 logicalPageUrl = currentBridgePageUrl,
-                ownerPageUrl = ownerView.url,
+                ownerPageUrl = null,
                 localBridgeDocumentActive = activeClaudeBridgeView === ownerView,
             )
         }
