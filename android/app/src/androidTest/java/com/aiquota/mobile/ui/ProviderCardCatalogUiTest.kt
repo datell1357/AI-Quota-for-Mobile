@@ -134,7 +134,27 @@ class ProviderCardCatalogUiTest {
         assertMinimumTouchTarget(later, "Korean Later action")
 
         val laterBounds = Rect().also(later::getBoundsInScreen)
-        runShell("input swipe 540 ${laterBounds.top - 40} 540 600 500")
+        val initiallyVisibleRows = platformNodes().filter {
+            val bounds = Rect().also(it::getBoundsInScreen)
+            it.className?.toString() == RADIO_BUTTON_CLASS &&
+                bounds.top >= 0 &&
+                bounds.bottom > bounds.top &&
+                bounds.top < laterBounds.top
+        }
+        assertTrue("At least one provider row must be initially visible", initiallyVisibleRows.isNotEmpty())
+        initiallyVisibleRows.forEach { row ->
+            val bounds = Rect().also(row::getBoundsInScreen)
+            assertTrue(
+                "Initial provider row must not overlap the fixed footer: row=$bounds footer=$laterBounds",
+                bounds.bottom <= laterBounds.top,
+            )
+        }
+        repeat(20) {
+            platformNodes().firstOrNull { it.isScrollable }
+                ?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+            Thread.sleep(250)
+        }
         val copilotPredicate: (AccessibilityNodeInfo) -> Boolean = {
             val bounds = Rect().also(it::getBoundsInScreen)
             it.className?.toString() == RADIO_BUTTON_CLASS &&

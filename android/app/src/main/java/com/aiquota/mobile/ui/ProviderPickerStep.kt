@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -20,8 +21,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -49,6 +56,8 @@ internal fun ProviderPickerStep(
     contentSpacing: Int,
     modifier: Modifier = Modifier,
 ) {
+    val pickerListState = rememberLazyListState()
+    val compactHeight = LocalConfiguration.current.screenHeightDp < 400
     Column(
         modifier = modifier.padding(contentPadding.dp),
         verticalArrangement = Arrangement.spacedBy(contentSpacing.dp),
@@ -58,21 +67,39 @@ internal fun ProviderPickerStep(
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
         )
-        Text(
-            text = androidx.compose.ui.res.stringResource(R.string.provider_picker_body),
-            style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Paragraph),
-            color = AIQuotaTheme.colors.textMuted,
-        )
+        if (!compactHeight) {
+            Text(
+                text = androidx.compose.ui.res.stringResource(R.string.provider_picker_body),
+                style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Paragraph),
+                color = AIQuotaTheme.colors.textMuted,
+            )
+        }
         LazyColumn(
-            modifier = Modifier.fillMaxWidth().weight(1f, fill = false).selectableGroup(),
+            modifier = Modifier.fillMaxWidth().weight(1f).clipToBounds().selectableGroup(),
+            state = pickerListState,
             verticalArrangement = Arrangement.spacedBy(contentSpacing.dp),
         ) {
             items(ProviderId.defaultOrder(), key = ProviderId::storageId) { providerId ->
+                val fullyVisible by remember(providerId, pickerListState) {
+                    derivedStateOf {
+                        pickerListState.layoutInfo.visibleItemsInfo
+                            .firstOrNull { it.key == providerId.storageId }
+                            ?.let { item ->
+                                item.offset >= pickerListState.layoutInfo.viewportStartOffset &&
+                                    item.offset + item.size <= pickerListState.layoutInfo.viewportEndOffset
+                            } == true
+                    }
+                }
                 ProviderPickerRow(
                     providerId = providerId,
                     selected = state.selectedProvider == providerId,
                     enabled = providerAvailable(providerId, existingAccountIds),
                     onSelect = { state.select(providerId) },
+                    modifier = if (fullyVisible) {
+                        Modifier
+                    } else {
+                        Modifier.alpha(0f).clearAndSetSemantics { }
+                    },
                 )
             }
         }
@@ -114,6 +141,7 @@ private fun ProviderPickerRow(
     selected: Boolean,
     enabled: Boolean,
     onSelect: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val colors = AIQuotaTheme.colors
     val accessibilityLabel = if (enabled) {
@@ -122,7 +150,7 @@ private fun ProviderPickerRow(
         androidx.compose.ui.res.stringResource(R.string.provider_picker_disabled_description, providerId.displayName)
     }
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
             .clickable(enabled = enabled, role = Role.RadioButton, onClick = onSelect)
