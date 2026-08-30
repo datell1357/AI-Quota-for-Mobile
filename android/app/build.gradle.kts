@@ -94,7 +94,8 @@ android {
         targetSdk = 36
         versionCode = 43
         versionName = "1.1.6"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = project.findProperty("aiquota.testInstrumentationRunner")?.toString()
+            ?: "com.aiquota.mobile.ui.AIQuotaInstrumentationRunner"
         buildConfigField("String", "GOOGLE_ANDROID_OAUTH_CLIENT_ID", "\"$googleAndroidOAuthClientId\"")
         buildConfigField("String", "GOOGLE_ANDROID_OAUTH_REDIRECT_SCHEME", "\"$googleAndroidOAuthRedirectScheme\"")
         manifestPlaceholders["appAuthRedirectScheme"] = googleAndroidOAuthRedirectScheme

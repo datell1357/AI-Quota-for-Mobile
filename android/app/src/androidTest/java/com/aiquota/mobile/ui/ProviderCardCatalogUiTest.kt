@@ -149,12 +149,6 @@ class ProviderCardCatalogUiTest {
                 bounds.bottom <= laterBounds.top,
             )
         }
-        repeat(20) {
-            platformNodes().firstOrNull { it.isScrollable }
-                ?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
-            InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-            Thread.sleep(250)
-        }
         val copilotPredicate: (AccessibilityNodeInfo) -> Boolean = {
             val bounds = Rect().also(it::getBoundsInScreen)
             it.className?.toString() == RADIO_BUTTON_CLASS &&
@@ -163,7 +157,7 @@ class ProviderCardCatalogUiTest {
                 bounds.top >= 0 &&
                 bounds.bottom <= laterBounds.top
         }
-        val copilot = awaitPlatformNode(
+        val copilot = scrollPlatformNodeUntil(
             "The final Copilot row must remain reachable without overlapping the footer",
             copilotPredicate,
         )
@@ -385,6 +379,27 @@ class ProviderCardCatalogUiTest {
             up.recycle()
         }
         awaitPlatformNode("Accessibility tree did not settle after $actionName", settledPredicate)
+    }
+
+    private fun scrollPlatformNodeUntil(
+        failureMessage: String,
+        predicate: (AccessibilityNodeInfo) -> Boolean,
+    ): AccessibilityNodeInfo {
+        val deadline = SystemClock.uptimeMillis() + PLATFORM_TIMEOUT_MS
+        while (SystemClock.uptimeMillis() < deadline) {
+            runCatching {
+                uiAutomation.waitForIdle(PLATFORM_POLL_IDLE_TIMEOUT_MS, PLATFORM_POLL_TIMEOUT_MS)
+            }
+            platformRoots().forEach { it.refresh() }
+            platformNodes().firstOrNull(predicate)?.let { return it }
+
+            val scrollable = platformNodes().firstOrNull { it.isScrollable }
+            if (scrollable == null || !scrollable.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
+                break
+            }
+        }
+        fail("$failureMessage\n${dumpPlatformTree()}")
+        throw AssertionError(failureMessage)
     }
 
     private fun awaitPlatformNode(

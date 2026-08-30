@@ -1,7 +1,6 @@
 package com.aiquota.mobile.ui
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -35,7 +35,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.unit.dp
@@ -153,19 +155,27 @@ private fun ProviderPickerRow(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
-            .clickable(enabled = enabled, role = Role.RadioButton, onClick = onSelect)
+            .toggleable(
+                value = selected,
+                enabled = enabled,
+                role = Role.RadioButton,
+                onValueChange = { onSelect() },
+            )
             .clearAndSetSemantics {
                 role = Role.RadioButton
-                this.selected = selected
+                toggleableState = if (selected) ToggleableState.On else ToggleableState.Off
                 contentDescription = accessibilityLabel
-                if (enabled) onClick { onSelect(); true } else disabled()
+                if (!enabled) disabled()
+            }
+            .semantics {
+                if (enabled) onClick { onSelect(); true }
             },
         color = if (selected) colors.selectedNav else colors.content,
         border = BorderStroke(1.dp, if (selected) colors.primary else colors.borderSoft),
         shape = MaterialTheme.shapes.medium,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -183,7 +193,7 @@ private fun ProviderPickerRow(
             RadioButton(
                 selected = selected,
                 onClick = null,
-                modifier = Modifier.clearAndSetSemantics { },
+                modifier = Modifier.size(48.dp).clearAndSetSemantics { },
                 enabled = enabled,
                 colors = RadioButtonDefaults.colors(
                     selectedColor = colors.textPrimary,

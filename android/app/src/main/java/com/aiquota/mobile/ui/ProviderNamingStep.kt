@@ -15,6 +15,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -22,11 +23,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.setText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aiquota.mobile.R
@@ -45,10 +49,18 @@ internal fun ProviderNamingStep(
     val providerId = checkNotNull(state.selectedProvider)
     val errorMessage = state.errorResource?.let { stringResource(it) }
     val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val scrollState = rememberScrollState()
     val landscapeLayout =
         LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     LaunchedEffect(providerId) { focusRequester.requestFocus() }
+    DisposableEffect(Unit) {
+        onDispose {
+            keyboardController?.hide()
+            focusManager.clearFocus(force = true)
+        }
+    }
     val title: @Composable () -> Unit = {
         Text(
             text = stringResource(R.string.provider_naming_title, providerId.displayName),
@@ -66,6 +78,11 @@ internal fun ProviderNamingStep(
             modifier = modifier
                 .focusRequester(focusRequester)
                 .semantics {
+                    setText { value ->
+                        state.alias = value.text
+                        state.errorResource = null
+                        true
+                    }
                     if (errorMessage != null) error(errorMessage)
                 },
             label = { Text(stringResource(R.string.provider_naming_label)) },
@@ -118,6 +135,8 @@ internal fun ProviderNamingStep(
                 val submission = checkNotNull(state.submission())
                 when (val result = onSubmit(submission)) {
                     is ProviderCardAddResult.Added -> {
+                        focusManager.clearFocus(force = true)
+                        keyboardController?.hide()
                         state.close()
                         onAdded()
                     }

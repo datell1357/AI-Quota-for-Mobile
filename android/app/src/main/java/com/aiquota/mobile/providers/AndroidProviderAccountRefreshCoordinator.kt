@@ -8,26 +8,47 @@ import com.aiquota.mobile.accounts.AccountUsageRepository
 import com.aiquota.mobile.accounts.AttemptCommitResult
 import com.aiquota.mobile.accounts.AttemptLease
 import com.aiquota.mobile.accounts.AttemptNonce
+import com.aiquota.mobile.accounts.AndroidNamedProfileLifecycleStore
+import com.aiquota.mobile.accounts.AndroidXNamedProfilePlatform
 import com.aiquota.mobile.accounts.MainProcessAccountAuthority
+import com.aiquota.mobile.accounts.LeaseAcquireResult
+import com.aiquota.mobile.accounts.LeaseCloseResult
+import com.aiquota.mobile.accounts.NamedProfileLease
+import com.aiquota.mobile.accounts.NamedProfileLifecycleManager
+import com.aiquota.mobile.accounts.ProfileLifecycleState
 import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
 import com.aiquota.mobile.accounts.ProviderCardCompatibilityProjection
+import com.aiquota.mobile.accounts.requireAndroidWebView
+import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderUsageSnapshot
+import android.webkit.WebView
 import java.security.SecureRandom
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 
 internal class AndroidProviderAccountRefreshCoordinator(
     context: Context,
 ) : ExactServiceAttemptCoordinator, AutoCloseable {
     private val appContext = context.applicationContext
     private val authority = MainProcessAccountAuthority.open(appContext)
+    private val profileStore = AndroidNamedProfileLifecycleStore(appContext)
+    private val profiles = NamedProfileLifecycleManager(
+        profileStore,
+        AndroidXNamedProfilePlatform(context),
+    )
+    private val codexNativeContext = CodexNativeAuthContextStore(appContext)
+    private val claudeNativeContext = ClaudeNativeRequestContextStore(appContext)
+    private val exactOperationGate = ExactProviderCollectorOperationGate()
     private val scheduler = ProviderAccountRefreshScheduler(
         Authority(authority),
         Cursor(appContext),
         ProviderRefreshClock(System::currentTimeMillis),
         Nonces(),
-        clearExactResources = { binding ->
-            AndroidExactProviderCollectorResources.timeoutInsideMaintenance(binding)
-        },
     )
 
     fun trigger(
@@ -54,29 +75,43 @@ internal class AndroidProviderAccountRefreshCoordinator(
     override fun timeout(attempt: ProviderRefreshAttempt): ProviderRefreshAttempt? = scheduler.timeout(attempt)
 
     suspend fun cancelExact(accountId: ProviderAccountId): ProviderRefreshAttempt? {
-        val binding = AndroidExactProviderCollectorResources.currentBinding(accountId)
-            ?: return scheduler.cancelExact(accountId)
-        return AndroidExactProviderCollectorResources.manualCancel(binding) {
-            scheduler.cancelExact(accountId)
-        }
+        return scheduler.cancelExact(accountId)
     }
 
     suspend fun requireReauthentication(accountId: ProviderAccountId): ProviderRefreshAttempt? {
-        val binding = AndroidExactProviderCollectorResources.currentBinding(accountId)
-        if (binding == null) {
-            runCatching { authority.requireReauthentication(accountId) }
-            return scheduler.cancelExact(accountId)
-        }
-        return AndroidExactProviderCollectorResources.reauthentication(binding) {
-            runCatching { authority.requireReauthentication(accountId) }
-            scheduler.cancelExact(accountId)
+        return persistReauthenticationThenCancel(
+            persist = { authority.requireReauthentication(accountId) },
+            cancel = { scheduler.cancelExact(accountId) },
+        )
+    }
+
+    internal suspend fun <T> withExactCollectorOperation(
+        attempt: ProviderRefreshAttempt,
+        block: suspend (ExactProviderCollectorOperation<WebView, NamedProfileLease>) -> T,
+    ): T {
+        val binding = requireNotNull(attempt.job.binding)
+        return exactOperationGate.withOperation {
+            if (!withContext(Dispatchers.IO) { authority.currentBinding(binding.accountId) == binding }) {
+                throw ExactProviderCollectorUnavailable("STALE_BINDING")
+            }
+            val nativeHeaders = withContext(Dispatchers.IO) { exactNativeHeaders(binding) }
+            val lease = acquireExactLease(binding)
+            try {
+                block(
+                    ExactProviderCollectorOperation(
+                        binding = binding,
+                        webView = lease.requireAndroidWebView(),
+                        profileLease = lease,
+                        nativeHeaders = nativeHeaders,
+                    )
+                )
+            } finally {
+                closeExactLease(lease)
+            }
         }
     }
 
     fun reset() = scheduler.resetCycle()
-
-    fun resources(attempt: ProviderRefreshAttempt) =
-        attempt.job.binding?.let(AndroidExactProviderCollectorResources::read)
 
     override fun close() {
         scheduler.resetCycle()
@@ -89,7 +124,8 @@ internal class AndroidProviderAccountRefreshCoordinator(
     ): List<ProviderRefreshCard> = authority.refreshDemandRecords().map { row ->
         val account = row.card.displayRecord.account
         val binding = AccountLoginSessionBinding(account.id, account.generation, account.sessionRevision)
-        val exact = AndroidExactProviderCollectorResources.read(binding)
+        val exactAvailable = exactProfileAvailable(binding)
+        val nativeHeaders = if (exactAvailable) exactNativeHeaders(binding) else emptyMap()
         val demand = when {
             automatic -> row.demand.plus(AccountDemand.SCHEDULED)
             account.id == exactTarget -> row.demand.plus(AccountDemand.MANUAL)
@@ -101,10 +137,52 @@ internal class AndroidProviderAccountRefreshCoordinator(
             row.card.displayRecord.snapshot,
             demand,
             row.card.activeRank,
-            credentialBinding = if (!named || exact != null) binding else null,
-            profileLeaseBinding = exact?.binding,
-            nativeContextBinding = exact?.takeIf { it.nativeHeaders.isNotEmpty() }?.binding,
+            credentialBinding = if (!named || exactAvailable) binding else null,
+            profileLeaseBinding = binding.takeIf { exactAvailable },
+            nativeContextBinding = binding.takeIf { exactAvailable && nativeHeaders.isNotEmpty() },
         )
+    }
+
+    private fun exactProfileAvailable(binding: AccountLoginSessionBinding): Boolean =
+        profileStore.read(binding.accountId)?.state == ProfileLifecycleState.ACTIVE
+
+    private fun exactNativeHeaders(binding: AccountLoginSessionBinding): Map<String, Map<String, String>> =
+        when (binding.accountId.providerId) {
+            ProviderId.CODEX -> codexNativeContext.restoreExact(binding)
+            ProviderId.CLAUDE -> claudeNativeContext.restoreExact(binding)
+            else -> emptyMap()
+        }
+
+    private suspend fun acquireExactLease(binding: AccountLoginSessionBinding): NamedProfileLease =
+        withContext(Dispatchers.Main.immediate) {
+            when (val result = profiles.acquireTyped(binding.accountId)) {
+                is LeaseAcquireResult.Acquired -> result.lease
+                LeaseAcquireResult.ProfileUnavailable ->
+                    throw ExactProviderCollectorUnavailable("PROFILE_UNAVAILABLE")
+                LeaseAcquireResult.ReauthenticationRequired ->
+                    throw ExactProviderCollectorUnavailable("REAUTHENTICATION_REQUIRED")
+                is LeaseAcquireResult.Rejected ->
+                    throw ExactProviderCollectorUnavailable("PROFILE_REJECTED:${result.capability}")
+            }
+        }
+
+    private suspend fun closeExactLease(lease: NamedProfileLease) {
+        withContext(NonCancellable + Dispatchers.Main.immediate) {
+            suspendCancellableCoroutine<Unit> { continuation ->
+                lease.closeAcknowledged { result ->
+                    when (result) {
+                        LeaseCloseResult.Closed,
+                        LeaseCloseResult.AlreadyClosed -> continuation.resume(Unit)
+                        LeaseCloseResult.AlreadyClosing -> continuation.resumeWithException(
+                            ExactProviderCollectorUnavailable("PROFILE_ALREADY_CLOSING")
+                        )
+                        is LeaseCloseResult.RetryableFailure -> continuation.resumeWithException(
+                            ExactProviderCollectorUnavailable("PROFILE_CLOSE_FAILED:${result.reason}")
+                        )
+                    }
+                }
+            }
+        }
     }
 
     private class Authority(

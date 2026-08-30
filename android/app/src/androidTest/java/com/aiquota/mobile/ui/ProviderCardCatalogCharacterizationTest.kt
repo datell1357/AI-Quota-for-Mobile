@@ -352,7 +352,7 @@ class ProviderCardCatalogCharacterizationTest {
     )
 
     private companion object {
-        val CURRENT_HEADER_ACTION_SIZE = 40.dp
+        val CURRENT_HEADER_ACTION_SIZE = 48.dp
         const val GEOMETRY_TOLERANCE_DP = 0.75f
 
         const val ADD_PROVIDER = "Add provider"

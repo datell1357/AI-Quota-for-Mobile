@@ -91,7 +91,7 @@ add_provider() {
 }
 
 run_instrumentation() {
-  local name="$1" classes="$2" runner="${3:-androidx.test.runner.AndroidJUnitRunner}"
+  local name="$1" classes="$2" runner="${3:-com.aiquota.mobile.ui.AIQuotaInstrumentationRunner}"
   log "RUN instrumentation $name"
   set +e
   adbq shell am instrument -w -r -e class "$classes" "$PKG.test/$runner" > "$OUT_DIR/receipts/$name.txt" 2>&1

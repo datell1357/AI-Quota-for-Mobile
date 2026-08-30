@@ -47,17 +47,17 @@ All paths are relative to the UI worktree unless prefixed with `../`.
 
 | Scope | Evidence |
 | --- | --- |
-| Tasks 1-8, account worktree freeze through lifecycle hardening | `../.omo/evidence/claude-codex-multi-account-profiles/task-1` through `task-8` |
+| Tasks 1-8, account worktree freeze through lifecycle hardening | [`../.omo/evidence/claude-codex-multi-account-profiles/task-1`](../../.omo/evidence/claude-codex-multi-account-profiles/task-1) through [`task-8`](../../.omo/evidence/claude-codex-multi-account-profiles/task-8) |
 | Tasks 9-17, account identity/migration/routing runtime | `../.omo/evidence/ulw/01a04e98-a025-7461-bb95-c0db6c728676/G002/a1` and `../.omo/evidence/prometheus-todo-13-provider-account-routing` |
 | Task 18 onboarding | commits `4c53a544`, `d9d7378f`; catalog instrumentation is included in Task 23 evidence |
 | Task 19 Add/naming | `.omo/evidence/task-19-add-provider-correction-20260829` |
-| Task 20 exact Remove | `.omo/evidence/task-20-remove-provider-20260830` |
+| Task 20 exact Remove | [`.omo/evidence/task-20-remove-provider-20260830`](../.omo/evidence/task-20-remove-provider-20260830); RED: [`.omo/evidence/task-19-add-provider-correction-20260829/final/task20-boundary-red.log`](../.omo/evidence/task-19-add-provider-correction-20260829/final/task20-boundary-red.log); GREEN: [`.omo/evidence/task-25-final-gates/emulator-qualification-current/actions.log`](../.omo/evidence/task-25-final-gates/emulator-qualification-current/actions.log), [`verdict.txt`](../.omo/evidence/task-25-final-gates/emulator-qualification-current/verdict.txt); cleanup: [`cleanup.txt`](../.omo/evidence/task-25-final-gates/emulator-qualification-current/cleanup.txt) |
 | Task 21 exact dashboard cards | `../.omo/evidence/task-21-dashboard-cards` and commit `b1714257` |
 | Task 22 settings/detail/widget/notification surfaces | `.omo/evidence/task-22-adjacent-surfaces` and `.omo/evidence/ulw/01a04e98-a025-7461-bb95-c0db6c728676/G003/a1` |
 | Task 23 localization/accessibility/responsive visual QA | `.omo/evidence/task-23-accessibility-visual` |
 | Task 24 clean-install/restart/delete emulator qualification | `.omo/evidence/task-24-emulator-qualification/run-20260830-final3` |
 | Task 25 mutation, build, 1,000-row, platform, and final emulator gates | `.omo/evidence/task-25-final-gates` |
-| Task 26 handoff verification | `.omo/evidence/task-26-handoff.txt` |
+| Task 26 handoff verification | [`.omo/evidence/task-26-handoff.txt`](../.omo/evidence/task-26-handoff.txt); zero-missing parser receipt: [`.omo/evidence/task-26-handoff.md`](../.omo/evidence/task-26-handoff.md) |
 | F1-F4 final reviews | `.omo/evidence/final-F1-plan-compliance.md`, `.omo/evidence/final-F2-code-quality.md`, `.omo/evidence/final-F3-real-qa`, `.omo/evidence/final-F4-scope-fidelity.md` |
 
 ## Known limits and local prerequisites

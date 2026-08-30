@@ -1,7 +1,6 @@
 package com.aiquota.mobile.accounts
 
 import android.content.Context
-import com.aiquota.mobile.providers.AndroidExactProviderCollectorResources
 
 class ProviderCardDeletionComposition private constructor(
     private val authority: MainProcessAccountAuthority,
@@ -9,40 +8,13 @@ class ProviderCardDeletionComposition private constructor(
     private val usageRepository: AccountUsageRepository,
     private val coordinator: ProviderCardDeletionCoordinator,
 ) : ProviderCardDeletionApi, AutoCloseable {
-    override fun delete(accountId: ProviderAccountId): ProviderCardDeletionResult {
-        val binding = AndroidExactProviderCollectorResources.currentBinding(accountId)
-        if (binding == null) {
-            return coordinator.delete(accountId)
-        }
-        return deleteAfterBegin(binding, authority.beginProviderCardDeletion(accountId))
-    }
+    override fun delete(accountId: ProviderAccountId): ProviderCardDeletionResult =
+        coordinator.delete(accountId)
 
     override fun delete(
         accountId: ProviderAccountId,
         expectedVersion: DisplayVersion,
-    ): ProviderCardDeletionResult {
-        val binding = AndroidExactProviderCollectorResources.currentBinding(accountId)
-        if (binding == null) {
-            return coordinator.delete(accountId, expectedVersion)
-        }
-        return deleteAfterBegin(binding, authority.beginProviderCardDeletion(accountId, expectedVersion))
-    }
-
-    private fun deleteAfterBegin(
-        binding: AccountLoginSessionBinding,
-        begin: BeginProviderCardDeletionResult,
-    ): ProviderCardDeletionResult = when (begin) {
-        BeginProviderCardDeletionResult.Missing ->
-            ProviderCardDeletionResult.Rejected(ProviderCardDeletionRejection.ACCOUNT_MISSING)
-        BeginProviderCardDeletionResult.Stale ->
-            ProviderCardDeletionResult.Rejected(ProviderCardDeletionRejection.VERSION_MISMATCH)
-        is BeginProviderCardDeletionResult.Ready -> {
-            AndroidExactProviderCollectorResources.scheduleDeletion(binding) {
-                coordinator.continueAfterBegin(begin.record)
-            }
-            ProviderCardDeletionResult.InProgress(begin.record)
-        }
-    }
+    ): ProviderCardDeletionResult = coordinator.delete(accountId, expectedVersion)
 
     fun resumePending(): List<ProviderCardDeletionResult> = coordinator.resumePending()
 

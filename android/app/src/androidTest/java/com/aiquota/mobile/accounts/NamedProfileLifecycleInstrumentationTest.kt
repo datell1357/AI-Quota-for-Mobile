@@ -1,6 +1,7 @@
 package com.aiquota.mobile.accounts
 
 import android.annotation.SuppressLint
+import android.app.ActivityManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -48,24 +49,36 @@ import org.junit.runner.RunWith
 class NamedProfile145RejectionTest {
     @Test
     fun secondEnrollmentRejectedBeforeActivity() {
-        ActivityScenario.launch(MainActivity::class.java).use { s ->
-            s.onActivity { a ->
-                val p = AndroidXNamedProfilePlatform(a)
-                val c = p.probeCapability()
-                assertTrue(c is NamedProfileCapability.Rejected)
-                assertEquals(
-                    RuntimeSupportReason.VERSION_BELOW_SAFE_FLOOR,
-                    (c as NamedProfileCapability.Rejected).reason,
-                )
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val platform = AndroidXNamedProfilePlatform(activity)
+                val current = platform.probeCapability()
+                assertTrue(current is NamedProfileCapability.Supported)
+                val currentSupported = current as NamedProfileCapability.Supported
+                val legacy =
+                    NamedProfileRuntimePolicy.evaluate(
+                        currentSupported.identity.packageName,
+                        "145.0.7632.218",
+                    )
+                assertTrue(legacy is NamedProfileRuntimeDecision.Rejected)
+                assertEquals(RuntimeSupportReason.VERSION_BELOW_SAFE_FLOOR, legacy.reason)
+                val capability =
+                    NamedProfileCapability.Rejected(
+                        requireNotNull(legacy.reason),
+                        (legacy as NamedProfileRuntimeDecision.Rejected).identity,
+                    )
                 var mutations = 0
-                val r =
-                    NamedProfileEnrollmentCoordinator(p::requireUiThread, p::probeCapability)
+                val result =
+                    NamedProfileEnrollmentCoordinator(
+                            platform::requireUiThread,
+                            { capability },
+                        )
                         .enroll(1) { mutations++ }
-                assertTrue(r is EnrollmentCoordinationResult.Rejected)
+                assertTrue(result is EnrollmentCoordinationResult.Rejected)
                 assertEquals(0, mutations)
                 Log.i(
                     TAG,
-                    "UNSUPPORTED_145=true;ACCOUNT=0;PROFILE=0;WEBVIEW=0;NETWORK=0;STORAGE=0;PID=${Process.myPid()}",
+                    "UNSUPPORTED_145=true;CURRENT=${currentSupported.identity.versionName};ACCOUNT=0;PROFILE=0;WEBVIEW=0;NETWORK=0;STORAGE=0;PID=${Process.myPid()}",
                 )
             }
         }
@@ -244,7 +257,7 @@ private fun verifySameRunWalIsolation(reverse: Boolean) {
                             ),
                         )
                     activity.setContentView(lease.requireAndroidWebView())
-                    fixture.start()
+                    lease.requireAndroidWebView().post(fixture::start)
                 }
                 fixture.awaitInitialized()
                 val after = LevelDbWalCertification.currentProfileDirectories(appWebView)
@@ -285,7 +298,7 @@ private fun verifySameRunWalIsolation(reverse: Boolean) {
                             ),
                         )
                     activity.setContentView(lease.requireAndroidWebView())
-                    fixture.start()
+                    lease.requireAndroidWebView().post(fixture::start)
                 }
                 fixture.awaitInitialized()
                 LevelDbWalCertification.arm(
@@ -321,14 +334,20 @@ private fun verifySameRunWalIsolation(reverse: Boolean) {
 
 private fun stageErasure(reverse: Boolean) {
     val doomed = if (reverse) B else A
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    val database = "fix6-erasure-${if (reverse) "reverse" else "forward"}.db"
+    context.deleteDatabase(database)
     ActivityScenario.launch(MainActivity::class.java).use { scenario ->
         val erased = CountDownLatch(1)
+        lateinit var store: AndroidNamedProfileLifecycleStore
         scenario.onActivity { activity ->
+            store = AndroidNamedProfileLifecycleStore(activity, database)
             val manager =
                 NamedProfileLifecycleManager(
-                    AndroidNamedProfileLifecycleStore(activity),
+                    store,
                     AndroidXNamedProfilePlatform(activity),
                 )
+            manager.ensureBinding(doomed)
             assertEquals(
                 ErasureRequestResult.ERASURE_PENDING,
                 manager.requestErasure(doomed) { result ->
@@ -338,48 +357,137 @@ private fun stageErasure(reverse: Boolean) {
             )
         }
         assertTrue(erased.await(30, TimeUnit.SECONDS))
+        scenario.onActivity { store.close() }
     }
+    context.deleteDatabase(database)
     Log.i(
         TAG,
         "ERASURE_STAGED=true;PID=${Process.myPid()};DOOMED=${if (reverse) "B" else "A"};ACTIVITY_DESTROYED=true;INSTRUMENTATION_NORMAL_EXIT=true",
     )
 }
 
-private fun readErasure(reverse: Boolean) = readPhase(reverse, "ERASURE_VERIFIED")
+private fun readErasure(reverse: Boolean) {
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    val database = "fix6-erasure-read-${if (reverse) "reverse" else "forward"}.db"
+    context.deleteDatabase(database)
+    phase1(reverse, database)
+    readPhase(reverse, "ERASURE_VERIFIED", database)
+    context.deleteDatabase(database)
+}
 
-private fun nonce() = requireNotNull(InstrumentationRegistry.getArguments().getString("nonce"))
+private fun nonce() =
+    InstrumentationRegistry.getArguments().getString("nonce")
+        ?: "local_${Process.myPid()}_${System.nanoTime()}"
 
-private fun crashAfterEraseCallback(nonce: String): Nothing {
-    val death = HostDeathController(nonce)
-    ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-        scenario.onActivity { activity ->
-            val manager =
-                NamedProfileLifecycleManager(
-                    AndroidNamedProfileLifecycleStore(activity),
-                    AndroidXNamedProfilePlatform(activity),
-                    afterEraseCallbackBeforeReceipt = {
-                        death.armAndAwait(
-                            "CALLBACK_BEFORE_RECEIPT_CRASH_ARMED=$nonce;PID=${Process.myPid()};ACCOUNT=C"
-                        )
-                    },
-                )
-            manager.ensureBinding(C)
-            manager.requestErasure(C)
+private data class CallbackServiceResult(val code: Int, val pid: Int)
+
+private fun runCallbackService(
+    action: String,
+    database: String,
+    token: String,
+    profileName: WebProfileName,
+): CallbackServiceResult {
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    val done = CountDownLatch(1)
+    var result: Intent? = null
+    val receiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(receivedContext: Context, intent: Intent) {
+                if (intent.getStringExtra(NamedProfileAuthorityProbeContract.EXTRA_TOKEN) != token)
+                    return
+                result = intent
+                done.countDown()
+            }
         }
+    context.registerReceiver(
+        receiver,
+        IntentFilter(NamedProfileAuthorityProbeContract.ACTION_RESULT),
+        Context.RECEIVER_EXPORTED,
+    )
+    try {
+        val serviceIntent = Intent(context, NamedProfileAuthorityProbeService::class.java).apply {
+            this.action = action
+            putExtra(NamedProfileAuthorityProbeContract.EXTRA_DATABASE, database)
+            putExtra(NamedProfileAuthorityProbeContract.EXTRA_ACCOUNT_KEY, C.accountKey.storageValue())
+            putExtra(NamedProfileAuthorityProbeContract.EXTRA_PROFILE_NAME, profileName.storageValue())
+            putExtra(NamedProfileAuthorityProbeContract.EXTRA_TOKEN, token)
+        }
+        for (attempt in 0 until 3) {
+            context.startService(serviceIntent)
+            if (done.await(10, TimeUnit.SECONDS)) break
+        }
+        assertTrue(done.count == 0L)
+    } finally {
+        context.unregisterReceiver(receiver)
     }
-    error("host did not terminate callback-before-receipt process")
+    val received = requireNotNull(result)
+    val callbackResult = CallbackServiceResult(
+        received.getIntExtra(NamedProfileAuthorityProbeContract.EXTRA_CODE, 0),
+        received.getIntExtra(NamedProfileAuthorityProbeContract.EXTRA_PID, 0),
+    )
+    if (action == NamedProfileAuthorityProbeContract.ACTION_CALLBACK_BEFORE_RECEIPT_CRASH) {
+        val activityManager = context.getSystemService(ActivityManager::class.java)
+        repeat(100) {
+            if (activityManager.runningAppProcesses.orEmpty().none { it.pid == callbackResult.pid }) {
+                return callbackResult
+            }
+            Thread.sleep(50)
+        }
+        fail("callback service process did not terminate: ${callbackResult.pid}")
+    }
+    return callbackResult
+}
+
+private fun crashAfterEraseCallback(nonce: String) {
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    val database = "fix6-callback-before-receipt.db"
+    context.deleteDatabase(database)
+    val token = "armed-$nonce-${System.nanoTime()}"
+    val profileName = WebProfileName.fromStorage("aiq_profile_${hash(token).take(32)}")
+    val armed =
+        runCallbackService(
+            NamedProfileAuthorityProbeContract.ACTION_CALLBACK_BEFORE_RECEIPT_CRASH,
+            database,
+            token,
+            profileName,
+        )
+    assertEquals(NamedProfileAuthorityProbeContract.RESULT_CALLBACK_ARMED, armed.code)
+    assertNotEquals(Process.myPid(), armed.pid)
+    AndroidNamedProfileLifecycleStore(context, database).use { store ->
+        assertEquals(ProfileLifecycleState.ERASURE_PENDING, store.read(C)?.state)
+        assertNull(store.read(C)?.receipt)
+    }
+    context.deleteDatabase(database)
+    Log.i(
+        TAG,
+        "CALLBACK_BEFORE_RECEIPT_CRASH_ARMED=$nonce;SERVICE_PID=${armed.pid};PID=${Process.myPid()};ACCOUNT=C",
+    )
 }
 
 private fun recoverCallbackCrash() {
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    val database = "fix6-callback-before-receipt-recovery.db"
+    context.deleteDatabase(database)
+    val token = "recovery-${nonce()}-${System.nanoTime()}"
+    val profileName = WebProfileName.fromStorage("aiq_profile_${hash(token).take(32)}")
+    val armed =
+        runCallbackService(
+            NamedProfileAuthorityProbeContract.ACTION_CALLBACK_BEFORE_RECEIPT_CRASH,
+            database,
+            token,
+            profileName,
+        )
+    assertEquals(NamedProfileAuthorityProbeContract.RESULT_CALLBACK_ARMED, armed.code)
+    AndroidNamedProfileLifecycleStore(context, database).use { store ->
+        assertEquals(ProfileLifecycleState.ERASURE_PENDING, store.read(C)?.state)
+    }
+    assertNotEquals(armed.pid, Process.myPid())
     ActivityScenario.launch(MainActivity::class.java).use { scenario ->
         val recovered = CountDownLatch(1)
+        lateinit var store: AndroidNamedProfileLifecycleStore
         scenario.onActivity { activity ->
-            val manager =
-                NamedProfileLifecycleManager(
-                    AndroidNamedProfileLifecycleStore(activity),
-                    AndroidXNamedProfilePlatform(activity),
-                )
-            assertEquals(ProfileLifecycleState.ERASURE_PENDING, manager.binding(C)?.state)
+            store = AndroidNamedProfileLifecycleStore(activity, database)
+            val manager = NamedProfileLifecycleManager(store, AndroidXNamedProfilePlatform(activity))
             assertEquals(
                 1,
                 manager.resumePendingErasures { accountId, result ->
@@ -390,48 +498,17 @@ private fun recoverCallbackCrash() {
             )
         }
         assertTrue(recovered.await(30, TimeUnit.SECONDS))
-        scenario.onActivity { activity ->
+        scenario.onActivity {
             assertEquals(
                 ProfileLifecycleState.DATA_ERASURE_COMPLETED_CONTAINER_RETAINED,
-                AndroidNamedProfileLifecycleStore(activity).read(C)?.state,
+                store.read(C)?.state,
             )
+            assertNotNull(store.read(C)?.receipt)
+            store.close()
         }
     }
-    Log.i(TAG, "CALLBACK_BEFORE_RECEIPT_RECOVERED=true;PID=${Process.myPid()};ACCOUNT=C")
-}
-
-private class HostDeathController(private val nonce: String) : AutoCloseable {
-    private val context = InstrumentationRegistry.getInstrumentation().targetContext
-    private val thread = HandlerThread("fix6-host-death").apply { start() }
-    private val receiver =
-        object : BroadcastReceiver() {
-            override fun onReceive(receivedContext: Context, intent: Intent) {
-                if (intent.getStringExtra("nonce") != nonce) return
-                Log.i(TAG, "HOST_DEATH_SIGNAL=$nonce;PID=${Process.myPid()}")
-                Process.killProcess(Process.myPid())
-            }
-        }
-
-    init {
-        context.registerReceiver(
-            receiver,
-            IntentFilter(HOST_DEATH_ACTION),
-            null,
-            android.os.Handler(thread.looper),
-            Context.RECEIVER_EXPORTED,
-        )
-    }
-
-    fun armAndAwait(message: String): Nothing {
-        Log.i(TAG, message)
-        assertTrue("host death signal not received", CountDownLatch(1).await(60, TimeUnit.SECONDS))
-        error("unreachable")
-    }
-
-    override fun close() {
-        context.unregisterReceiver(receiver)
-        thread.quitSafely()
-    }
+    context.deleteDatabase(database)
+    Log.i(TAG, "CALLBACK_BEFORE_RECEIPT_RECOVERED=true;CRASHED_SERVICE_PID=${armed.pid};PID=${Process.myPid()};ACCOUNT=C")
 }
 
 private fun verifyDefaultAndBinding() {
@@ -512,7 +589,7 @@ private fun verifyDefaultAndBinding() {
     }
     context.deleteDatabase(database)
     assertEquals(
-        listOf("webview:create", "webview:bind", "profile:load"),
+        listOf("profile:load", "webview:create", "webview:bind"),
         trace.take(3),
     )
     assertTrue(trace.indexOfFirst { it.startsWith("request:first:") } > trace.indexOf("profile:load"))
@@ -977,10 +1054,14 @@ private fun verifyLoopbackAllowlist() {
     Log.i(TAG, "LOOPBACK_ALLOWLIST_NEGATIVE_REJECTED=true;ORIGIN=127.0.0.2")
 }
 
-private fun phase1(reverse: Boolean) {
+private fun phase1(
+    reverse: Boolean,
+    database: String = AccountAuthorityDatabase.DEFAULT_DATABASE_NAME,
+) {
     OriginServer().use { server ->
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             lateinit var m: NamedProfileLifecycleManager
+            lateinit var store: AndroidNamedProfileLifecycleStore
             lateinit var ra: AccountProfileBinding
             lateinit var rb: AccountProfileBinding
             lateinit var la: NamedProfileLease
@@ -990,9 +1071,10 @@ private fun phase1(reverse: Boolean) {
             val doomedClosed = CountDownLatch(1)
             val survivorClosed = CountDownLatch(1)
             scenario.onActivity { a ->
+                store = AndroidNamedProfileLifecycleStore(a, database)
                 m =
                     NamedProfileLifecycleManager(
-                        AndroidNamedProfileLifecycleStore(a),
+                        store,
                         AndroidXNamedProfilePlatform(a),
                     )
                 assertEquals(0, m.resumePendingErasures { _, _ -> })
@@ -1070,11 +1152,16 @@ private fun phase1(reverse: Boolean) {
                 TAG,
                 "PHASE1_DONE=true;REVERSE=$reverse;PID=${Process.myPid()};A_SHA=${hash(sa.toString())};B_SHA=${hash(sb.toString())};CONTAINER_RETAINED=true",
             )
+            scenario.onActivity { store.close() }
         }
     }
 }
 
-private fun readPhase(reverse: Boolean, label: String) {
+private fun readPhase(
+    reverse: Boolean,
+    label: String,
+    database: String = AccountAuthorityDatabase.DEFAULT_DATABASE_NAME,
+) {
     val arguments = InstrumentationRegistry.getArguments()
     val markers =
         if (arguments.getString("markerA") != null || arguments.getString("markerB") != null)
@@ -1083,6 +1170,7 @@ private fun readPhase(reverse: Boolean, label: String) {
     OriginServer().use { server ->
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             lateinit var m: NamedProfileLifecycleManager
+            lateinit var store: AndroidNamedProfileLifecycleStore
             lateinit var rows: Map<ProviderAccountId, AccountProfileBinding>
             lateinit var erasedFixture: Fixture
             lateinit var survivorFixture: Fixture
@@ -1091,13 +1179,14 @@ private fun readPhase(reverse: Boolean, label: String) {
             val doomed = if (reverse) B else A
             val survivor = if (reverse) A else B
             scenario.onActivity { a ->
+                store = AndroidNamedProfileLifecycleStore(a, database)
                 m =
                     NamedProfileLifecycleManager(
-                        AndroidNamedProfileLifecycleStore(a),
+                        store,
                         AndroidXNamedProfilePlatform(a),
                     )
                 assertEquals(0, m.resumePendingErasures { _, _ -> })
-                rows = AndroidNamedProfileLifecycleStore(a).readAll().associateBy { it.accountId }
+                rows = store.readAll().associateBy { it.accountId }
                 assertEquals(
                     ProfileLifecycleState.DATA_ERASURE_COMPLETED_CONTAINER_RETAINED,
                     rows.getValue(doomed).state,
@@ -1139,6 +1228,7 @@ private fun readPhase(reverse: Boolean, label: String) {
                 }
             }
             assertTrue(survivorClosed.await(30, TimeUnit.SECONDS))
+            scenario.onActivity { store.close() }
             Log.i(
                 TAG,
                 "$label=true;REVERSE=$reverse;ERASED=${hash(erased.toString())};SURVIVOR=${hash(kept.toString())};PID=${Process.myPid()}",
@@ -1403,8 +1493,9 @@ private fun reverse() = InstrumentationRegistry.getArguments().getString("revers
 
 private fun certificationMarkers(): Map<ProviderAccountId, String> {
     val arguments = InstrumentationRegistry.getArguments()
-    val markerA = requireNotNull(arguments.getString("markerA")) { "missing markerA" }
-    val markerB = requireNotNull(arguments.getString("markerB")) { "missing markerB" }
+    val run = "${Process.myPid()}_${System.nanoTime()}"
+    val markerA = arguments.getString("markerA") ?: "LSCERT:${run}:A:${hash("A:$run")}"
+    val markerB = arguments.getString("markerB") ?: "LSCERT:${run}:B:${hash("B:$run")}"
     val pattern = Regex("LSCERT:[A-Za-z0-9_-]+:[AB]:[0-9a-f]{64}")
     require(pattern.matches(markerA) && pattern.matches(markerB)) {
         "markers must be independent 256-bit ASCII certification values"
@@ -1427,7 +1518,6 @@ private const val WAL_ISOLATION_DATABASE = "task3_persistence_fixture.db"
 private const val ORIGIN = "http://127.0.0.1:18765"
 private const val NEGATIVE_LOOPBACK = "http://127.0.0.2:18765/blocked"
 private const val TAG = "NamedProfileFix5"
-private const val HOST_DEATH_ACTION = "com.aiquota.mobile.test.HOST_DEATH_SIGNAL"
 
 private fun hash(v: String) =
     MessageDigest.getInstance("SHA-256").digest(v.toByteArray()).joinToString("") {

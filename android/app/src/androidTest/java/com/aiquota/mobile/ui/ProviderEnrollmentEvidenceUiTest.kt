@@ -21,6 +21,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aiquota.mobile.R
@@ -54,7 +55,7 @@ class ProviderEnrollmentEvidenceUiTest {
 
         // Then
         composeRule.onAllNodesWithText("Codex")[0].assertIsDisplayed()
-        composeRule.onNodeWithText("Codex 2").assertIsDisplayed()
+        composeRule.onNodeWithText("Codex 2").performScrollTo().assertIsDisplayed()
         val receipt = composeRule.activity.catalogReceipt()
         val codexRows = receipt.lineSequence().filter { line -> line.startsWith("codex:acct_") }.toList()
         assertEquals("Exactly two Codex ProviderAccountIds must exist", 2, codexRows.size)

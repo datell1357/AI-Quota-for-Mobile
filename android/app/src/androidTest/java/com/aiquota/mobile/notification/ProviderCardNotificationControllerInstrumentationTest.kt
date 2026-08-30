@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import android.os.SystemClock
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aiquota.mobile.accounts.AccountGeneration
@@ -60,7 +61,8 @@ class ProviderCardNotificationControllerInstrumentationTest {
         val identityB = requireNotNull(
             ProviderUsageThresholdNotificationController.notifyLowUsage(context, threshold(b, "Work")),
         )
-        val before = children().associate { it.tag to it.notification.extras.getString("android.title") }
+        val before = awaitChildren { it.size == 2 }
+            .associate { it.tag to it.notification.extras.getString("android.title") }
 
         // When
         val renamedCount = ProviderNotificationAliasUpdater.update(context, card(b, "Personal"))
@@ -68,9 +70,14 @@ class ProviderCardNotificationControllerInstrumentationTest {
             ProviderNotificationKind.THRESHOLD,
             ProviderAccountLineKey(b, "primary:window"),
         )
-        val afterRename = children().associate { it.tag to it.notification.extras.getString("android.title") }
+        val afterRename = awaitChildren { notifications ->
+            notifications.any { notification ->
+                notification.tag == identityB.tag &&
+                    notification.notification.extras.getString("android.title").orEmpty().contains("Personal")
+            }
+        }.associate { it.tag to it.notification.extras.getString("android.title") }
         assertTrue(ProviderNotificationArtifacts.eraseExact(context, b))
-        val afterDelete = children()
+        val afterDelete = awaitChildren { notifications -> notifications.none { it.tag == identityB.tag } }
 
         // Then
         assertNotEquals(identityA.notificationId, identityB.notificationId)
@@ -100,6 +107,17 @@ class ProviderCardNotificationControllerInstrumentationTest {
 
     private fun children() = manager.activeNotifications.filterNot {
         it.tag == "provider_usage_threshold_alerts_summary" || it.tag == "provider_reset_alerts_summary"
+    }
+
+    private fun awaitChildren(
+        condition: (List<android.service.notification.StatusBarNotification>) -> Boolean,
+    ): List<android.service.notification.StatusBarNotification> {
+        repeat(50) {
+            val current = children()
+            if (condition(current)) return current
+            SystemClock.sleep(100)
+        }
+        return children()
     }
 
     private fun card(id: ProviderAccountId, alias: String) = ProviderCardNotificationSnapshot(
@@ -132,6 +150,14 @@ class ProviderCardNotificationControllerInstrumentationTest {
 
     private fun clear() {
         manager.cancelAll()
+        var attempts = 0
+        while (manager.activeNotifications.isNotEmpty() && attempts < 50) {
+            SystemClock.sleep(100)
+            attempts++
+        }
+        InstrumentationRegistry.getInstrumentation().uiAutomation
+            .executeShellCommand("cmd statusbar collapse")
+            .close()
         context.getSharedPreferences("ai_quota_provider_notification_identity", Context.MODE_PRIVATE)
             .edit().clear().commit()
     }

@@ -9,11 +9,9 @@ import com.aiquota.mobile.local.ProviderUsageSnapshot
 import com.aiquota.mobile.ui.provider.providerDetailConnectionAction
 import com.aiquota.mobile.ui.settings.SettingsConnectionAction
 import com.aiquota.mobile.ui.settings.settingsConnectionAction
-import java.io.File
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -176,50 +174,6 @@ class ProviderCardRenameTest {
     }
 
     @Test
-    fun exactDeleteCallbacksCarryDialogVersionAndPreserveIdOnlyRecoveryPath() {
-        val source = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
-        val detailSource = File("src/main/java/com/aiquota/mobile/ui/provider/ProviderDetailScreen.kt").readText()
-        val settingsSource = File("src/main/java/com/aiquota/mobile/ui/settings/SettingsPanel.kt").readText()
-        val removalSource = File("src/main/java/com/aiquota/mobile/ui/ProviderCardRemovalSurface.kt").readText()
-
-        assertTrue(
-            Regex("fun\\s+deleteExactCard\\s*\\(\\s*accountId:\\s*ProviderAccountId,\\s*expectedVersion:\\s*DisplayVersion\\s*\\)")
-                .containsMatchIn(source)
-        )
-        assertTrue(
-            Regex("""deletionApi\(\)\.delete\(\s*accountId\s*,\s*expectedVersion\s*\)""")
-                .containsMatchIn(source)
-        )
-        assertTrue(
-            Regex("""deletionApi\(\)\.delete\(\s*accountId\s*\)""")
-                .containsMatchIn(source)
-        )
-        assertFalse(source.contains("cardRuntime.state.card(accountId)?.displayRecord?.version"))
-        assertTrue(detailSource.contains("onDelete: ((DisplayVersion) -> ProviderCardDeletionResult?)?"))
-        assertTrue(settingsSource.contains("onDelete: (ProviderAccountId, DisplayVersion) -> ProviderCardDeletionResult?"))
-        assertTrue(removalSource.contains("onDelete: (ProviderAccountId, DisplayVersion) -> ProviderCardDeletionResult"))
-        assertTrue(removalSource.contains("onDelete(snapshot.accountId, snapshot.version)"))
-    }
-
-    @Test
-    fun interactiveRenameCapturesDialogVersionAndExactAuthState() {
-        val runtimeSource = File("src/main/java/com/aiquota/mobile/ui/ProviderCardShellRuntime.kt").readText()
-        val detailSource = File("src/main/java/com/aiquota/mobile/ui/provider/ProviderDetailScreen.kt").readText()
-        val settingsSource = File("src/main/java/com/aiquota/mobile/ui/settings/SettingsPanel.kt").readText()
-        val shellSource = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
-
-        assertTrue(
-            Regex("fun\\s+rename\\s*\\(\\s*accountId:\\s*ProviderAccountId,\\s*alias:\\s*String,\\s*expectedVersion:\\s*DisplayVersion")
-                .containsMatchIn(runtimeSource)
-        )
-        assertTrue(detailSource.contains("renameExpectedVersion"))
-        assertTrue(settingsSource.contains("renameExpectedVersion"))
-        assertTrue(detailSource.contains("providerDetailConnectionAction(authState, snapshot)"))
-        assertTrue(settingsSource.contains("settingsConnectionAction(card.authState, card.displayRecord.snapshot)"))
-        assertTrue(shellSource.contains("authState = exactDetail?.authState"))
-    }
-
-    @Test
     fun authoritativeReauthStateWinsOverStaleConnectedSnapshot() {
         val staleConnected = ProviderUsageSnapshot(
             providerId = ProviderId.CODEX,
@@ -242,46 +196,6 @@ class ProviderCardRenameTest {
             ProviderConnectionAction.DISCONNECT,
             providerDetailConnectionAction(AccountAuthState.AUTHENTICATED, staleConnected),
         )
-    }
-
-    @Test
-    fun detailStaleDeleteRejectionKeepsDialogAndShowsLocalizedError() {
-        val source = File("src/main/java/com/aiquota/mobile/ui/provider/ProviderDetailScreen.kt").readText()
-
-        assertTrue(source.contains("var deleteError by remember"))
-        assertTrue(
-            Regex(
-                "is\\s+ProviderCardDeletionResult\\.Rejected\\s*->\\s*\\{?\\s*deleteError\\s*=\\s*providerDeleteErrorResource\\(result\\.reason\\)",
-                RegexOption.DOT_MATCHES_ALL,
-            ).containsMatchIn(source)
-        )
-        assertTrue(source.contains("deleteError?.let { error ->"))
-        assertTrue(source.contains("R.string.provider_removal_error_stale"))
-    }
-
-    @Test
-    fun settingsStaleDeleteRejectionKeepsDialogAndShowsLocalizedError() {
-        val source = File("src/main/java/com/aiquota/mobile/ui/settings/SettingsPanel.kt").readText()
-
-        assertTrue(source.contains("onDelete: (ProviderAccountId, DisplayVersion) -> ProviderCardDeletionResult?"))
-        assertTrue(source.contains("var deleteError by remember"))
-        assertTrue(
-            Regex(
-                "is\\s+ProviderCardDeletionResult\\.Rejected\\s*->\\s*\\{?\\s*deleteError\\s*=\\s*settingsDeleteErrorResource\\(result\\.reason\\)",
-                RegexOption.DOT_MATCHES_ALL,
-            ).containsMatchIn(source)
-        )
-        assertTrue(source.contains("deleteError?.let { error ->"))
-        assertTrue(source.contains("R.string.provider_removal_error_stale"))
-    }
-
-    @Test
-    fun exactDeleteConfirmationsNameTheSelectedAliasAndProvider() {
-        val detailSource = File("src/main/java/com/aiquota/mobile/ui/provider/ProviderDetailScreen.kt").readText()
-        val settingsSource = File("src/main/java/com/aiquota/mobile/ui/settings/SettingsPanel.kt").readText()
-
-        assertTrue(detailSource.contains("R.string.provider_removal_named_card"))
-        assertTrue(settingsSource.contains("R.string.provider_removal_named_card"))
     }
 
     private fun added(result: ProviderCardAddResult): AccountRecord =

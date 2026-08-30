@@ -5,14 +5,26 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import android.os.IBinder
 import android.os.Process
+import android.webkit.WebView
 import com.aiquota.mobile.local.ProviderId
 
 class NamedProfileAuthorityProbeService : Service() {
+    override fun onCreate() {
+        super.onCreate()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            WebView.setDataDirectorySuffix("named_profile_authority_probe")
+        } else {
+            stopSelf()
+        }
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return START_NOT_STICKY
         val command = requireNotNull(intent?.action)
         val database = requireNotNull(intent.getStringExtra(NamedProfileAuthorityProbeContract.EXTRA_DATABASE))
         val accountKey = requireNotNull(intent.getStringExtra(NamedProfileAuthorityProbeContract.EXTRA_ACCOUNT_KEY))
@@ -64,6 +76,20 @@ class NamedProfileAuthorityProbeService : Service() {
                 )
                 stopSelf(startId)
             }
+            NamedProfileAuthorityProbeContract.ACTION_CALLBACK_BEFORE_RECEIPT_CRASH -> {
+                val store = AndroidNamedProfileLifecycleStore(this, database)
+                store.create(accountId, name)
+                val manager =
+                    NamedProfileLifecycleManager(
+                        store,
+                        AndroidXNamedProfilePlatform(this),
+                        afterEraseCallbackBeforeReceipt = {
+                            sendResult(token, NamedProfileAuthorityProbeContract.RESULT_CALLBACK_ARMED)
+                            Process.killProcess(Process.myPid())
+                        },
+                )
+                manager.requestErasure(accountId)
+            }
             else -> error("Unknown named profile authority probe command")
         }
         return START_NOT_STICKY
@@ -84,6 +110,8 @@ class NamedProfileAuthorityProbeService : Service() {
 object NamedProfileAuthorityProbeContract {
     const val ACTION_RACE_CREATE = "com.aiquota.mobile.debug.NAMED_PROFILE_RACE_CREATE"
     const val ACTION_COMPLETE = "com.aiquota.mobile.debug.NAMED_PROFILE_COMPLETE"
+    const val ACTION_CALLBACK_BEFORE_RECEIPT_CRASH =
+        "com.aiquota.mobile.debug.NAMED_PROFILE_CALLBACK_BEFORE_RECEIPT_CRASH"
     const val ACTION_TRIGGER = "com.aiquota.mobile.debug.NAMED_PROFILE_TRIGGER"
     const val ACTION_RESULT = "com.aiquota.mobile.debug.NAMED_PROFILE_RESULT"
     const val EXTRA_DATABASE = "database"
@@ -97,4 +125,5 @@ object NamedProfileAuthorityProbeContract {
     const val RESULT_CREATED = 2
     const val RESULT_COLLISION = 3
     const val RESULT_COMPLETED = 4
+    const val RESULT_CALLBACK_ARMED = 5
 }

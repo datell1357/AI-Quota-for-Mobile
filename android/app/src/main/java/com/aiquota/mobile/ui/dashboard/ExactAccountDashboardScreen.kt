@@ -1,5 +1,6 @@
 package com.aiquota.mobile.ui.dashboard
 
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -40,6 +41,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.aiquota.mobile.R
 import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
@@ -129,6 +131,24 @@ internal fun ExactDashboardCardsContent(
             dragOverlayOffsetX = offsetX
             dragOverlayOffsetY = offsetY
         }
+        AndroidView(
+            factory = ::ProviderCardCatalogAccessibilityScrollView,
+            modifier = Modifier.fillMaxSize(),
+            update = { scrollView ->
+                scrollView.onAccessibilityScroll = { action ->
+                    coroutineScope.launch {
+                        val targetIndex = when (action) {
+                            AccessibilityNodeInfo.ACTION_SCROLL_FORWARD -> previewIds.lastIndex
+                            AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD -> 0
+                            else -> return@launch
+                        }
+                        if (targetIndex >= 0) {
+                            scrollState.scrollToItem(targetIndex)
+                        }
+                    }
+                }
+            },
+        )
         Column(
             modifier = Modifier
                 .fillMaxSize()

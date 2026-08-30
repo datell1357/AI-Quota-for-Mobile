@@ -6,6 +6,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
 import org.junit.Test
@@ -153,19 +154,23 @@ class ProviderSessionResetterTest {
     }
 
     @Test
-    fun explicitDisconnectNotifiesRunningBackgroundCollectorsToDropRetainedWebViews() {
-        val resetter = java.io.File("src/main/java/com/aiquota/mobile/providers/ProviderSessionResetter.kt").readText()
-        val service = java.io.File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
-        val disconnectAndWait = resetter.substringAfter("suspend fun disconnectAndWait(providerId: ProviderId)")
-            .substringBefore("private fun clearStoredProviderCredentials")
+    fun providerOnlySessionResetTargetFailsClosedInMultiAccountButRemainsExplicitLegacyInSingleAccount() {
+        val multiAccountTarget = resolveProviderServiceIntentTarget(
+            rawProviderId = ProviderId.CLAUDE.storageId,
+            rawAccountId = null,
+            multiAccountEnabled = true,
+        )
+        val singleAccountTarget = resolveProviderServiceIntentTarget(
+            rawProviderId = ProviderId.CLAUDE.storageId,
+            rawAccountId = null,
+            multiAccountEnabled = false,
+        )
 
-        assertTrue(disconnectAndWait.contains("notifyProviderSessionReset(providerId)"))
-        assertTrue(resetter.contains("ProviderBackgroundRefreshService.createSessionResetIntent(appContext, providerId)"))
-        assertTrue(service.contains("ACTION_PROVIDER_SESSION_RESET"))
-        assertTrue(service.contains("registerReceiver(sessionResetReceiver"))
-        assertTrue(service.contains("handleProviderSessionReset(providerId)"))
-        assertTrue(service.contains("destroyProviderWebView(providerId)"))
-        assertTrue(service.contains("repository.removeProviderSnapshot(providerId)"))
+        assertEquals(ProviderServiceIntentTarget.Rejected, multiAccountTarget)
+        assertEquals(
+            ProviderServiceIntentTarget.LegacyProvider(ProviderId.CLAUDE),
+            singleAccountTarget,
+        )
     }
 
     @Test

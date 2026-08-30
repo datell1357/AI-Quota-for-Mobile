@@ -9,6 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 
 data class ExactProviderCollectorResources<W : Any, L : Any>(
     val binding: AccountLoginSessionBinding,
@@ -16,6 +17,36 @@ data class ExactProviderCollectorResources<W : Any, L : Any>(
     val profileLease: L,
     val nativeHeaders: Map<String, Map<String, String>>,
 )
+
+internal data class ExactProviderCollectorOperation<W : Any, L : Any>(
+    val binding: AccountLoginSessionBinding,
+    val webView: W,
+    val profileLease: L,
+    val nativeHeaders: Map<String, Map<String, String>>,
+)
+
+internal class ExactProviderCollectorOperationGate {
+    private val mutex = Mutex()
+
+    suspend fun <T> withOperation(block: suspend () -> T): T {
+        mutex.lock()
+        return try {
+            block()
+        } finally {
+            mutex.unlock()
+        }
+    }
+}
+
+internal class ExactProviderCollectorUnavailable(reason: String) : IllegalStateException(reason)
+
+internal fun persistReauthenticationThenCancel(
+    persist: () -> Unit,
+    cancel: () -> ProviderRefreshAttempt?,
+): ProviderRefreshAttempt? {
+    persist()
+    return cancel()
+}
 
 class ExactProviderCollectorResourceStore<W : Any, L : Any> {
     private val resources = mutableMapOf<ProviderAccountId, ExactProviderCollectorResources<W, L>>()

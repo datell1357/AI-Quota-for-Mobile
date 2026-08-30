@@ -219,17 +219,23 @@ test("Google native OAuth routes through Firebase token exchange without client 
   );
 });
 
-test("Android release builds fail before packaging placeholder Firebase resources", () => {
+test("tracked Android release guard validates Firebase resources before packaging", () => {
   const gradle = source("android/app/build.gradle.kts");
-  const googleServices = source("android/app/google-services.json");
 
-  assert.match(googleServices, /"project_number":\s*"550123003638"/);
-  assert.match(googleServices, /"mobilesdk_app_id":\s*"1:550123003638:android:b77771790177d817eb56d7"/);
-  assert.doesNotMatch(googleServices, /123456789012|0000000000000000000000/);
+  assert.match(gradle, /val expectedFirebaseProjectNumber = "550123003638"/);
+  assert.match(gradle, /val expectedFirebaseProjectId = "com-aiquota-mobile"/);
+  assert.match(gradle, /val expectedFirebaseAppId = "1:550123003638:android:b77771790177d817eb56d7"/);
+  assert.match(gradle, /val placeholderFirebaseValues = listOf\([\s\S]*"123456789012"[\s\S]*"0000000000000000000000"/);
   assert.match(gradle, /tasks\.register\("verifyReleaseFirebaseResources"/);
-  assert.match(gradle, /google-services\.json/);
-  assert.match(gradle, /1:550123003638:android:b77771790177d817eb56d7/);
-  assert.match(gradle, /123456789012|0000000000000000000000/);
+  assert.match(gradle, /val googleServicesFile = project\.file\("google-services\.json"\)/);
+  assert.match(gradle, /require\(googleServicesFile\.isFile\)/);
+  assert.match(gradle, /require\(expectedFirebaseProjectNumber in googleServices\)/);
+  assert.match(gradle, /require\(expectedFirebaseProjectId in googleServices\)/);
+  assert.match(gradle, /require\(expectedFirebaseAppId in googleServices\)/);
+  assert.match(gradle, /current_key/);
+  assert.match(gradle, /AIza\[0-9A-Za-z_-\]\+/);
+  assert.match(gradle, /containsMatchIn\(googleServices\)/);
+  assert.match(gradle, /require\(placeholderFirebaseValues\.none \{ it in googleServices \}\)/);
   assert.match(gradle, /matching \{ task -> task\.name == "processReleaseGoogleServices" \}\.configureEach[\s\S]*dependsOn\(verifyReleaseFirebaseResources\)/);
   assert.match(gradle, /matching \{ task -> task\.name in setOf\("bundleRelease", "assembleRelease"\) \}[\s\S]*dependsOn\(verifyReleaseFirebaseResources\)/);
 });

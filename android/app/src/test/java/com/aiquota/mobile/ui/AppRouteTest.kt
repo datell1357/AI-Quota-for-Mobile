@@ -21,6 +21,7 @@ class AppRouteTest {
         val route = AppRoute.fromExtras(
             route = AppRoute.ROUTE_PROVIDER,
             providerIdStorageId = ProviderId.CURSOR.storageId,
+            multiAccountEnabled = false,
         )
 
         assertTrue(route is AppRoute.ProviderDetail)
@@ -142,12 +143,14 @@ class AppRouteTest {
         val explicitPrimary = AppRoute.fromExtras(
             route = AppRoute.ROUTE_PROVIDER,
             providerIdStorageId = ProviderId.CODEX.storageId,
+            multiAccountEnabled = false,
             legacyProviderResolver = { provider -> b.takeIf { provider == ProviderId.CODEX } },
         )
         val cursorDefault = ProviderAccountId(ProviderId.CURSOR, AccountKey.reservedDefault())
         val reservedDefault = AppRoute.fromExtras(
             route = AppRoute.ROUTE_PROVIDER,
             legacyProviderIdStorageId = ProviderId.CURSOR.storageId,
+            multiAccountEnabled = false,
             legacyProviderResolver = { provider -> cursorDefault.takeIf { provider == ProviderId.CURSOR } },
         )
 
@@ -155,6 +158,28 @@ class AppRouteTest {
         assertEquals(b, (explicitPrimary as AppRoute.ProviderDetail).accountId)
         assertEquals(cursorDefault, (reservedDefault as AppRoute.ProviderDetail).accountId)
         assertNotEquals(a, explicitPrimary.accountId)
+    }
+
+    @Test
+    fun providerOnlyDetailRouteFailsClosedInMultiAccountButLegacyModeCanResolveIt() {
+        val providerOnly = {
+            AppRoute.fromExtras(
+                route = AppRoute.ROUTE_PROVIDER,
+                providerIdStorageId = ProviderId.CODEX.storageId,
+                multiAccountEnabled = true,
+            )
+        }
+        val legacy = AppRoute.fromExtras(
+            route = AppRoute.ROUTE_PROVIDER,
+            providerIdStorageId = ProviderId.CODEX.storageId,
+            multiAccountEnabled = false,
+        )
+
+        assertEquals(AppRoute.Home, providerOnly())
+        assertEquals(
+            AppRoute.ProviderDetail(ProviderAccountId(ProviderId.CODEX, AccountKey.reservedDefault())),
+            legacy,
+        )
     }
 
     private fun account(provider: ProviderId, index: Int) = ProviderAccountId(

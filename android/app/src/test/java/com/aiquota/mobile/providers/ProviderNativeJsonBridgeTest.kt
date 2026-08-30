@@ -55,13 +55,14 @@ class ProviderNativeJsonBridgeTest {
 
     @Test
     fun exactClaudeAndCodexRequestsUseOnlySelectedProfileCookieWithExactHeaders() {
-        val selected = ExactProfileCookieSource { _, _ -> "profile_session=B" }
+        val profileA = ExactProfileCookieSource { _, _ -> "profile_session=A" }
+        val profileB = ExactProfileCookieSource { _, _ -> "profile_session=B" }
         val cases = listOf(
-            ProviderId.CLAUDE to "https://claude.ai/api/organizations",
-            ProviderId.CODEX to "https://chatgpt.com/backend-api/wham/usage",
+            Triple(ProviderId.CLAUDE, "https://claude.ai/api/organizations", profileA),
+            Triple(ProviderId.CODEX, "https://chatgpt.com/backend-api/wham/usage", profileB),
         )
 
-        cases.forEach { (providerId, url) ->
+        cases.forEach { (providerId, url, selected) ->
             val headers = ProviderNativeJsonBridge.assembledHeadersForTest(
                 ProviderNativeJsonRequest(
                     providerId,
@@ -73,8 +74,11 @@ class ProviderNativeJsonBridgeTest {
             )
 
             assertEquals("Bearer B", headers["Authorization"])
-            assertEquals("profile_session=B", headers["Cookie"])
-            assertFalse(headers.values.any { it.contains("default_session=A") })
+            assertEquals(
+                if (providerId == ProviderId.CLAUDE) "profile_session=A" else "profile_session=B",
+                headers["Cookie"],
+            )
+            assertFalse(headers.values.any { it.contains("default_session") })
         }
     }
 

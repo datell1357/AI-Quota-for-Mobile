@@ -20,8 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
-import com.aiquota.mobile.accounts.AccountKey
-import com.aiquota.mobile.accounts.AccountUsageRepository
 import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.notification.UsageLimitNotificationController
@@ -130,17 +128,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun resolveRouteRequestFromIntent(intent: Intent?): AppRouteIntentRequest =
-        routeRequestFromIntent(intent) { providerId ->
-            if (!BuildConfig.MULTI_ACCOUNT_ENABLED) {
-                ProviderAccountId(providerId, AccountKey.reservedDefault())
-            } else {
-                runCatching {
-                    AccountUsageRepository.open(applicationContext).use { repository ->
-                        repository.compatibilityAccount(providerId)
-                    }
-                }.getOrNull()
-            }
-        }
+        routeRequestFromIntent(
+            intent = intent,
+            multiAccountEnabled = BuildConfig.MULTI_ACCOUNT_ENABLED,
+        )
 
     private fun postCachedNotificationWhenAllowed() {
         if (
@@ -183,7 +174,8 @@ class MainActivity : ComponentActivity() {
 
         internal fun routeRequestFromIntent(
             intent: Intent?,
-            legacyProviderResolver: (ProviderId) -> ProviderAccountId?,
+            multiAccountEnabled: Boolean = true,
+            legacyProviderResolver: ((ProviderId) -> ProviderAccountId?)? = null,
         ): AppRouteIntentRequest {
             val hasNavigationData = intent != null && listOf(
                 AppRoute.EXTRA_ROUTE,
@@ -199,14 +191,20 @@ class MainActivity : ComponentActivity() {
                     providerIdStorageId = intent.getStringExtra(AppRoute.EXTRA_PROVIDER_ID),
                     legacyProviderIdStorageId = intent.getStringExtra(AppRoute.EXTRA_PROVIDER_ID_LEGACY),
                     legacyProviderResolver = legacyProviderResolver,
+                    multiAccountEnabled = multiAccountEnabled,
                 )
             )
         }
 
         internal fun routeFromIntent(
             intent: Intent?,
-            legacyProviderResolver: (ProviderId) -> ProviderAccountId?,
-        ): AppRoute = routeRequestFromIntent(intent, legacyProviderResolver).routeOrHome()
+            multiAccountEnabled: Boolean = true,
+            legacyProviderResolver: ((ProviderId) -> ProviderAccountId?)? = null,
+        ): AppRoute = routeRequestFromIntent(
+            intent = intent,
+            legacyProviderResolver = legacyProviderResolver,
+            multiAccountEnabled = multiAccountEnabled,
+        ).routeOrHome()
     }
 }
 

@@ -42,4 +42,45 @@ class ProviderAccountRefreshServiceIntentTest {
             ),
         )
     }
+
+    @Test
+    fun providerOnlyServiceTargetsFailClosedInMultiAccountButRemainExplicitLegacyInSingleAccount() {
+        val multiAccountTarget = resolveProviderServiceIntentTarget(
+            rawProviderId = ProviderId.CLAUDE.storageId,
+            rawAccountId = null,
+            multiAccountEnabled = true,
+        )
+        val singleAccountTarget = resolveProviderServiceIntentTarget(
+            rawProviderId = ProviderId.CLAUDE.storageId,
+            rawAccountId = null,
+            multiAccountEnabled = false,
+        )
+
+        assertEquals(ProviderServiceIntentTarget.Rejected, multiAccountTarget)
+        assertEquals(
+            ProviderServiceIntentTarget.LegacyProvider(ProviderId.CLAUDE),
+            singleAccountTarget,
+        )
+    }
+
+    @Test
+    fun exactServiceTargetKeepsAccountBAndRejectsAccountWithoutProvider() {
+        val b = ProviderAccountId(
+            ProviderId.CLAUDE,
+            AccountKey.parseOpaque("acct_00000000000000000000000000000002"),
+        )
+        val exact = resolveProviderServiceIntentTarget(
+            rawProviderId = ProviderId.CLAUDE.storageId,
+            rawAccountId = ProviderAccountIdStorageCodec.encode(b),
+            multiAccountEnabled = true,
+        )
+        val missingProvider = resolveProviderServiceIntentTarget(
+            rawProviderId = null,
+            rawAccountId = ProviderAccountIdStorageCodec.encode(b),
+            multiAccountEnabled = true,
+        )
+
+        assertEquals(ProviderServiceIntentTarget.Exact(b), exact)
+        assertEquals(ProviderServiceIntentTarget.Rejected, missingProvider)
+    }
 }

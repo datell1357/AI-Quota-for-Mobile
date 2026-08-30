@@ -1905,12 +1905,7 @@ open class WebLoginActivity : Activity() {
                 LoginCallbackResult.Accepted -> {
                     if (publishExactLoginSnapshot(binding, rawPayload)) {
                         setExactLoginResult(EXACT_RESULT_SUCCESS)
-                        val lease = requireNotNull(namedProfileLease)
                         rootContainer.removeView(webView)
-                        AndroidExactProviderCollectorResources.retain(binding, lease, composition, context)
-                        namedProfileLease = null
-                        exactLoginComposition = null
-                        mainWebViewDestroyed = true
                     } else {
                         composition.coordinator.fail(binding)
                         setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)

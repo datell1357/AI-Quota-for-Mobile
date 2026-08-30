@@ -45,7 +45,8 @@ sealed class AppRoute {
             providerAccountId: String? = null,
             providerIdStorageId: String? = null,
             legacyProviderIdStorageId: String? = null,
-            legacyProviderResolver: (ProviderId) -> ProviderAccountId? = ::reservedDefaultAccount,
+            multiAccountEnabled: Boolean = true,
+            legacyProviderResolver: ((ProviderId) -> ProviderAccountId?)? = null,
         ): AppRoute {
             val hasExactIdentity = providerAccountId != null
             val exactAccountId = providerAccountId?.let(::decodeRouteAccountId)
@@ -53,7 +54,13 @@ sealed class AppRoute {
             val legacyProvider = if (hasExactIdentity) null else {
                 ProviderId.fromStorageId(providerIdStorageId ?: legacyProviderIdStorageId.orEmpty())
             }
-            val detail = exactAccountId ?: legacyProvider?.let(legacyProviderResolver)
+            val detail = exactAccountId ?: if (multiAccountEnabled) {
+                null
+            } else {
+                legacyProvider?.let { provider ->
+                    legacyProviderResolver?.invoke(provider) ?: reservedDefaultAccount(provider)
+                }
+            }
             return when (route) {
                 ROUTE_PROVIDER -> detail?.let(::ProviderDetail) ?: Home
                 ROUTE_SETTINGS -> Settings

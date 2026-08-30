@@ -3,6 +3,7 @@ package com.aiquota.mobile.ui
 import android.os.ParcelFileDescriptor
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
@@ -51,7 +52,7 @@ class ProviderOnboardingUiTest {
         // Then
         assertEquals(1, selectedRadios(radio).fetchSemanticsNodes().size)
         composeRule.onNodeWithContentDescription(ProviderId.CURSOR.displayName)
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, true))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.On))
         composeRule.onNodeWithText(text(R.string.provider_onboarding_start)).assertIsEnabled().performClick()
         composeRule.onNode(hasSetTextAction()).performTextInput("Work")
         composeRule.activityRule.scenario.recreate()
@@ -114,7 +115,7 @@ class ProviderOnboardingUiTest {
     }
 
     private fun selectedRadios(radio: SemanticsMatcher) = composeRule.onAllNodes(
-        radio and SemanticsMatcher.expectValue(SemanticsProperties.Selected, true)
+        radio and SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.On)
     )
 
     private fun assertEmptyCatalog() {
