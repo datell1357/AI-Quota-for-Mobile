@@ -82,6 +82,7 @@ internal class AndroidProviderAccountRefreshCoordinator(
         return persistReauthenticationThenCancel(
             persist = { authority.requireReauthentication(accountId) },
             cancel = { scheduler.cancelExact(accountId) },
+            abort = scheduler::resetCycle,
         )
     }
 

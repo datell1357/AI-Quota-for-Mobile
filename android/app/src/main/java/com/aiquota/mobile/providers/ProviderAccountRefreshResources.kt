@@ -66,11 +66,12 @@ internal class ExactProviderCollectorUnavailable(reason: String) : IllegalStateE
 internal fun persistReauthenticationThenCancel(
     persist: () -> Unit,
     cancel: () -> ProviderRefreshAttempt?,
+    abort: () -> Unit,
 ): ProviderRefreshAttempt? {
     try {
         persist()
     } catch (failure: Throwable) {
-        runCatching(cancel).exceptionOrNull()?.let(failure::addSuppressed)
+        runCatching(abort).exceptionOrNull()?.let(failure::addSuppressed)
         throw failure
     }
     return cancel()

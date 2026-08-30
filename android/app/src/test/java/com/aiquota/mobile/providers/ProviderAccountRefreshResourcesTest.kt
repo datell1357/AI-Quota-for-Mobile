@@ -66,8 +66,9 @@ class ProviderAccountRefreshResourcesTest {
     }
 
     @Test
-    fun faultInjectedReauthenticationPersistenceCancelsAttemptBeforeRethrowing() {
+    fun faultInjectedReauthenticationPersistenceAbortsCycleBeforeRethrowing() {
         var cancelled = false
+        var aborted = false
         val failure = InjectedAuthorityFault()
         val authorityFaultInjector = { throw failure }
 
@@ -78,12 +79,14 @@ class ProviderAccountRefreshResourcesTest {
                     cancelled = true
                     null
                 },
+                abort = { aborted = true },
             )
         } catch (actual: InjectedAuthorityFault) {
             assertSame(failure, actual)
         }
 
-        assertTrue(cancelled)
+        assertFalse(cancelled)
+        assertTrue(aborted)
     }
 
     private fun account(index: Int) = ProviderAccountId(
