@@ -1,7 +1,6 @@
 package com.aiquota.mobile.accounts
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
 import android.webkit.CookieManager
@@ -181,17 +180,10 @@ private class AndroidSession(
                 ): WebResourceResponse? {
                     if (activeAttempt != attempt) return null
                     return attemptLoader.shouldInterceptRequest(r.url)
-                        ?: previousClient?.shouldInterceptRequest(v, r)
-                }
-
-                override fun onPageStarted(v: WebView, u: String, b: Bitmap?) {
-                    if (activeAttempt != attempt) return
-                    previousClient?.onPageStarted(v, u, b)
                 }
 
                 override fun onPageFinished(v: WebView, u: String) {
                     if (activeAttempt != attempt) return
-                    previousClient?.onPageFinished(v, u)
                     if (activeAttempt == attempt && u == URL) {
                         finished = true
                         check(attempt)
@@ -200,7 +192,6 @@ private class AndroidSession(
 
                 override fun onPageCommitVisible(v: WebView, u: String) {
                     if (activeAttempt != attempt) return
-                    previousClient?.onPageCommitVisible(v, u)
                     if (activeAttempt == attempt && u == URL) {
                         committed = true
                         check(attempt)
