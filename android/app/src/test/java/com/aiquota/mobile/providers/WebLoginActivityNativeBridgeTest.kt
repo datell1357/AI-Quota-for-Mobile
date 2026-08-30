@@ -142,6 +142,11 @@ class WebLoginActivityNativeBridgeTest {
         assertTrue(source.contains("UsageBridge(view, nextClaudeBridgeGeneration)"))
         assertTrue(source.contains("UUID.randomUUID()"))
         assertTrue(source.contains("invalidateClaudeBridgeDocument()"))
+        assertTrue(source.contains("postClaudeUsagePayload(t,v)"))
+        assertTrue(source.contains("fetchClaudeProviderJson(t,v)"))
+        assertTrue(source.contains("token == activeClaudeBridgeToken"))
+        assertTrue(source.contains("override fun onPageCommitVisible"))
+        assertTrue(source.contains("claudeBridgeLoadPending = false"))
     }
 
     @Test

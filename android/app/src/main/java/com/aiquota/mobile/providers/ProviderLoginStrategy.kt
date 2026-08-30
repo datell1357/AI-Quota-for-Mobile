@@ -127,7 +127,8 @@ object ProviderLoginStrategy {
     }
 
     fun isTransientNavigationError(url: String, errorCode: Int): Boolean {
-        val host = runCatching { URI(url).host.orEmpty().lowercase(Locale.US) }.getOrDefault("")
+        val uri = runCatching { URI(url) }.getOrNull()
+        val host = uri?.host.orEmpty().lowercase(Locale.US)
         if (errorCode == 0) return false
         return host == "localhost" ||
             host == "127.0.0.1" ||
@@ -138,8 +139,8 @@ object ProviderLoginStrategy {
             host.endsWith("gemini.google.com") ||
             host.endsWith("github.com") ||
             host.endsWith("githubassets.com") ||
-            host == "auth.openai.com" ||
-            isCodexHost(host) ||
+            (uri?.scheme.equals("https", ignoreCase = true) && host == "auth.openai.com") ||
+            (uri?.scheme.equals("https", ignoreCase = true) && isCodexHost(host)) ||
             host.endsWith("z.ai") ||
             host.endsWith("api.z.ai") ||
             host.endsWith("opencode.ai") ||
@@ -173,6 +174,7 @@ object ProviderLoginStrategy {
     fun shouldKeepCodexLoginOpenForHttpError(url: String, statusCode: Int): Boolean {
         if (statusCode != 403) return false
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        if (!uri.scheme.equals("https", ignoreCase = true)) return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
         if (host != "chatgpt.com") return false
         val path = uri.path.orEmpty().lowercase(Locale.US)

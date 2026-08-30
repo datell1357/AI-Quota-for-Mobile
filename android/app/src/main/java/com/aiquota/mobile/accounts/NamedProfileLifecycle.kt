@@ -329,6 +329,7 @@ internal constructor(
     private val abort: (NamedProfileLease, (LeaseCloseResult) -> Unit) -> Unit,
 ) : AutoCloseable {
     private var state = LeaseState.OPEN
+    private var closeAttempt = 0L
     val webView
         get() = resource.webView
 
@@ -346,28 +347,40 @@ internal constructor(
 
     fun markPersistenceReady() = resource.markPersistenceReady()
 
-    internal fun beginClose(): LeaseCloseResult? =
+    internal data class CloseStart(val attempt: Long?, val result: LeaseCloseResult?)
+
+    internal fun beginClose(): CloseStart =
         when (state) {
-            LeaseState.OPEN -> null.also { state = LeaseState.CLOSING }
-            LeaseState.CLOSING -> LeaseCloseResult.AlreadyClosing
-            LeaseState.CLOSED -> LeaseCloseResult.AlreadyClosed
+            LeaseState.OPEN -> {
+                state = LeaseState.CLOSING
+                CloseStart(++closeAttempt, null)
+            }
+            LeaseState.CLOSING -> CloseStart(null, LeaseCloseResult.AlreadyClosing)
+            LeaseState.CLOSED -> CloseStart(null, LeaseCloseResult.AlreadyClosed)
         }
 
-    internal fun beginAbort(): LeaseCloseResult? =
+    internal fun beginAbort(): CloseStart =
         when (state) {
-            LeaseState.OPEN -> null.also { state = LeaseState.CLOSING }
-            LeaseState.CLOSING -> null
-            LeaseState.CLOSED -> LeaseCloseResult.AlreadyClosed
+            LeaseState.OPEN, LeaseState.CLOSING -> {
+                state = LeaseState.CLOSING
+                CloseStart(++closeAttempt, null)
+            }
+            LeaseState.CLOSED -> CloseStart(null, LeaseCloseResult.AlreadyClosed)
         }
 
-    internal fun reopen() {
-        check(state == LeaseState.CLOSING)
+    internal fun ownsCloseAttempt(attempt: Long): Boolean =
+        state == LeaseState.CLOSING && closeAttempt == attempt
+
+    internal fun reopen(attempt: Long): Boolean {
+        if (!ownsCloseAttempt(attempt)) return false
         state = LeaseState.OPEN
+        return true
     }
 
-    internal fun markClosed() {
-        check(state == LeaseState.CLOSING)
+    internal fun markClosed(attempt: Long): Boolean {
+        if (!ownsCloseAttempt(attempt)) return false
         state = LeaseState.CLOSED
+        return true
     }
 
     internal fun stateForTest(): LeaseState = state
@@ -509,31 +522,36 @@ class NamedProfileLifecycleManager(
     fun liveLeaseCount(id: ProviderAccountId) = read { leases[id]?.size ?: 0 }
 
     private fun release(l: NamedProfileLease, callback: (LeaseCloseResult) -> Unit) = mutate {
-        l.beginClose()?.let {
+        val start = l.beginClose()
+        start.result?.let {
             callback(it)
             return@mutate
         }
+        val attempt = requireNotNull(start.attempt)
         l.resource.quiesce { result ->
             platform.requireUiThread()
-            if (l.stateForTest() == LeaseState.CLOSED) {
-                callback(LeaseCloseResult.AlreadyClosed)
+            if (!l.ownsCloseAttempt(attempt)) {
+                callback(
+                    if (l.stateForTest() == LeaseState.CLOSED) LeaseCloseResult.AlreadyClosed
+                    else LeaseCloseResult.RetryableFailure("CLOSE_SUPERSEDED")
+                )
                 return@quiesce
             }
             if (result is SessionQuiesceResult.Failed) {
-                l.reopen()
+                l.reopen(attempt)
                 callback(LeaseCloseResult.RetryableFailure(result.reason))
                 return@quiesce
             }
             val destroyFailure = runCatching { l.resource.destroy() }.exceptionOrNull()
             if (destroyFailure != null) {
-                l.reopen()
+                l.reopen(attempt)
                 callback(LeaseCloseResult.RetryableFailure("DESTROY_FAILED:${destroyFailure.javaClass.simpleName}"))
                 return@quiesce
             }
             val active = leases[l.accountId]
             active?.remove(l)
             if (active?.isEmpty() == true) leases.remove(l.accountId)
-            l.markClosed()
+            l.markClosed(attempt)
             if (
                 store.read(l.accountId)?.state == ProfileLifecycleState.ERASURE_PENDING &&
                     leases[l.accountId].isNullOrEmpty()
@@ -545,20 +563,22 @@ class NamedProfileLifecycleManager(
     }
 
     private fun abortRelease(l: NamedProfileLease, callback: (LeaseCloseResult) -> Unit) = mutate {
-        l.beginAbort()?.let {
+        val start = l.beginAbort()
+        start.result?.let {
             callback(it)
             return@mutate
         }
+        val attempt = requireNotNull(start.attempt)
         val destroyFailure = runCatching { l.resource.destroy() }.exceptionOrNull()
         if (destroyFailure != null) {
-            l.reopen()
+            l.reopen(attempt)
             callback(LeaseCloseResult.RetryableFailure("DESTROY_FAILED:${destroyFailure.javaClass.simpleName}"))
             return@mutate
         }
         val active = leases[l.accountId]
         active?.remove(l)
         if (active?.isEmpty() == true) leases.remove(l.accountId)
-        l.markClosed()
+        l.markClosed(attempt)
         if (
             store.read(l.accountId)?.state == ProfileLifecycleState.ERASURE_PENDING &&
                 leases[l.accountId].isNullOrEmpty()

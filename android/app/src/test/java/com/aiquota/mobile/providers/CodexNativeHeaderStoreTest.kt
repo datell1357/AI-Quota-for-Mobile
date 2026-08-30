@@ -30,6 +30,14 @@ class CodexNativeHeaderStoreTest {
     }
 
     @Test
+    fun replayRejectsUntrustedCodexOrigins() {
+        val storedHeaders = mapOf("fallback" to mapOf("Authorization" to "Bearer auth"))
+
+        assertTrue(CodexNativeHeaderStore.headersFor(storedHeaders, "https://evil.chatgpt.com/backend-api/wham/usage", "fallback").isEmpty())
+        assertTrue(CodexNativeHeaderStore.headersFor(storedHeaders, "http://chatgpt.com/backend-api/wham/usage", "fallback").isEmpty())
+    }
+
+    @Test
     fun captureKeepsAuthenticatedEndpointAndFallbackHeadersAfterUnauthenticatedCapture() {
         val storedHeaders = mutableMapOf<String, Map<String, String>>()
         val usageUrl = "https://chatgpt.com/backend-api/wham/usage"

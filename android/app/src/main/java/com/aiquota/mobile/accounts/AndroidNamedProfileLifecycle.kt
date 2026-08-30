@@ -158,6 +158,11 @@ private class AndroidSession(
     override fun quiesce(callback: (SessionQuiesceResult) -> Unit) {
         ui()
         check(this.callback == null)
+        observedRequest.set(false)
+        observedBeacon.set(false)
+        finished = false
+        committed = false
+        visual = false
         this.callback = callback
         prior = WebViewCompat.getWebViewClient(webView)
         webView.webViewClient =

@@ -74,6 +74,14 @@ class ClaudeNativeHeaderStoreTest {
     }
 
     @Test
+    fun replayRejectsUntrustedClaudeOrigins() {
+        val stored = mapOf("claude:*" to mapOf("Authorization" to "Bearer test"))
+
+        assertTrue(ClaudeNativeHeaderStore.headersFor(stored, "https://evil.claude.ai/api/organizations/org_123/usage", "claude:*").isEmpty())
+        assertTrue(ClaudeNativeHeaderStore.headersFor(stored, "http://claude.ai/api/organizations/org_123/usage", "claude:*").isEmpty())
+    }
+
+    @Test
     fun persistedClaudeRequestContextKeepsOnlyReplaySafeHeaders() {
         val payload = ClaudeNativeRequestContextStore.encodeForTest(
             mapOf(

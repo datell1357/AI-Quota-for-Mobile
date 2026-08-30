@@ -23,7 +23,9 @@ internal object ClaudeNativeHeaderStore {
         url: String,
         wildcardKey: String
     ): Map<String, String> {
-        val endpointHeaders = keyFor(url)?.let { storedHeaders[it] }.orEmpty()
+        val key = keyFor(url)
+        if (key == null && url != "about:blank") return emptyMap()
+        val endpointHeaders = key?.let { storedHeaders[it] }.orEmpty()
         val wildcardHeaders = storedHeaders[wildcardKey].orEmpty()
             .ifEmpty { storedHeaders.values.firstOrNull { it.isNotEmpty() }.orEmpty() }
         return CodexNativeHeaderSelector.selectForFetch(endpointHeaders, wildcardHeaders)

@@ -124,10 +124,16 @@ open class WebLoginActivity : Activity() {
     private val claudeNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
     private val geminiUsageRpcIds = linkedSetOf<String>()
     private val popupViews = mutableSetOf<WebView>()
+    @Volatile
     private var activeClaudeBridgeView: WebView? = null
+    @Volatile
     private var activeClaudeBridgeGeneration: Long? = null
+    @Volatile
     private var activeClaudeBridgeName: String? = null
+    @Volatile
+    private var activeClaudeBridgeToken: String? = null
     private var nextClaudeBridgeGeneration = 0L
+    @Volatile
     private var claudeBridgeLoadPending = false
     private val exactPopupProfileNames = mutableMapOf<WebView, String>()
     private val collectorInjectionKeys = mutableSetOf<String>()
@@ -439,7 +445,10 @@ open class WebLoginActivity : Activity() {
 
     private fun noteBridgePageUrl(view: WebView, url: String?) {
         if (::webView.isInitialized && view === webView) {
-            if (activeClaudeBridgeView === view && !isClaudeAboutBlankBridgeNavigation(url.orEmpty())) {
+            if (activeClaudeBridgeView === view &&
+                !isClaudeAboutBlankBridgeNavigation(url.orEmpty()) &&
+                !isPendingClaudeBridgeNavigation(view, url.orEmpty())
+            ) {
                 invalidateClaudeBridgeDocument()
             }
             noteBridgePageUrl(url)
@@ -494,8 +503,7 @@ open class WebLoginActivity : Activity() {
                 return
             }
             if (isPendingClaudeBridgeNavigation(view, url)) {
-                claudeBridgeLoadPending = false
-                noteBridgePageUrl(view, "about:blank")
+                noteBridgePageUrl("about:blank")
                 return
             }
             if (activeClaudeBridgeView === view) invalidateClaudeBridgeDocument()
@@ -510,6 +518,11 @@ open class WebLoginActivity : Activity() {
         }
 
         override fun onPageCommitVisible(view: WebView, url: String) {
+            if (isPendingClaudeBridgeNavigation(view, url)) {
+                claudeBridgeLoadPending = false
+                noteBridgePageUrl("about:blank")
+                return
+            }
             if (providerId != ProviderId.GLM) return
             glmMainFramePainted = true
             Log.i("AIQuotaLogin", "provider=glm pageCommitVisible host=${hostOf(url)}${pathOf(url)}")
@@ -820,7 +833,9 @@ open class WebLoginActivity : Activity() {
         private fun activePageUrl(): String? {
             if (!::webView.isInitialized || ownerView !== webView || finished) return null
             if (providerId == ProviderId.CLAUDE && claudeNativeCollectionStarted &&
-                (claudeBridgeGeneration == null || claudeBridgeGeneration != activeClaudeBridgeGeneration)
+                (claudeBridgeLoadPending ||
+                    claudeBridgeGeneration == null ||
+                    claudeBridgeGeneration != activeClaudeBridgeGeneration)
             ) {
                 return null
             }
@@ -834,45 +849,69 @@ open class WebLoginActivity : Activity() {
         @JavascriptInterface
         fun postUsagePayload(rawPayload: String) {
             runOnUiThread {
-                val pageUrl = activePageUrl() ?: return@runOnUiThread
-                if (!ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, pageUrl, rawPayload)) {
-                    Log.w("AIQuotaCollector", "provider=${providerId.storageId} collectorMode=webview-js ignoredPayload page=${pathOf(pageUrl)}")
-                    return@runOnUiThread
-                }
-                saveOpenCodeUsageUrl(pageUrl)
-                Log.i("AIQuotaCollector", "provider=${providerId.storageId} collectorMode=webview-js rawPayloadPresent=${rawPayload.isNotBlank()}")
-                finishSuccessfulLogin(rawPayload)
+                if (providerId == ProviderId.CLAUDE && claudeNativeCollectionStarted) return@runOnUiThread
+                handleUsagePayload(rawPayload)
             }
+        }
+
+        @JavascriptInterface
+        fun postClaudeUsagePayload(token: String, rawPayload: String) {
+            runOnUiThread {
+                if (!isActiveClaudeBridgeToken(ownerView, claudeBridgeGeneration, token)) return@runOnUiThread
+                handleUsagePayload(rawPayload)
+            }
+        }
+
+        private fun handleUsagePayload(rawPayload: String) {
+            val pageUrl = activePageUrl() ?: return
+            if (!ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, pageUrl, rawPayload)) {
+                Log.w("AIQuotaCollector", "provider=${providerId.storageId} collectorMode=webview-js ignoredPayload page=${pathOf(pageUrl)}")
+                return
+            }
+            saveOpenCodeUsageUrl(pageUrl)
+            Log.i("AIQuotaCollector", "provider=${providerId.storageId} collectorMode=webview-js rawPayloadPresent=${rawPayload.isNotBlank()}")
+            finishSuccessfulLogin(rawPayload)
         }
 
         @JavascriptInterface
         fun postCollectorError(rawError: String) {
             runOnUiThread {
-                val pageUrl = activePageUrl() ?: return@runOnUiThread
-                if (!ProviderWebCollectorScripts.shouldAcceptCollectorError(providerId, pageUrl, rawError)) {
-                    Log.w("AIQuotaCollector", "provider=${providerId.storageId} collectorMode=webview-js ignoredError page=${pathOf(pageUrl)}")
-                    return@runOnUiThread
-                }
-                val errorKind = runCatching { JSONObject(rawError).optString("errorKind", "collector_error") }
-                    .getOrDefault("collector_error")
-                Log.w("AIQuotaCollector", "provider=${providerId.storageId} collectorMode=webview-js errorKind=$errorKind keptPreviousSnapshot=true")
-                if (providerId == ProviderId.GLM && errorKind == GlmNoSubscriptionPolicy.ERROR_KIND) {
-                    finishGlmNoSubscription(errorKind)
-                    return@runOnUiThread
-                }
-                if (providerId == ProviderId.GLM && errorKind == "glm_auth_required" && recoverGlmAuthRequiredFromNativeCollection()) {
-                    return@runOnUiThread
-                }
-                if (shouldKeepLoginOpenUntilUsagePayload(errorKind)) {
-                    if (providerId == ProviderId.CODEX) {
-                        codexNativeCollectionStarted = false
-                        collectorInjectionKeys.clear()
-                    }
-                    Log.i("AIQuotaCollector", "provider=${providerId.storageId} awaitingUsagePayload=true errorKind=$errorKind")
-                    return@runOnUiThread
-                }
-                finishConnectedWithoutUsage("Provider session reached, but trusted usage payload was not available yet.", errorKind)
+                if (providerId == ProviderId.CLAUDE && claudeNativeCollectionStarted) return@runOnUiThread
+                handleCollectorError(rawError)
             }
+        }
+
+        @JavascriptInterface
+        fun postClaudeCollectorError(token: String, rawError: String) {
+            runOnUiThread {
+                if (!isActiveClaudeBridgeToken(ownerView, claudeBridgeGeneration, token)) return@runOnUiThread
+                handleCollectorError(rawError)
+            }
+        }
+
+        private fun handleCollectorError(rawError: String) {
+            val pageUrl = activePageUrl() ?: return
+            if (!ProviderWebCollectorScripts.shouldAcceptCollectorError(providerId, pageUrl, rawError)) {
+                Log.w("AIQuotaCollector", "provider=${providerId.storageId} collectorMode=webview-js ignoredError page=${pathOf(pageUrl)}")
+                return
+            }
+            val errorKind = runCatching { JSONObject(rawError).optString("errorKind", "collector_error") }
+                .getOrDefault("collector_error")
+            Log.w("AIQuotaCollector", "provider=${providerId.storageId} collectorMode=webview-js errorKind=$errorKind keptPreviousSnapshot=true")
+            if (providerId == ProviderId.GLM && errorKind == GlmNoSubscriptionPolicy.ERROR_KIND) {
+                finishGlmNoSubscription(errorKind)
+                return
+            }
+            if (providerId == ProviderId.GLM && errorKind == "glm_auth_required" && recoverGlmAuthRequiredFromNativeCollection()) return
+            if (shouldKeepLoginOpenUntilUsagePayload(errorKind)) {
+                if (providerId == ProviderId.CODEX) {
+                    codexNativeCollectionStarted = false
+                    collectorInjectionKeys.clear()
+                }
+                Log.i("AIQuotaCollector", "provider=${providerId.storageId} awaitingUsagePayload=true errorKind=$errorKind")
+                return
+            }
+            finishConnectedWithoutUsage("Provider session reached, but trusted usage payload was not available yet.", errorKind)
         }
 
         @JavascriptInterface
@@ -926,6 +965,21 @@ open class WebLoginActivity : Activity() {
 
         @JavascriptInterface
         fun fetchProviderJson(url: String): String {
+            if (providerId == ProviderId.CLAUDE && claudeNativeCollectionStarted) {
+                return JSONObject().put("ok", false).put("error", "bridge_token_required").toString()
+            }
+            return fetchProviderJsonInternal(url)
+        }
+
+        @JavascriptInterface
+        fun fetchClaudeProviderJson(token: String, url: String): String {
+            if (!isActiveClaudeBridgeToken(ownerView, claudeBridgeGeneration, token)) {
+                return JSONObject().put("ok", false).put("error", "blocked_bridge_token").toString()
+            }
+            return fetchProviderJsonInternal(url)
+        }
+
+        private fun fetchProviderJsonInternal(url: String): String {
             if (!ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
                 return JSONObject().put("ok", false).put("error", "provider_not_allowlisted").toString()
             }
@@ -942,6 +996,21 @@ open class WebLoginActivity : Activity() {
 
         @JavascriptInterface
         fun fetchProviderUsagePayload(): String {
+            if (providerId == ProviderId.CLAUDE && claudeNativeCollectionStarted) {
+                return JSONObject().put("ok", false).put("error", "bridge_token_required").toString()
+            }
+            return fetchProviderUsagePayloadInternal()
+        }
+
+        @JavascriptInterface
+        fun fetchClaudeProviderUsagePayload(token: String): String {
+            if (!isActiveClaudeBridgeToken(ownerView, claudeBridgeGeneration, token)) {
+                return JSONObject().put("ok", false).put("error", "blocked_bridge_token").toString()
+            }
+            return fetchProviderUsagePayloadInternal()
+        }
+
+        private fun fetchProviderUsagePayloadInternal(): String {
             if (!ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
                 return JSONObject().put("ok", false).put("error", "provider_not_allowlisted").toString()
             }
@@ -1641,10 +1710,18 @@ open class WebLoginActivity : Activity() {
         claudeBridgeLoadPending = true
         view.removeJavascriptInterface(BRIDGE_NAME)
         val bridgeName = "${BRIDGE_NAME}_${UUID.randomUUID().toString().replace("-", "")}"
+        val bridgeToken = UUID.randomUUID().toString()
         activeClaudeBridgeName = bridgeName
+        activeClaudeBridgeToken = bridgeToken
         view.addJavascriptInterface(UsageBridge(view, nextClaudeBridgeGeneration), bridgeName)
+        val tokenJson = JSONObject.quote(bridgeToken)
         val bridgeHtml = "<!doctype html><html><head><meta charset=\"utf-8\"><script>" +
-            "window.$BRIDGE_NAME=window.$bridgeName;</script></head><body></body></html>"
+            "(function(b,t){window.$BRIDGE_NAME={" +
+            "postUsagePayload:function(v){b.postClaudeUsagePayload(t,v);}," +
+            "postCollectorError:function(v){b.postClaudeCollectorError(t,v);}," +
+            "fetchProviderJson:function(v){return b.fetchClaudeProviderJson(t,v);}," +
+            "fetchProviderUsagePayload:function(){return b.fetchClaudeProviderUsagePayload(t);}" +
+            "};})(window.$bridgeName,$tokenJson);</script></head><body></body></html>"
         view.loadDataWithBaseURL(
             CLAUDE_ABOUT_BLANK_BASE_URL,
             bridgeHtml,
@@ -1663,7 +1740,18 @@ open class WebLoginActivity : Activity() {
         activeClaudeBridgeView = null
         activeClaudeBridgeGeneration = null
         activeClaudeBridgeName = null
+        activeClaudeBridgeToken = null
         claudeBridgeLoadPending = false
+    }
+
+    private fun isActiveClaudeBridgeToken(view: WebView, generation: Long?, token: String): Boolean {
+        return providerId == ProviderId.CLAUDE &&
+            claudeNativeCollectionStarted &&
+            !claudeBridgeLoadPending &&
+            view === activeClaudeBridgeView &&
+            generation != null &&
+            generation == activeClaudeBridgeGeneration &&
+            token == activeClaudeBridgeToken
     }
 
     private fun recoverCodexFromLocalAuthCallback(view: WebView, url: String) {

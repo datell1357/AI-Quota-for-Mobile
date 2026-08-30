@@ -239,6 +239,35 @@ class NamedProfileLifecycleManagerTest {
     }
 
     @Test
+    fun `failed abort supersedes stale quiesce callback without corrupting retry`() {
+        val p = FakePlatform().apply {
+            deferQuiesce = true
+            destroyFailures.add(IllegalStateException("renderer"))
+        }
+        val m = manager(platform = p)
+        val id = id(1)
+        m.ensureBinding(id)
+        val lease = m.acquire(id)
+        var closeResult: LeaseCloseResult? = null
+
+        lease.closeAcknowledged { closeResult = it }
+        lease.abortAcknowledged {
+            assertEquals(LeaseCloseResult.RetryableFailure("DESTROY_FAILED:IllegalStateException"), it)
+        }
+        assertEquals(LeaseState.OPEN, lease.stateForTest())
+
+        p.completeNextQuiesce()
+
+        assertEquals(LeaseCloseResult.RetryableFailure("CLOSE_SUPERSEDED"), closeResult)
+        assertEquals(LeaseState.OPEN, lease.stateForTest())
+        p.deferQuiesce = false
+        lease.closeAcknowledged { closeResult = it }
+        assertEquals(LeaseCloseResult.Closed, closeResult)
+        assertEquals(LeaseState.CLOSED, lease.stateForTest())
+        assertEquals(0, m.liveLeaseCount(id))
+    }
+
+    @Test
     fun `abort retains lease after destroy failure and releases it on retry`() {
         val p = FakePlatform().apply { destroyFailures.add(IllegalStateException("renderer")) }
         val m = manager(platform = p)

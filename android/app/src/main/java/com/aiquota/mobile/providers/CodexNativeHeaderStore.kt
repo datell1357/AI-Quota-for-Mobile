@@ -29,7 +29,8 @@ internal object CodexNativeHeaderStore {
         url: String,
         fallbackKey: String
     ): Map<String, String> {
-        val endpointHeaders = keyFor(url)?.let { storedHeaders[it] }.orEmpty()
+        val key = keyFor(url) ?: return emptyMap()
+        val endpointHeaders = storedHeaders[key].orEmpty()
         val fallbackHeaders = storedHeaders[fallbackKey].orEmpty()
         return CodexNativeHeaderSelector.selectForCodexFetch(endpointHeaders, fallbackHeaders)
     }
