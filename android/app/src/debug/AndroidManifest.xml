@@ -17,6 +17,9 @@
       android:name=".debug.ProviderCardCatalogDebugActivity"
       android:exported="true"
       android:process=":provider_card_catalog_debug" />
+    <activity
+      android:name=".debug.ProviderCardCatalogCharacterizationActivity"
+      android:exported="false" />
     <receiver
       android:name=".debug.LiveRefreshIssueDebugReceiver"
       android:exported="true">

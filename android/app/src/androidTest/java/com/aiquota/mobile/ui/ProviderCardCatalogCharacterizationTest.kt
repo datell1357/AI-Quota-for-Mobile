@@ -32,6 +32,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aiquota.mobile.R
+import com.aiquota.mobile.debug.ProviderCardCatalogCharacterizationActivity
 import com.aiquota.mobile.debug.ProviderCardCatalogDebugActivity
 import com.aiquota.mobile.local.DashboardViewMode
 import org.junit.After
@@ -49,7 +50,7 @@ class ProviderCardCatalogCharacterizationTest {
     @get:Rule
     val composeRule = createEmptyComposeRule()
 
-    private var scenario: ActivityScenario<ProviderCardCatalogDebugActivity>? = null
+    private var scenario: ActivityScenario<ProviderCardCatalogCharacterizationActivity>? = null
     private var screenWidthDp: Int = 0
     private var screenHeightDp: Int = 0
     private lateinit var labels: CurrentLabels
@@ -215,11 +216,11 @@ class ProviderCardCatalogCharacterizationTest {
 
     private fun launchDashboard(dataset: String, viewMode: String) {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val intent = Intent(context, ProviderCardCatalogDebugActivity::class.java).apply {
+        val intent = Intent(context, ProviderCardCatalogCharacterizationActivity::class.java).apply {
             putExtra(ProviderCardCatalogDebugActivity.EXTRA_DATASET, dataset)
             putExtra(ProviderCardCatalogDebugActivity.EXTRA_VIEW_MODE, viewMode)
         }
-        scenario = ActivityScenario.launch<ProviderCardCatalogDebugActivity>(intent).also { launched ->
+        scenario = ActivityScenario.launch<ProviderCardCatalogCharacterizationActivity>(intent).also { launched ->
             launched.onActivity { activity ->
                 screenWidthDp = activity.resources.configuration.screenWidthDp
                 screenHeightDp = activity.resources.configuration.screenHeightDp

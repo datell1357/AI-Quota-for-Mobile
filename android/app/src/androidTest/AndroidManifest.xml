@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <instrumentation
-    android:name="com.aiquota.mobile.ui.AIQuotaInstrumentationRunner"
+    android:name="androidx.test.runner.AndroidJUnitRunner"
     android:targetPackage="com.aiquota.mobile" />
   <instrumentation
     android:name="com.aiquota.mobile.ui.ProviderCardCatalogInstrumentationRunner"

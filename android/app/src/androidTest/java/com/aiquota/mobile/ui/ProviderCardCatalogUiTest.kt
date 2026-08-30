@@ -7,8 +7,6 @@ import android.content.Intent
 import android.graphics.Rect
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
-import android.view.InputDevice
-import android.view.MotionEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -43,7 +41,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.aiquota.mobile.R
 import com.aiquota.mobile.debug.ProviderOnboardingComposeTestActivity
 import org.junit.After
-import org.junit.Assume.assumeTrue
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -76,7 +73,6 @@ class ProviderCardCatalogUiTest {
 
     @Test
     fun platformEnglishTreeSupportsExactRemovalConfirmation() {
-        requireRemotePlatformRunner()
         setPlatformLocale(LOCALE_ENGLISH)
         launchPlatformCatalog(DATASET_POPULATED)
 
@@ -117,7 +113,6 @@ class ProviderCardCatalogUiTest {
 
     @Test
     fun platformKoreanTreeKeepsOnboardingActionsReachable() {
-        requireRemotePlatformRunner()
         setPlatformLocale(LOCALE_KOREAN)
         launchPlatformCatalog(DATASET_EMPTY)
 
@@ -317,10 +312,7 @@ class ProviderCardCatalogUiTest {
                 AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
                 AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS
         }
-        runShell(
-            "am start -W -f 0x10008000 -n $ACTIVITY_COMPONENT " +
-                "--es $EXTRA_DATASET $dataset --es $EXTRA_VIEW_MODE $VIEW_MODE_LIST",
-        )
+        launchCatalog(dataset)
         uiAutomation.waitForIdle(PLATFORM_IDLE_TIMEOUT_MS, PLATFORM_TIMEOUT_MS)
         awaitPlatformNode("Debug catalog did not expose an accessibility root") {
             it.packageName?.toString() == APP_PACKAGE && if (dataset == DATASET_EMPTY) {
@@ -329,13 +321,6 @@ class ProviderCardCatalogUiTest {
                 it.hasExactLabel(DASHBOARD)
             }
         }
-    }
-
-    private fun requireRemotePlatformRunner() {
-        assumeTrue(
-            "Platform-tree tests require ProviderCardCatalogInstrumentationRunner",
-            InstrumentationRegistry.getInstrumentation() is ProviderCardCatalogInstrumentationRunner,
-        )
     }
 
     private fun setPlatformLocale(languageTag: String) {
@@ -353,31 +338,11 @@ class ProviderCardCatalogUiTest {
             "Platform node must expose ACTION_CLICK while attempting to $actionName",
             node.actionList.any { action -> action.id == AccessibilityNodeInfo.ACTION_CLICK },
         )
-        val bounds = Rect().also(node::getBoundsInScreen)
-        val eventTime = SystemClock.uptimeMillis()
-        val down = MotionEvent.obtain(
-            eventTime,
-            eventTime,
-            MotionEvent.ACTION_DOWN,
-            bounds.exactCenterX(),
-            bounds.exactCenterY(),
-            0,
-        ).apply { source = InputDevice.SOURCE_TOUCHSCREEN }
-        val up = MotionEvent.obtain(
-            eventTime,
-            eventTime + 50L,
-            MotionEvent.ACTION_UP,
-            bounds.exactCenterX(),
-            bounds.exactCenterY(),
-            0,
-        ).apply { source = InputDevice.SOURCE_TOUCHSCREEN }
-        try {
-            assertTrue("Touch down injection failed while attempting to $actionName", uiAutomation.injectInputEvent(down, true))
-            assertTrue("Touch up injection failed while attempting to $actionName", uiAutomation.injectInputEvent(up, true))
-        } finally {
-            down.recycle()
-            up.recycle()
-        }
+        assertTrue(
+            "Accessibility click failed while attempting to $actionName",
+            node.performAction(AccessibilityNodeInfo.ACTION_CLICK),
+        )
+        composeRule.waitForIdle()
         awaitPlatformNode("Accessibility tree did not settle after $actionName", settledPredicate)
     }
 
@@ -483,12 +448,8 @@ class ProviderCardCatalogUiTest {
 
     private companion object {
         const val APP_PACKAGE = "com.aiquota.mobile"
-        const val ACTIVITY_COMPONENT = "$APP_PACKAGE/.debug.ProviderOnboardingComposeTestActivity"
-        const val EXTRA_DATASET = "com.aiquota.mobile.debug.extra.DATASET"
-        const val EXTRA_VIEW_MODE = "com.aiquota.mobile.debug.extra.VIEW_MODE"
         const val DATASET_EMPTY = "empty"
         const val DATASET_POPULATED = "populated"
-        const val VIEW_MODE_LIST = "list"
 
         const val LOCALE_ENGLISH = "en-US"
         const val LOCALE_KOREAN = "ko-KR"

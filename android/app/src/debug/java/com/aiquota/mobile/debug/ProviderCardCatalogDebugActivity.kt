@@ -59,7 +59,7 @@ import com.aiquota.mobile.ui.dashboard.UnifiedDashboardScreen
  * Every callback is intentionally local and side-effect free. This process does not initialize the
  * main-process provider, Firebase, refresh, widget, or login coordinators.
  */
-class ProviderCardCatalogDebugActivity : ComponentActivity() {
+open class ProviderCardCatalogDebugActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
