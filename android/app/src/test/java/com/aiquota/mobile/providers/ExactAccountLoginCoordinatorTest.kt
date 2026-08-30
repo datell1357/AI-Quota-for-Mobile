@@ -81,6 +81,8 @@ class ExactAccountLoginCoordinatorTest {
 
         assertEquals(LoginCallbackResult.Accepted, fixture.coordinator.complete(aLogin.binding, marker("A")))
         assertEquals(LoginCallbackResult.Accepted, fixture.coordinator.complete(bLogin.binding, marker("B")))
+        aLogin.lease?.close()
+        bLogin.lease?.close()
         assertEquals(marker("A"), fixture.contexts.restore(aLogin.binding))
         assertEquals(marker("B"), fixture.contexts.restore(bLogin.binding))
 

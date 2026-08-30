@@ -1,5 +1,8 @@
 package com.aiquota.mobile.providers
 
+import com.aiquota.mobile.accounts.AccountKey
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.local.ProviderId
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -8,10 +11,26 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProviderAccountRefreshResourcesTest {
+    @Test
+    fun exactManualRefreshQueuePreservesDistinctPendingAccountsAndWidgetTargets() {
+        val queue = ExactManualRefreshQueue()
+        val first = account(1)
+        val second = account(2)
+
+        queue.enqueue(first, 101)
+        queue.enqueue(second, 202)
+
+        assertEquals(ExactManualRefreshRequest(first, 101), queue.poll())
+        assertEquals(ExactManualRefreshRequest(second, 202), queue.poll())
+        assertNull(queue.poll())
+    }
+
     @Test
     fun exactOperationsAreSerializedAndGateReleasesAfterCompletion() = runBlocking {
         val gate = ExactProviderCollectorOperationGate()
@@ -47,7 +66,7 @@ class ProviderAccountRefreshResourcesTest {
     }
 
     @Test
-    fun faultInjectedReauthenticationPersistenceDoesNotCancelAttempt() {
+    fun faultInjectedReauthenticationPersistenceCancelsAttemptBeforeRethrowing() {
         var cancelled = false
         val failure = InjectedAuthorityFault()
         val authorityFaultInjector = { throw failure }
@@ -64,8 +83,13 @@ class ProviderAccountRefreshResourcesTest {
             assertSame(failure, actual)
         }
 
-        assertFalse(cancelled)
+        assertTrue(cancelled)
     }
+
+    private fun account(index: Int) = ProviderAccountId(
+        ProviderId.CODEX,
+        AccountKey.parseOpaque("acct_${index.toString(16).padStart(32, '0')}"),
+    )
 
     private class InjectedAuthorityFault : RuntimeException()
 }

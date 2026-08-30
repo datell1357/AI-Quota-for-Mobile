@@ -24,10 +24,12 @@ internal fun interface NamedProfileFaultInjector {
 class AndroidNamedProfileLifecycleStore
 internal constructor(
     context: Context,
-    databaseName: String = AccountAuthorityDatabase.DEFAULT_DATABASE_NAME,
+    private val databaseName: String = AccountAuthorityDatabase.DEFAULT_DATABASE_NAME,
     private val fault: NamedProfileFaultInjector = NamedProfileFaultInjector.NONE,
 ) : NamedProfileLifecycleStore, AutoCloseable {
     private val helper = AccountAuthorityDatabase(context.applicationContext, databaseName)
+
+    override val coordinationKey: Any = "android-named-profile:$databaseName"
 
     override fun read(id: ProviderAccountId) = one(helper.readableDatabase, id)
 

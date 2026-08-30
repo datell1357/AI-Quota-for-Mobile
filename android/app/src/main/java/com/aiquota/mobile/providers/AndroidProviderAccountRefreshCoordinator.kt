@@ -115,6 +115,7 @@ internal class AndroidProviderAccountRefreshCoordinator(
 
     override fun close() {
         scheduler.resetCycle()
+        profileStore.close()
         authority.close()
     }
 

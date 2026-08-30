@@ -8,10 +8,11 @@ fun interface ExactCredentialEraser {
 
 internal class AccountVaultCredentialEraser(
     private val vault: AccountCredentialVault,
+    private val hasLiveProfileLease: (ProviderAccountId) -> Boolean = { false },
 ) : ExactCredentialEraser {
     override fun erase(accountId: ProviderAccountId): Boolean =
         if (accountId.providerId in setOf(ProviderId.CLAUDE, ProviderId.CODEX)) {
-            vault.delete(CredentialVaultAccountId.parse(accountId))
+            !hasLiveProfileLease(accountId) && vault.delete(CredentialVaultAccountId.parse(accountId))
         } else {
             true
         }

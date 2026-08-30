@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
+import com.aiquota.mobile.accounts.AccountUsageRepository
 import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.notification.UsageLimitNotificationController
@@ -131,6 +132,11 @@ class MainActivity : ComponentActivity() {
         routeRequestFromIntent(
             intent = intent,
             multiAccountEnabled = BuildConfig.MULTI_ACCOUNT_ENABLED,
+            legacyProviderResolver = { provider ->
+                AccountUsageRepository.open(applicationContext).use { repository ->
+                    repository.compatibilityAccount(provider)
+                }
+            },
         )
 
     private fun postCachedNotificationWhenAllowed() {

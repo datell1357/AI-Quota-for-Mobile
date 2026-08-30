@@ -66,6 +66,8 @@ class NamedProfileEnrollmentRejected(val rejection: EnrollmentCoordinationResult
     IllegalStateException()
 
 interface NamedProfileLifecycleStore {
+    val coordinationKey: Any get() = this
+
     fun read(accountId: ProviderAccountId): AccountProfileBinding?
 
     fun readAll(): List<AccountProfileBinding>
@@ -369,10 +371,10 @@ class NamedProfileLifecycleManager(
     private val names: () -> WebProfileName = WebProfileName::create,
     private val afterEraseCallbackBeforeReceipt: (ProviderAccountId) -> Unit = {},
 ) {
-    private val leases = linkedMapOf<ProviderAccountId, MutableSet<NamedProfileLease>>()
-    private val erasing = mutableSetOf<ProviderAccountId>()
-    private val pendingCallbacks =
-        linkedMapOf<ProviderAccountId, MutableList<(ProfileDataErasureResult) -> Unit>>()
+    private val processState = ProcessNamedProfileLifecycleStates.forKey(store.coordinationKey)
+    private val leases get() = processState.leases
+    private val erasing get() = processState.erasing
+    private val pendingCallbacks get() = processState.pendingCallbacks
     private var mutating = false
 
     fun ensureBinding(id: ProviderAccountId): AccountProfileBinding = mutate {
@@ -555,4 +557,18 @@ class NamedProfileLifecycleManager(
         check(!mutating)
         return b()
     }
+}
+
+private class ProcessNamedProfileLifecycleState {
+    val leases = linkedMapOf<ProviderAccountId, MutableSet<NamedProfileLease>>()
+    val erasing = mutableSetOf<ProviderAccountId>()
+    val pendingCallbacks =
+        linkedMapOf<ProviderAccountId, MutableList<(ProfileDataErasureResult) -> Unit>>()
+}
+
+private object ProcessNamedProfileLifecycleStates {
+    private val states = mutableMapOf<Any, ProcessNamedProfileLifecycleState>()
+
+    fun forKey(key: Any): ProcessNamedProfileLifecycleState =
+        states.getOrPut(key, ::ProcessNamedProfileLifecycleState)
 }

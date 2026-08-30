@@ -143,14 +143,12 @@ class AppRouteTest {
         val explicitPrimary = AppRoute.fromExtras(
             route = AppRoute.ROUTE_PROVIDER,
             providerIdStorageId = ProviderId.CODEX.storageId,
-            multiAccountEnabled = false,
             legacyProviderResolver = { provider -> b.takeIf { provider == ProviderId.CODEX } },
         )
         val cursorDefault = ProviderAccountId(ProviderId.CURSOR, AccountKey.reservedDefault())
         val reservedDefault = AppRoute.fromExtras(
             route = AppRoute.ROUTE_PROVIDER,
             legacyProviderIdStorageId = ProviderId.CURSOR.storageId,
-            multiAccountEnabled = false,
             legacyProviderResolver = { provider -> cursorDefault.takeIf { provider == ProviderId.CURSOR } },
         )
 
@@ -161,7 +159,7 @@ class AppRouteTest {
     }
 
     @Test
-    fun providerOnlyDetailRouteFailsClosedInMultiAccountButLegacyModeCanResolveIt() {
+    fun providerOnlyDetailRouteRequiresResolverInMultiAccountButLegacyModeCanUseDefault() {
         val providerOnly = {
             AppRoute.fromExtras(
                 route = AppRoute.ROUTE_PROVIDER,

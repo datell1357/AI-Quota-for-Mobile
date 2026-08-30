@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
+import android.os.SystemClock
 import android.webkit.CookieManager
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -177,27 +178,40 @@ class ExactWebLoginActivityInstrumentationTest {
         fixture.seedAContext()
         fixture.seedNextBContext()
         lateinit var bBinding: AccountLoginSessionBinding
+        val pageReady = CountDownLatch(1)
+        val observed = arrayOfNulls<String>(1)
 
         ActivityScenario.launch<WebLoginActivity>(fixture.intent()).use { scenario ->
             scenario.onActivity { activity ->
                 bBinding = requireNotNull(activity.exactBindingForTest())
+                attach(activity.mainWebViewForTest(), fixture, 0, observed, pageReady)
+                activity.mainWebViewForTest().loadUrl(SYNTHETIC_URL)
+            }
+            assertTrue(pageReady.await(TIMEOUT_SECONDS, TimeUnit.SECONDS))
+            scenario.onActivity { activity ->
                 invokeSuccessfulCompletion(activity)
             }
             instrumentation.waitForIdleSync()
         }
+        instrumentation.waitForIdleSync()
         assertEquals(AccountAuthState.AUTHENTICATED, fixture.account(fixture.b).authState)
 
         val completed = CountDownLatch(1)
         val cleared = AtomicBoolean(false)
+        val accepted = AtomicBoolean(false)
         val composition = AtomicReference<AndroidExactAccountLoginComposition>()
-        instrumentation.runOnMainSync {
-            val opened = AndroidExactAccountLoginComposition.open(context)
-            composition.set(opened)
-            assertTrue(opened.coordinator.logout(fixture.b) { result ->
-                cleared.set(result)
-                completed.countDown()
-            })
+        val deadline = SystemClock.uptimeMillis() + TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS)
+        while (!accepted.get() && SystemClock.uptimeMillis() < deadline) {
+            instrumentation.runOnMainSync {
+                val opened = composition.get() ?: AndroidExactAccountLoginComposition.open(context).also(composition::set)
+                accepted.set(opened.coordinator.logout(fixture.b) { result ->
+                    cleared.set(result)
+                    completed.countDown()
+                })
+            }
+            if (!accepted.get()) SystemClock.sleep(50L)
         }
+        assertTrue(accepted.get())
         assertTrue(completed.await(TIMEOUT_SECONDS, TimeUnit.SECONDS))
         instrumentation.runOnMainSync { composition.get().close() }
 

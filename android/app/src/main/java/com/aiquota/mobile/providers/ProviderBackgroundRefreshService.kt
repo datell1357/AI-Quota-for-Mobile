@@ -121,9 +121,8 @@ class ProviderBackgroundRefreshService : Service() {
     private val webJobLastUrls = mutableMapOf<Long, String>()
     private val codexNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
     private val claudeNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
-    private var observedCodexAccountId: String? = null
     private var pendingManualProviderId: ProviderId? = null
-    private val pendingManualAccountIds = linkedSetOf<ProviderAccountId>()
+    private val pendingExactManualRefreshes = ExactManualRefreshQueue()
     private var exactRefreshCoordinator: AndroidProviderAccountRefreshCoordinator? = null
     private var pendingManualWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
     private var sessionResetReceiverRegistered = false
@@ -238,20 +237,20 @@ class ProviderBackgroundRefreshService : Service() {
         ) {
             ProviderServiceIntentTarget.Unified -> {
                 pendingManualProviderId = null
-                pendingManualAccountIds.clear()
+                pendingExactManualRefreshes.clear()
             }
             is ProviderServiceIntentTarget.LegacyProvider -> {
                 pendingManualProviderId = target.providerId
-                pendingManualAccountIds.clear()
+                pendingExactManualRefreshes.clear()
             }
             is ProviderServiceIntentTarget.Exact -> {
                 pendingManualProviderId = null
-                pendingManualAccountIds.clear()
-                pendingManualAccountIds.add(target.accountId)
+                pendingExactManualRefreshes.enqueue(target.accountId, pendingManualWidgetId)
+                pendingManualWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
             }
             ProviderServiceIntentTarget.Rejected -> {
                 pendingManualProviderId = null
-                pendingManualAccountIds.clear()
+                pendingExactManualRefreshes.clear()
                 WidgetRefreshFeedback.clearWidgetRefresh(applicationContext, pendingManualWidgetId)
                 pendingManualWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
                 return
@@ -393,7 +392,7 @@ class ProviderBackgroundRefreshService : Service() {
 
     private fun hasPendingManualRefresh(): Boolean {
         return pendingManualProviderId != null ||
-            pendingManualAccountIds.isNotEmpty() ||
+            pendingExactManualRefreshes.isNotEmpty() ||
             pendingManualWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID
     }
 
@@ -402,10 +401,10 @@ class ProviderBackgroundRefreshService : Service() {
         refreshInProgress = true
         refreshStateRepository.recordHeartbeat()
         val manualProviderId = pendingManualProviderId
-        val manualAccountId = pendingManualAccountIds.firstOrNull()
-        val manualWidgetId = pendingManualWidgetId
+        val exactManualRequest = pendingExactManualRefreshes.poll()
+        val manualAccountId = exactManualRequest?.accountId
+        val manualWidgetId = exactManualRequest?.widgetId ?: pendingManualWidgetId
         pendingManualProviderId = null
-        manualAccountId?.let(pendingManualAccountIds::remove)
         pendingManualWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
         val userInitiated = manualProviderId != null || manualAccountId != null ||
             manualWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID
@@ -1030,7 +1029,6 @@ class ProviderBackgroundRefreshService : Service() {
     private fun startWebCollection(active: ServiceWebRefreshJob) {
         val job = active.job
         clearClaudeNativeFetchHeaders(job.providerId)
-        if (job.providerId == ProviderId.CODEX) observedCodexAccountId = null
         val exactOperation = active.exactOperation
         if (job.binding != null &&
             (exactOperation == null || exactOperation.binding != job.binding)
@@ -1067,9 +1065,12 @@ class ProviderBackgroundRefreshService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             cookieManager.setAcceptThirdPartyCookies(webView, true)
         }
-        webView.addJavascriptInterface(ServiceUsageBridge(job.accountId, collectorUserAgent), BRIDGE_NAME)
+        webView.addJavascriptInterface(
+            ServiceUsageBridge(job.accountId, active.requestId, collectorUserAgent),
+            BRIDGE_NAME,
+        )
         webView.webChromeClient = ServiceCollectorChromeClient()
-        webView.webViewClient = ServiceCollectorWebViewClient(job.accountId)
+        webView.webViewClient = ServiceCollectorWebViewClient(job.accountId, active.requestId)
         if (job.binding == null) {
             prepareSharedWebSessionForCollection(webView, job.providerId)
         } else {
@@ -1207,8 +1208,9 @@ class ProviderBackgroundRefreshService : Service() {
         ProviderScopedStateRepository(applicationContext).saveGeminiUsageUrl(url)
     }
 
-    private fun injectCollectorIfReady(providerId: ProviderId, view: WebView, url: String, pageText: String) {
-        val active = currentWebJobFor(providerId) ?: return
+    private fun injectCollectorIfReady(ownerAccountId: ProviderAccountId, view: WebView, url: String, pageText: String) {
+        val active = currentWebJobFor(ownerAccountId) ?: return
+        val providerId = ownerAccountId.providerId
         if (ProviderAboutBlankCollectorPolicy.isEnabled(providerId) && url != "about:blank") return
         val cookies = collectorCookiesFor(active, url)
         if (!ProviderWebCollectorScripts.shouldRunCollector(providerId, url, cookies, pageText)) {
@@ -1228,7 +1230,7 @@ class ProviderBackgroundRefreshService : Service() {
             cookies = cookies,
             geminiCollectorAsset = geminiCollectorAsset,
             antigravityCollectorAsset = antigravityCollectorAsset,
-            observedAccountId = observedCodexAccountId,
+            observedAccountId = active.observedCodexAccountId,
             pageText = pageText,
             pageUrl = url,
             awaitInteractiveLoginUsage = providerId == ProviderId.CODEX || providerId == ProviderId.GEMINI,
@@ -1295,14 +1297,15 @@ class ProviderBackgroundRefreshService : Service() {
         return true
     }
 
-    private fun maybeCompleteSessionReviveFromResource(providerId: ProviderId, view: WebView, url: String) {
-        val active = currentWebJobFor(providerId) ?: return
+    private fun maybeCompleteSessionReviveFromResource(ownerAccountId: ProviderAccountId, view: WebView, url: String) {
+        val active = currentWebJobFor(ownerAccountId) ?: return
+        val providerId = ownerAccountId.providerId
         if (!active.warmUpPending) return
         if (ProviderSessionRevivePolicy.reviveUrl(providerId) == null) return
         if (!ProviderWebCollectorScripts.shouldRunCollectorOnResource(providerId, url)) return
         val requestId = active.requestId
         mainHandler.post {
-            val current = currentWebJobFor(providerId) ?: return@post
+            val current = currentWebJobFor(ownerAccountId) ?: return@post
             if (current.requestId != requestId || !current.warmUpPending) return@post
             Log.i(
                 TAG,
@@ -1438,11 +1441,15 @@ class ProviderBackgroundRefreshService : Service() {
     }
 
     private inner class ServiceCollectorWebViewClient(
-        private val ownerAccountId: ProviderAccountId
+        private val ownerAccountId: ProviderAccountId,
+        private val ownerRequestId: Long,
     ) : WebViewClient() {
         private val ownerProviderId: ProviderId get() = ownerAccountId.providerId
+        private fun activeJob(): ServiceWebRefreshJob? =
+            currentWebJobFor(ownerAccountId)?.takeIf { it.requestId == ownerRequestId }
+
         override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
-            val active = currentWebJobFor(ownerAccountId) ?: return
+            val active = activeJob() ?: return
             val effectiveUrl = effectiveCollectorPageUrl(ownerProviderId, active.requestId, url)
             recordWebJobUrl(active.requestId, effectiveUrl)
             if (isWebSessionWarmUpPage(active, effectiveUrl)) return
@@ -1457,11 +1464,11 @@ class ProviderBackgroundRefreshService : Service() {
                 completeWebJob(active.requestId, ServiceRefreshOutcome.Failure(ProviderRefreshFailure.interactiveAuthRequired(LOGIN_PAGE_REACHED_MESSAGE)))
                 return
             }
-            injectCollectorIfReady(ownerProviderId, view, effectiveUrl, "")
+            injectCollectorIfReady(ownerAccountId, view, effectiveUrl, "")
         }
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-            val active = currentWebJobFor(ownerAccountId) ?: return true
+            val active = activeJob() ?: return true
             val url = request.url.toString()
             if (shouldWaitForGeminiRefreshSignInRedirect(active, url)) {
                 Log.d(TAG, "allowSignInRedirect provider=gemini to=${hostOf(url)}${pathOf(url)}")
@@ -1471,25 +1478,26 @@ class ProviderBackgroundRefreshService : Service() {
         }
 
         override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+            if (activeJob() == null) return null
             val url = request.url.toString()
-            captureCodexAccountId(ownerProviderId, url)
+            captureCodexAccountId(ownerAccountId, url)
             captureCodexNativeFetchHeaders(ownerAccountId, ownerProviderId, url, request.requestHeaders.orEmpty())
             captureClaudeNativeFetchHeaders(ownerAccountId, ownerProviderId, url, request.requestHeaders.orEmpty())
-            maybeStartCodexAboutBlankCollection(ownerProviderId, view, url)
-            maybeStartClaudeAboutBlankCollection(ownerProviderId, view, url)
-            maybeCompleteSessionReviveFromResource(ownerProviderId, view, url)
+            maybeStartCodexAboutBlankCollection(ownerAccountId, view, url)
+            maybeStartClaudeAboutBlankCollection(ownerAccountId, view, url)
+            maybeCompleteSessionReviveFromResource(ownerAccountId, view, url)
             return null
         }
 
         override fun onLoadResource(view: WebView, url: String) {
-            val active = currentWebJobFor(ownerAccountId) ?: return
+            val active = activeJob() ?: return
             val pageUrl = effectiveCollectorPageUrl(ownerProviderId, active.requestId, view.url ?: url)
             recordWebJobUrl(active.requestId, pageUrl)
             if (isWebSessionWarmUpPage(active, pageUrl)) return
             if (!ProviderWebCollectorScripts.shouldRunCollectorFromResource(ownerProviderId, pageUrl, url)) return
             val requestId = active.requestId
             view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
-                if (currentWebJobFor(ownerAccountId)?.requestId != requestId) return@evaluateJavascript
+                if (activeJob()?.requestId != requestId) return@evaluateJavascript
                 val pageText = decodeJsString(encoded)
                 if (ProviderWebCollectorScripts.isRefreshLoginPage(ownerProviderId, pageUrl, pageText)) {
                     Log.d(
@@ -1503,12 +1511,12 @@ class ProviderBackgroundRefreshService : Service() {
                 }
                 if (ownerProviderId == ProviderId.CODEX && pageUrl != "about:blank") return@evaluateJavascript
                 if (ownerProviderId == ProviderId.CLAUDE && pageUrl != "about:blank") return@evaluateJavascript
-                injectCollectorIfReady(ownerProviderId, view, pageUrl, pageText)
+                injectCollectorIfReady(ownerAccountId, view, pageUrl, pageText)
             }
         }
 
         override fun onPageFinished(view: WebView, url: String) {
-            val active = currentWebJobFor(ownerAccountId) ?: return
+            val active = activeJob() ?: return
             val requestId = active.requestId
             val effectiveUrl = effectiveCollectorPageUrl(ownerProviderId, requestId, url)
             recordWebJobUrl(requestId, effectiveUrl)
@@ -1526,11 +1534,11 @@ class ProviderBackgroundRefreshService : Service() {
                 return
             }
             if (ownerProviderId == ProviderId.CLAUDE && effectiveUrl == "about:blank") {
-                injectCollectorIfReady(ownerProviderId, view, effectiveUrl, "")
+                injectCollectorIfReady(ownerAccountId, view, effectiveUrl, "")
                 return
             }
             view.evaluateJavascript(PAGE_CAPTURE_SCRIPT) { encoded ->
-                if (currentWebJobFor(ownerAccountId)?.requestId != requestId) return@evaluateJavascript
+                if (activeJob()?.requestId != requestId) return@evaluateJavascript
                 val pageText = decodeJsString(encoded)
                 if (ProviderWebCollectorScripts.isRefreshLoginPage(ownerProviderId, effectiveUrl, pageText)) {
                     Log.d(
@@ -1544,14 +1552,14 @@ class ProviderBackgroundRefreshService : Service() {
                 }
                 if (ownerProviderId == ProviderId.CODEX && effectiveUrl != "about:blank") return@evaluateJavascript
                 if (ownerProviderId == ProviderId.CLAUDE && effectiveUrl != "about:blank") return@evaluateJavascript
-                injectCollectorIfReady(ownerProviderId, view, effectiveUrl, pageText)
+                injectCollectorIfReady(ownerAccountId, view, effectiveUrl, pageText)
                 maybeScheduleGeminiTerminalCheck(active, view, effectiveUrl)
             }
         }
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
             if (!request.isForMainFrame) return
-            val active = currentWebJobFor(ownerAccountId) ?: return
+            val active = activeJob() ?: return
             completeWebJob(
                 active.requestId,
                 ServiceRefreshOutcome.Failure(
@@ -1577,7 +1585,7 @@ class ProviderBackgroundRefreshService : Service() {
             ) {
                 return
             }
-            val active = currentWebJobFor(ownerAccountId) ?: return
+            val active = activeJob() ?: return
             val failure = ProviderRefreshHttpErrorPolicy.failureForMainFrameHttpError(
                 ownerProviderId,
                 request.url.toString(),
@@ -1592,13 +1600,17 @@ class ProviderBackgroundRefreshService : Service() {
 
     private inner class ServiceUsageBridge(
         private val ownerAccountId: ProviderAccountId,
+        private val ownerRequestId: Long,
         private val collectorUserAgent: String
     ) {
         private val ownerProviderId: ProviderId get() = ownerAccountId.providerId
+        private fun activeJob(): ServiceWebRefreshJob? =
+            currentWebJobFor(ownerAccountId)?.takeIf { it.requestId == ownerRequestId }
+
         @JavascriptInterface
         fun postUsagePayload(rawPayload: String) {
             mainHandler.post {
-                val active = currentWebJobFor(ownerAccountId) ?: return@post
+                val active = activeJob() ?: return@post
                 val pageUrl = webJobLastUrls[active.requestId].orEmpty().ifBlank { active.job.startUrl }
                 if (!ProviderWebCollectorScripts.shouldAcceptCollectorPayload(ownerProviderId, pageUrl, rawPayload)) {
                     Log.d(
@@ -1622,7 +1634,7 @@ class ProviderBackgroundRefreshService : Service() {
         fun postClaudeSubscriptionDetailsPlanStructure(rawRecord: String) {
             if (!BuildConfig.DEBUG || ownerProviderId != ProviderId.CLAUDE) return
             mainHandler.post {
-                if (!BuildConfig.DEBUG || currentWebJobFor(ownerAccountId) == null) return@post
+                if (!BuildConfig.DEBUG || activeJob() == null) return@post
                 val safeRecord = safeClaudeSubscriptionDetailsPlanStructureRecord(rawRecord) ?: return@post
                 Log.d(PLAN_PROVENANCE_DIAGNOSTICS_TAG, safeRecord)
             }
@@ -1632,7 +1644,7 @@ class ProviderBackgroundRefreshService : Service() {
         @JavascriptInterface
         fun postCollectorError(rawError: String) {
             mainHandler.post {
-                val active = currentWebJobFor(ownerAccountId) ?: return@post
+                val active = activeJob() ?: return@post
                 val pageUrl = webJobLastUrls[active.requestId].orEmpty().ifBlank { active.job.startUrl }
                 if (!ProviderWebCollectorScripts.shouldAcceptCollectorError(ownerProviderId, pageUrl, rawError)) {
                     Log.d(TAG, "dropCollectorError provider=${ownerProviderId.storageId} reason=untrusted_bridge_page")
@@ -1895,14 +1907,15 @@ class ProviderBackgroundRefreshService : Service() {
 
     private class ServiceCollectorChromeClient : WebChromeClient()
 
-    private fun maybeStartCodexAboutBlankCollection(providerId: ProviderId, view: WebView, resourceUrl: String) {
+    private fun maybeStartCodexAboutBlankCollection(ownerAccountId: ProviderAccountId, view: WebView, resourceUrl: String) {
+        val providerId = ownerAccountId.providerId
         if (providerId != ProviderId.CODEX) return
-        val active = currentWebJobFor(providerId) ?: return
+        val active = currentWebJobFor(ownerAccountId) ?: return
         if (webJobLastUrls[active.requestId] == "about:blank") return
         if (!shouldStartCodexNativeCollectionFromResource(resourceUrl)) return
         if (!hasCodexNativeFetchAuthContext(active, resourceUrl) && !hasCodexSessionCookies(active, resourceUrl)) return
         mainHandler.post {
-            if (currentWebJobFor(providerId)?.requestId != active.requestId) return@post
+            if (currentWebJobFor(ownerAccountId)?.requestId != active.requestId) return@post
             if (webJobLastUrls[active.requestId] == "about:blank") return@post
             collectorInjectionKeys.removeAll { it.startsWith("${active.requestId}:${providerId.storageId}:") }
             recordWebJobUrl(active.requestId, "about:blank")
@@ -1912,14 +1925,15 @@ class ProviderBackgroundRefreshService : Service() {
         }
     }
 
-    private fun maybeStartClaudeAboutBlankCollection(providerId: ProviderId, view: WebView, resourceUrl: String) {
+    private fun maybeStartClaudeAboutBlankCollection(ownerAccountId: ProviderAccountId, view: WebView, resourceUrl: String) {
+        val providerId = ownerAccountId.providerId
         if (providerId != ProviderId.CLAUDE) return
-        val active = currentWebJobFor(providerId) ?: return
+        val active = currentWebJobFor(ownerAccountId) ?: return
         if (webJobLastUrls[active.requestId] == "about:blank") return
         if (!ProviderLoginStrategy.shouldStartClaudeNativeCollectionFromResource(resourceUrl)) return
         if (!hasClaudeNativeFetchHeaders(active, resourceUrl)) return
         mainHandler.post {
-            if (currentWebJobFor(providerId)?.requestId != active.requestId) return@post
+            if (currentWebJobFor(ownerAccountId)?.requestId != active.requestId) return@post
             if (webJobLastUrls[active.requestId] == "about:blank") return@post
             collectorInjectionKeys.removeAll { it.startsWith("${active.requestId}:${providerId.storageId}:") }
             recordWebJobUrl(active.requestId, "about:blank")
@@ -2116,8 +2130,9 @@ class ProviderBackgroundRefreshService : Service() {
         return !cookieHeaderForJob(active, url).isNullOrBlank()
     }
 
-    private fun captureCodexAccountId(providerId: ProviderId, url: String) {
-        if (providerId != ProviderId.CODEX) return
+    private fun captureCodexAccountId(ownerAccountId: ProviderAccountId, url: String) {
+        if (ownerAccountId.providerId != ProviderId.CODEX) return
+        val active = currentWebJobFor(ownerAccountId) ?: return
         val accountId = runCatching {
             val uri = URI(url)
             if (uri.path != "/backend-api/subscriptions") return@runCatching null
@@ -2127,7 +2142,7 @@ class ProviderBackgroundRefreshService : Service() {
                 ?.substringAfter("=")
                 ?.takeIf { it.isNotBlank() }
         }.getOrNull() ?: return
-        observedCodexAccountId = accountId
+        active.observedCodexAccountId = accountId
     }
 
     private fun collectorCookiesFor(active: ServiceWebRefreshJob, url: String): Map<String, String> {
@@ -2290,7 +2305,8 @@ class ProviderBackgroundRefreshService : Service() {
         var lastGeminiRefreshRedirectAtMs: Long = 0L,
         var geminiUsageRedirectAttempts: Int = 0,
         var geminiTerminalCheckScheduled: Boolean = false,
-        var geminiSignInClickAttempts: Int = 0
+        var geminiSignInClickAttempts: Int = 0,
+        var observedCodexAccountId: String? = null,
     )
 
     private sealed class ServiceRefreshOutcome {

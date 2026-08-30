@@ -31,6 +31,7 @@ import com.aiquota.mobile.accounts.AccountLoginSessionBinding
 import com.aiquota.mobile.accounts.AccountUsageRepository
 import com.aiquota.mobile.accounts.AccountUsageWrite
 import com.aiquota.mobile.accounts.AccountUsageWriteResult
+import com.aiquota.mobile.accounts.LeaseCloseResult
 import com.aiquota.mobile.accounts.NamedProfileLease
 import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
@@ -1905,7 +1906,6 @@ open class WebLoginActivity : Activity() {
                 LoginCallbackResult.Accepted -> {
                     if (publishExactLoginSnapshot(binding, rawPayload)) {
                         setExactLoginResult(EXACT_RESULT_SUCCESS)
-                        rootContainer.removeView(webView)
                     } else {
                         composition.coordinator.fail(binding)
                         setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
@@ -1919,7 +1919,7 @@ open class WebLoginActivity : Activity() {
             }
             finished = true
             loginCookieManager().flush()
-            finish()
+            finishExactLoginAfterLeaseClose(composition, binding)
             return
         }
         finished = true
@@ -1933,6 +1933,36 @@ open class WebLoginActivity : Activity() {
             glmWebSessionCookieHeader = captureGlmWebSessionCookieHeader()
         )
         finish()
+    }
+
+    private fun finishExactLoginAfterLeaseClose(
+        composition: AndroidExactAccountLoginComposition,
+        binding: AccountLoginSessionBinding,
+    ) {
+        val lease = namedProfileLease
+        if (lease == null) {
+            exactLoginComposition = null
+            composition.close()
+            finish()
+            return
+        }
+        lease.closeAcknowledged { result ->
+            when (result) {
+                LeaseCloseResult.Closed,
+                LeaseCloseResult.AlreadyClosed -> {
+                    namedProfileLease = null
+                    exactLoginComposition = null
+                    composition.close()
+                    finish()
+                }
+                LeaseCloseResult.AlreadyClosing,
+                is LeaseCloseResult.RetryableFailure -> {
+                    composition.coordinator.fail(binding)
+                    setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
+                    finish()
+                }
+            }
+        }
     }
 
     private fun publishExactLoginSnapshot(

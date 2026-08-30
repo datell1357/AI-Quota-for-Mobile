@@ -38,13 +38,41 @@ internal class ExactProviderCollectorOperationGate {
     }
 }
 
+internal data class ExactManualRefreshRequest(
+    val accountId: ProviderAccountId,
+    val widgetId: Int,
+)
+
+internal class ExactManualRefreshQueue {
+    private val requests = linkedMapOf<ProviderAccountId, Int>()
+
+    fun enqueue(accountId: ProviderAccountId, widgetId: Int) {
+        requests[accountId] = widgetId
+    }
+
+    fun poll(): ExactManualRefreshRequest? {
+        val entry = requests.entries.firstOrNull() ?: return null
+        requests.remove(entry.key)
+        return ExactManualRefreshRequest(entry.key, entry.value)
+    }
+
+    fun clear() = requests.clear()
+
+    fun isNotEmpty(): Boolean = requests.isNotEmpty()
+}
+
 internal class ExactProviderCollectorUnavailable(reason: String) : IllegalStateException(reason)
 
 internal fun persistReauthenticationThenCancel(
     persist: () -> Unit,
     cancel: () -> ProviderRefreshAttempt?,
 ): ProviderRefreshAttempt? {
-    persist()
+    try {
+        persist()
+    } catch (failure: Throwable) {
+        runCatching(cancel).exceptionOrNull()?.let(failure::addSuppressed)
+        throw failure
+    }
     return cancel()
 }
 

@@ -40,7 +40,8 @@ class ProviderCardDeletionComposition private constructor(
                     profileStore = profileStore,
                     usageRepository = usageRepository,
                     credentials = AccountVaultCredentialEraser(
-                        createAndroidAccountCredentialVault(appContext)
+                        createAndroidAccountCredentialVault(appContext),
+                        hasLiveProfileLease = { lifecycle.liveLeaseCount(it) > 0 },
                     ),
                     profiles = NamedProfileExactEraser(lifecycle),
                     providerCleanup = ConservativeSingleAccountProviderCleanup(appContext),

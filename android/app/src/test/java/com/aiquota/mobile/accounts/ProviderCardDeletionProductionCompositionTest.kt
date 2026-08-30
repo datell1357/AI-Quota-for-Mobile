@@ -112,6 +112,23 @@ class ProviderCardDeletionProductionCompositionTest {
     }
 
     @Test
+    fun credentialEraserRefusesNamedAccountWhileExactProfileLeaseIsLive() {
+        val selected = id(ProviderId.CODEX, 2)
+        val crypto = FakeCredentialVaultCrypto()
+        val vault = createAndroidAccountCredentialVault(context, crypto)
+        putCredential(vault, selected, "selected-header-payload")
+        var live = true
+        val eraser = AccountVaultCredentialEraser(vault) { live }
+
+        assertFalse(eraser.erase(selected))
+        assertFalse(vault.isAbsent(CredentialVaultAccountId.parse(selected)))
+
+        live = false
+        assertTrue(eraser.erase(selected))
+        assertTrue(vault.isAbsent(CredentialVaultAccountId.parse(selected)))
+    }
+
+    @Test
     fun realConservativeLegacyOwnersClearSingleDefaultAndRetainOtherProviderBytes() {
         val cursor = ProviderAccountId(ProviderId.CURSOR, AccountKey.reservedDefault())
         seedProviderKeyedArtifacts(ProviderId.CURSOR)

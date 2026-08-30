@@ -54,10 +54,10 @@ sealed class AppRoute {
             val legacyProvider = if (hasExactIdentity) null else {
                 ProviderId.fromStorageId(providerIdStorageId ?: legacyProviderIdStorageId.orEmpty())
             }
-            val detail = exactAccountId ?: if (multiAccountEnabled) {
-                null
-            } else {
-                legacyProvider?.let { provider ->
+            val detail = exactAccountId ?: legacyProvider?.let { provider ->
+                if (multiAccountEnabled) {
+                    legacyProviderResolver?.invoke(provider)
+                } else {
                     legacyProviderResolver?.invoke(provider) ?: reservedDefaultAccount(provider)
                 }
             }
