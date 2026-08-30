@@ -233,6 +233,7 @@ class NamedProfileLifecycleManagerTest {
         assertEquals(LeaseState.CLOSED, lease.stateForTest())
         assertEquals(0, m.liveLeaseCount(id))
         assertEquals(1, p.destroyCount)
+        assertEquals(1, p.cancelQuiesceCount)
         p.completeNextQuiesce()
         assertEquals(LeaseCloseResult.AlreadyClosed, closeResult)
         assertEquals(1, p.destroyCount)
@@ -255,6 +256,7 @@ class NamedProfileLifecycleManagerTest {
             assertEquals(LeaseCloseResult.RetryableFailure("DESTROY_FAILED:IllegalStateException"), it)
         }
         assertEquals(LeaseState.OPEN, lease.stateForTest())
+        assertEquals(1, p.cancelQuiesceCount)
 
         p.completeNextQuiesce()
 
@@ -500,6 +502,7 @@ private class FakePlatform : NamedProfilePlatform {
     var eraseResult: ProfileDataErasureResult = ProfileDataErasureResult.Completed
     var deferErase = false
     var destroyCount = 0
+    var cancelQuiesceCount = 0
     val destroyFailures = ArrayDeque<RuntimeException>()
     var probeCount = 0
     val capabilities = ArrayDeque<NamedProfileCapability>()
@@ -528,6 +531,7 @@ private class FakePlatform : NamedProfilePlatform {
     ): NamedProfileSessionResource {
         bindCount++
         return object : NamedProfileSessionResource {
+            var pendingQuiesce: (() -> Unit)? = null
             override val webView = Any()
             override val cookieManager = Any()
             override val cookieSource = ExactProfileCookieSource { _, _ -> null }
@@ -542,7 +546,26 @@ private class FakePlatform : NamedProfilePlatform {
                         else quiesceResults.removeFirst()
                     )
                 }
-                if (deferQuiesce) deferredQuiesces.add(complete) else complete()
+                pendingQuiesce = complete
+                if (deferQuiesce) {
+                    deferredQuiesces.add {
+                        pendingQuiesce?.let {
+                            pendingQuiesce = null
+                            it()
+                        }
+                    }
+                } else {
+                    pendingQuiesce = null
+                    complete()
+                }
+            }
+
+            override fun cancelQuiesce() {
+                pendingQuiesce?.let {
+                    cancelQuiesceCount++
+                    pendingQuiesce = null
+                    deferredQuiesces.addFirst(it)
+                }
             }
 
             override fun destroy() {

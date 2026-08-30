@@ -110,6 +110,7 @@ open class WebLoginActivity : Activity() {
     private var codexNativeCollectionStarted = false
     private var cursorNativeCollectionStarted = false
     private var aboutBlankNativeCollectionStarted = false
+    @Volatile
     private var claudeNativeCollectionStarted = false
     private var geminiNativeCollectionStarted = false
     private var geminiNativeUsagePageUrl = ""

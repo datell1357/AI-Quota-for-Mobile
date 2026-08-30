@@ -2,6 +2,7 @@ package com.aiquota.mobile.accounts
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.os.Handler
 import android.os.Looper
 import android.webkit.CookieManager
 import android.webkit.ServiceWorkerController
@@ -238,6 +239,17 @@ private class AndroidSession(
             else "session:quiesce-failed"
         )
         cb(r)
+    }
+
+    override fun cancelQuiesce() {
+        ui()
+        val cb = callback ?: return
+        callback = null
+        prior?.let { webView.webViewClient = it }
+        prior = null
+        Handler(Looper.getMainLooper()).post {
+            cb(SessionQuiesceResult.Failed("QUIESCE_ABORTED"))
+        }
     }
 
     override fun destroy() {

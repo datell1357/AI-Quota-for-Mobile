@@ -266,6 +266,8 @@ interface NamedProfileSessionResource {
 
     fun quiesce(callback: (SessionQuiesceResult) -> Unit)
 
+    fun cancelQuiesce() = Unit
+
     fun destroy()
 }
 
@@ -569,6 +571,7 @@ class NamedProfileLifecycleManager(
             return@mutate
         }
         val attempt = requireNotNull(start.attempt)
+        l.resource.cancelQuiesce()
         val destroyFailure = runCatching { l.resource.destroy() }.exceptionOrNull()
         if (destroyFailure != null) {
             l.reopen(attempt)
