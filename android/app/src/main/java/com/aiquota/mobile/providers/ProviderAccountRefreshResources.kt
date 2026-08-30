@@ -68,6 +68,9 @@ internal class ExactProviderCollectorUnavailable(reason: String) : IllegalStateE
 internal fun exactHiddenCollectionNeedsNamedProfile(providerId: ProviderId): Boolean =
     providerId in NAMED_PROFILE_PROVIDERS
 
+internal fun jobUsesNamedProfileSession(job: ProviderRefreshJob): Boolean =
+    job.binding != null && exactHiddenCollectionNeedsNamedProfile(job.providerId)
+
 internal suspend fun closeAfterRefreshCycle(activeCycle: Job?, close: () -> Unit) {
     activeCycle?.cancelAndJoin()
     close()

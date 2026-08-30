@@ -171,7 +171,8 @@ class ProviderBackgroundRefreshService : Service() {
                     },
                     schedule = ::scheduleNextTick,
                     onFailure = { error ->
-                        Log.e(TAG, "refreshCycleFailed=${error::class.java.simpleName}")
+                        refreshStateRepository.recordFailure("UNEXPECTED:${error::class.java.simpleName}")
+                        Log.e(TAG, "refreshCycleFailed=${error::class.java.simpleName}", error)
                     },
                 )
             } finally {
@@ -1056,7 +1057,8 @@ class ProviderBackgroundRefreshService : Service() {
         val job = active.job
         clearClaudeNativeFetchHeaders(job.providerId)
         val exactOperation = active.exactOperation
-        if (job.binding != null &&
+        val usesNamedProfile = jobUsesNamedProfileSession(job)
+        if (usesNamedProfile &&
             (exactOperation == null || exactOperation.binding != job.binding)
         ) {
             completeWebJob(
@@ -1067,12 +1069,12 @@ class ProviderBackgroundRefreshService : Service() {
             )
             return
         }
-        val webView = if (job.binding != null) {
+        val webView = if (usesNamedProfile) {
             requireNotNull(exactOperation).webView
         } else {
             retainedWebViews.getOrPut(job.providerId) { WebView(this) }
         }
-        val cookieManager = if (job.binding != null) {
+        val cookieManager = if (usesNamedProfile) {
             requireNotNull(exactOperation).profileLease.requireAndroidCookieManager()
         } else {
             CookieManager.getInstance()
@@ -1097,7 +1099,7 @@ class ProviderBackgroundRefreshService : Service() {
         )
         webView.webChromeClient = ServiceCollectorChromeClient()
         webView.webViewClient = ServiceCollectorWebViewClient(job.accountId, active.requestId)
-        if (job.binding == null) {
+        if (!usesNamedProfile) {
             prepareSharedWebSessionForCollection(webView, job.providerId)
         } else {
             cookieManager.setAcceptCookie(true)
@@ -1841,7 +1843,7 @@ class ProviderBackgroundRefreshService : Service() {
             return JSONObject().put("ok", false).put("error", "provider_mismatch").toString()
         }
         val binding = job.binding
-        if (binding == null) {
+        if (!jobUsesNamedProfileSession(job)) {
             return ProviderNativeJsonBridge.fetchJson(providerId, url, userAgent, requestHeaders)
         }
         val operation = exactOperation?.takeIf { it.binding == binding }
@@ -1858,7 +1860,7 @@ class ProviderBackgroundRefreshService : Service() {
     }
 
     private fun requestHeadersForJob(active: ServiceWebRefreshJob, url: String): Map<String, String> {
-        if (active.job.binding != null) {
+        if (jobUsesNamedProfileSession(active.job)) {
             if (active.exactOperation?.binding != active.job.binding) return emptyMap()
             return when (active.job.providerId) {
                 ProviderId.CODEX -> CodexNativeHeaderStore.headersFor(
@@ -1883,7 +1885,7 @@ class ProviderBackgroundRefreshService : Service() {
         exactOperation: ExactProviderCollectorOperation<WebView, NamedProfileLease>?,
     ): Map<String, String> {
         val binding = job.binding
-        if (binding != null) {
+        if (jobUsesNamedProfileSession(job)) {
             val storedHeaders = exactOperation
                 ?.takeIf { it.binding == binding }
                 ?.nativeHeaders
@@ -1920,7 +1922,7 @@ class ProviderBackgroundRefreshService : Service() {
         val uri = runCatching { URI(url) }.getOrNull() ?: return null
         val origin = "${uri.scheme}://${uri.host}"
         val binding = job.binding
-        if (binding != null) {
+        if (jobUsesNamedProfileSession(job)) {
             return exactOperation
                 ?.takeIf { it.binding == binding }
                 ?.profileLease

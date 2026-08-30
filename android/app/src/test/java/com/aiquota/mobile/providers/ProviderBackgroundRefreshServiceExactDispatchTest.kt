@@ -45,6 +45,17 @@ class ProviderBackgroundRefreshServiceExactDispatchTest {
     }
 
     @Test
+    fun scheduledSingletonJobKeepsSharedSessionWhileClaudeAndCodexRequireNamedProfile() {
+        val cursorJob = attempt(binding(ProviderId.CURSOR, 1, generation = 1)).job
+        val claudeJob = attempt(binding(ProviderId.CLAUDE, 2, generation = 1)).job
+        val codexJob = attempt(binding(ProviderId.CODEX, 3, generation = 1)).job
+
+        assertFalse(jobUsesNamedProfileSession(cursorJob))
+        assertTrue(jobUsesNamedProfileSession(claudeJob))
+        assertTrue(jobUsesNamedProfileSession(codexJob))
+    }
+
+    @Test
     fun serviceDispatchSerializesRealExternalCleanupWithoutBlockingSiblingBinding() = runBlocking {
         val bindingA = binding(ProviderId.CLAUDE, 1, generation = 1)
         val bindingB = binding(ProviderId.CLAUDE, 2, generation = 1)

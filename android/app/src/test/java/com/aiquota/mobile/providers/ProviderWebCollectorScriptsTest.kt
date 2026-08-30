@@ -10,6 +10,26 @@ import org.junit.Test
 
 class ProviderWebCollectorScriptsTest {
     @Test
+    fun collectorAndLoginPageAdmissionRejectHttp() {
+        assertFalse(ProviderWebCollectorScripts.isRefreshLoginPage(ProviderId.CLAUDE, "http://claude.ai/login"))
+        assertFalse(
+            ProviderWebCollectorScripts.isRefreshLoginPage(
+                ProviderId.CODEX,
+                "http://chatgpt.com/",
+                "Sign in",
+            )
+        )
+        assertFalse(
+            ProviderWebCollectorScripts.shouldRunCollector(
+                ProviderId.CLAUDE,
+                "http://claude.ai/new",
+                mapOf("lastActiveOrg" to "org"),
+                "Claude",
+            )
+        )
+    }
+
+    @Test
     fun collectorRunsOnlyAfterProviderShellsAreReached() {
         assertFalse(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CLAUDE, "https://claude.ai/new", mapOf("lastActiveOrg" to "org_123"), ""))
         assertTrue(ProviderWebCollectorScripts.shouldRunCollector(ProviderId.CLAUDE, "about:blank", emptyMap(), ""))

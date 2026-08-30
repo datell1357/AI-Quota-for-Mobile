@@ -9,6 +9,7 @@ import org.json.JSONObject
 object ProviderWebCollectorScripts {
     fun isRefreshLoginPage(providerId: ProviderId, url: String): Boolean {
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        if (!uri.scheme.equals("https", ignoreCase = true)) return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
         val path = uri.path.orEmpty().lowercase(Locale.US)
         return when (providerId) {
@@ -73,6 +74,7 @@ object ProviderWebCollectorScripts {
     fun isRefreshLoginPage(providerId: ProviderId, url: String, pageText: String): Boolean {
         if (isRefreshLoginPage(providerId, url)) return true
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        if (!uri.scheme.equals("https", ignoreCase = true)) return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
         val path = uri.path.orEmpty().lowercase(Locale.US)
         if (providerId == ProviderId.CODEX) {
@@ -142,6 +144,7 @@ object ProviderWebCollectorScripts {
             return false
         }
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        if (!uri.scheme.equals("https", ignoreCase = true)) return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
         val path = uri.path.orEmpty().lowercase(Locale.US)
         val text = pageText.lowercase(Locale.US)

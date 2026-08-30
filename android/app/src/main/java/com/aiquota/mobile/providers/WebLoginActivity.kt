@@ -1969,8 +1969,7 @@ open class WebLoginActivity : Activity() {
                     }
                     if (finishAfterClose && binding != null) finish()
                 }
-                LeaseCloseResult.AlreadyClosing,
-                is LeaseCloseResult.RetryableFailure -> {
+                LeaseCloseResult.AlreadyClosing -> {
                     if (attempt < EXACT_LEASE_CLOSE_MAX_RETRIES) {
                         Handler(Looper.getMainLooper()).postDelayed(
                             {
@@ -1989,6 +1988,37 @@ open class WebLoginActivity : Activity() {
                             "AIQuotaLogin",
                             "provider=${providerId.storageId} exactLeaseClosePending=true",
                         )
+                    }
+                }
+                is LeaseCloseResult.RetryableFailure -> {
+                    if (attempt < EXACT_LEASE_CLOSE_MAX_RETRIES) {
+                        Handler(Looper.getMainLooper()).postDelayed(
+                            {
+                                closeExactLeaseAndComposition(
+                                    lease,
+                                    composition,
+                                    finishAfterClose,
+                                    binding,
+                                    attempt + 1,
+                                )
+                            },
+                            EXACT_LEASE_CLOSE_RETRY_DELAY_MS,
+                        )
+                    } else {
+                        binding?.let {
+                            composition?.coordinator?.fail(it)
+                            setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
+                        }
+                        lease.abortAcknowledged { aborted ->
+                            if (aborted == LeaseCloseResult.Closed || aborted == LeaseCloseResult.AlreadyClosed) {
+                                if (namedProfileLease === lease) namedProfileLease = null
+                                if (composition != null && exactLoginComposition === composition) {
+                                    exactLoginComposition = null
+                                    composition.close()
+                                }
+                                if (finishAfterClose && binding != null) finish()
+                            }
+                        }
                     }
                 }
             }

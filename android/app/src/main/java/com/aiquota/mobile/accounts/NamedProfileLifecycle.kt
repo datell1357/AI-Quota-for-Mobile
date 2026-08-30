@@ -326,6 +326,7 @@ internal constructor(
     val profileName: WebProfileName,
     internal val resource: NamedProfileSessionResource,
     private val release: (NamedProfileLease, (LeaseCloseResult) -> Unit) -> Unit,
+    private val abort: (NamedProfileLease, (LeaseCloseResult) -> Unit) -> Unit,
 ) : AutoCloseable {
     private var state = LeaseState.OPEN
     val webView
@@ -365,6 +366,8 @@ internal constructor(
     internal fun stateForTest(): LeaseState = state
 
     fun closeAcknowledged(callback: (LeaseCloseResult) -> Unit) = release(this, callback)
+
+    fun abortAcknowledged(callback: (LeaseCloseResult) -> Unit) = abort(this, callback)
 
     override fun close() = closeAcknowledged {}
 }
@@ -421,7 +424,7 @@ class NamedProfileLifecycleManager(
         val resource = platform.createBoundSession(row.profileName, createIfMissing)
             ?: return@mutate LeaseAcquireResult.ProfileUnavailable
         lateinit var lease: NamedProfileLease
-        lease = NamedProfileLease(id, row.profileName, resource, ::release)
+        lease = NamedProfileLease(id, row.profileName, resource, ::release, ::abortRelease)
         leases.getOrPut(id, ::linkedSetOf).add(lease)
         LeaseAcquireResult.Acquired(lease)
     }
@@ -509,6 +512,25 @@ class NamedProfileLifecycleManager(
             }
             callback(LeaseCloseResult.Closed)
         }
+    }
+
+    private fun abortRelease(l: NamedProfileLease, callback: (LeaseCloseResult) -> Unit) = mutate {
+        l.beginClose()?.let {
+            callback(it)
+            return@mutate
+        }
+        l.resource.destroy()
+        val active = leases[l.accountId]
+        active?.remove(l)
+        if (active?.isEmpty() == true) leases.remove(l.accountId)
+        l.markClosed()
+        if (
+            store.read(l.accountId)?.state == ProfileLifecycleState.ERASURE_PENDING &&
+                leases[l.accountId].isNullOrEmpty()
+        ) {
+            startErase(l.accountId)
+        }
+        callback(LeaseCloseResult.Closed)
     }
 
     fun shutdown(callback: (List<LeaseCloseResult>) -> Unit) {

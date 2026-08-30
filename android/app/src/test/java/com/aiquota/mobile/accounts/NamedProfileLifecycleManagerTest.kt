@@ -174,6 +174,28 @@ class NamedProfileLifecycleManagerTest {
     }
 
     @Test
+    fun `aborting after persistent quiesce failure releases lease`() {
+        val p = FakePlatform().apply {
+            repeat(4) { quiesceResults.add(SessionQuiesceResult.Failed("renderer")) }
+        }
+        val m = manager(platform = p)
+        val id = id(1)
+        m.ensureBinding(id)
+        val lease = m.acquire(id)
+        repeat(4) {
+            lease.closeAcknowledged { result ->
+                assertTrue(result is LeaseCloseResult.RetryableFailure)
+            }
+        }
+
+        lease.abortAcknowledged { assertEquals(LeaseCloseResult.Closed, it) }
+
+        assertEquals(LeaseState.CLOSED, lease.stateForTest())
+        assertEquals(0, m.liveLeaseCount(id))
+        assertEquals(1, p.destroyCount)
+    }
+
+    @Test
     fun `duplicate closing closed and shutdown with live leases are deterministic`() {
         val p = FakePlatform().apply { deferQuiesce = true }
         val m = manager(platform = p)
