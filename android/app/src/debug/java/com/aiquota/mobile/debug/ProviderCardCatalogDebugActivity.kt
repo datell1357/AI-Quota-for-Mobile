@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.aiquota.mobile.accounts.AccountAuthState
@@ -67,18 +68,22 @@ import java.util.Locale
  */
 open class ProviderCardCatalogDebugActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        intent.getStringExtra(EXTRA_LOCALE)?.trim()?.takeIf(String::isNotEmpty)?.let { languageTag ->
-            val locale = try {
-                Locale.Builder().setLanguageTag(languageTag).build()
-            } catch (_: IllformedLocaleException) {
-                null
+        val requestedLocale = intent.getStringExtra(EXTRA_LOCALE)
+            ?.trim()
+            ?.takeIf(String::isNotEmpty)
+            ?.let { languageTag ->
+                try {
+                    Locale.Builder().setLanguageTag(languageTag).build()
+                } catch (_: IllformedLocaleException) {
+                    null
+                }
             }
-            locale?.let {
-                applyOverrideConfiguration(Configuration().apply { setLocale(it) })
-            }
-        }
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val contentContext = requestedLocale?.let { locale ->
+            createConfigurationContext(Configuration(resources.configuration).apply { setLocale(locale) })
+        } ?: this
 
         val dataset = intent.getStringExtra(EXTRA_DATASET)
         val initialViewMode = when (intent.getStringExtra(EXTRA_VIEW_MODE)?.trim()?.lowercase()) {
@@ -93,35 +98,40 @@ open class ProviderCardCatalogDebugActivity : ComponentActivity() {
         }
 
         setContent {
-            ProviderCardCatalogDebugTheme(theme) {
-                var viewMode by remember(initialViewMode) { mutableStateOf(initialViewMode) }
-                Surface(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .windowInsetsPadding(WindowInsets.safeDrawing),
-                    color = AIQuotaTheme.colors.appBackground
-                ) {
-                    if (exact != null) {
-                        ExactProviderCardCatalogPreview(
-                            dataset = dataset.orEmpty(),
-                            initialViewMode = initialViewMode,
-                        )
-                    } else if (dataset.equals(DATASET_ONBOARDING, ignoreCase = true)) {
-                        ProviderOnboardingPreviewSurface()
-                    } else {
-                        UnifiedDashboardScreen(
-                            providerOrder = if (populated) populatedProviderOrder else emptyList(),
-                            hiddenProviders = emptySet(),
-                            snapshots = if (populated) populatedSnapshots else emptyList(),
-                            onProviderSelected = {},
-                            onConnectProvider = {},
-                            onReorderProvider = { _, _ -> },
-                            onAddWidget = {},
-                            onOpenSettings = {},
-                            viewMode = viewMode,
-                            onSelectViewMode = { viewMode = it },
-                            modifier = Modifier.fillMaxSize()
-                        )
+            CompositionLocalProvider(
+                LocalConfiguration provides contentContext.resources.configuration,
+                LocalContext provides contentContext,
+            ) {
+                ProviderCardCatalogDebugTheme(theme) {
+                    var viewMode by remember(initialViewMode) { mutableStateOf(initialViewMode) }
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .windowInsetsPadding(WindowInsets.safeDrawing),
+                        color = AIQuotaTheme.colors.appBackground
+                    ) {
+                        if (exact != null) {
+                            ExactProviderCardCatalogPreview(
+                                dataset = dataset.orEmpty(),
+                                initialViewMode = initialViewMode,
+                            )
+                        } else if (dataset.equals(DATASET_ONBOARDING, ignoreCase = true)) {
+                            ProviderOnboardingPreviewSurface()
+                        } else {
+                            UnifiedDashboardScreen(
+                                providerOrder = if (populated) populatedProviderOrder else emptyList(),
+                                hiddenProviders = emptySet(),
+                                snapshots = if (populated) populatedSnapshots else emptyList(),
+                                onProviderSelected = {},
+                                onConnectProvider = {},
+                                onReorderProvider = { _, _ -> },
+                                onAddWidget = {},
+                                onOpenSettings = {},
+                                viewMode = viewMode,
+                                onSelectViewMode = { viewMode = it },
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     }
                 }
             }
