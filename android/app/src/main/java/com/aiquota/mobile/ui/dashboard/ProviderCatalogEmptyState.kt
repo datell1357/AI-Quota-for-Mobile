@@ -1,6 +1,7 @@
 package com.aiquota.mobile.ui.dashboard
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,7 +49,9 @@ internal fun ProviderCatalogEmptyState(
                 onClick = onAddProvider,
                 modifier = Modifier
                     .then(
-                        if (focusRequester == null) Modifier else Modifier.focusRequester(focusRequester),
+                        if (focusRequester == null) Modifier else {
+                            Modifier.focusRequester(focusRequester).focusable()
+                        },
                     )
                     .semantics { contentDescription = addDescription },
             ) {

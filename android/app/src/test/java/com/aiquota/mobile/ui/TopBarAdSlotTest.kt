@@ -15,8 +15,13 @@ import org.junit.Test
  * AdMob이 "복제된 콘텐츠가 있는 화면에 게재된 광고"로 지적했다(2026-08-19).
  */
 class TopBarAdSlotTest {
-    private val topBar = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt")
-        .readText()
+    private val shell = File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
+    private val banner = File("src/main/java/com/aiquota/mobile/ui/ads/TopBarAdBanner.kt").readText()
+    private val exactDashboard =
+        File("src/main/java/com/aiquota/mobile/ui/dashboard/ExactAccountDashboardScreen.kt").readText()
+    private val emptyState =
+        File("src/main/java/com/aiquota/mobile/ui/dashboard/ProviderCatalogEmptyState.kt").readText()
+    private val topBar = shell
         .substringAfter("private fun AppTopBar(")
         .substringBefore("private fun AppNavigationBar")
 
@@ -89,6 +94,25 @@ class TopBarAdSlotTest {
 
         assertEquals(50, phone.topBarAdMinHeightDp)
         assertEquals(90, tablet.topBarAdMinHeightDp)
+    }
+
+    @Test
+    fun providerPickerBlocksAdFocusUntilAddInvokerFocusReturns() {
+        assertTrue(
+            shell.contains(
+                "val topBarAdFocusEnabled = providerEnrollment?.state?.visible != true && " +
+                    "providerAddFocusRequester == null",
+            ),
+        )
+        assertTrue(shell.contains("TopBarAdBanner(focusEnabled = topBarAdFocusEnabled)"))
+        assertTrue(banner.contains("fun TopBarAdBanner(focusEnabled: Boolean = true"))
+        assertTrue(banner.contains("view.findFocus()?.clearFocus()"))
+        assertTrue(banner.contains("ViewGroup.FOCUS_BLOCK_DESCENDANTS"))
+        assertTrue(banner.contains("view.descendantFocusability = initialDescendantFocusability"))
+        assertTrue(
+            exactDashboard.contains("Modifier.focusRequester(addProviderFocusRequester).focusable()"),
+        )
+        assertTrue(emptyState.contains("Modifier.focusRequester(focusRequester).focusable()"))
     }
 
     @Test

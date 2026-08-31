@@ -221,6 +221,7 @@ fun AIQuotaAppShell(
     var providerAddFocusRequester by remember { mutableStateOf<FocusRequester?>(null) }
     val providerAddHeaderFocusRequester = remember { FocusRequester() }
     val providerAddEmptyStateFocusRequester = remember { FocusRequester() }
+    val topBarAdFocusEnabled = providerEnrollment?.state?.visible != true && providerAddFocusRequester == null
     val liveRefreshState = settingsLiveRefreshState(
         notificationEnabled = liveMonitoringEnabled,
         canPostNotifications = canPostNotifications,
@@ -946,7 +947,7 @@ fun AIQuotaAppShell(
                         layoutMetrics = layoutMetrics,
                         onHomeClick = { route = AppRoute.Home },
                         adContent = if (AdConfig.isBannerEnabled()) {
-                            { TopBarAdBanner() }
+                            { TopBarAdBanner(focusEnabled = topBarAdFocusEnabled) }
                         } else {
                             null
                         }

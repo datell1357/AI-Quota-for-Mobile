@@ -3,6 +3,7 @@ package com.aiquota.mobile.ui.dashboard
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -194,7 +195,7 @@ internal fun ExactDashboardCardsContent(
                             .size(DashboardCatalogActionSize)
                             .then(
                                 if (addProviderFocusRequester == null) Modifier else {
-                                    Modifier.focusRequester(addProviderFocusRequester)
+                                    Modifier.focusRequester(addProviderFocusRequester).focusable()
                                 },
                             ),
                     ) {

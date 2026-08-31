@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.util.Log
+import android.view.ViewGroup
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -96,17 +97,20 @@ suspend fun warmUpAds(activity: Activity) {
  * 파기한다. 앱이 백그라운드로 가면 광고 요청도 타이머도 돌지 않으므로 위젯·수집 동작에 영향이 없다.
  */
 @Composable
-fun TopBarAdBanner(modifier: Modifier = Modifier) {
+fun TopBarAdBanner(focusEnabled: Boolean = true, modifier: Modifier = Modifier) {
     if (!AdConfig.isBannerEnabled()) return
     // 배너 폭은 화면 전체가 아니라 이 슬롯에 실제로 주어진 폭으로 계산해야 한다. 상단바는
     // 좌우 패딩을 갖고 있어 화면 폭 기준으로 요청하면 배너가 그만큼 잘린다.
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        TopBarAdBannerContent(availableWidthDp = maxWidth.value.toInt())
+        TopBarAdBannerContent(
+            availableWidthDp = maxWidth.value.toInt(),
+            focusEnabled = focusEnabled,
+        )
     }
 }
 
 @Composable
-private fun TopBarAdBannerContent(availableWidthDp: Int) {
+private fun TopBarAdBannerContent(availableWidthDp: Int, focusEnabled: Boolean) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val widthDp = availableWidthDp
@@ -178,8 +182,23 @@ private fun TopBarAdBannerContent(availableWidthDp: Int) {
             .height((adSize?.height ?: 0).dp)
     ) {
         adView?.let { view ->
+            val initialFocusable = remember(view) { view.isFocusable }
+            val initialFocusableInTouchMode = remember(view) { view.isFocusableInTouchMode }
+            val initialDescendantFocusability = remember(view) { view.descendantFocusability }
             AndroidView(
                 factory = { view },
+                update = {
+                    if (focusEnabled) {
+                        view.isFocusable = initialFocusable
+                        view.isFocusableInTouchMode = initialFocusableInTouchMode
+                        view.descendantFocusability = initialDescendantFocusability
+                    } else {
+                        view.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+                        view.findFocus()?.clearFocus()
+                        view.isFocusable = false
+                        view.isFocusableInTouchMode = false
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
         }
