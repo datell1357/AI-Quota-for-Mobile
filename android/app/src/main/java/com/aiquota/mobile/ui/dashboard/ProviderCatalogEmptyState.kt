@@ -11,6 +11,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -24,6 +26,7 @@ import com.aiquota.mobile.ui.AppLayoutMetrics
 internal fun ProviderCatalogEmptyState(
     layoutMetrics: AppLayoutMetrics,
     onAddProvider: () -> Unit,
+    focusRequester: FocusRequester? = null,
 ) {
     val colors = AIQuotaTheme.colors
     Surface(
@@ -43,7 +46,11 @@ internal fun ProviderCatalogEmptyState(
             val addDescription = stringResource(R.string.provider_catalog_add_action)
             Button(
                 onClick = onAddProvider,
-                modifier = Modifier.semantics { contentDescription = addDescription },
+                modifier = Modifier
+                    .then(
+                        if (focusRequester == null) Modifier else Modifier.focusRequester(focusRequester),
+                    )
+                    .semantics { contentDescription = addDescription },
             ) {
                 Text(stringResource(R.string.provider_catalog_add))
             }

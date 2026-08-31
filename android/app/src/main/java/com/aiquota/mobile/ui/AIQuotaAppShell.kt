@@ -217,6 +217,9 @@ fun AIQuotaAppShell(
     var showProviderRemoval by remember { mutableStateOf(false) }
     var restoreProviderRemovalFocus by remember { mutableStateOf(false) }
     val providerRemovalFocusRequester = remember { FocusRequester() }
+    var providerAddFocusRequester by remember { mutableStateOf<FocusRequester?>(null) }
+    val providerAddHeaderFocusRequester = remember { FocusRequester() }
+    val providerAddEmptyStateFocusRequester = remember { FocusRequester() }
     val liveRefreshState = settingsLiveRefreshState(
         notificationEnabled = liveMonitoringEnabled,
         canPostNotifications = canPostNotifications,
@@ -228,6 +231,21 @@ fun AIQuotaAppShell(
         if (!showProviderRemoval && restoreProviderRemovalFocus) {
             providerRemovalFocusRequester.requestFocus()
             restoreProviderRemovalFocus = false
+        }
+    }
+
+    LaunchedEffect(providerEnrollment?.state?.visible, providerAddFocusRequester) {
+        if (providerEnrollment?.state?.visible == false) {
+            val focusRequester = providerAddFocusRequester
+            if (
+                focusRequester == providerAddEmptyStateFocusRequester &&
+                cardRuntime.state.catalog.cards.isNotEmpty()
+            ) {
+                providerAddHeaderFocusRequester.requestFocus()
+            } else {
+                focusRequester?.requestFocus()
+            }
+            providerAddFocusRequester = null
         }
     }
 
@@ -965,12 +983,25 @@ fun AIQuotaAppShell(
                                     onOpenSettings = { route = AppRoute.Settings },
                                     viewMode = dashboardViewMode,
                                     onSelectViewMode = selectViewMode,
-                                    onAddProvider = { providerEnrollment?.openExplicitAdd() },
+                                    onAddProvider = {
+                                        providerEnrollment?.let {
+                                            it.openExplicitAdd()
+                                            providerAddFocusRequester = providerAddHeaderFocusRequester
+                                        }
+                                    },
+                                    onAddProviderFromEmptyState = {
+                                        providerEnrollment?.let {
+                                            it.openExplicitAdd()
+                                            providerAddFocusRequester = providerAddEmptyStateFocusRequester
+                                        }
+                                    },
                                     onRemoveProvider = {
                                         restoreProviderRemovalFocus = false
                                         showProviderRemoval = true
                                     },
                                     removeProviderFocusRequester = providerRemovalFocusRequester,
+                                    addProviderFocusRequester = providerAddHeaderFocusRequester,
+                                    emptyStateAddProviderFocusRequester = providerAddEmptyStateFocusRequester,
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             } else {

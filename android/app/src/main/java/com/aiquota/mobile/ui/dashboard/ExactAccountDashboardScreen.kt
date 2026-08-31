@@ -52,6 +52,7 @@ import com.aiquota.mobile.ui.AppLayoutMetrics
 import com.aiquota.mobile.ui.dashboardProviderCardHeightDp
 import com.aiquota.mobile.ui.forDashboardViewMode
 import com.aiquota.mobile.ui.rememberAppLayoutMetrics
+import com.aiquota.mobile.ui.systemAnimationsEnabled
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -71,8 +72,11 @@ internal fun ExactDashboardCardsContent(
     viewMode: DashboardViewMode,
     onSelectViewMode: (DashboardViewMode) -> Unit,
     onAddProvider: () -> Unit,
+    onAddProviderFromEmptyState: (() -> Unit)? = null,
     onRemoveProvider: () -> Unit,
     removeProviderFocusRequester: FocusRequester? = null,
+    addProviderFocusRequester: FocusRequester? = null,
+    emptyStateAddProviderFocusRequester: FocusRequester? = null,
     modifier: Modifier = Modifier,
 ) {
     val layoutMetrics = rememberAppLayoutMetrics().forDashboardViewMode(viewMode)
@@ -109,7 +113,7 @@ internal fun ExactDashboardCardsContent(
         }
     ) {
         val density = androidx.compose.ui.platform.LocalDensity.current
-        val animationsEnabled = dashboardAnimationsEnabled()
+        val animationsEnabled = systemAnimationsEnabled()
         val cardHeightDp = dashboardProviderCardHeightDp(maxHeight.value.roundToInt(), layoutMetrics)
         val columns = layoutMetrics.dashboardGridColumnCount.coerceAtLeast(1)
         val viewportTopY = dashboardRootPosition.y
@@ -186,7 +190,13 @@ internal fun ExactDashboardCardsContent(
                     }
                     IconButton(
                         onClick = onAddProvider,
-                        modifier = Modifier.size(DashboardCatalogActionSize),
+                        modifier = Modifier
+                            .size(DashboardCatalogActionSize)
+                            .then(
+                                if (addProviderFocusRequester == null) Modifier else {
+                                    Modifier.focusRequester(addProviderFocusRequester)
+                                },
+                            ),
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_add_provider),
@@ -231,7 +241,11 @@ internal fun ExactDashboardCardsContent(
             ) {
                 if (previewIds.isEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        ProviderCatalogEmptyState(layoutMetrics, onAddProvider)
+                        ProviderCatalogEmptyState(
+                            layoutMetrics = layoutMetrics,
+                            onAddProvider = onAddProviderFromEmptyState ?: onAddProvider,
+                            focusRequester = emptyStateAddProviderFocusRequester,
+                        )
                     }
                 } else {
                     itemsIndexed(previewIds, key = { _, id -> ProviderAccountIdStorageCodec.encode(id) }) { index, accountId ->

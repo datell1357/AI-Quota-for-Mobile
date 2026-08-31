@@ -1,6 +1,5 @@
 ﻿package com.aiquota.mobile.ui.dashboard
 
-import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -57,7 +56,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -99,6 +97,7 @@ import com.aiquota.mobile.ui.dashboardProviderCardHeightDp
 import com.aiquota.mobile.ui.forDashboardViewMode
 import com.aiquota.mobile.ui.rememberAppLayoutMetrics
 import com.aiquota.mobile.ui.provider.ProviderIconImage
+import com.aiquota.mobile.ui.systemAnimationsEnabled
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -134,16 +133,6 @@ internal data class DashboardCardBounds(
             x = left + (width / 2f),
             y = top + (height / 2f)
         )
-}
-
-@Composable
-internal fun dashboardAnimationsEnabled(): Boolean {
-    val context = LocalContext.current
-    return Settings.Global.getFloat(
-        context.contentResolver,
-        Settings.Global.ANIMATOR_DURATION_SCALE,
-        1f
-    ) > 0f
 }
 
 internal enum class DashboardDropPlacement {
@@ -226,7 +215,7 @@ fun UnifiedDashboardScreen(
         }
     ) {
         val density = LocalDensity.current
-        val animationsEnabled = dashboardAnimationsEnabled()
+        val animationsEnabled = systemAnimationsEnabled()
         val cardHeightDp = dashboardProviderCardHeightDp(
             viewportHeightDp = maxHeight.value.roundToInt(),
             layoutMetrics = layoutMetrics
@@ -453,8 +442,11 @@ fun UnifiedDashboardScreen(
     onSelectViewMode: (DashboardViewMode) -> Unit,
     modifier: Modifier = Modifier,
     onAddProvider: () -> Unit = {},
+    onAddProviderFromEmptyState: (() -> Unit)? = null,
     onRemoveProvider: () -> Unit = {},
     removeProviderFocusRequester: FocusRequester? = null,
+    addProviderFocusRequester: FocusRequester? = null,
+    emptyStateAddProviderFocusRequester: FocusRequester? = null,
 ) {
     ExactDashboardCardsContent(
         cards = cards,
@@ -470,8 +462,11 @@ fun UnifiedDashboardScreen(
         viewMode = viewMode,
         onSelectViewMode = onSelectViewMode,
         onAddProvider = onAddProvider,
+        onAddProviderFromEmptyState = onAddProviderFromEmptyState,
         onRemoveProvider = onRemoveProvider,
         removeProviderFocusRequester = removeProviderFocusRequester,
+        addProviderFocusRequester = addProviderFocusRequester,
+        emptyStateAddProviderFocusRequester = emptyStateAddProviderFocusRequester,
         modifier = modifier,
     )
 }

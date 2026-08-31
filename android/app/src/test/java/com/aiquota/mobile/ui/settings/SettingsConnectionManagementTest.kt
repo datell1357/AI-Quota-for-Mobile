@@ -8,6 +8,8 @@ import androidx.compose.ui.graphics.Color
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -191,6 +193,18 @@ class SettingsConnectionManagementTest {
         assertTrue(rows.contains("renameTriggerFocusRequester"))
         assertTrue(rows.contains("deleteTriggerFocusRequester"))
         assertTrue(rows.contains("requestFocus()"))
+    }
+
+    @Test
+    fun themeDialogTransitionSelectionRespectsSystemAnimations() {
+        assertSame(
+            androidx.compose.animation.EnterTransition.None,
+            settingsThemeDialogEnterTransition(animationsEnabled = false)
+        )
+        assertNotSame(
+            androidx.compose.animation.EnterTransition.None,
+            settingsThemeDialogEnterTransition(animationsEnabled = true)
+        )
     }
 
     @Test

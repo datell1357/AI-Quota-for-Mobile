@@ -2,6 +2,7 @@
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -81,6 +82,7 @@ import com.aiquota.mobile.ui.compactProviderLineBreakStyle
 import com.aiquota.mobile.ui.provider.ProviderIconImage
 import kotlinx.coroutines.delay
 import com.aiquota.mobile.ui.rememberAppLayoutMetrics
+import com.aiquota.mobile.ui.systemAnimationsEnabled
 
 @Composable
 fun SettingsPanel(
@@ -815,6 +817,7 @@ private fun ThemePickerDialog(
             targetState = true
         }
     }
+    val animationsEnabled = systemAnimationsEnabled()
     val colors = AIQuotaTheme.colors
 
     Dialog(
@@ -822,11 +825,7 @@ private fun ThemePickerDialog(
     ) {
         AnimatedVisibility(
             visibleState = visibleState,
-            enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
-                scaleIn(
-                    initialScale = 0.92f,
-                    animationSpec = tween(durationMillis = 150)
-                )
+            enter = settingsThemeDialogEnterTransition(animationsEnabled)
         ) {
             Surface(
                 modifier = Modifier
@@ -882,6 +881,17 @@ private fun ThemePickerDialog(
         }
     }
 }
+
+internal fun settingsThemeDialogEnterTransition(animationsEnabled: Boolean): EnterTransition =
+    if (animationsEnabled) {
+        fadeIn(animationSpec = tween(durationMillis = 150)) +
+            scaleIn(
+                initialScale = 0.92f,
+                animationSpec = tween(durationMillis = 150)
+            )
+    } else {
+        EnterTransition.None
+    }
 
 @StringRes
 private fun themeLabelResource(theme: AppTheme): Int {

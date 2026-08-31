@@ -129,13 +129,29 @@ class ProviderCardCatalogPlatformAccessibilityTest {
     }
 
     private fun assertFinalRowReachability(initialNodes: List<AccessibilityNodeInfo>) {
-        val scroll = initialNodes.first { node -> node.className == SCROLL_VIEW_CLASS && node.isScrollable }
-        val before = signature(activeRoot("scroll start"))
-        assertTrue("provider list must expose forward scrolling", scroll.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD))
-        val nodes = awaitTransition(before, "scroll provider list") { tree ->
-            tree.any { node -> node.contentDescription?.toString()?.startsWith("Cursor, Cursor,") == true }
+        var nodes = initialNodes
+        var scrollAttempts = 0
+        while (scrollAttempts < MAX_SCROLL_ACTIONS && nodes.none { node -> isFinalProviderRow(node) }) {
+            val attempt = scrollAttempts + 1
+            val root = activeRoot("scroll provider list $attempt start")
+            nodes = allNodes(root)
+            if (nodes.any(::isFinalProviderRow)) break
+            val before = signature(nodes)
+            val scroll = nodes.first { node -> node.className == SCROLL_VIEW_CLASS && node.isScrollable }
+            assertTrue(
+                "provider list must expose forward scrolling",
+                scroll.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD),
+            )
+            scrollAttempts = attempt
+            nodes = awaitTransition(before, "scroll provider list $attempt") { tree ->
+                tree.any { node -> node.className == SCROLL_VIEW_CLASS && node.isScrollable }
+            }
         }
-        val finalRow = nodes.first { node -> node.contentDescription?.toString()?.startsWith("Cursor, Cursor,") == true }
+        if (nodes.none(::isFinalProviderRow)) {
+            throw AssertionError("platform tree did not expose the final provider row after $MAX_SCROLL_ACTIONS scrolls")
+        }
+        nodes = settledTree("scroll provider list settled") { tree -> tree.any(::isFinalProviderRow) }
+        val finalRow = nodes.first(::isFinalProviderRow)
         val viewport = Rect()
         nodes.first { node -> node.className == SCROLL_VIEW_CLASS && node.isScrollable }.getBoundsInScreen(viewport)
         val rowBounds = Rect()
@@ -143,6 +159,9 @@ class ProviderCardCatalogPlatformAccessibilityTest {
         assertTrue("final provider row must be fully reachable above footer: row=$rowBounds viewport=$viewport", rowBounds.bottom <= viewport.bottom)
         assertTrue("final provider row must intersect the scroll viewport: row=$rowBounds viewport=$viewport", rowBounds.top < viewport.bottom && rowBounds.bottom > viewport.top)
     }
+
+    private fun isFinalProviderRow(node: AccessibilityNodeInfo): Boolean =
+        node.contentDescription?.toString()?.startsWith("Cursor, Cursor,") == true
 
     private fun launchCatalog(dataset: String) {
         closeCurrentScenario()
@@ -325,6 +344,7 @@ class ProviderCardCatalogPlatformAccessibilityTest {
         const val IDLE_TIMEOUT_MS = 100L
         const val GLOBAL_IDLE_TIMEOUT_MS = 500L
         const val MAX_POLLS = 40
+        const val MAX_SCROLL_ACTIONS = 4
         const val REQUIRED_STABLE_SNAPSHOTS = 1
         const val MAX_DUMP_NODES = 120
     }
