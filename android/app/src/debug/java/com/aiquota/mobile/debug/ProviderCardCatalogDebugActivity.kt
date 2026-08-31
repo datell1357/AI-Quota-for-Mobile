@@ -55,6 +55,7 @@ import com.aiquota.mobile.ui.dashboard.UnifiedDashboardScreen
  * Supported intent extras:
  * - [EXTRA_DATASET]: [DATASET_POPULATED] (default) or [DATASET_EMPTY].
  * - [EXTRA_VIEW_MODE]: [VIEW_MODE_LIST] (default) or [VIEW_MODE_GRID].
+ * - [EXTRA_THEME]: [THEME_MACOS] (default) or [THEME_WINDOWS].
  *
  * Every callback is intentionally local and side-effect free. This process does not initialize the
  * main-process provider, Firebase, refresh, widget, or login coordinators.
@@ -69,6 +70,7 @@ open class ProviderCardCatalogDebugActivity : ComponentActivity() {
             VIEW_MODE_GRID, VIEW_MODE_CARD -> DashboardViewMode.CARD
             else -> DashboardViewMode.LIST
         }
+        val theme = AppTheme.fromStorageId(intent.getStringExtra(EXTRA_THEME))
         val populated = !dataset.equals(DATASET_EMPTY, ignoreCase = true)
         val exact = exactFixture(dataset)
         if (exact != null && intent.getBooleanExtra(EXTRA_RESET_EXACT_FIXTURE, false)) {
@@ -76,7 +78,7 @@ open class ProviderCardCatalogDebugActivity : ComponentActivity() {
         }
 
         setContent {
-            ProviderCardCatalogDebugTheme {
+            ProviderCardCatalogDebugTheme(theme) {
                 var viewMode by remember(initialViewMode) { mutableStateOf(initialViewMode) }
                 Surface(
                     modifier = Modifier
@@ -120,6 +122,7 @@ open class ProviderCardCatalogDebugActivity : ComponentActivity() {
     companion object {
         const val EXTRA_DATASET = "com.aiquota.mobile.debug.extra.DATASET"
         const val EXTRA_VIEW_MODE = "com.aiquota.mobile.debug.extra.VIEW_MODE"
+        const val EXTRA_THEME = "com.aiquota.mobile.debug.extra.THEME"
         const val EXTRA_RESET_EXACT_FIXTURE = "com.aiquota.mobile.debug.extra.RESET_EXACT_FIXTURE"
         const val DATASET_POPULATED = "populated"
         const val DATASET_EMPTY = "empty"
@@ -133,6 +136,8 @@ open class ProviderCardCatalogDebugActivity : ComponentActivity() {
         const val VIEW_MODE_LIST = "list"
         const val VIEW_MODE_GRID = "grid"
         const val VIEW_MODE_CARD = "card"
+        const val THEME_MACOS = "macos"
+        const val THEME_WINDOWS = "windows"
     }
 }
 
@@ -298,8 +303,11 @@ private val ACCOUNT_TWO = AccountKey.parseOpaque("acct_0000000000000000000000000
 private val ACCOUNT_THREE = AccountKey.parseOpaque("acct_00000000000000000000000000000003")
 
 @Composable
-internal fun ProviderCardCatalogDebugTheme(content: @Composable () -> Unit) {
-    val colors = aiQuotaThemeColors(AppTheme.DEFAULT)
+internal fun ProviderCardCatalogDebugTheme(
+    theme: AppTheme = AppTheme.DEFAULT,
+    content: @Composable () -> Unit,
+) {
+    val colors = aiQuotaThemeColors(theme)
     val materialColors = lightColorScheme(
         primary = colors.primary,
         onPrimary = AIQuotaColors.SurfaceMuted,
