@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -216,6 +217,7 @@ fun UnifiedDashboardScreen(
     ) {
         val density = LocalDensity.current
         val animationsEnabled = systemAnimationsEnabled()
+        val stackHeaderActions = shouldStackDashboardHeaderActions(layoutMetrics)
         val cardHeightDp = dashboardProviderCardHeightDp(
             viewportHeightDp = maxHeight.value.roundToInt(),
             layoutMetrics = layoutMetrics
@@ -251,15 +253,8 @@ fun UnifiedDashboardScreen(
                 ),
             verticalArrangement = Arrangement.spacedBy(layoutMetrics.sectionSpacingDp.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(layoutMetrics.dashboardTitleHeightDp.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 제목과 설정 버튼이 남는 폭을 모두 차지한다. 폭이 모자라면 오른쪽 버튼들을
-                // 찌그러뜨리는 대신 제목이 줄어든다.
+            val dashboardTitleHeightDp = layoutMetrics.dashboardTitleHeightDp
+            val titleAndSettings: @Composable RowScope.() -> Unit = {
                 Row(
                     modifier = Modifier.weight(1f),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -274,7 +269,6 @@ fun UnifiedDashboardScreen(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    // 종합 설정 진입점은 대시보드에만 둔다. 개별 provider 탭에서는 노출하지 않는다.
                     IconButton(
                         onClick = onOpenSettings,
                         modifier = Modifier.size(DashboardHeaderButtonSize)
@@ -286,6 +280,8 @@ fun UnifiedDashboardScreen(
                         )
                     }
                 }
+            }
+            val headerActions: @Composable RowScope.() -> Unit = {
                 OutlinedButton(
                     onClick = onAddWidget,
                     modifier = Modifier.widthIn(min = 104.dp)
@@ -297,6 +293,39 @@ fun UnifiedDashboardScreen(
                     )
                 }
                 DashboardViewModeButtons(viewMode = viewMode, onSelectViewMode = onSelectViewMode)
+            }
+            if (stackHeaderActions) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(dashboardTitleHeightDp.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        titleAndSettings()
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        headerActions()
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(dashboardTitleHeightDp.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    titleAndSettings()
+                    headerActions()
+                }
             }
 
             if (visibleProviders.isEmpty()) {
@@ -423,6 +452,10 @@ fun UnifiedDashboardScreen(
             )
         }
     }
+}
+
+internal fun shouldStackDashboardHeaderActions(layoutMetrics: AppLayoutMetrics): Boolean {
+    return !layoutMetrics.isTablet && layoutMetrics.fontScale >= 1.5f
 }
 
 /** Exact-card overload used by the feature-enabled shell; legacy provider behavior stays above. */

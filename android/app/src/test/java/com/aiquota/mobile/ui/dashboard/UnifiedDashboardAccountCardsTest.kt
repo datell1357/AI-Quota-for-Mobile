@@ -15,11 +15,44 @@ import com.aiquota.mobile.local.ProviderConnectionState
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderRefreshState
 import com.aiquota.mobile.local.ProviderUsageSnapshot
+import com.aiquota.mobile.ui.appLayoutMetrics
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UnifiedDashboardAccountCardsTest {
+    @Test
+    fun headerActionsStackWhenPhoneUsesAccessibilityFontScale() {
+        // Given a 375dp phone at the accessibility font-scale boundary.
+        val boundaryMetrics = appLayoutMetrics(screenWidthDp = 375, screenHeightDp = 812, fontScale = 1.5f)
+        val twoHundredPercentMetrics = appLayoutMetrics(screenWidthDp = 375, screenHeightDp = 812, fontScale = 2f)
+
+        // When the dashboard chooses its header layout.
+        val stacksAtBoundary = shouldStackDashboardHeaderActions(boundaryMetrics)
+        val stacksAtTwoHundredPercent = shouldStackDashboardHeaderActions(twoHundredPercentMetrics)
+
+        // Then actions move below the title at and above the boundary.
+        assertTrue(stacksAtBoundary)
+        assertTrue(stacksAtTwoHundredPercent)
+    }
+
+    @Test
+    fun headerActionsRemainInlineForNormalFontOrTablet() {
+        // Given either normal phone text or a tablet width.
+        val normalPhoneMetrics = appLayoutMetrics(screenWidthDp = 375, screenHeightDp = 812, fontScale = 1.49f)
+        val accessibilityTabletMetrics = appLayoutMetrics(screenWidthDp = 600, screenHeightDp = 1024, fontScale = 2f)
+
+        // When the dashboard chooses its header layout.
+        val normalPhoneStacks = shouldStackDashboardHeaderActions(normalPhoneMetrics)
+        val accessibilityTabletStacks = shouldStackDashboardHeaderActions(accessibilityTabletMetrics)
+
+        // Then both retain the existing inline header.
+        assertFalse(normalPhoneStacks)
+        assertFalse(accessibilityTabletStacks)
+    }
+
     @Test
     fun exactContentPreservesSiblingsAndMapsBusyErrorOnlyToB() {
         val cards = listOf(

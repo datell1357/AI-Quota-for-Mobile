@@ -1,6 +1,7 @@
 package com.aiquota.mobile.debug
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -48,6 +49,8 @@ import com.aiquota.mobile.ui.AIQuotaTheme
 import com.aiquota.mobile.ui.LocalAIQuotaThemeColors
 import com.aiquota.mobile.ui.aiQuotaThemeColors
 import com.aiquota.mobile.ui.dashboard.UnifiedDashboardScreen
+import java.util.IllformedLocaleException
+import java.util.Locale
 
 /**
  * Debug-only deterministic host for the production dashboard surface.
@@ -56,12 +59,24 @@ import com.aiquota.mobile.ui.dashboard.UnifiedDashboardScreen
  * - [EXTRA_DATASET]: [DATASET_POPULATED] (default) or [DATASET_EMPTY].
  * - [EXTRA_VIEW_MODE]: [VIEW_MODE_LIST] (default) or [VIEW_MODE_GRID].
  * - [EXTRA_THEME]: [THEME_MACOS] (default) or [THEME_WINDOWS].
+ * - [EXTRA_LOCALE]: Optional BCP 47 language tag such as `en-US` or `ko-KR`; omitted or invalid
+ *   values use the system locale.
  *
  * Every callback is intentionally local and side-effect free. This process does not initialize the
  * main-process provider, Firebase, refresh, widget, or login coordinators.
  */
 open class ProviderCardCatalogDebugActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        intent.getStringExtra(EXTRA_LOCALE)?.trim()?.takeIf(String::isNotEmpty)?.let { languageTag ->
+            val locale = try {
+                Locale.Builder().setLanguageTag(languageTag).build()
+            } catch (_: IllformedLocaleException) {
+                null
+            }
+            locale?.let {
+                applyOverrideConfiguration(Configuration().apply { setLocale(it) })
+            }
+        }
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
@@ -123,6 +138,7 @@ open class ProviderCardCatalogDebugActivity : ComponentActivity() {
         const val EXTRA_DATASET = "com.aiquota.mobile.debug.extra.DATASET"
         const val EXTRA_VIEW_MODE = "com.aiquota.mobile.debug.extra.VIEW_MODE"
         const val EXTRA_THEME = "com.aiquota.mobile.debug.extra.THEME"
+        const val EXTRA_LOCALE = "com.aiquota.mobile.debug.extra.LOCALE"
         const val EXTRA_RESET_EXACT_FIXTURE = "com.aiquota.mobile.debug.extra.RESET_EXACT_FIXTURE"
         const val DATASET_POPULATED = "populated"
         const val DATASET_EMPTY = "empty"

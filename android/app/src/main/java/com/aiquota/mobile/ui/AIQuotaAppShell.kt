@@ -60,6 +60,7 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -236,14 +237,16 @@ fun AIQuotaAppShell(
 
     LaunchedEffect(providerEnrollment?.state?.visible, providerAddFocusRequester) {
         if (providerEnrollment?.state?.visible == false) {
-            val focusRequester = providerAddFocusRequester
+            val focusRequester = providerAddFocusRequester ?: return@LaunchedEffect
+            withFrameNanos { }
+            delay(100L)
             if (
                 focusRequester == providerAddEmptyStateFocusRequester &&
                 cardRuntime.state.catalog.cards.isNotEmpty()
             ) {
                 providerAddHeaderFocusRequester.requestFocus()
             } else {
-                focusRequester?.requestFocus()
+                focusRequester.requestFocus()
             }
             providerAddFocusRequester = null
         }
