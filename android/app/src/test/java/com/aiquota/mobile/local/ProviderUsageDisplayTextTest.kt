@@ -21,6 +21,7 @@ class ProviderUsageDisplayTextTest {
 
         assertEquals("5시간 세션", displayUsageLabel("claude", "Session", 0, locale))
         assertEquals("주간 세션", displayUsageLabel("claude", "Weekly", 1, locale))
+        assertEquals("5시간 세션", displayUsageLabel("codex", "5 hour", 0, locale))
         assertEquals("인라인 제안", displayUsageLabel("copilot", "Inline suggestions", 0, locale))
     }
 
@@ -146,5 +147,7 @@ class ProviderUsageDisplayTextTest {
 
         assertEquals("4일 3시간 후 초기화", displayResetTextForLocale("Resets in 4d 3h", locale))
         assertEquals("3시간 15분 후 초기화", displayResetTextForLocale("Resets in 3h 15m", locale))
+        assertEquals("월요일 초기화", displayResetTextForLocale("Resets Monday", locale))
+        assertEquals("일요일 초기화", displayResetTextForLocale("Resets Sunday", locale))
     }
 }

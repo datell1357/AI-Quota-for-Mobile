@@ -44,6 +44,43 @@ class ProviderCardCatalogDebugLocaleTest {
     }
 
     @Test
+    fun remoteKoreanPopulatedCatalogLocalizesUsageCopy() {
+        // Given
+        val localizedUsageLabels = listOf(
+            "5시간" to "5 hour",
+            "주간" to "Weekly",
+            "72% 남음" to "72% left",
+            "41% 남음" to "41% left",
+            "58% 남음" to "58% left",
+            "84% 남음" to "84% left",
+            "2시간 30분 후 초기화" to "Resets in 2h 30m",
+            "월요일 초기화" to "Resets Monday",
+            "1시간 45분 후 초기화" to "Resets in 1h 45m",
+            "일요일 초기화" to "Resets Sunday",
+            "로그인 필요" to "Sign in required",
+            "연결 확인 필요" to "Connection needs attention",
+            "데이터 수집 중" to "Collecting usage",
+            "합성 사용량을 사용할 수 없음" to "Synthetic usage unavailable",
+        )
+
+        // When
+        launchKoreanPopulatedCatalog()
+        val nodes = settledTree(localizedUsageLabels)
+
+        // Then
+        localizedUsageLabels.forEach { (koreanLabel, englishLabel) ->
+            assertTrue(
+                "missing Korean usage text '$koreanLabel'\n${describe(nodes)}",
+                nodes.any { node -> node.text?.toString() == koreanLabel },
+            )
+            assertFalse(
+                "English usage text leaked into ko-KR dashboard: '$englishLabel'\n${describe(nodes)}",
+                nodes.any { node -> node.text?.toString() == englishLabel },
+            )
+        }
+    }
+
+    @Test
     fun zzSynchronousCleanupAllowsAnotherRemoteLaunchInTheSameRunner() {
         assertKoreanOnboardingDialog()
     }
@@ -79,6 +116,21 @@ class ProviderCardCatalogDebugLocaleTest {
     private fun launchKoreanOnboardingCatalog() {
         val command = "am start -W -f 0x10008000 -n $ACTIVITY_COMPONENT " +
             "--es ${ProviderCardCatalogDebugActivity.EXTRA_DATASET} ${ProviderCardCatalogDebugActivity.DATASET_ONBOARDING} " +
+            "--es ${ProviderCardCatalogDebugActivity.EXTRA_LOCALE} ko-KR"
+        uiAutomation.executeAndWaitForEvent(
+            { runShell(command) },
+            { event ->
+                event.packageName?.toString() == APP_PACKAGE &&
+                    event.eventType in CONTENT_CHANGE_EVENT_TYPES
+            },
+            EVENT_TIMEOUT_MS,
+        )
+    }
+
+    private fun launchKoreanPopulatedCatalog() {
+        val command = "am start -W -f 0x10008000 -n $ACTIVITY_COMPONENT " +
+            "--es ${ProviderCardCatalogDebugActivity.EXTRA_DATASET} ${ProviderCardCatalogDebugActivity.DATASET_POPULATED} " +
+            "--es ${ProviderCardCatalogDebugActivity.EXTRA_VIEW_MODE} ${ProviderCardCatalogDebugActivity.VIEW_MODE_GRID} " +
             "--es ${ProviderCardCatalogDebugActivity.EXTRA_LOCALE} ko-KR"
         uiAutomation.executeAndWaitForEvent(
             { runShell(command) },

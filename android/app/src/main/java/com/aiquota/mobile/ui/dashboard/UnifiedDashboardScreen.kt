@@ -58,6 +58,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -1144,7 +1145,13 @@ internal fun dashboardProviderWindowTitle(providerId: ProviderId): String {
 }
 
 internal fun dashboardEmptyMessageResource(snapshot: ProviderUsageSnapshot): Int? {
-    return null
+    return when (snapshot.message?.trim()?.lowercase(java.util.Locale.US)) {
+        "sign in required" -> R.string.dashboard_sign_in_required
+        "connection needs attention" -> R.string.provider_status_auth_required
+        "collecting usage" -> R.string.provider_status_collecting
+        "synthetic usage unavailable" -> R.string.dashboard_synthetic_usage_unavailable
+        else -> null
+    }
 }
 
 internal fun dashboardUsagePreviewLines(snapshot: ProviderUsageSnapshot): List<ProviderUsageLine> {
@@ -1383,7 +1390,7 @@ private fun UsageLinePreview(
 ) {
     val colors = AIQuotaTheme.colors
     val largeFont = LocalDensity.current.fontScale >= 1.5f
-    val locale = java.util.Locale.getDefault()
+    val locale = LocalConfiguration.current.locales[0]
     val gaugeColor = remember(gaugeColorHex, colors.progress) {
         ProviderGaugeColor.toArgbOrNull(gaugeColorHex)?.let(::Color) ?: colors.progress
     }

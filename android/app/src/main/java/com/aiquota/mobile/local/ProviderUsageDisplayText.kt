@@ -69,6 +69,7 @@ fun displayUsageLabel(
         "claude session",
         "codex session",
         "codex 5 hour limit",
+        "5 hour",
         "five hour",
         "five hour limit" -> "5시간 세션"
         "claude weekly",
@@ -201,6 +202,10 @@ fun displayResetTextForLocale(text: String?, locale: Locale = Locale.getDefault(
         .matchEntire(value)
         ?.let { return "${durationTextToKorean(it.groupValues[1])} 후 초기화" }
 
+    Regex("""^Resets\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)$""", RegexOption.IGNORE_CASE)
+        .matchEntire(value)
+        ?.let { return "${weekdayTextToKorean(it.groupValues[1])} 초기화" }
+
     Regex("""^Runs out in\s+(.+)$""", RegexOption.IGNORE_CASE)
         .matchEntire(value)
         ?.let { return "${durationTextToKorean(it.groupValues[1])} 후 소진" }
@@ -275,4 +280,14 @@ private fun durationTextToKorean(value: String): String {
         }
         .toList()
     return parts.takeIf { it.isNotEmpty() }?.joinToString(" ") ?: value
+}
+
+private fun weekdayTextToKorean(value: String): String = when (value.lowercase(Locale.US)) {
+    "monday" -> "월요일"
+    "tuesday" -> "화요일"
+    "wednesday" -> "수요일"
+    "thursday" -> "목요일"
+    "friday" -> "금요일"
+    "saturday" -> "토요일"
+    else -> "일요일"
 }
