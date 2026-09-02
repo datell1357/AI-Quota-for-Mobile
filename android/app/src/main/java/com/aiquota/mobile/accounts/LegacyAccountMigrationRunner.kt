@@ -1,6 +1,7 @@
 package com.aiquota.mobile.accounts
 
 import android.content.Context
+import com.aiquota.mobile.providers.LegacySessionCarryOver
 
 internal object LegacyAccountMigrationRunner {
     fun runIfEnabled(context: Context, enabled: Boolean): LegacyMigrationResult? =
@@ -26,8 +27,11 @@ internal object LegacyAccountMigrationRunner {
             }
         }.getOrNull()
         if (result is LegacyMigrationResult.Completed) {
-            MainProcessAccountAuthority.open(appContext).use { authority ->
+            val cards = MainProcessAccountAuthority.open(appContext).use { authority ->
                 ConnectedProviderCardMigration(AndroidLegacyMigrationSource(appContext), authority).run()
+            }
+            if (cards is ConnectedProviderCardMigrationResult.Completed && !cards.resumed && cards.importedAccountCount > 0) {
+                runCatching { LegacySessionCarryOver(appContext).run() }
             }
         }
         MainProcessAccountFeature.start(appContext)
