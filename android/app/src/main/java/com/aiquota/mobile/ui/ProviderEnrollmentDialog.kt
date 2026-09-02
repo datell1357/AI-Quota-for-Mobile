@@ -33,7 +33,16 @@ fun ProviderEnrollmentDialog(
 ) {
     if (!state.visible) return
     when (state.step) {
-        ProviderEnrollmentStep.PICKER -> ProviderPickerSheet(state, existingAccountIds, onLater)
+        ProviderEnrollmentStep.PICKER -> ProviderPickerSheet(
+            state = state,
+            existingAccountIds = existingAccountIds,
+            onLater = onLater,
+            onStart = {
+                state.firstRunSubmissions().forEach { onSubmit(it) }
+                state.close()
+                onAdded()
+            },
+        )
         ProviderEnrollmentStep.NAMING -> ProviderNamingDialog(
             state = state,
             suggestedAlias = suggestedAlias(checkNotNull(state.selectedProvider))
@@ -50,6 +59,7 @@ private fun ProviderPickerSheet(
     state: ProviderEnrollmentState,
     existingAccountIds: Set<ProviderAccountId>,
     onLater: () -> Unit,
+    onStart: () -> Unit,
 ) {
     val colors = AIQuotaTheme.colors
     val metrics = rememberAppLayoutMetrics()
@@ -71,6 +81,7 @@ private fun ProviderPickerSheet(
             state = state,
             existingAccountIds = existingAccountIds,
             onLater = onLater,
+            onStart = onStart,
             contentPadding = metrics.cardPaddingDp,
             contentSpacing = metrics.cardSpacingDp,
             modifier = Modifier.heightIn(min = sheetHeight, max = sheetHeight),

@@ -53,7 +53,7 @@ class ProviderCardCatalogPlatformAccessibilityTest {
         launchCatalog(DATASET_EMPTY)
         assertActivityLanguage(language)
         var nodes = settledTree("$localeTag first-run") { tree ->
-            tree.any { node -> node.className == RADIO_BUTTON_CLASS }
+            tree.any { node -> node.className == CHECKBOX_CLASS }
         }
         assertContainsText(nodes, text(R.string.provider_picker_title))
         val getStarted = actionNode(nodes, text(R.string.provider_onboarding_start))
@@ -169,7 +169,7 @@ class ProviderCardCatalogPlatformAccessibilityTest {
             putExtra(ProviderOnboardingComposeTestActivity.EXTRA_DATASET, dataset)
         })
         settledTree("launch $dataset") { tree ->
-            tree.any { node -> node.className == RADIO_BUTTON_CLASS || node.text?.toString() == "Dashboard" || node.text?.toString() == "대시보드" }
+            tree.any { node -> node.className == RADIO_BUTTON_CLASS || node.className == CHECKBOX_CLASS || node.text?.toString() == "Dashboard" || node.text?.toString() == "대시보드" }
         }
     }
 
@@ -193,18 +193,20 @@ class ProviderCardCatalogPlatformAccessibilityTest {
     private fun settledTree(description: String, expected: (List<AccessibilityNodeInfo>) -> Boolean): List<AccessibilityNodeInfo> {
         var previous: String? = null
         var stable = 0
+        var lastNodes: List<AccessibilityNodeInfo> = emptyList()
         repeat(MAX_POLLS) {
             waitForIdle()
             val root = uiAutomation.rootInActiveWindow
             if (root == null || root.packageName?.toString() != APP_PACKAGE) return@repeat
             root.refresh()
             val nodes = allNodes(root)
+            lastNodes = nodes
             if (!expected(nodes)) { previous = null; stable = 0; return@repeat }
             val current = signature(nodes)
             if (current == previous) stable++ else { previous = current; stable = 0 }
             if (stable >= REQUIRED_STABLE_SNAPSHOTS) return nodes
         }
-        throw AssertionError("platform tree did not settle for $description")
+        throw AssertionError("platform tree did not settle for $description\n${describe(lastNodes)}")
     }
 
     private fun awaitTransition(before: String, description: String, expected: (List<AccessibilityNodeInfo>) -> Boolean): List<AccessibilityNodeInfo> =

@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
@@ -54,6 +56,7 @@ internal fun ProviderPickerStep(
     state: ProviderEnrollmentState,
     existingAccountIds: Set<ProviderAccountId>,
     onLater: () -> Unit,
+    onStart: () -> Unit,
     contentPadding: Int,
     contentSpacing: Int,
     modifier: Modifier = Modifier,
@@ -71,7 +74,9 @@ internal fun ProviderPickerStep(
         )
         if (!compactHeight) {
             Text(
-                text = androidx.compose.ui.res.stringResource(R.string.provider_picker_body),
+                text = androidx.compose.ui.res.stringResource(
+                    if (state.multiSelect) R.string.provider_picker_body else R.string.provider_picker_body_single
+                ),
                 style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Paragraph),
                 color = AIQuotaTheme.colors.textMuted,
             )
@@ -94,7 +99,8 @@ internal fun ProviderPickerStep(
                 }
                 ProviderPickerRow(
                     providerId = providerId,
-                    selected = state.selectedProvider == providerId,
+                    selected = providerId in state.selectedProviders,
+                    multiSelect = state.multiSelect,
                     enabled = providerAvailable(providerId, existingAccountIds),
                     onSelect = { state.select(providerId) },
                     modifier = if (fullyVisible) {
@@ -122,7 +128,10 @@ internal fun ProviderPickerStep(
                     Text(androidx.compose.ui.res.stringResource(R.string.provider_enrollment_cancel))
                 }
             }
-            Button(onClick = state::advance, enabled = state.selectedProvider != null) {
+            Button(
+                onClick = if (state.multiSelect) onStart else state::advance,
+                enabled = state.selectedProviders.isNotEmpty(),
+            ) {
                 Text(
                     androidx.compose.ui.res.stringResource(
                         if (state.origin == ProviderEnrollmentOrigin.FIRST_RUN) {
@@ -141,11 +150,13 @@ internal fun ProviderPickerStep(
 private fun ProviderPickerRow(
     providerId: ProviderId,
     selected: Boolean,
+    multiSelect: Boolean,
     enabled: Boolean,
     onSelect: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = AIQuotaTheme.colors
+    val choiceRole = if (multiSelect) Role.Checkbox else Role.RadioButton
     val accessibilityLabel = if (enabled) {
         providerId.displayName
     } else {
@@ -158,11 +169,11 @@ private fun ProviderPickerRow(
             .toggleable(
                 value = selected,
                 enabled = enabled,
-                role = Role.RadioButton,
+                role = choiceRole,
                 onValueChange = { onSelect() },
             )
             .clearAndSetSemantics {
-                role = Role.RadioButton
+                role = choiceRole
                 toggleableState = if (selected) ToggleableState.On else ToggleableState.Off
                 contentDescription = accessibilityLabel
                 if (!enabled) disabled()
@@ -190,16 +201,29 @@ private fun ProviderPickerRow(
                     )
                 }
             }
-            RadioButton(
-                selected = selected,
-                onClick = null,
-                modifier = Modifier.size(48.dp).clearAndSetSemantics { },
-                enabled = enabled,
-                colors = RadioButtonDefaults.colors(
-                    selectedColor = colors.textPrimary,
-                    unselectedColor = colors.textSecondary,
-                ),
-            )
+            if (multiSelect) {
+                Checkbox(
+                    checked = selected,
+                    onCheckedChange = null,
+                    modifier = Modifier.size(48.dp).clearAndSetSemantics { },
+                    enabled = enabled,
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = colors.textPrimary,
+                        uncheckedColor = colors.textSecondary,
+                    ),
+                )
+            } else {
+                RadioButton(
+                    selected = selected,
+                    onClick = null,
+                    modifier = Modifier.size(48.dp).clearAndSetSemantics { },
+                    enabled = enabled,
+                    colors = RadioButtonDefaults.colors(
+                        selectedColor = colors.textPrimary,
+                        unselectedColor = colors.textSecondary,
+                    ),
+                )
+            }
         }
     }
 }

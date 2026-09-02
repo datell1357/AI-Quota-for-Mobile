@@ -118,7 +118,8 @@
     <string name="provider_removal_error_stale">This card changed. Close and reopen the dialog before trying again.</string>
     <string name="provider_removal_error_missing">This card is no longer available.</string>
     <string name="provider_picker_title">Choose a provider</string>
-    <string name="provider_picker_body">Select one AI provider to add to your dashboard.</string>
+    <string name="provider_picker_body">Select the AI providers to add to your dashboard.</string>
+    <string name="provider_picker_body_single">Select one AI provider to add to your dashboard.</string>
     <string name="provider_picker_already_added">Already added</string>
     <string name="provider_picker_disabled_description">%1$s, already added</string>
     <string name="provider_onboarding_later">Later</string>

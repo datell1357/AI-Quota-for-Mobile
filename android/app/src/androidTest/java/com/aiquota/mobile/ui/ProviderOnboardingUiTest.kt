@@ -11,11 +11,9 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTextExactly
-import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -38,40 +36,40 @@ class ProviderOnboardingUiTest {
     val composeRule = createAndroidComposeRule<ProviderOnboardingComposeTestActivity>()
 
     @Test
-    fun wholeRowSelectionCommitsExactlyOneRadioBeforeNamingAndSurvivesRecreation() {
+    fun firstRunChecksSeveralProvidersSurvivesRecreationAndCreatesOneCardEach() {
         // Given
-        val radio = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)
-        composeRule.onAllNodes(radio and hasClickAction()).assertCountEquals(ProviderId.defaultOrder().size)
-        selectedRadios(radio).assertCountEquals(0)
+        val checkbox = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox)
+        composeRule.onAllNodes(checkbox and hasClickAction()).assertCountEquals(ProviderId.defaultOrder().size)
+        checked(checkbox).assertCountEquals(0)
         composeRule.onNodeWithText(text(R.string.provider_onboarding_start)).assertIsNotEnabled()
 
         // When
         composeRule.onNodeWithContentDescription(ProviderId.CURSOR.displayName).performClick()
+        composeRule.onNodeWithContentDescription(ProviderId.CODEX.displayName).performClick()
         composeRule.waitForIdle()
 
         // Then
-        assertEquals(1, selectedRadios(radio).fetchSemanticsNodes().size)
-        composeRule.onNodeWithContentDescription(ProviderId.CURSOR.displayName)
+        assertEquals(2, checked(checkbox).fetchSemanticsNodes().size)
+        composeRule.onNodeWithContentDescription(ProviderId.CODEX.displayName)
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.On))
-        composeRule.onNodeWithText(text(R.string.provider_onboarding_start)).assertIsEnabled().performClick()
-        composeRule.onNode(hasSetTextAction()).performTextInput("Work")
         composeRule.activityRule.scenario.recreate()
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Work").assertIsDisplayed()
+        assertEquals(2, checked(checkbox).fetchSemanticsNodes().size)
 
         // When
-        composeRule.onNode(
-            hasTextExactly(text(R.string.provider_enrollment_add)) and hasClickAction() and hasAnyAncestor(isDialog())
-        ).performClick()
+        composeRule.onNodeWithText(text(R.string.provider_onboarding_start)).assertIsEnabled().performClick()
+        composeRule.waitForIdle()
 
-        // Then
-        composeRule.onNodeWithText("Work").assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.provider_status_disconnected)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.provider_connect)).assertHasClickAction()
+        // Then: no naming step, one automatically named disconnected card per checked provider
+        composeRule.onAllNodes(hasSetTextAction()).assertCountEquals(0)
+        composeRule.onNodeWithText("Cursor").assertIsDisplayed()
+        composeRule.onNodeWithText("Codex").assertIsDisplayed()
+        composeRule.onAllNodesWithText(text(R.string.provider_status_disconnected)).assertCountEquals(2)
+        composeRule.onAllNodesWithText(text(R.string.provider_connect))[0].assertHasClickAction()
     }
 
     @Test
-    fun laterShowsEmptyPromptAndAddReopensTheSamePicker() {
+    fun laterShowsEmptyPromptAndAddReopensSingleChoicePicker() {
         composeRule.onNodeWithText(text(R.string.provider_onboarding_later)).performClick()
         composeRule.onNodeWithText(text(R.string.provider_catalog_empty_prompt)).assertIsDisplayed()
         composeRule.onAllNodes(
@@ -80,42 +78,46 @@ class ProviderOnboardingUiTest {
         composeRule.onNodeWithText(text(R.string.provider_picker_title)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.provider_enrollment_cancel)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.provider_enrollment_next)).assertIsNotEnabled()
+        composeRule.onAllNodes(
+            SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and hasClickAction()
+        ).assertCountEquals(ProviderId.defaultOrder().size)
     }
 
     @Test
     fun namingBackAndExplicitCancelCloseWithoutCreatingCard() {
-        openNaming(firstRun = true)
+        composeRule.onNodeWithText(text(R.string.provider_onboarding_later)).performClick()
+        openExplicitNaming()
         runShell("input keyevent 4")
         composeRule.waitForIdle()
         assertEmptyCatalog()
 
-        composeRule.onAllNodes(
-            hasTextExactly(text(R.string.provider_catalog_add)) and hasClickAction()
-        )[0].performClick()
-        openNaming(firstRun = false)
+        openExplicitNaming()
         composeRule.onNodeWithText(text(R.string.provider_enrollment_cancel)).performClick()
         assertEmptyCatalog()
     }
 
     @Test
-    fun namingOutsideDismissClosesWithoutCreatingCard() {
-        openNaming(firstRun = true)
+    fun firstRunOutsideDismissClosesWithoutCreatingCard() {
+        composeRule.onNodeWithContentDescription(ProviderId.CURSOR.displayName).performClick()
+        composeRule.waitForIdle()
         runShell("input tap 20 100")
         composeRule.waitForIdle()
         assertEmptyCatalog()
     }
 
-    private fun openNaming(firstRun: Boolean) {
+    private fun openExplicitNaming() {
+        composeRule.onAllNodes(
+            hasTextExactly(text(R.string.provider_catalog_add)) and hasClickAction()
+        )[0].performClick()
         composeRule.onNodeWithContentDescription(ProviderId.CURSOR.displayName).performClick()
         composeRule.waitForIdle()
-        composeRule.onNodeWithText(
-            text(if (firstRun) R.string.provider_onboarding_start else R.string.provider_enrollment_next)
-        ).assertIsEnabled().performClick()
+        composeRule.onNodeWithText(text(R.string.provider_enrollment_next)).assertIsEnabled().performClick()
         composeRule.onNode(hasSetTextAction()).assertIsDisplayed()
+        composeRule.onNode(hasSetTextAction()).performTextInput("Work")
     }
 
-    private fun selectedRadios(radio: SemanticsMatcher) = composeRule.onAllNodes(
-        radio and SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.On)
+    private fun checked(choice: SemanticsMatcher) = composeRule.onAllNodes(
+        choice and SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.On)
     )
 
     private fun assertEmptyCatalog() {

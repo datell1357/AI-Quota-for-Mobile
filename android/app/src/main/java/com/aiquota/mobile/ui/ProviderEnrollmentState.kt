@@ -21,11 +21,15 @@ data class ProviderEnrollmentSubmission(
     val optionalAlias: String?,
 )
 
+/**
+ * First run lets the user tick several providers and creates one automatically named card per
+ * tick; explicit Add picks exactly one provider and continues to the naming step.
+ */
 class ProviderEnrollmentState private constructor(
     visible: Boolean,
     origin: ProviderEnrollmentOrigin,
     step: ProviderEnrollmentStep,
-    selectedProvider: ProviderId?,
+    selectedProviders: Set<ProviderId>,
     alias: String,
     errorResource: Int?,
 ) {
@@ -35,27 +39,36 @@ class ProviderEnrollmentState private constructor(
         private set
     var step by mutableStateOf(step)
         private set
-    var selectedProvider by mutableStateOf(selectedProvider)
+    var selectedProviders by mutableStateOf(selectedProviders)
         private set
     var alias by mutableStateOf(alias)
     var errorResource by mutableStateOf(errorResource)
+
+    val multiSelect: Boolean get() = origin == ProviderEnrollmentOrigin.FIRST_RUN
+
+    /** The single choice of an explicit Add; null while nothing (or several providers) is selected. */
+    val selectedProvider: ProviderId? get() = selectedProviders.singleOrNull()
 
     fun openExplicitAdd() {
         visible = true
         origin = ProviderEnrollmentOrigin.EXPLICIT_ADD
         step = ProviderEnrollmentStep.PICKER
-        selectedProvider = null
+        selectedProviders = emptySet()
         alias = ""
         errorResource = null
     }
 
     fun select(providerId: ProviderId) {
-        selectedProvider = providerId
+        selectedProviders = when {
+            !multiSelect -> setOf(providerId)
+            providerId in selectedProviders -> selectedProviders - providerId
+            else -> selectedProviders + providerId
+        }
         errorResource = null
     }
 
     fun advance() {
-        if (selectedProvider != null) step = ProviderEnrollmentStep.NAMING
+        if (!multiSelect && selectedProvider != null) step = ProviderEnrollmentStep.NAMING
     }
 
     fun back() = close()
@@ -63,7 +76,7 @@ class ProviderEnrollmentState private constructor(
     fun close() {
         visible = false
         step = ProviderEnrollmentStep.PICKER
-        selectedProvider = null
+        selectedProviders = emptySet()
         alias = ""
         errorResource = null
     }
@@ -76,11 +89,17 @@ class ProviderEnrollmentState private constructor(
         )
     }
 
+    /** First-run cards are created with automatic aliases, in the picker's display order. */
+    fun firstRunSubmissions(): List<ProviderEnrollmentSubmission> =
+        ProviderId.defaultOrder()
+            .filter { it in selectedProviders }
+            .map { ProviderEnrollmentSubmission(it, optionalAlias = null) }
+
     fun savedState(): List<String> = listOf(
         visible.toString(),
         origin.name,
         step.name,
-        selectedProvider?.storageId.orEmpty(),
+        selectedProviders.joinToString(",") { it.storageId },
         alias,
         errorResource?.toString().orEmpty(),
     )
@@ -90,7 +109,7 @@ class ProviderEnrollmentState private constructor(
             visible = true,
             origin = ProviderEnrollmentOrigin.FIRST_RUN,
             step = ProviderEnrollmentStep.PICKER,
-            selectedProvider = null,
+            selectedProviders = emptySet(),
             alias = "",
             errorResource = null,
         )
@@ -99,7 +118,7 @@ class ProviderEnrollmentState private constructor(
             visible = false,
             origin = ProviderEnrollmentOrigin.EXPLICIT_ADD,
             step = ProviderEnrollmentStep.PICKER,
-            selectedProvider = null,
+            selectedProviders = emptySet(),
             alias = "",
             errorResource = null,
         )
@@ -112,7 +131,10 @@ class ProviderEnrollmentState private constructor(
             visible = values[0].toBooleanStrict(),
             origin = ProviderEnrollmentOrigin.valueOf(values[1]),
             step = ProviderEnrollmentStep.valueOf(values[2]),
-            selectedProvider = ProviderId.fromStorageId(values[3]),
+            selectedProviders = values[3].split(',')
+                .filter(String::isNotEmpty)
+                .mapNotNull(ProviderId::fromStorageId)
+                .toSet(),
             alias = values[4],
             errorResource = values[5].toIntOrNull(),
         )

@@ -131,7 +131,7 @@ class ProviderCardCatalogUiTest {
         val laterBounds = Rect().also(later::getBoundsInScreen)
         val initiallyVisibleRows = platformNodes().filter {
             val bounds = Rect().also(it::getBoundsInScreen)
-            it.className?.toString() == RADIO_BUTTON_CLASS &&
+            it.className?.toString() == CHECKBOX_CLASS &&
                 bounds.top >= 0 &&
                 bounds.bottom > bounds.top &&
                 bounds.top < laterBounds.top
@@ -146,7 +146,7 @@ class ProviderCardCatalogUiTest {
         }
         val copilotPredicate: (AccessibilityNodeInfo) -> Boolean = {
             val bounds = Rect().also(it::getBoundsInScreen)
-            it.className?.toString() == RADIO_BUTTON_CLASS &&
+            it.className?.toString() == CHECKBOX_CLASS &&
                 it.isClickable &&
                 it.hasExactLabelOrDescendant(COPILOT) &&
                 bounds.top >= 0 &&

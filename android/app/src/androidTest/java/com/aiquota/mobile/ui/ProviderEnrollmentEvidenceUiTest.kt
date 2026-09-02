@@ -82,9 +82,9 @@ class ProviderEnrollmentEvidenceUiTest {
     }
 
     private fun completeFirstRun(providerId: ProviderId) {
+        // First run creates automatically named cards straight from the multi-select picker.
         providerRow(providerId).performClick()
         composeRule.onNodeWithText(text(R.string.provider_onboarding_start)).performClick()
-        namingAdd().performClick()
         composeRule.waitForIdle()
     }
 
@@ -95,7 +95,10 @@ class ProviderEnrollmentEvidenceUiTest {
 
     private fun providerRow(providerId: ProviderId) = composeRule.onNode(
         hasContentDescriptionExactly(providerId.displayName) and
-            SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)
+            (
+                SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) or
+                    SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox)
+                )
     )
 
     private fun namingAdd() = composeRule.onNode(
