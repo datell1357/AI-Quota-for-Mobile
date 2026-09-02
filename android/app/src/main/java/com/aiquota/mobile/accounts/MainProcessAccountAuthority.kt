@@ -123,7 +123,9 @@ class MainProcessAccountAuthority private constructor(
                     remoteIdentity = null,
                     modifiedVersion = version,
                 )
-                reactivateProviderCard(db, revived, activeProviderCardTotalCount(db), selectedAlias!!)
+                val revivedRank = providerGroupInsertionRank(db, providerId)
+                openProviderCardRankSlot(db, revivedRank)
+                reactivateProviderCard(db, revived, revivedRank, selectedAlias!!)
                 writeVersion(db, version)
                 return@transaction ProviderCardAddResult.Added(revived)
             }
@@ -137,6 +139,8 @@ class MainProcessAccountAuthority private constructor(
                 candidate
             }
             val version = readVersion(db).next()
+            val insertionRank = providerGroupInsertionRank(db, providerId)
+            openProviderCardRankSlot(db, insertionRank)
             val inserted = insertAccount(
                 db,
                 AccountRecord(
@@ -148,7 +152,8 @@ class MainProcessAccountAuthority private constructor(
                     sessionRevision = SessionRevision.of(0),
                     alias = selectedAlias?.displayValue,
                     modifiedVersion = version,
-                )
+                ),
+                activeRank = insertionRank,
             )
             faultInjector.after(AccountAuthorityFaultPoint.CATALOG)
             writeVersion(db, version)

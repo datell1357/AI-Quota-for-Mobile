@@ -499,6 +499,29 @@ class ProviderCardCatalogTest {
         }
     }
 
+    @Test
+    fun addedCardJoinsTheBottomOfItsOwnProviderGroup() {
+        // Given: one card per provider, in the picker's display order
+        val fixture = fixture("provider-grouping")
+        added(fixture.catalog.add(ProviderId.CLAUDE))
+        added(fixture.catalog.add(ProviderId.CODEX))
+        added(fixture.catalog.add(ProviderId.CURSOR))
+
+        // When: a second Claude and a second Codex are added
+        added(fixture.catalog.add(ProviderId.CLAUDE))
+        added(fixture.catalog.add(ProviderId.CODEX))
+
+        // Then: each sits directly below its own provider, not at the end of the list
+        assertEquals(
+            listOf("Claude", "Claude 2", "Codex", "Codex 2", "Cursor"),
+            fixture.catalog.page(0, 10).records.map { it.alias },
+        )
+        assertEquals(
+            listOf(0L, 1L, 2L, 3L, 4L),
+            activeCatalogRows(fixture.databaseName).map(CatalogRow::rank),
+        )
+    }
+
     private fun fixture(label: String): Fixture {
         val name = databaseName(label)
         val authority = MainProcessAccountAuthority.open(context, name)

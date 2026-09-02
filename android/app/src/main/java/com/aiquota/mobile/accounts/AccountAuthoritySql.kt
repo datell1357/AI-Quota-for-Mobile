@@ -35,7 +35,11 @@ internal val ACCOUNT_COLUMNS = arrayOf(
     "modified_version"
 )
 
-internal fun insertAccount(db: SQLiteDatabase, account: AccountRecord): AccountRecord {
+internal fun insertAccount(
+    db: SQLiteDatabase,
+    account: AccountRecord,
+    activeRank: Long? = null,
+): AccountRecord {
     val alias = account.alias?.let(::normalizeProviderCardAlias)
         ?: allocateProviderCardAlias(db, account.id.providerId)
     val storedAccount = account.copy(alias = alias.displayValue)
@@ -61,16 +65,41 @@ internal fun insertAccount(db: SQLiteDatabase, account: AccountRecord): AccountR
         statement.bindLong(12, storedAccount.modifiedVersion.value)
         check(statement.executeInsert() != -1L) { "Failed to insert account" }
     }
-    val activeRank = db.rawQuery(
-        "SELECT COUNT(*) FROM provider_card_catalog WHERE active_rank IS NOT NULL",
-        null,
-    ).use { cursor ->
-        check(cursor.moveToFirst())
-        cursor.getLong(0)
-    }
-    insertProviderCardCatalogMetadata(db, storedAccount.id, activeRank, alias.normalizedKey)
+    val rank = activeRank ?: activeProviderCardTotalCount(db)
+    insertProviderCardCatalogMetadata(db, storedAccount.id, rank, alias.normalizedKey)
     return storedAccount
 }
+
+/**
+ * A new card joins the bottom of its own provider's group, so adding a second Claude lands right
+ * below the first one instead of after every other provider.
+ */
+internal fun providerGroupInsertionRank(db: SQLiteDatabase, providerId: ProviderId): Long =
+    db.rawQuery(
+        "SELECT max(active_rank) FROM provider_card_catalog " +
+            "WHERE provider_id=? AND active_rank IS NOT NULL",
+        arrayOf(providerId.storageId),
+    ).use { cursor ->
+        check(cursor.moveToFirst())
+        if (cursor.isNull(0)) activeProviderCardTotalCount(db) else cursor.getLong(0) + 1
+    }
+
+/**
+ * Frees [rank] by pushing every later card down one place. The ranks are moved out of range first
+ * because the active-rank index is unique and a single in-place increment would collide.
+ */
+internal fun openProviderCardRankSlot(db: SQLiteDatabase, rank: Long) {
+    db.execSQL(
+        "UPDATE provider_card_catalog SET active_rank=active_rank+? WHERE active_rank>=?",
+        arrayOf(RANK_SHIFT, rank),
+    )
+    db.execSQL(
+        "UPDATE provider_card_catalog SET active_rank=active_rank-? WHERE active_rank>=?",
+        arrayOf(RANK_SHIFT - 1, RANK_SHIFT),
+    )
+}
+
+private const val RANK_SHIFT = 1_000_000L
 
 internal fun insertProviderCardCatalogMetadata(
     db: SQLiteDatabase,
