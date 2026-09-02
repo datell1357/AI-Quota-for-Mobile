@@ -156,7 +156,7 @@ class ProviderCardDeletionSchemaValidationTest {
                 db.execSQL("PRAGMA user_version=$oldVersion")
             }
             MainProcessAccountAuthority.open(context, name).use { it.displayVersion() }
-            assertEquals(9, userVersion(name))
+            assertEquals(10, userVersion(name))
             hashes += journalSchemaHash(name)
             assertTrue(journalSchemaSql(name).contains("claim_owner TEXT"))
             assertTrue(journalSchemaSql(name).contains("provider_card_deletion_pending_index"))
@@ -256,7 +256,7 @@ class ProviderCardDeletionSchemaValidationTest {
             assertThrows(label, SQLiteException::class.java) {
                 MainProcessAccountAuthority.open(context, name).use { authority -> authority.displayVersion() }
             }
-            assertEquals(label, 9, userVersion(name))
+            assertEquals(label, 10, userVersion(name))
             assertTrue(label, before.contentEquals(rawSurface(name)))
         }
     }

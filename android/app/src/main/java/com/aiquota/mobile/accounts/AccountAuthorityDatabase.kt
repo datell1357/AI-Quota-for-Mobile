@@ -128,6 +128,7 @@ internal class AccountAuthorityDatabase(
         if (oldVersion == 4) backfillParentPrimarySelections(db)
         if (tableExists(db, "named_profile_lifecycle")) validateNamedProfileTable(db)
         createNamedProfileTables(db)
+        if (oldVersion < 10) rescopeProviderCardAliasIndex(db)
         upgradeProviderCardCatalog(db)
         createProviderCardInitializationTables(db)
         createProviderCardDeletionTables(db)
@@ -148,19 +149,21 @@ internal class AccountAuthorityDatabase(
         }
 
         val rows = readLegacyProviderCardRows(db)
-        val activeAliasKeys = linkedSetOf<String>()
+        val activeAliasKeys = mutableMapOf<ProviderId, MutableSet<String>>()
+        fun keysFor(providerId: ProviderId) = activeAliasKeys.getOrPut(providerId, ::linkedSetOf)
         val prepared = rows.map { row ->
             val explicitAlias = row.account.alias?.let(::normalizeAliasForMigration)
             if (row.account.deletionState == AccountDeletionState.NONE && explicitAlias != null) {
-                if (!activeAliasKeys.add(explicitAlias.normalizedKey)) {
+                if (!keysFor(row.account.id.providerId).add(explicitAlias.normalizedKey)) {
                     malformedCatalog("Duplicate active provider-card alias")
                 }
             }
             LegacyProviderCardRow(row.account, explicitAlias)
         }.map { row ->
-            val alias = row.alias ?: allocateLegacyAlias(row.account.id.providerId, activeAliasKeys)
+            val providerId = row.account.id.providerId
+            val alias = row.alias ?: allocateLegacyAlias(providerId, keysFor(providerId))
             if (row.account.deletionState == AccountDeletionState.NONE) {
-                activeAliasKeys += alias.normalizedKey
+                keysFor(providerId) += alias.normalizedKey
             }
             row.copy(alias = alias)
         }
@@ -248,8 +251,15 @@ internal class AccountAuthorityDatabase(
         )
         db.execSQL(
             "CREATE UNIQUE INDEX IF NOT EXISTS provider_card_catalog_active_alias_unique " +
-                "ON provider_card_catalog(alias_normalized_key) WHERE active_rank IS NOT NULL"
+                "ON provider_card_catalog(provider_id, alias_normalized_key) WHERE active_rank IS NOT NULL"
         )
+    }
+
+    /** Schema 10: alias uniqueness moved from global to per provider. */
+    private fun rescopeProviderCardAliasIndex(db: SQLiteDatabase) {
+        if (!tableExists(db, PROVIDER_CARD_CATALOG_TABLE)) return
+        db.execSQL("DROP INDEX IF EXISTS $ACTIVE_ALIAS_INDEX")
+        createProviderCardCatalogIndexes(db)
     }
 
     private fun createProviderCardDeletionTables(db: SQLiteDatabase) {
@@ -724,7 +734,7 @@ internal class AccountAuthorityDatabase(
     private fun validateProviderCardCatalog(db: SQLiteDatabase) {
         validateProviderCardCatalogSchema(db)
         val activeRanks = mutableListOf<Long>()
-        val activeAliases = mutableSetOf<String>()
+        val activeAliases = mutableSetOf<Pair<ProviderId, String>>()
         var accountCount = 0L
         val qualifiedColumns = ACCOUNT_COLUMNS.joinToString(",") { "accounts.$it" }
         db.rawQuery(
@@ -789,7 +799,7 @@ internal class AccountAuthorityDatabase(
                     if (activeRank < 0 || activeRank > Int.MAX_VALUE) {
                         malformedCatalog("Active provider-card rank is out of range")
                     }
-                    if (!activeAliases.add(normalized.normalizedKey)) {
+                    if (!activeAliases.add(provider to normalized.normalizedKey)) {
                         malformedCatalog("Duplicate active provider-card alias")
                     }
                     activeRanks += activeRank
@@ -842,13 +852,13 @@ internal class AccountAuthorityDatabase(
         validateProviderCardCatalogIndex(
             db,
             ACTIVE_RANK_INDEX,
-            "active_rank",
+            listOf("active_rank"),
             "active_rank IS NOT NULL",
         )
         validateProviderCardCatalogIndex(
             db,
             ACTIVE_ALIAS_INDEX,
-            "alias_normalized_key",
+            listOf("provider_id", "alias_normalized_key"),
             "active_rank IS NOT NULL",
         )
 
@@ -885,7 +895,7 @@ internal class AccountAuthorityDatabase(
     private fun validateProviderCardCatalogIndex(
         db: SQLiteDatabase,
         name: String,
-        column: String,
+        expectedColumns: List<String>,
         predicate: String,
     ) {
         val flags = db.rawQuery("PRAGMA index_list(provider_card_catalog)", null).use { cursor ->
@@ -901,7 +911,7 @@ internal class AccountAuthorityDatabase(
                 while (cursor.moveToNext()) add(cursor.getString(2))
             }
         }
-        if (columns != listOf(column)) malformedCatalog("Provider-card catalog index $name has wrong columns")
+        if (columns != expectedColumns) malformedCatalog("Provider-card catalog index $name has wrong columns")
         val sql = db.rawQuery(
             "SELECT sql FROM sqlite_master WHERE type='index' AND name=?",
             arrayOf(name),
@@ -1314,7 +1324,7 @@ internal class AccountAuthorityDatabase(
         private const val PROVIDER_CARD_CATALOG_TABLE = "provider_card_catalog"
         private const val ACTIVE_RANK_INDEX = "provider_card_catalog_active_rank_unique"
         private const val ACTIVE_ALIAS_INDEX = "provider_card_catalog_active_alias_unique"
-        const val SCHEMA_VERSION = 9
+        const val SCHEMA_VERSION = 10
         const val DEFAULT_DATABASE_NAME = "ai_quota_accounts_v2.db"
     }
 }

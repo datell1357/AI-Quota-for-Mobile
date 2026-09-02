@@ -93,7 +93,7 @@ class MainProcessAccountAuthority private constructor(
                 ProviderCardMultiplicity.UNLIMITED -> null
                 ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT -> normalizeProviderCardAlias(providerId.displayName)
             }
-            if (selectedAlias != null && activeProviderCardAliasExists(db, selectedAlias.normalizedKey)) {
+            if (selectedAlias != null && activeProviderCardAliasExists(db, providerId, selectedAlias.normalizedKey)) {
                 return@transaction ProviderCardAddResult.Rejected(
                     ProviderCardAddRejection.AliasConflict(selectedAlias.displayValue)
                 )

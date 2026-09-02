@@ -64,7 +64,7 @@ class AccountAuthorityCatalogMigrationTest {
         openAndTouch(name)
 
         val migrated = catalogRows(name)
-        assertEquals(9, userVersion(name))
+        assertEquals(10, userVersion(name))
         assertEquals(
             listOf(id(ProviderId.CLAUDE, 1), id(ProviderId.CODEX, 3), id(ProviderId.GEMINI, 4)),
             migrated.filter { it.activeRank != null }.map(CatalogRow::id),
@@ -115,8 +115,9 @@ class AccountAuthorityCatalogMigrationTest {
     @Test
     fun duplicateTrimmedCaseFoldedAliasesAndMalformedLegacyRowsFailClosedWithoutMutation() {
         val duplicateCases = listOf(
-            "ascii" to listOf(row(ProviderId.CLAUDE, 1, " Work "), row(ProviderId.CODEX, 2, "work")),
-            "unicode" to listOf(row(ProviderId.CLAUDE, 1, "Ä"), row(ProviderId.CODEX, 2, "ä")),
+            // Duplicates only collide within one provider; the same alias on another provider is fine.
+            "ascii" to listOf(row(ProviderId.CLAUDE, 1, " Work "), row(ProviderId.CLAUDE, 2, "work")),
+            "unicode" to listOf(row(ProviderId.CLAUDE, 1, "Ä"), row(ProviderId.CLAUDE, 2, "ä")),
         )
         val duplicateHashes = duplicateCases.map { (label, rows) ->
             val name = legacyV6("duplicate-$label", rows)
@@ -174,7 +175,7 @@ class AccountAuthorityCatalogMigrationTest {
             assertArrayEquals(point.toString(), before, rawCatalogSurface(name))
 
             openAndTouch(name)
-            assertEquals(point.toString(), 9, userVersion(name))
+            assertEquals(point.toString(), 10, userVersion(name))
             assertEquals(listOf(0L, 1L), catalogRows(name).mapNotNull(CatalogRow::activeRank))
         }
         println("QA_TASK7_FAULT_POINTS=${points.joinToString(",")};ROLLBACKS=${points.size};RETRIES=${points.size}")
@@ -207,7 +208,7 @@ class AccountAuthorityCatalogMigrationTest {
         } finally {
             executor.shutdownNow()
         }
-        assertEquals(9, userVersion(name))
+        assertEquals(10, userVersion(name))
         val once = rawCatalogSurface(name)
         openAndTouch(name)
         assertArrayEquals(once, rawCatalogSurface(name))
@@ -435,7 +436,7 @@ class AccountAuthorityCatalogMigrationTest {
             authority.register(seed(ProviderId.CLAUDE, 1, "Work"))
             val before = authority.canonicalDumpForTest()
             assertThrows(SQLiteException::class.java) {
-                authority.register(seed(ProviderId.CODEX, 2, " work "))
+                authority.register(seed(ProviderId.CLAUDE, 2, " work "))
             }
             assertArrayEquals(before, authority.canonicalDumpForTest())
             assertEquals(1, authority.catalog(0, 10).totalCount)
@@ -487,10 +488,12 @@ class AccountAuthorityCatalogMigrationTest {
 
         val collision = database("allocator-cross-provider")
         MainProcessAccountAuthority.open(context, collision).use { authority ->
+            // A Claude card named "Codex" does not reserve the name on the Codex provider.
             authority.register(seed(ProviderId.CLAUDE, 1, "Codex"))
-            assertEquals("Codex 2", authority.register(seed(ProviderId.CODEX, 2, null)).account.alias)
+            assertEquals("Codex", authority.register(seed(ProviderId.CODEX, 2, null)).account.alias)
+            assertEquals("Codex 2", authority.register(seed(ProviderId.CODEX, 3, null)).account.alias)
         }
-        println("QA_TASK7_ALLOCATOR=0,1,1000;UNIQUE=${aliases.toSet().size};CROSS_PROVIDER=Codex_2")
+        println("QA_TASK7_ALLOCATOR=0,1,1000;UNIQUE=${aliases.toSet().size};CROSS_PROVIDER=Codex;SAME_PROVIDER=Codex_2")
     }
 
     @Test
@@ -621,7 +624,7 @@ class AccountAuthorityCatalogMigrationTest {
         )
         db.execSQL(
             "CREATE UNIQUE INDEX provider_card_catalog_active_alias_unique " +
-                "ON provider_card_catalog(alias_normalized_key) WHERE active_rank IS NOT NULL"
+                "ON provider_card_catalog(provider_id, alias_normalized_key) WHERE active_rank IS NOT NULL"
         )
     }
 
@@ -674,7 +677,7 @@ class AccountAuthorityCatalogMigrationTest {
         val before = rawCatalogSurface(name)
         repeat(2) {
             assertThrows(SQLiteException::class.java) { openAndTouch(name) }
-            assertEquals(9, userVersion(name))
+            assertEquals(10, userVersion(name))
             assertArrayEquals(before, rawCatalogSurface(name))
         }
     }

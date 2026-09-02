@@ -148,11 +148,11 @@ class ProviderAddUiTest {
         // Given
         dismissFirstRun()
         addProvider(ProviderId.CLAUDE, "Work")
-        openNaming(ProviderId.CODEX)
+        openNaming(ProviderId.CLAUDE)
         val field = composeRule.onNode(hasSetTextAction())
         val add = namingAdd()
 
-        // When / Then: global Locale.ROOT case collision
+        // When / Then: same-provider Locale.ROOT case collision
         field.performTextInput(" work ")
         add.performClick()
         assertFieldError(R.string.provider_enrollment_error_alias_conflict)

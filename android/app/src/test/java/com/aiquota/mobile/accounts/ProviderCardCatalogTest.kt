@@ -169,7 +169,7 @@ class ProviderCardCatalogTest {
     }
 
     @Test
-    fun caseSensitiveAliasMutationGuardUsesGlobalUnicodeTrimAndLocaleRootCollisionKeys() {
+    fun caseSensitiveAliasMutationGuardUsesPerProviderUnicodeTrimAndLocaleRootCollisionKeys() {
         val priorLocale = Locale.getDefault()
         Locale.setDefault(Locale.forLanguageTag("tr-TR"))
         try {
@@ -177,19 +177,21 @@ class ProviderCardCatalogTest {
             assertEquals("Work", added(fixture.catalog.add(custom(ProviderId.CLAUDE, "\u2003Work\u3000"))).alias)
             assertEquals(
                 ProviderCardAddRejection.AliasConflict("work"),
-                rejected(fixture.catalog.add(custom(ProviderId.CODEX, " work "))),
+                rejected(fixture.catalog.add(custom(ProviderId.CLAUDE, " work "))),
             )
             assertEquals("I", added(fixture.catalog.add(custom(ProviderId.CLAUDE, "I"))).alias)
             assertEquals(
                 ProviderCardAddRejection.AliasConflict("i"),
-                rejected(fixture.catalog.add(custom(ProviderId.CODEX, "i"))),
+                rejected(fixture.catalog.add(custom(ProviderId.CLAUDE, "i"))),
             )
             assertEquals("İST", added(fixture.catalog.add(custom(ProviderId.CLAUDE, "İST"))).alias)
             assertEquals(
                 ProviderCardAddRejection.AliasConflict("i\u0307st"),
-                rejected(fixture.catalog.add(custom(ProviderId.CODEX, "i\u0307st"))),
+                rejected(fixture.catalog.add(custom(ProviderId.CLAUDE, "i\u0307st"))),
             )
-            assertEquals(3, fixture.catalog.page(0, 10).totalCount)
+            // Uniqueness is scoped to the provider: the same alias is free on Codex.
+            assertEquals("work", added(fixture.catalog.add(custom(ProviderId.CODEX, " work "))).alias)
+            assertEquals(4, fixture.catalog.page(0, 10).totalCount)
         } finally {
             Locale.setDefault(priorLocale)
         }
@@ -304,7 +306,7 @@ class ProviderCardCatalogTest {
         added(fixture.catalog.add(ProviderId.CURSOR))
         val failures = listOf<() -> ProviderCardAddResult>(
             { fixture.catalog.add(ProviderId.KIMI) },
-            { fixture.catalog.add(custom(ProviderId.CODEX, " work ")) },
+            { fixture.catalog.add(custom(ProviderId.CLAUDE, " work ")) },
             { fixture.catalog.add(custom(ProviderId.CODEX, "bad\u0001alias")) },
             { fixture.catalog.add(ProviderId.CURSOR) },
         )
@@ -424,7 +426,7 @@ class ProviderCardCatalogTest {
         ).forEach { provider -> added(fixture.catalog.add(provider)) }
         val before = activeCatalogRows(fixture.databaseName)
         val work = added(fixture.catalog.add(custom(ProviderId.CLAUDE, "Work")))
-        val collision = rejected(fixture.catalog.add(custom(ProviderId.CODEX, " work ")))
+        val collision = rejected(fixture.catalog.add(custom(ProviderId.CLAUDE, " work ")))
         val beforeSecondCursor = fixture.authority.canonicalDumpForTest()
         val secondCursor = rejected(fixture.catalog.add(ProviderId.CURSOR))
         assertArrayEquals(beforeSecondCursor, fixture.authority.canonicalDumpForTest())

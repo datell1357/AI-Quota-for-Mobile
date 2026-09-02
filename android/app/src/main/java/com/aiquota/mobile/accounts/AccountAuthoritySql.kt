@@ -108,11 +108,16 @@ internal fun activeProviderCardTotalCount(db: SQLiteDatabase): Long =
         cursor.getLong(0)
     }
 
-internal fun activeProviderCardAliasExists(db: SQLiteDatabase, normalizedKey: String): Boolean =
+/** Aliases are unique per provider: "홍길동" may exist on a Claude card and a Codex card at once. */
+internal fun activeProviderCardAliasExists(
+    db: SQLiteDatabase,
+    providerId: ProviderId,
+    normalizedKey: String,
+): Boolean =
     db.rawQuery(
         "SELECT 1 FROM provider_card_catalog " +
-            "WHERE active_rank IS NOT NULL AND alias_normalized_key=? LIMIT 1",
-        arrayOf(normalizedKey),
+            "WHERE active_rank IS NOT NULL AND provider_id=? AND alias_normalized_key=? LIMIT 1",
+        arrayOf(providerId.storageId, normalizedKey),
     ).use(Cursor::moveToFirst)
 
 internal fun activeProviderCardAliasExists(
@@ -121,11 +126,11 @@ internal fun activeProviderCardAliasExists(
     excluding: ProviderAccountId,
 ): Boolean = db.rawQuery(
     "SELECT 1 FROM provider_card_catalog " +
-        "WHERE active_rank IS NOT NULL AND alias_normalized_key=? " +
-        "AND NOT (provider_id=? AND account_key=?) LIMIT 1",
+        "WHERE active_rank IS NOT NULL AND provider_id=? AND alias_normalized_key=? " +
+        "AND account_key<>? LIMIT 1",
     arrayOf(
-        normalizedKey,
         excluding.providerId.storageId,
+        normalizedKey,
         excluding.accountKey.storageValue(),
     ),
 ).use(Cursor::moveToFirst)
@@ -201,8 +206,8 @@ internal fun allocateProviderCardAlias(
     providerId: ProviderId,
 ): NormalizedProviderCardAlias {
     val activeAliasCount = db.rawQuery(
-        "SELECT COUNT(*) FROM provider_card_catalog WHERE active_rank IS NOT NULL",
-        null,
+        "SELECT COUNT(*) FROM provider_card_catalog WHERE active_rank IS NOT NULL AND provider_id=?",
+        arrayOf(providerId.storageId),
     ).use { cursor ->
         check(cursor.moveToFirst())
         cursor.getLong(0)
@@ -211,15 +216,16 @@ internal fun allocateProviderCardAlias(
     val base = normalizeProviderCardAlias(providerId.displayName)
     val suffix = db.rawQuery(
         """
-        WITH base(value) AS (VALUES(?)),
+        WITH base(value, provider) AS (VALUES(?, ?)),
         used(suffix) AS (
             SELECT 1
             FROM provider_card_catalog, base
-            WHERE active_rank IS NOT NULL AND alias_normalized_key = base.value
+            WHERE active_rank IS NOT NULL AND provider_id = base.provider
+              AND alias_normalized_key = base.value
             UNION ALL
             SELECT CAST(substr(alias_normalized_key, length(base.value) + 2) AS INTEGER)
             FROM provider_card_catalog, base
-            WHERE active_rank IS NOT NULL
+            WHERE active_rank IS NOT NULL AND provider_id = base.provider
               AND alias_normalized_key GLOB base.value || ' [0-9]*'
               AND CAST(substr(alias_normalized_key, length(base.value) + 2) AS INTEGER) >= 2
               AND alias_normalized_key = base.value || ' ' ||
@@ -233,7 +239,7 @@ internal fun allocateProviderCardAlias(
             (SELECT coalesce(max(suffix), 0) + 1 FROM used)
         )
         """.trimIndent(),
-        arrayOf(base.normalizedKey),
+        arrayOf(base.normalizedKey, providerId.storageId),
     ).use { cursor ->
         check(cursor.moveToFirst()) { "Provider-card alias allocation exhausted" }
         cursor.getLong(0)
