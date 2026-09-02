@@ -976,9 +976,13 @@ class MainProcessAccountAuthority private constructor(
         fun open(context: Context): MainProcessAccountAuthority =
             open(context, DEFAULT_DATABASE_NAME, AccountAuthorityFaultInjector.NONE)
 
+        /** In-memory authority for test/debug surfaces; never adds a file to Context.databaseList(). */
+        internal fun openInMemoryForTest(context: Context): MainProcessAccountAuthority =
+            open(context, databaseName = null)
+
         internal fun open(
             context: Context,
-            databaseName: String,
+            databaseName: String?,
             faultInjector: AccountAuthorityFaultInjector = AccountAuthorityFaultInjector.NONE,
             migrationFaultInjector: AccountAuthorityMigrationFaultInjector =
                 AccountAuthorityMigrationFaultInjector.NONE,

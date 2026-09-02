@@ -16,7 +16,7 @@ internal class AccountAuthorityCatalogException(
 
 internal class AccountAuthorityDatabase(
     context: Context,
-    databaseName: String,
+    databaseName: String?,
     private val migrationFaultInjector: AccountAuthorityMigrationFaultInjector =
         AccountAuthorityMigrationFaultInjector.NONE,
 ) : SQLiteOpenHelper(context, databaseName, null, SCHEMA_VERSION) {

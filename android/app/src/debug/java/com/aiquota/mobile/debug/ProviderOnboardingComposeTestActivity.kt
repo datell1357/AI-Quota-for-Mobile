@@ -41,12 +41,15 @@ class ProviderOnboardingComposeTestActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        if (savedInstanceState == null) deleteDatabase(DEBUG_DATABASE_NAME)
-        host = ProviderEnrollmentDebugHost(
-            ProviderCardCatalog.openForTest(
-                MainProcessAccountAuthority.open(this, DEBUG_DATABASE_NAME)
-            )
-        )
+        // In-memory authority: a fresh launch starts empty, recreation (rotation) keeps the same instance.
+        host = if (savedInstanceState == null) {
+            retainedHost?.close()
+            ProviderEnrollmentDebugHost(
+                ProviderCardCatalog.openForTest(MainProcessAccountAuthority.openInMemoryForTest(this))
+            ).also { retainedHost = it }
+        } else {
+            requireNotNull(retainedHost) { "Recreated without a retained in-memory host" }
+        }
         val populated = intent.getStringExtra(EXTRA_DATASET).equals(DATASET_POPULATED, ignoreCase = true)
         if (savedInstanceState == null && populated) host.seedPopulated()
         setContent {
@@ -75,13 +78,16 @@ class ProviderOnboardingComposeTestActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        host.close()
+        if (isFinishing) {
+            host.close()
+            if (retainedHost === host) retainedHost = null
+        }
         super.onDestroy()
     }
 
     companion object {
         const val EXTRA_DATASET = "com.aiquota.mobile.debug.extra.DATASET"
         const val DATASET_POPULATED = "populated"
-        private const val DEBUG_DATABASE_NAME = "provider-enrollment-debug.db"
+        private var retainedHost: ProviderEnrollmentDebugHost? = null
     }
 }
