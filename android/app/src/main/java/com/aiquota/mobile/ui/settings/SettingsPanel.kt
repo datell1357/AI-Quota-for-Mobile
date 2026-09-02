@@ -1,4 +1,6 @@
-﻿package com.aiquota.mobile.ui.settings
+﻿@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
+package com.aiquota.mobile.ui.settings
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
@@ -12,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -451,74 +454,54 @@ private fun ExactCardConnectionRow(
                 )
             }
         }
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val stackActions = maxWidth < 420.dp || androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.5f
-            val connectAction: @Composable (Modifier) -> Unit = { buttonModifier ->
-                OutlinedButton(
-                    modifier = buttonModifier.heightIn(min = 48.dp),
-                    enabled = action != SettingsConnectionAction.NONE,
-                    onClick = {
-                        if (action == SettingsConnectionAction.CONNECT) onConnect(card.accountId)
-                        else if (action == SettingsConnectionAction.DISCONNECT) onDisconnect(card.accountId)
-                    },
-                ) {
-                    Text(
-                        stringResource(
-                            if (action == SettingsConnectionAction.CONNECT) R.string.provider_connect
-                            else R.string.provider_disconnect
-                        )
+        // Natural-size buttons that wrap only when the row is too narrow; Material's 48dp minimum
+        // interactive size keeps the touch targets.
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            OutlinedButton(
+                enabled = action != SettingsConnectionAction.NONE,
+                onClick = {
+                    if (action == SettingsConnectionAction.CONNECT) onConnect(card.accountId)
+                    else if (action == SettingsConnectionAction.DISCONNECT) onDisconnect(card.accountId)
+                },
+            ) {
+                Text(
+                    stringResource(
+                        if (action == SettingsConnectionAction.CONNECT) R.string.provider_connect
+                        else R.string.provider_disconnect
                     )
-                }
+                )
             }
-            val renameAction: @Composable (Modifier) -> Unit = { buttonModifier ->
-                TextButton(
-                    modifier = buttonModifier
-                        .heightIn(min = 48.dp)
-                        .focusRequester(renameTriggerFocusRequester)
-                        .focusable(),
-                    onClick = {
-                        renameError = null
-                        renameExpectedVersion = card.displayRecord.version
-                        renameFocusReturnPending = true
-                        showRename = true
-                    },
-                ) {
-                    Text(stringResource(R.string.settings_rename_selected_device))
-                }
+            TextButton(
+                modifier = Modifier
+                    .focusRequester(renameTriggerFocusRequester)
+                    .focusable(),
+                onClick = {
+                    renameError = null
+                    renameExpectedVersion = card.displayRecord.version
+                    renameFocusReturnPending = true
+                    showRename = true
+                },
+            ) {
+                Text(stringResource(R.string.settings_rename_selected_device))
             }
-            val deleteAction: @Composable (Modifier) -> Unit = { buttonModifier ->
-                TextButton(
-                    modifier = buttonModifier
-                        .heightIn(min = 48.dp)
-                        .focusRequester(deleteTriggerFocusRequester)
-                        .focusable(),
-                    onClick = {
-                        deleteError = null
-                        deleteBusy = false
-                        deletePending = false
-                        deleteExpectedVersion = card.displayRecord.version
-                        deleteFocusReturnPending = true
-                        showDelete = true
-                    },
-                ) {
-                    Text(stringResource(R.string.provider_catalog_remove_action))
-                }
-            }
-            if (stackActions) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    connectAction(Modifier.fillMaxWidth())
-                    renameAction(Modifier.fillMaxWidth())
-                    deleteAction(Modifier.fillMaxWidth())
-                }
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    connectAction(Modifier.weight(1f))
-                    renameAction(Modifier.weight(1f))
-                    deleteAction(Modifier.weight(1f))
-                }
+            TextButton(
+                modifier = Modifier
+                    .focusRequester(deleteTriggerFocusRequester)
+                    .focusable(),
+                onClick = {
+                    deleteError = null
+                    deleteBusy = false
+                    deletePending = false
+                    deleteExpectedVersion = card.displayRecord.version
+                    deleteFocusReturnPending = true
+                    showDelete = true
+                },
+            ) {
+                Text(stringResource(R.string.provider_catalog_remove_action))
             }
         }
     }

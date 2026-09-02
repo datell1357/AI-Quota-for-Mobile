@@ -74,7 +74,7 @@ class SettingsConnectionManagementUiTest {
     }
 
     @Test
-    fun exactCardActionsReflowAtCompactWidth() {
+    fun exactCardActionsKeepSingleLineCompactButtonsAtCompactWidth() {
         composeRule.setContent {
             Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                 SettingsPanel(
@@ -94,10 +94,12 @@ class SettingsConnectionManagementUiTest {
             context.getString(R.string.settings_rename_selected_device),
             context.getString(R.string.provider_catalog_remove_action),
         )
-        val tops = actionLabels.map { label ->
-            composeRule.onNodeWithText(label).assertIsDisplayed().fetchSemanticsNode().boundsInRoot.top
+        // Buttons keep their natural 40dp height (labels never wrap); the row itself may flow onto a second line.
+        val singleLineMaxPx = with(composeRule.density) { 48.dp.toPx() }
+        val heights = actionLabels.map { label ->
+            composeRule.onNodeWithText(label).assertIsDisplayed().fetchSemanticsNode().boundsInRoot.height
         }
-        assertTrue("Exact-card actions must reflow vertically at 320dp: $tops", tops.zipWithNext().all { (first, second) -> first < second })
+        assertTrue("Exact-card action labels must stay single-line at 320dp: $heights", heights.all { it <= singleLineMaxPx })
     }
 
     @Test
