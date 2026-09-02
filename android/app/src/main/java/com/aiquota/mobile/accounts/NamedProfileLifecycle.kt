@@ -27,6 +27,10 @@ value class WebProfileName private constructor(private val token: String) {
 enum class ProfileLifecycleState {
     ACTIVE,
     ERASURE_PENDING,
+    /**
+     * Terminal. Browsing data is gone; the empty container is deleted by the next process that
+     * uses named profiles (see [NamedProfileLifecycleManager]). The name is never reused.
+     */
     DATA_ERASURE_COMPLETED_CONTAINER_RETAINED,
 }
 
@@ -283,6 +287,9 @@ interface NamedProfilePlatform {
     ): NamedProfileSessionResource?
 
     fun eraseProfileData(name: WebProfileName, callback: (ProfileDataErasureResult) -> Unit)
+
+    /** Best-effort deletion of an erased profile's physical container; false when still in use. */
+    fun deleteReleasedContainer(name: WebProfileName): Boolean = false
 }
 
 enum class ErasureRequestResult {
@@ -432,6 +439,7 @@ class NamedProfileLifecycleManager(
     private fun acquire(id: ProviderAccountId, createIfMissing: Boolean): LeaseAcquireResult = mutate {
         val c = platform.probeCapability()
         if (c !is NamedProfileCapability.Supported) return@mutate LeaseAcquireResult.Rejected(c)
+        sweepErasedContainersOnce()
         val row =
             store.read(id)?.takeIf { it.state == ProfileLifecycleState.ACTIVE }
                 ?: return@mutate LeaseAcquireResult.ProfileUnavailable
@@ -605,6 +613,18 @@ class NamedProfileLifecycleManager(
         }
     }
 
+    /**
+     * Erased profiles keep an empty container until a process that has not bound them deletes
+     * it. Runs once per process on the first acquire, when WebView is being initialised anyway.
+     */
+    private fun sweepErasedContainersOnce() {
+        if (processState.swept) return
+        processState.swept = true
+        store.readAll()
+            .filter { it.state == ProfileLifecycleState.DATA_ERASURE_COMPLETED_CONTAINER_RETAINED }
+            .forEach { platform.deleteReleasedContainer(it.profileName) }
+    }
+
     private fun startErase(id: ProviderAccountId) {
         if (!leases[id].isNullOrEmpty() || !erasing.add(id)) return
         val c = platform.probeCapability()
@@ -650,6 +670,7 @@ private class ProcessNamedProfileLifecycleState {
     val erasing = mutableSetOf<ProviderAccountId>()
     val pendingCallbacks =
         linkedMapOf<ProviderAccountId, MutableList<(ProfileDataErasureResult) -> Unit>>()
+    var swept = false
 }
 
 private object ProcessNamedProfileLifecycleStates {

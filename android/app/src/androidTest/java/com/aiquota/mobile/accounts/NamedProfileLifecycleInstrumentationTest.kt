@@ -1192,11 +1192,18 @@ private fun readPhase(
                     rows.getValue(doomed).state,
                 )
                 assertTrue(m.acquireTyped(doomed) is LeaseAcquireResult.ProfileUnavailable)
-                val w = WebView(a)
-                WebViewCompat.setProfile(w, rows.getValue(doomed).profileName.storageValue())
+                // The first acquire in a fresh process sweeps erased containers off disk.
+                assertFalse(
+                    rows.getValue(doomed).profileName.storageValue() in
+                        ProfileStore.getInstance().allProfileNames
+                )
+                // Recreate an empty container under the same name to prove nothing of the doomed
+                // session survived on disk.
                 val p =
                     ProfileStore.getInstance()
                         .getOrCreateProfile(rows.getValue(doomed).profileName.storageValue())
+                val w = WebView(a)
+                WebViewCompat.setProfile(w, rows.getValue(doomed).profileName.storageValue())
                 erasedFixture = Fixture(w, p, server, markers.getValue(doomed), false)
                 a.setContentView(w)
                 erasedFixture.start()

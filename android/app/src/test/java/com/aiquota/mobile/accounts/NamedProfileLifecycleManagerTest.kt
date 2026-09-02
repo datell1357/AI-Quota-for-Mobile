@@ -506,6 +506,30 @@ class NamedProfileLifecycleManagerTest {
         assertEquals(0, platform.eraseCount)
     }
 
+    @Test
+    fun `first acquire in a process deletes erased containers exactly once`() {
+        val p = FakePlatform()
+        val s = InMemoryNamedProfileLifecycleStore()
+        val m = manager(s, p)
+        val erased = id(1)
+        val live = id(2)
+        m.ensureBinding(erased)
+        m.ensureBinding(live)
+        assertEquals(ErasureRequestResult.ERASURE_PENDING, m.requestErasure(erased))
+        val erasedName = m.binding(erased)!!.profileName
+        assertEquals(
+            ProfileLifecycleState.DATA_ERASURE_COMPLETED_CONTAINER_RETAINED,
+            m.binding(erased)!!.state,
+        )
+        assertEquals(emptyList<WebProfileName>(), p.deletedContainers)
+
+        m.acquire(live).close()
+        assertEquals(listOf(erasedName), p.deletedContainers)
+
+        m.acquire(live).close()
+        assertEquals(listOf(erasedName), p.deletedContainers)
+    }
+
     private fun manager(
         store: NamedProfileLifecycleStore = InMemoryNamedProfileLifecycleStore(),
         platform: FakePlatform = FakePlatform(),
@@ -521,6 +545,7 @@ private class FakePlatform : NamedProfilePlatform {
     var eraseCount = 0
     var eraseResult: ProfileDataErasureResult = ProfileDataErasureResult.Completed
     var deferErase = false
+    val deletedContainers = mutableListOf<WebProfileName>()
     var destroyCount = 0
     var cancelQuiesceCount = 0
     val cancelQuiesceFailures = ArrayDeque<RuntimeException>()
@@ -604,6 +629,11 @@ private class FakePlatform : NamedProfilePlatform {
         beforeErase()
         eraseCount++
         if (deferErase) deferred = { callback(eraseResult) } else callback(eraseResult)
+    }
+
+    override fun deleteReleasedContainer(name: WebProfileName): Boolean {
+        deletedContainers += name
+        return true
     }
 
     fun completeNextQuiesce() = deferredQuiesces.removeFirst().invoke()

@@ -109,8 +109,27 @@ class AndroidXNamedProfilePlatform(
             callback(ProfileDataErasureResult.Failed(e.javaClass.simpleName))
         }
     }
+
+    /**
+     * Chromium keeps a profile "in use" while service workers or not-yet-torn-down WebViews
+     * reference it, so the container is only deletable from a process that never bound it.
+     * Failures are silent; the next process start retries.
+     */
+    override fun deleteReleasedContainer(name: WebProfileName): Boolean {
+        requireUiThread()
+        return try {
+            ProfileStore.getInstance().deleteProfile(name.storageValue())
+        } catch (_: RuntimeException) {
+            false
+        }.also { if (it) trace("profile:container-deleted") }
+    }
 }
 
+/**
+ * Closing a lease navigates the WebView to a local synthetic page first: the provider page's
+ * `pagehide` is what makes Chromium commit localStorage/IndexedDB to disk, so skipping this loses
+ * that state on the next process start. The page is served from memory, so no network is used.
+ */
 private class AndroidSession(
     override val webView: WebView,
     override val cookieManager: CookieManager,
@@ -144,7 +163,7 @@ private class AndroidSession(
                         response("text/plain", "ok")
                     }
                     else -> {
-                        attemptObservations?.recordRequest()
+                        attemptObservations.recordRequest()
                         response("text/html", HTML)
                     }
                 }
@@ -176,7 +195,6 @@ private class AndroidSession(
                 }
 
                 override fun onPageFinished(v: WebView, u: String) {
-                    if (activeAttempt != attempt) return
                     if (activeAttempt == attempt && u == URL) {
                         finished = true
                         check(attempt)
@@ -184,7 +202,6 @@ private class AndroidSession(
                 }
 
                 override fun onPageCommitVisible(v: WebView, u: String) {
-                    if (activeAttempt != attempt) return
                     if (activeAttempt == attempt && u == URL) {
                         committed = true
                         check(attempt)
