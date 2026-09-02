@@ -75,7 +75,6 @@ class AndroidXNamedProfilePlatform(
                 profile.webStorage,
                 profile.serviceWorkerController,
                 trace,
-                persistenceReady = !createIfMissing,
             )
         } catch (e: RuntimeException) {
             w.destroy()
@@ -118,7 +117,6 @@ private class AndroidSession(
     override val webStorage: WebStorage,
     override val serviceWorkerController: ServiceWorkerController,
     private val trace: (String) -> Unit,
-    private var persistenceReady: Boolean,
 ) : NamedProfileSessionResource {
     override val cookieSource = ExactProfileCookieSource { url, origin ->
         cookieManager.getCookie(url)?.takeIf(String::isNotBlank)
@@ -134,11 +132,6 @@ private class AndroidSession(
     private var observations: QuiesceObservations? = null
     private var callback: ((SessionQuiesceResult) -> Unit)? = null
     private var prior: WebViewClient? = null
-
-    override fun markPersistenceReady() {
-        ui()
-        persistenceReady = true
-    }
 
     private fun loaderFor(attempt: Long, attemptObservations: QuiesceObservations) =
         WebViewAssetLoader.Builder()
@@ -198,10 +191,6 @@ private class AndroidSession(
                     }
                 }
             }
-        if (!persistenceReady) {
-            finish(attempt, SessionQuiesceResult.Failed("PERSISTENCE_NOT_READY"))
-            return
-        }
         webView.evaluateJavascript(
             "window.addEventListener('pagehide',()=>navigator.sendBeacon('$BEACON','x'),{once:true});true"
         ) {

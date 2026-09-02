@@ -73,8 +73,6 @@ class ExactAccountLoginProfileInstrumentationTest {
 
             scenario.onActivity {
                 bPopup.destroy()
-                aLease.markPersistenceReady()
-                bLease.markPersistenceReady()
                 aLease.closeAcknowledged { result ->
                     closeResults[0] = result
                     closes.countDown()

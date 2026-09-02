@@ -298,7 +298,6 @@ open class WebLoginActivity : Activity() {
         val lease = namedProfileLease
         val composition = exactLoginComposition
         if (lease != null) {
-            if (!finished) lease.markPersistenceReady()
             closeExactLeaseAndComposition(lease, composition, finishAfterClose = false)
         } else {
             if (::webView.isInitialized && !mainWebViewDestroyed) webView.destroy()
@@ -2066,7 +2065,6 @@ open class WebLoginActivity : Activity() {
             when (composition.coordinator.complete(binding, context)) {
                 LoginCallbackResult.Accepted -> {
                     if (publishExactLoginSnapshot(binding, rawPayload)) {
-                        namedProfileLease?.markPersistenceReady()
                         setExactLoginResult(EXACT_RESULT_SUCCESS)
                     } else {
                         composition.coordinator.fail(binding)

@@ -258,8 +258,6 @@ interface NamedProfileSessionResource {
     val webStorage: Any
     val serviceWorkerController: Any
 
-    fun markPersistenceReady() = Unit
-
     fun quiesce(callback: (SessionQuiesceResult) -> Unit)
 
     fun cancelQuiesce() = Unit
@@ -342,8 +340,6 @@ internal constructor(
 
     val serviceWorkerController
         get() = resource.serviceWorkerController
-
-    fun markPersistenceReady() = resource.markPersistenceReady()
 
     internal data class CloseStart(val attempt: Long?, val result: LeaseCloseResult?)
 
