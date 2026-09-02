@@ -124,7 +124,6 @@ enum class RuntimeSupportReason {
     FEATURE_MULTI_PROFILE_MISSING,
     FEATURE_DELETE_BROWSING_DATA_MISSING,
     PROVIDER_MISSING,
-    PROVIDER_UNVERIFIED,
     VERSION_MALFORMED,
     VERSION_BELOW_SAFE_FLOOR,
     PROBE_FAILED,
@@ -150,12 +149,9 @@ object NamedProfileRuntimePolicy {
     fun evaluate(packageName: String?, versionName: String?): NamedProfileRuntimeDecision {
         if (packageName == null || versionName == null)
             return NamedProfileRuntimeDecision.Rejected(RuntimeSupportReason.PROVIDER_MISSING)
+        // Every WebView provider is Chromium-based and shares the same version scheme, so the
+        // floor applies regardless of package (Google, Chrome channels, AOSP, OEM builds).
         val id = WebViewProviderIdentity(packageName, versionName)
-        if (packageName != "com.google.android.webview")
-            return NamedProfileRuntimeDecision.Rejected(
-                RuntimeSupportReason.PROVIDER_UNVERIFIED,
-                id,
-            )
         val rawParts = versionName.split('.')
         if (
             rawParts.size != 4 ||

@@ -36,9 +36,9 @@ class NamedProfileFixIteration5Test {
             RuntimeSupportReason.VERSION_MALFORMED,
             NamedProfileRuntimePolicy.evaluate("com.google.android.webview", "152.bad").reason,
         )
-        assertEquals(
-            RuntimeSupportReason.PROVIDER_UNVERIFIED,
-            NamedProfileRuntimePolicy.evaluate("com.android.webview", "999.0.0.0").reason,
+        assertTrue(
+            NamedProfileRuntimePolicy.evaluate("com.android.webview", "999.0.0.0")
+                is NamedProfileRuntimeDecision.Supported,
         )
     }
 

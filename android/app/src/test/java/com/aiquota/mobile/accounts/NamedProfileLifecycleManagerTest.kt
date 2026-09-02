@@ -387,7 +387,6 @@ class NamedProfileLifecycleManagerTest {
                 NamedProfileCapability.Rejected(RuntimeSupportReason.VERSION_BELOW_SAFE_FLOOR),
                 NamedProfileCapability.Rejected(RuntimeSupportReason.VERSION_MALFORMED),
                 NamedProfileCapability.Rejected(RuntimeSupportReason.PROVIDER_MISSING),
-                NamedProfileCapability.Rejected(RuntimeSupportReason.PROVIDER_UNVERIFIED),
                 NamedProfileCapability.Rejected(RuntimeSupportReason.PROBE_FAILED),
             )
         rejected.forEach { capability ->
