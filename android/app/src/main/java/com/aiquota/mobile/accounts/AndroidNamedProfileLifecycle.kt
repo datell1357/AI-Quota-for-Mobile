@@ -3,6 +3,7 @@ package com.aiquota.mobile.accounts
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.ServiceWorkerController
 import android.webkit.WebResourceRequest
@@ -203,10 +204,19 @@ private class AndroidSession(
                     }
                 }
             }
+        cookieManager.flush()
         trace("webview:navigate-neutral")
         webView.loadUrl(URL)
         Handler(Looper.getMainLooper()).postDelayed(
-            { if (activeAttempt == attempt) finish(attempt, SessionQuiesceResult.Failed("QUIESCE_TIMEOUT")) },
+            {
+                if (activeAttempt == attempt) {
+                    // Best effort only. Cookies were flushed above, so a slow neutral page must not
+                    // strand the user on it or turn a successful login into a reauthentication.
+                    Log.w(TAG, "quiesce timed out; closing anyway")
+                    cookieManager.flush()
+                    finish(attempt, SessionQuiesceResult.CommittedCrossOriginPlatformAsync)
+                }
+            },
             QUIESCE_TIMEOUT_MS,
         )
     }
@@ -215,7 +225,9 @@ private class AndroidSession(
         ui()
         if (activeAttempt != attempt) return
         val attemptObservations = observations?.takeIf { it.attempt == attempt } ?: return
-        if (!finished || !committed || !attemptObservations.complete() || visual)
+        // Painting (onPageCommitVisible) is not required: while the login activity is finishing the
+        // WebView may never draw another frame, which used to stall the close forever.
+        if (!finished || !attemptObservations.complete() || visual)
             return
         visual = true
         WebViewCompat.postVisualStateCallback(webView, 15L) {
@@ -241,6 +253,7 @@ private class AndroidSession(
         callback = null
         prior?.let { webView.webViewClient = it }
         prior = null
+        Log.i(TAG, "quiesce finished: $r")
         trace(
             if (r is SessionQuiesceResult.CommittedCrossOriginPlatformAsync) "session:quiesced"
             else "session:quiesce-failed"
@@ -278,7 +291,8 @@ private class AndroidSession(
         const val HOST = "aiquota-neutral.invalid"
         const val URL = "https://$HOST/neutral/page.html"
         const val HTML = "<!doctype html><script>window.__AIQ_NEUTRAL_READY__=true</script>neutral"
-        const val QUIESCE_TIMEOUT_MS = 5_000L
+        const val QUIESCE_TIMEOUT_MS = 1_200L
+        const val TAG = "AIQuotaProfile"
 
         fun response(m: String, b: String) =
             WebResourceResponse(m, "UTF-8", ByteArrayInputStream(b.toByteArray()))

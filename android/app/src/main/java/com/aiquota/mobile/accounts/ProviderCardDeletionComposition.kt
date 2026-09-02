@@ -102,6 +102,28 @@ object MainProcessAccountFeature {
         return deletion().resumePending()
     }
 
+    /**
+     * Deletion steps drive WebView profiles, so they need the UI thread; the compatibility
+     * projection they normally share a pass with does blocking disk writes and is reconciled
+     * separately off the startup path.
+     */
+    @Synchronized
+    fun resumePendingDeletions(context: Context): List<ProviderCardDeletionResult> {
+        appContext = context.applicationContext
+        val hasPending = MainProcessAccountAuthority.open(context).use { authority ->
+            authority.pendingProviderCardDeletions().isNotEmpty()
+        }
+        if (!hasPending) return emptyList()
+        return deletion().resumePending()
+    }
+
+    @Synchronized
+    fun reconcileCompatibilityProjection(context: Context) {
+        MainProcessAccountAuthority.open(context).use { authority ->
+            ProviderCardCompatibilityProjection(context.applicationContext, authority).reconcile()
+        }
+    }
+
     @Synchronized
     fun deletionApi(): ProviderCardDeletionApi = deletion()
 

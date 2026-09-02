@@ -25,7 +25,7 @@ class AIQuotaApplication : Application() {
         )
         if (currentProcessName != packageName) return
         if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
-            LegacyAccountMigrationRunner.runIfEnabled(
+            LegacyAccountMigrationRunner.startIfEnabled(
                 this,
                 enabled = MultiAccountStartupGate.isEnabled(),
             )
