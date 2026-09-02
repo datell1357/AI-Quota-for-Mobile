@@ -129,6 +129,10 @@ class AndroidXNamedProfilePlatform(
  * Closing a lease navigates the WebView to a local synthetic page first: the provider page's
  * `pagehide` is what makes Chromium commit localStorage/IndexedDB to disk, so skipping this loses
  * that state on the next process start. The page is served from memory, so no network is used.
+ *
+ * Completion is judged only from this side (page served, finished, visible, JS ready) — never
+ * from anything the provider page must send, because provider CSPs (claude.ai:
+ * `connect-src 'self'`) block cross-origin beacons. A timeout guarantees the close never hangs.
  */
 private class AndroidSession(
     override val webView: WebView,
@@ -152,21 +156,12 @@ private class AndroidSession(
     private var callback: ((SessionQuiesceResult) -> Unit)? = null
     private var prior: WebViewClient? = null
 
-    private fun loaderFor(attempt: Long, attemptObservations: QuiesceObservations) =
+    private fun loaderFor(attemptObservations: QuiesceObservations) =
         WebViewAssetLoader.Builder()
             .setDomain(HOST)
-            .addPathHandler("/neutral/") { path ->
-                when {
-                    path.startsWith("beacon") -> {
-                        attemptObservations.recordBeacon()
-                        postCheck(attempt)
-                        response("text/plain", "ok")
-                    }
-                    else -> {
-                        attemptObservations.recordRequest()
-                        response("text/html", HTML)
-                    }
-                }
+            .addPathHandler("/neutral/") {
+                attemptObservations.recordRequest()
+                response("text/html", HTML)
             }
             .build()
 
@@ -178,7 +173,7 @@ private class AndroidSession(
         visual = false
         val attempt = ++quiesceAttempt
         val attemptObservations = QuiesceObservations(attempt)
-        val attemptLoader = loaderFor(attempt, attemptObservations)
+        val attemptLoader = loaderFor(attemptObservations)
         observations = attemptObservations
         activeAttempt = attempt
         this.callback = callback
@@ -208,20 +203,12 @@ private class AndroidSession(
                     }
                 }
             }
-        webView.evaluateJavascript(
-            "window.addEventListener('pagehide',()=>navigator.sendBeacon('$BEACON','x'),{once:true});true"
-        ) {
-            if (activeAttempt != attempt) return@evaluateJavascript
-            if (it != "true") finish(attempt, SessionQuiesceResult.Failed("PAGE_NOT_READY"))
-            else {
-                trace("webview:navigate-neutral")
-                webView.loadUrl(URL)
-            }
-        }
-    }
-
-    private fun postCheck(attempt: Long) = Handler(Looper.getMainLooper()).post {
-        if (activeAttempt == attempt) check(attempt)
+        trace("webview:navigate-neutral")
+        webView.loadUrl(URL)
+        Handler(Looper.getMainLooper()).postDelayed(
+            { if (activeAttempt == attempt) finish(attempt, SessionQuiesceResult.Failed("QUIESCE_TIMEOUT")) },
+            QUIESCE_TIMEOUT_MS,
+        )
     }
 
     private fun check(attempt: Long) {
@@ -290,8 +277,8 @@ private class AndroidSession(
     companion object {
         const val HOST = "aiquota-neutral.invalid"
         const val URL = "https://$HOST/neutral/page.html"
-        const val BEACON = "https://$HOST/neutral/beacon"
         const val HTML = "<!doctype html><script>window.__AIQ_NEUTRAL_READY__=true</script>neutral"
+        const val QUIESCE_TIMEOUT_MS = 5_000L
 
         fun response(m: String, b: String) =
             WebResourceResponse(m, "UTF-8", ByteArrayInputStream(b.toByteArray()))
@@ -300,13 +287,10 @@ private class AndroidSession(
 
 internal class QuiesceObservations(val attempt: Long) {
     private val observedRequest = AtomicBoolean()
-    private val observedBeacon = AtomicBoolean()
 
     fun recordRequest() = observedRequest.set(true)
 
-    fun recordBeacon() = observedBeacon.set(true)
-
-    fun complete() = observedRequest.get() && observedBeacon.get()
+    fun complete() = observedRequest.get()
 }
 
 fun NamedProfileLease.createAndroidPopupWebView(context: Context): WebView {

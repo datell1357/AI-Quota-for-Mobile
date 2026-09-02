@@ -6,12 +6,11 @@ import org.junit.Test
 
 class AndroidNamedProfileLifecycleTest {
     @Test
-    fun `stale observations cannot complete a newer quiesce attempt`() {
+    fun `quiesce completes once the neutral page was served without any provider-side signal`() {
         val stale = QuiesceObservations(attempt = 1)
-        stale.recordRequest()
-
         val current = QuiesceObservations(attempt = 2)
-        stale.recordBeacon()
+
+        stale.recordRequest()
 
         assertTrue(stale.complete())
         assertFalse(current.complete())
