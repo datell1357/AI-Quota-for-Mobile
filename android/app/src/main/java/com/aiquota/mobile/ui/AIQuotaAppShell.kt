@@ -1124,9 +1124,6 @@ fun AIQuotaAppShell(
                                 } else null,
                                 cardVersion = exactCard?.displayRecord?.version,
                                 authState = exactDetail?.authState,
-                                onDelete = if (exactId != null && exactCard != null) {
-                                    { expectedVersion -> deleteExactCard(exactId, expectedVersion) }
-                                } else null,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -1222,14 +1219,34 @@ private fun aiQuotaMaterialColorScheme(colors: AIQuotaThemeColors) = lightColorS
     primaryContainer = colors.selectedNav,
     onPrimaryContainer = colors.textPrimary,
     secondary = colors.primaryActive,
+    onSecondary = Color.White,
+    secondaryContainer = colors.selectedNav,
+    onSecondaryContainer = colors.textPrimary,
+    tertiary = colors.primary,
+    onTertiary = Color.White,
     background = colors.appBackground,
+    onBackground = colors.textPrimary,
     surface = colors.panel,
     surfaceVariant = colors.unselectedNav,
     onSurface = colors.textPrimary,
     onSurfaceVariant = colors.textSecondary,
+    // Dialogs and sheets read the surfaceContainer roles; without these they fall back to the
+    // Material baseline lavender instead of the app's own cream/graphite palette.
+    surfaceContainerLowest = colors.panel,
+    surfaceContainerLow = colors.panel,
+    surfaceContainer = colors.panel,
+    surfaceContainerHigh = colors.panel,
+    surfaceContainerHighest = colors.content,
+    surfaceBright = colors.panel,
+    surfaceDim = colors.cardChrome,
+    surfaceTint = Color.Transparent,
+    inverseSurface = colors.textPrimary,
+    inverseOnSurface = colors.panel,
     outline = colors.border,
     outlineVariant = colors.borderSoft,
-    error = Color(0xFFC64545)
+    scrim = colors.shadow,
+    error = Color(0xFFC64545),
+    onError = Color.White,
 )
 
 private fun AppTheme.labelResource(): Int {
