@@ -88,8 +88,6 @@ import com.aiquota.mobile.R
 import com.aiquota.mobile.accounts.AccountAuthState
 import com.aiquota.mobile.accounts.DisplayVersion
 import com.aiquota.mobile.accounts.ProviderAccountId
-import com.aiquota.mobile.accounts.ProviderCardDeletionRejection
-import com.aiquota.mobile.accounts.ProviderCardDeletionResult
 import com.aiquota.mobile.accounts.ProviderCardRenameRejection
 import com.aiquota.mobile.accounts.ProviderCardRenameResult
 import com.aiquota.mobile.local.AppTheme
@@ -149,7 +147,6 @@ fun ProviderDetailScreen(
     onRename: ((String, DisplayVersion) -> ProviderCardRenameResult?)? = null,
     cardVersion: DisplayVersion? = null,
     authState: AccountAuthState? = null,
-    onDelete: ((DisplayVersion) -> ProviderCardDeletionResult?)? = null,
     modifier: Modifier = Modifier
 ) {
     val layoutMetrics = rememberAppLayoutMetrics()
@@ -185,7 +182,6 @@ fun ProviderDetailScreen(
             onRename = onRename,
             cardVersion = cardVersion,
             authState = authState,
-            onDelete = onDelete,
         )
     }
 }
@@ -211,8 +207,7 @@ private fun ClassicProviderWindow(
     onGaugeColorChange: (String?) -> Unit,
     onRename: ((String, DisplayVersion) -> ProviderCardRenameResult?)?,
     cardVersion: DisplayVersion?,
-    authState: AccountAuthState?,
-    onDelete: ((DisplayVersion) -> ProviderCardDeletionResult?)?
+    authState: AccountAuthState?
 ) {
     val colors = AIQuotaTheme.colors
     val windowTitle = providerDetailWindowTitle(snapshot)
@@ -324,7 +319,6 @@ private fun ClassicProviderWindow(
                         onRename = onRename,
                         cardVersion = cardVersion,
                         authState = authState,
-                        onDelete = onDelete,
                     )
 
                     ClassicSectionTitle(text = stringResource(R.string.provider_usage_title))
@@ -374,8 +368,7 @@ private fun ProviderSummaryBlock(
     onGaugeColorChange: (String?) -> Unit,
     onRename: ((String, DisplayVersion) -> ProviderCardRenameResult?)?,
     cardVersion: DisplayVersion?,
-    authState: AccountAuthState?,
-    onDelete: ((DisplayVersion) -> ProviderCardDeletionResult?)?
+    authState: AccountAuthState?
 ) {
     val colors = AIQuotaTheme.colors
     val connectionAction = providerDetailConnectionAction(authState, snapshot)
@@ -384,15 +377,10 @@ private fun ProviderSummaryBlock(
     var renameValue by remember(cardAlias) { mutableStateOf(cardAlias) }
     var renameError by remember { mutableStateOf<Int?>(null) }
     var renameExpectedVersion by remember { mutableStateOf<DisplayVersion?>(null) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var deleteExpectedVersion by remember { mutableStateOf<DisplayVersion?>(null) }
-    var deleteError by remember { mutableStateOf<Int?>(null) }
     val personalSettingsFocusRequester = remember { FocusRequester() }
     val renameTriggerFocusRequester = remember { FocusRequester() }
-    val deleteTriggerFocusRequester = remember { FocusRequester() }
     var personalSettingsFocusReturnPending by remember { mutableStateOf(false) }
     var renameFocusReturnPending by remember { mutableStateOf(false) }
-    var deleteFocusReturnPending by remember { mutableStateOf(false) }
     LaunchedEffect(showPersonalSettings, personalSettingsFocusReturnPending) {
         if (!showPersonalSettings && personalSettingsFocusReturnPending) {
             personalSettingsFocusRequester.requestFocus()
@@ -403,12 +391,6 @@ private fun ProviderSummaryBlock(
         if (!showRenameDialog && renameFocusReturnPending) {
             renameTriggerFocusRequester.requestFocus()
             renameFocusReturnPending = false
-        }
-    }
-    LaunchedEffect(showDeleteDialog, deleteFocusReturnPending) {
-        if (!showDeleteDialog && deleteFocusReturnPending) {
-            deleteTriggerFocusRequester.requestFocus()
-            deleteFocusReturnPending = false
         }
     }
 
@@ -533,19 +515,6 @@ private fun ProviderSummaryBlock(
                     )
                 }
             }
-            if (onDelete != null && cardVersion != null) {
-                TextButton(
-                    modifier = Modifier.focusRequester(deleteTriggerFocusRequester),
-                    onClick = {
-                        deleteError = null
-                        deleteExpectedVersion = cardVersion
-                        deleteFocusReturnPending = true
-                        showDeleteDialog = true
-                    },
-                ) {
-                    Text(stringResource(R.string.provider_catalog_remove_action))
-                }
-            }
         }
     }
     if (showPersonalSettings) {
@@ -623,64 +592,6 @@ private fun ProviderSummaryBlock(
             }
         }
     }
-    if (showDeleteDialog && onDelete != null) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(R.string.provider_removal_confirmation_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(layoutMetrics.cardSpacingDp.dp)) {
-                    Text(
-                        stringResource(
-                            R.string.provider_removal_confirmation_names,
-                            stringResource(
-                                R.string.provider_removal_named_card,
-                                cardAlias,
-                                snapshot.providerId.displayName,
-                            ),
-                        )
-                    )
-                    Text(stringResource(R.string.provider_removal_confirmation_consequence))
-                    deleteError?.let { error ->
-                        val errorText = stringResource(error)
-                        Text(
-                            text = errorText,
-                            modifier = Modifier.semantics {
-                                liveRegion = LiveRegionMode.Polite
-                                error(errorText)
-                            },
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    deleteExpectedVersion?.let { expectedVersion ->
-                        when (val result = onDelete(expectedVersion)) {
-                            is ProviderCardDeletionResult.Rejected -> {
-                                deleteError = providerDeleteErrorResource(result.reason)
-                            }
-                            else -> showDeleteDialog = false
-                        }
-                    }
-                }) {
-                    Text(stringResource(R.string.provider_removal_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(R.string.provider_removal_cancel))
-                }
-            },
-        )
-    }
-}
-
-@androidx.annotation.StringRes
-private fun providerDeleteErrorResource(reason: ProviderCardDeletionRejection): Int = when (reason) {
-    ProviderCardDeletionRejection.ACCOUNT_MISSING -> R.string.provider_removal_error_missing
-    ProviderCardDeletionRejection.VERSION_MISMATCH -> R.string.provider_removal_error_stale
 }
 
 internal fun providerDetailConnectionAction(

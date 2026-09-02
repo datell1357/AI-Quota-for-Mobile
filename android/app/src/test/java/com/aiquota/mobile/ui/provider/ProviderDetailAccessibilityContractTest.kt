@@ -1,6 +1,7 @@
 package com.aiquota.mobile.ui.provider
 
 import java.io.File
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -8,11 +9,17 @@ class ProviderDetailAccessibilityContractTest {
     private val source = File("src/main/java/com/aiquota/mobile/ui/provider/ProviderDetailScreen.kt").readText()
 
     @Test
-    fun renameAndDeleteErrorsAreErrorSemanticsInAPoliteLiveRegion() {
+    fun renameErrorsAreErrorSemanticsInAPoliteLiveRegion() {
         assertTrue(source.contains("LiveRegionMode.Polite"))
         assertTrue(source.contains("error(errorText)"))
         assertTrue(source.contains("renameError?.let"))
-        assertTrue(source.contains("deleteError?.let"))
+    }
+
+    @Test
+    fun providerDetailDoesNotOfferCardRemoval() {
+        // Removal lives only on the dashboard header; the provider tab must not delete accounts.
+        assertFalse(source.contains("provider_catalog_remove_action"))
+        assertFalse(source.contains("onDelete"))
     }
 
     @Test
@@ -60,11 +67,10 @@ class ProviderDetailAccessibilityContractTest {
     @Test
     fun detailDialogsReturnFocusToTheirInvokingControls() {
         val summary = source.substringAfter("private fun ProviderSummaryBlock")
-            .substringBefore("private fun providerDeleteErrorResource")
+            .substringBefore("internal fun providerDetailConnectionAction")
 
         assertTrue(summary.contains("personalSettingsFocusRequester"))
         assertTrue(summary.contains("renameTriggerFocusRequester"))
-        assertTrue(summary.contains("deleteTriggerFocusRequester"))
         assertTrue(summary.contains("requestFocus()"))
     }
 }
