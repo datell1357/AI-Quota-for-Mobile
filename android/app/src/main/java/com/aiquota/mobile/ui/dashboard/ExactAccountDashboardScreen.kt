@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.layout.LocalPinnableContainer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.painterResource
@@ -254,6 +256,13 @@ internal fun ExactDashboardCardsContent(
                             Modifier.fillMaxWidth()
                         } else {
                             Modifier.animateItem().fillMaxWidth()
+                        }
+                        // Auto-scrolling a drag past the viewport would otherwise dispose this item
+                        // and cancel the gesture, so the dragged card stays composed while held.
+                        val pinnableContainer = LocalPinnableContainer.current
+                        DisposableEffect(accountId == draggedAccount, pinnableContainer) {
+                            val pinned = if (accountId == draggedAccount) pinnableContainer?.pin() else null
+                            onDispose { pinned?.release() }
                         }
                         ExactProviderUsageCard(
                             content = contentById.getValue(accountId),
