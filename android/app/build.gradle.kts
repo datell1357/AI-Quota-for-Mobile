@@ -92,8 +92,8 @@ android {
         applicationId = "com.aiquota.mobile"
         minSdk = 26
         targetSdk = 36
-        versionCode = 49
-        versionName = "1.2.2"
+        versionCode = 50
+        versionName = "1.2.3"
         testInstrumentationRunner = project.findProperty("aiquota.testInstrumentationRunner")?.toString()
             ?: "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GOOGLE_ANDROID_OAUTH_CLIENT_ID", "\"$googleAndroidOAuthClientId\"")
