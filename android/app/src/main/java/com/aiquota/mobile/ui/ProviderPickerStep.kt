@@ -67,11 +67,6 @@ internal fun ProviderPickerStep(
         modifier = modifier.padding(contentPadding.dp),
         verticalArrangement = Arrangement.spacedBy(contentSpacing.dp),
     ) {
-        Text(
-            text = androidx.compose.ui.res.stringResource(R.string.provider_picker_title),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-        )
         if (!compactHeight) {
             Text(
                 text = androidx.compose.ui.res.stringResource(
@@ -183,7 +178,7 @@ private fun ProviderPickerRow(
             },
         color = if (selected) colors.selectedNav else colors.content,
         border = BorderStroke(1.dp, if (selected) colors.primary else colors.borderSoft),
-        shape = MaterialTheme.shapes.medium,
+        shape = aiQuotaRowShape(colors.theme),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),

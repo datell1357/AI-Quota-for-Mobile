@@ -5,6 +5,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -14,10 +15,12 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.R
 import com.aiquota.mobile.accounts.ProviderCardAddResult
 import com.aiquota.mobile.local.AppTheme
 import com.aiquota.mobile.local.ProviderId
@@ -77,15 +80,22 @@ private fun ProviderPickerSheet(
         containerColor = colors.panel,
         tonalElevation = 0.dp,
     ) {
-        ProviderPickerStep(
-            state = state,
-            existingAccountIds = existingAccountIds,
-            onLater = onLater,
-            onStart = onStart,
-            contentPadding = metrics.cardPaddingDp,
-            contentSpacing = metrics.cardSpacingDp,
-            modifier = Modifier.heightIn(min = sheetHeight, max = sheetHeight),
-        )
+        AIQuotaWindowFrame(
+            title = stringResource(R.string.provider_picker_title),
+            modifier = Modifier
+                .padding(horizontal = 8.dp, vertical = 8.dp)
+                .heightIn(min = sheetHeight, max = sheetHeight),
+        ) {
+            ProviderPickerStep(
+                state = state,
+                existingAccountIds = existingAccountIds,
+                onLater = onLater,
+                onStart = onStart,
+                contentPadding = metrics.cardPaddingDp,
+                contentSpacing = metrics.cardSpacingDp,
+                modifier = Modifier.fillMaxWidth().weight(1f),
+            )
+        }
     }
 }
 
@@ -109,15 +119,15 @@ private fun ProviderNamingDialog(
             usePlatformDefaultWidth = !isLandscape,
         ),
     ) {
-        Surface(
+        AIQuotaWindowFrame(
+            title = stringResource(
+                R.string.provider_naming_title,
+                checkNotNull(state.selectedProvider).displayName,
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .widthIn(max = 560.dp)
                 .heightIn(max = (screenHeight - 48).coerceAtLeast(320).dp),
-            shape = providerEnrollmentDialogShape(colors.theme),
-            color = colors.panel,
-            shadowElevation = if (colors.theme == AppTheme.MACOS) 12.dp else 2.dp,
-            border = BorderStroke(if (colors.theme == AppTheme.MACOS) 1.dp else 2.dp, colors.border),
         ) {
             ProviderNamingStep(
                 state = state,

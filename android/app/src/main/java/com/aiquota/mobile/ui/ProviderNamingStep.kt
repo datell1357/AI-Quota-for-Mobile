@@ -61,13 +61,8 @@ internal fun ProviderNamingStep(
             focusManager.clearFocus(force = true)
         }
     }
-    val title: @Composable () -> Unit = {
-        Text(
-            text = stringResource(R.string.provider_naming_title, providerId.displayName),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-        )
-    }
+    // The window title bar already names the provider being added.
+    val title: @Composable () -> Unit = {}
     val field: @Composable (Modifier) -> Unit = { modifier ->
         OutlinedTextField(
             value = state.alias,

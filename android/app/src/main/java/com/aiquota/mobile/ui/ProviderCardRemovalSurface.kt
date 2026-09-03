@@ -5,6 +5,9 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -44,6 +47,7 @@ import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.aiquota.mobile.R
 import com.aiquota.mobile.accounts.ProviderAccountId
@@ -162,43 +166,14 @@ private fun ProviderCardRemovalSelectionDialog(
     onContinue: () -> Unit,
 ) {
     val headingFocusRequester = remember { FocusRequester() }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true),
-        title = {
-            LaunchedEffect(Unit) { headingFocusRequester.requestFocus() }
-            Text(
-                text = stringResource(R.string.provider_removal_title),
-                modifier = Modifier
-                    .focusRequester(headingFocusRequester)
-                    .focusable()
-                    .semantics { heading() },
-                fontWeight = FontWeight.Bold,
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(R.string.provider_removal_body))
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 360.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    cards.forEach { card ->
-                        val selected = card.accountId in selectedIds
-                        ProviderCardRemovalRow(card, selected, onToggle)
-                    }
-                }
-                Text(
-                    text = stringResource(R.string.provider_removal_selected_count, selectedIds.size),
-                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+    ProviderCardRemovalWindow(
+        title = stringResource(R.string.provider_removal_title),
+        titleModifier = Modifier.focusRequester(headingFocusRequester).focusable(),
+        onDismiss = onDismiss,
+        actions = {
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text(stringResource(R.string.provider_removal_cancel))
             }
-        },
-        confirmButton = {
             Button(
                 onClick = onContinue,
                 enabled = selectedIds.isNotEmpty(),
@@ -207,12 +182,27 @@ private fun ProviderCardRemovalSelectionDialog(
                 Text(stringResource(R.string.provider_removal_continue))
             }
         },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.provider_removal_cancel))
+    ) {
+        LaunchedEffect(Unit) { headingFocusRequester.requestFocus() }
+        Text(stringResource(R.string.provider_removal_body))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 360.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            cards.forEach { card ->
+                val selected = card.accountId in selectedIds
+                ProviderCardRemovalRow(card, selected, onToggle)
             }
-        },
-    )
+        }
+        Text(
+            text = stringResource(R.string.provider_removal_selected_count, selectedIds.size),
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
 }
 
 @Composable
@@ -284,39 +274,15 @@ private fun ProviderCardRemovalConfirmationDialog(
     val names = selectedCards.map { card ->
         stringResource(R.string.provider_removal_named_card, card.alias, card.accountId.providerId.displayName)
     }.joinToString(", ")
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            dismissOnBackPress = !deleting,
-            dismissOnClickOutside = !deleting,
-        ),
-        title = {
-            LaunchedEffect(Unit) { headingFocusRequester.requestFocus() }
-            Text(
-                text = stringResource(R.string.provider_removal_confirmation_title),
-                modifier = Modifier
-                    .focusRequester(headingFocusRequester)
-                    .focusable()
-                    .semantics { heading() },
-                fontWeight = FontWeight.Bold,
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text(stringResource(R.string.provider_removal_confirmation_names, names))
-                selectedCards.forEach { card ->
-                    Text(
-                        text = card.alias,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
-                Text(stringResource(R.string.provider_removal_confirmation_consequence))
+    ProviderCardRemovalWindow(
+        title = stringResource(R.string.provider_removal_confirmation_title),
+        titleModifier = Modifier.focusRequester(headingFocusRequester).focusable(),
+        onDismiss = onDismiss,
+        dismissible = !deleting,
+        actions = {
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text(stringResource(R.string.provider_removal_cancel))
             }
-        },
-        confirmButton = {
             Button(
                 onClick = onConfirm,
                 enabled = selectedCards.isNotEmpty() && !deleting,
@@ -337,12 +303,19 @@ private fun ProviderCardRemovalConfirmationDialog(
                 }
             }
         },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.provider_removal_cancel))
+    ) {
+        LaunchedEffect(Unit) { headingFocusRequester.requestFocus() }
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(stringResource(R.string.provider_removal_confirmation_names, names))
+            selectedCards.forEach { card ->
+                Text(text = card.alias, fontWeight = FontWeight.SemiBold)
             }
-        },
-    )
+            Text(stringResource(R.string.provider_removal_confirmation_consequence))
+        }
+    }
 }
 
 @Composable
@@ -351,62 +324,87 @@ private fun ProviderCardRemovalResultDialog(
     onDismiss: () -> Unit,
 ) {
     val headingFocusRequester = remember { FocusRequester() }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            LaunchedEffect(Unit) { headingFocusRequester.requestFocus() }
-            Text(
-                stringResource(R.string.provider_removal_results_title),
-                modifier = Modifier
-                    .focusRequester(headingFocusRequester)
-                    .focusable()
-                    .semantics { heading() },
-                fontWeight = FontWeight.Bold,
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                resultById.values.forEach { result ->
-                    val status = stringResource(result.outcome.statusResource())
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .semantics { liveRegion = LiveRegionMode.Polite },
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Text(
-                            stringResource(
-                                R.string.provider_removal_result_item,
-                                result.snapshot.alias,
-                                result.snapshot.providerName,
-                                status,
-                            ),
-                            modifier = Modifier.semantics {
-                                liveRegion = LiveRegionMode.Polite
-                            },
-                        )
-                        if (result.outcome == RemovalResult.PENDING) {
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .semantics {
-                                        liveRegion = LiveRegionMode.Polite
-                                        contentDescription = status
-                                    },
-                                strokeWidth = 2.dp,
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
+    ProviderCardRemovalWindow(
+        title = stringResource(R.string.provider_removal_results_title),
+        titleModifier = Modifier.focusRequester(headingFocusRequester).focusable(),
+        onDismiss = onDismiss,
+        actions = {
             Button(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.provider_removal_close))
             }
         },
-    )
+    ) {
+        LaunchedEffect(Unit) { headingFocusRequester.requestFocus() }
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            resultById.values.forEach { result ->
+                val status = stringResource(result.outcome.statusResource())
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics { liveRegion = LiveRegionMode.Polite },
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        stringResource(
+                            R.string.provider_removal_result_item,
+                            result.snapshot.alias,
+                            result.snapshot.providerName,
+                            status,
+                        ),
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                    if (result.outcome == RemovalResult.PENDING) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .semantics {
+                                    liveRegion = LiveRegionMode.Polite
+                                    contentDescription = status
+                                },
+                            strokeWidth = 2.dp,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProviderCardRemovalWindow(
+    title: String,
+    onDismiss: () -> Unit,
+    actions: @Composable RowScope.() -> Unit,
+    titleModifier: Modifier = Modifier,
+    dismissible: Boolean = true,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Dialog(
+        onDismissRequest = { if (dismissible) onDismiss() },
+        properties = DialogProperties(
+            dismissOnBackPress = dismissible,
+            dismissOnClickOutside = dismissible,
+        ),
+    ) {
+        AIQuotaWindowFrame(
+            title = title,
+            titleModifier = titleModifier,
+            modifier = Modifier.fillMaxWidth().widthIn(max = 560.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                content = content,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, bottom = 18.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                verticalAlignment = Alignment.CenterVertically,
+                content = actions,
+            )
+        }
+    }
 }
