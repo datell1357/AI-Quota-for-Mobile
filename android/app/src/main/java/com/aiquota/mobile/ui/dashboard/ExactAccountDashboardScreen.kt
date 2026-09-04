@@ -2,6 +2,7 @@ package com.aiquota.mobile.ui.dashboard
 
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.runtime.DisposableEffect
@@ -234,22 +234,27 @@ internal fun ExactDashboardCardsContent(
                     DashboardViewModeButtons(viewMode, onSelectViewMode)
                 }
             }
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(columns),
-                state = scrollState,
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(layoutMetrics.sectionSpacingDp.dp),
-                verticalArrangement = Arrangement.spacedBy(layoutMetrics.sectionSpacingDp.dp),
-            ) {
-                if (previewIds.isEmpty()) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        ProviderCatalogEmptyState(
-                            layoutMetrics = layoutMetrics,
-                            onAddProvider = onAddProviderFromEmptyState ?: onAddProvider,
-                            focusRequester = emptyStateAddProviderFocusRequester,
-                        )
-                    }
-                } else {
+            // 카드가 없을 때는 격자 대신 남은 영역 가운데에 안내를 둔다. 격자의 첫 칸에 넣으면
+            // 안내가 화면 맨 위에 붙어 카드가 하나 놓인 것처럼 보인다.
+            if (previewIds.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    ProviderCatalogEmptyState(
+                        layoutMetrics = layoutMetrics,
+                        onAddProvider = onAddProviderFromEmptyState ?: onAddProvider,
+                        focusRequester = emptyStateAddProviderFocusRequester,
+                    )
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(columns),
+                    state = scrollState,
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(layoutMetrics.sectionSpacingDp.dp),
+                    verticalArrangement = Arrangement.spacedBy(layoutMetrics.sectionSpacingDp.dp),
+                ) {
                     itemsIndexed(previewIds, key = { _, id -> ProviderAccountIdStorageCodec.encode(id) }) { index, accountId ->
                         val cardModifier = if (accountId == draggedAccount || !animationsEnabled) {
                             Modifier.fillMaxWidth()
