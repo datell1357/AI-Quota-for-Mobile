@@ -71,6 +71,7 @@ internal class ProviderPostedNotificationRepository(context: Context) {
                 .put(FIELD_GENERATION, event.generation.value)
                 .put(FIELD_SESSION, event.sessionRevision.value)
                 .put(FIELD_VERSION, event.version.value)
+                .put(FIELD_DISAMBIGUATE, event.disambiguateAccount)
         }
         is PostedProviderNotification.Threshold -> notification.event.let { event ->
             JSONObject()
@@ -83,6 +84,7 @@ internal class ProviderPostedNotificationRepository(context: Context) {
                 .put(FIELD_GENERATION, event.generation.value)
                 .put(FIELD_SESSION, event.sessionRevision.value)
                 .put(FIELD_VERSION, event.version.value)
+                .put(FIELD_DISAMBIGUATE, event.disambiguateAccount)
         }
     }
 
@@ -95,6 +97,7 @@ internal class ProviderPostedNotificationRepository(context: Context) {
         val generation = root.optLong(FIELD_GENERATION, -1L).takeIf { it > 0L } ?: return null
         val session = root.optLong(FIELD_SESSION, -1L).takeIf { it > 0L } ?: return null
         val version = root.optLong(FIELD_VERSION, -1L).takeIf { it >= 0L } ?: return null
+        val disambiguate = root.optBoolean(FIELD_DISAMBIGUATE, false)
         return runCatching {
             when (root.optString(FIELD_KIND)) {
                 "reset" -> PostedProviderNotification.Reset(
@@ -106,6 +109,7 @@ internal class ProviderPostedNotificationRepository(context: Context) {
                         AccountGeneration.of(generation),
                         SessionRevision.of(session),
                         DisplayVersion.of(version),
+                        disambiguate,
                     )
                 )
                 "threshold" -> PostedProviderNotification.Threshold(
@@ -118,6 +122,7 @@ internal class ProviderPostedNotificationRepository(context: Context) {
                         AccountGeneration.of(generation),
                         SessionRevision.of(session),
                         DisplayVersion.of(version),
+                        disambiguate,
                     )
                 )
                 else -> return null
@@ -133,6 +138,7 @@ internal class ProviderPostedNotificationRepository(context: Context) {
         val LOCK = Any()
         const val PREFERENCES_NAME = "ai_quota_provider_notification_identity"
         const val KEY_POSTED = "posted_v1"
+        const val FIELD_DISAMBIGUATE = "disambiguate"
         const val FIELD_KIND = "kind"
         const val FIELD_LINE_KEY = "line_key"
         const val FIELD_ALIAS = "alias"

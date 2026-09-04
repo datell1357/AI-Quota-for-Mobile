@@ -30,6 +30,8 @@ data class ProviderUsageThresholdNotification(
     val generation: AccountGeneration,
     val sessionRevision: SessionRevision,
     val version: DisplayVersion,
+    /** 같은 provider에 카드가 둘 이상이라 알림에서 계정을 구분해야 하는지. */
+    val disambiguateAccount: Boolean = false,
 ) {
     val accountId: ProviderAccountId get() = accountLineKey.accountId
     val providerId: ProviderId get() = accountId.providerId
@@ -44,8 +46,23 @@ data class ProviderResetNotification(
     val generation: AccountGeneration,
     val sessionRevision: SessionRevision,
     val version: DisplayVersion,
+    /** 같은 provider에 카드가 둘 이상이라 알림에서 계정을 구분해야 하는지. */
+    val disambiguateAccount: Boolean = false,
 ) {
     val accountId: ProviderAccountId get() = accountLineKey.accountId
     val providerId: ProviderId get() = accountId.providerId
     val lineKey: String get() = accountLineKey.lineKey
+}
+
+/**
+ * 같은 provider에 카드가 둘 이상일 때만 알림에서 계정 별칭을 앞에 붙인다. 단일 계정 사용자는
+ * 기존(provider 이름만 쓰는) 알림 문구를 그대로 본다.
+ */
+internal fun accountsNeedingAliasIn(
+    cards: List<ProviderCardNotificationSnapshot>,
+): Set<ProviderAccountId> {
+    val countByProvider = cards.groupingBy { it.accountId.providerId }.eachCount()
+    return cards.filter { countByProvider.getValue(it.accountId.providerId) > 1 }
+        .map { it.accountId }
+        .toSet()
 }

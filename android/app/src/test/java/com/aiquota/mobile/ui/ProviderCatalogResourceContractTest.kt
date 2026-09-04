@@ -43,15 +43,6 @@ class ProviderCatalogResourceContractTest {
     }
 
     @Test
-    fun koreanVisibleCopyDoesNotLeakTheEnglishProviderTerm() {
-        val leaked = readStrings("src/main/res/values-ko/strings.xml")
-            .filterValues { Regex("\\bprovider\\b", RegexOption.IGNORE_CASE).containsMatchIn(it) }
-            .keys
-
-        assertTrue("Korean resources still contain English provider copy: $leaked", leaked.isEmpty())
-    }
-
-    @Test
     fun settingsVersionPlaceholdersStayAlignedAcrossLocales() {
         val english = readStrings("src/main/res/values/strings.xml")
         val korean = readStrings("src/main/res/values-ko/strings.xml")

@@ -96,6 +96,74 @@ class ProviderCardNotificationPolicyExactTest {
         assertTrue(failure.isFailure)
     }
 
+    /**
+     * 같은 provider에 카드가 둘 이상일 때만 알림 제목에 계정 별칭을 붙인다. 단일 계정 사용자는
+     * 프로덕션과 같은 문구를 그대로 본다.
+     */
+    @Test
+    fun siblingCardsAskForAliasPrefix_whileASoleCardKeepsTheProductionTitle() {
+        // Given: 같은 provider 카드 두 장.
+        val keyA = ProviderAccountLineKey(codexA, "primary:window")
+        val keyB = ProviderAccountLineKey(codexB, "primary:window")
+        val siblings = ThresholdNotificationEvaluation(
+            cards = listOf(card(codexA, "Codex", 0.05f), card(codexB, "Work", 0.05f)),
+            enabledAccounts = setOf(codexA, codexB),
+            thresholdPercents = mapOf(codexA to 5, codexB to 5),
+            storedArmed = mapOf(keyA to true, keyB to true),
+        )
+
+        // When
+        val siblingResult = ProviderUsageThresholdNotificationPolicy.evaluate(siblings)
+
+        // Then: 두 장 모두 별칭으로 구분한다.
+        assertTrue(siblingResult.notifications.all { it.disambiguateAccount })
+
+        // Given: 카드가 한 장뿐일 때.
+        val soleCard = ThresholdNotificationEvaluation(
+            cards = listOf(card(codexA, "Codex", 0.05f)),
+            enabledAccounts = setOf(codexA),
+            thresholdPercents = mapOf(codexA to 5),
+            storedArmed = mapOf(keyA to true),
+        )
+
+        // When
+        val soleResult = ProviderUsageThresholdNotificationPolicy.evaluate(soleCard)
+
+        // Then: 별칭을 붙이지 않는다.
+        assertEquals(listOf(false), soleResult.notifications.map { it.disambiguateAccount })
+    }
+
+    @Test
+    fun resetNotificationsCarryTheSameAliasDisambiguationRule() {
+        // Given
+        val keyA = ProviderAccountLineKey(codexA, "primary:window")
+        val keyB = ProviderAccountLineKey(codexB, "primary:window")
+        val siblings = ResetNotificationEvaluation(
+            cards = listOf(
+                card(codexA, "Codex", 0.8f).withReset(resetAt.toString()),
+                card(codexB, "Work", 0.7f).withReset(resetAt.toString()),
+            ),
+            enabledAccounts = setOf(codexA, codexB),
+            storedPending = mapOf(keyA to resetAt.toEpochMilli(), keyB to resetAt.toEpochMilli()),
+            lastNotified = emptyMap(),
+            now = resetAt.plusSeconds(1),
+        )
+        val soleCard = ResetNotificationEvaluation(
+            cards = listOf(card(codexA, "Codex", 0.8f).withReset(resetAt.toString())),
+            enabledAccounts = setOf(codexA),
+            storedPending = mapOf(keyA to resetAt.toEpochMilli()),
+            lastNotified = emptyMap(),
+            now = resetAt.plusSeconds(1),
+        )
+
+        // When / Then
+        assertTrue(ProviderResetNotificationPolicy.evaluate(siblings).notifications.all { it.disambiguateAccount })
+        assertEquals(
+            listOf(false),
+            ProviderResetNotificationPolicy.evaluate(soleCard).notifications.map { it.disambiguateAccount },
+        )
+    }
+
     private fun card(
         accountId: ProviderAccountId,
         alias: String,

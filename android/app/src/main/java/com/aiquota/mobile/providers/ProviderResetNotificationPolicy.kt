@@ -26,6 +26,7 @@ object ProviderResetNotificationPolicy {
         val notified = input.lastNotified.toMutableMap()
         val notifications = mutableListOf<ProviderResetNotification>()
         val nowMillis = input.now.toEpochMilli()
+        val accountsNeedingAlias = accountsNeedingAliasIn(input.cards)
 
         input.cards.forEach { card ->
             val snapshot = card.snapshot
@@ -58,6 +59,7 @@ object ProviderResetNotificationPolicy {
                         card.generation,
                         card.sessionRevision,
                         card.version,
+                        disambiguateAccount = card.accountId in accountsNeedingAlias,
                     )
                     notified[key] = watchedReset
                 }

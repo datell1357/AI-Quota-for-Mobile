@@ -121,11 +121,18 @@ class ProviderCardNotificationIdentityTest {
         assertEquals(identities, replay)
     }
 
+    /**
+     * 단일 계정은 기존 알림 문구(provider 이름)를 그대로 쓰고, 같은 provider에 카드가 둘 이상일
+     * 때만 어떤 계정인지 알 수 있게 별칭이 앞에 붙는다.
+     */
     @Test
-    fun visibleCardLabelUsesAliasAndExplicitProviderIdentity() {
+    fun visibleCardLabelPrefixesTheAliasOnlyForMultiAccountProviders() {
         // Given / When / Then
-        assertEquals("Codex", cardProviderLabel("Codex", ProviderId.CODEX))
-        assertEquals("Work · Codex", cardProviderLabel("Work", ProviderId.CODEX))
+        assertEquals("Codex", cardProviderLabel("Codex", ProviderId.CODEX, false))
+        assertEquals("Codex", cardProviderLabel("Work", ProviderId.CODEX, false))
+        assertEquals("(Work) Codex", cardProviderLabel("Work", ProviderId.CODEX, true))
+        assertEquals("(Codex 2) Codex", cardProviderLabel("Codex 2", ProviderId.CODEX, true))
+        assertEquals("Codex", cardProviderLabel("  ", ProviderId.CODEX, true))
     }
 
     @Test

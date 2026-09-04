@@ -21,6 +21,7 @@ object ProviderUsageThresholdNotificationPolicy {
     fun evaluate(input: ThresholdNotificationEvaluation): Result {
         val armed = input.storedArmed.toMutableMap()
         val notifications = mutableListOf<ProviderUsageThresholdNotification>()
+        val accountsNeedingAlias = accountsNeedingAliasIn(input.cards)
 
         input.cards.forEach { card ->
             val snapshot = card.snapshot
@@ -50,6 +51,7 @@ object ProviderUsageThresholdNotificationPolicy {
                         card.generation,
                         card.sessionRevision,
                         card.version,
+                        disambiguateAccount = card.accountId in accountsNeedingAlias,
                     )
                     armed[key] = false
                 } else if (!isLow) {

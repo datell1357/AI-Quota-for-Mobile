@@ -23,7 +23,8 @@ class DebugUsageThresholdNotificationReceiver : BroadcastReceiver() {
         val accountId = ProviderAccountIdStorageCodec.decodeOrNull(intent.getStringExtra(EXTRA_ACCOUNT_ID))
             ?.takeIf { it.providerId == providerId }
             ?: ProviderAccountId(providerId, AccountKey.reservedDefault())
-        val alias = intent.getStringExtra(EXTRA_ALIAS)?.takeIf(String::isNotBlank) ?: providerId.displayName
+        val requestedAlias = intent.getStringExtra(EXTRA_ALIAS)?.takeIf(String::isNotBlank)
+        val alias = requestedAlias ?: providerId.displayName
         val threshold = intent.getIntExtra(EXTRA_THRESHOLD, 5)
         fakeLines(providerId).forEachIndexed { index, line ->
             ProviderUsageThresholdNotificationController.notifyLowUsage(
@@ -37,6 +38,7 @@ class DebugUsageThresholdNotificationReceiver : BroadcastReceiver() {
                     AccountGeneration.of(1),
                     SessionRevision.of(1),
                     DisplayVersion.of(1),
+                    disambiguateAccount = requestedAlias != null,
                 )
             )
         }

@@ -42,7 +42,7 @@ object ProviderUsageThresholdNotificationController {
         val label = displayUsageLabel(event.providerId.storageId, event.lineLabel, event.lineIndex)
         val title = context.getString(
             R.string.provider_usage_threshold_notification_title,
-            cardProviderLabel(event.alias, event.providerId),
+            cardProviderLabel(event.alias, event.providerId, event.disambiguateAccount),
             label,
             event.thresholdPercent,
         )
@@ -107,5 +107,16 @@ object ProviderUsageThresholdNotificationController {
     }
 }
 
-internal fun cardProviderLabel(alias: String, providerId: ProviderId): String =
-    if (alias == providerId.displayName) alias else "$alias · ${providerId.displayName}"
+/**
+ * 알림 제목 앞부분. 같은 provider에 카드가 하나뿐이면 기존 알림 문구 그대로 provider 이름만
+ * 쓰고, 둘 이상일 때만 어떤 계정인지 알 수 있게 별칭을 앞에 붙인다.
+ */
+internal fun cardProviderLabel(
+    alias: String,
+    providerId: ProviderId,
+    disambiguateAccount: Boolean,
+): String = if (!disambiguateAccount || alias.isBlank()) {
+    providerId.displayName
+} else {
+    "(${alias.trim()}) ${providerId.displayName}"
+}

@@ -43,7 +43,7 @@ object ProviderResetNotificationController {
         val label = displayUsageLabel(event.providerId.storageId, event.lineLabel, event.lineIndex)
         val title = context.getString(
             R.string.provider_reset_notification_title,
-            cardProviderLabel(event.alias, event.providerId),
+            cardProviderLabel(event.alias, event.providerId, event.disambiguateAccount),
             label,
         )
         val action = ProviderNotificationResetAction(
