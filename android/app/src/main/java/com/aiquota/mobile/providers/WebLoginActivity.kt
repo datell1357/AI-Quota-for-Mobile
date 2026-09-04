@@ -187,6 +187,11 @@ open class WebLoginActivity : Activity() {
                     namedProfileLease = start.lease
                 }
                 is ExactAccountLoginStartResult.ReauthenticationRequired -> {
+                    // 로그 없이 닫히면 사용자에게는 "연결 버튼 무반응"으로만 보인다.
+                    Log.w(
+                        "AIQuotaLogin",
+                        "provider=${providerId.storageId} exactLoginStart=reauthRequired"
+                    )
                     exactLoginBinding = start.binding
                     setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
                     composition.close()
@@ -195,6 +200,10 @@ open class WebLoginActivity : Activity() {
                     return
                 }
                 is ExactAccountLoginStartResult.Rejected -> {
+                    Log.w(
+                        "AIQuotaLogin",
+                        "provider=${providerId.storageId} exactLoginStart=rejected reason=${start.reason}"
+                    )
                     exactLoginBinding = start.binding
                     setExactLoginResult(EXACT_RESULT_REJECTED)
                     composition.close()

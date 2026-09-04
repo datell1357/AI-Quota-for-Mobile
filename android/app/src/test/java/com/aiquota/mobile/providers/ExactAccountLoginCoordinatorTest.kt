@@ -110,17 +110,21 @@ class ExactAccountLoginCoordinatorTest {
             fixture.coordinator.complete(opened.binding, marker(accountId.toString()))
             requireNotNull(opened.lease).close()
         }
-        fixture.platform.deletePhysical(requireNotNull(fixture.profileStore.read(b)).profileName)
+        val bProfile = requireNotNull(fixture.profileStore.read(b)).profileName
+        fixture.platform.deletePhysical(bProfile)
         val profilesBefore = fixture.platform.openedProfiles.toList()
 
         val result = fixture.coordinator.connectExplicit(b)
 
-        assertTrue(result is ExactAccountLoginStartResult.ReauthenticationRequired)
-        assertEquals(b, (result as ExactAccountLoginStartResult.ReauthenticationRequired).accountId)
+        // 물리 프로필이 사라진 카드는 자기 프로필을 다시 만들어 로그인을 이어간다. 예전처럼
+        // 재인증 필요로만 돌려보내면 다시 눌러도 같은 자리에서 막혀 "연결 버튼 무반응"이
+        // 된다(2026-09-04 실측: Claude exactLoginStart=reauthRequired).
+        assertTrue(result is ExactAccountLoginStartResult.Opened)
+        assertEquals(b, (result as ExactAccountLoginStartResult.Opened).binding.accountId)
+        // 형제 카드와 기본 프로필은 건드리지 않는다.
         assertEquals("AUTHENTICATED", fixture.authority.state(a))
         assertEquals("AUTHENTICATED", fixture.authority.state(default))
-        assertEquals("REAUTH_REQUIRED", fixture.authority.state(b))
-        assertEquals(profilesBefore, fixture.platform.openedProfiles)
+        assertEquals(listOf(bProfile), fixture.platform.openedProfiles.drop(profilesBefore.size))
         assertEquals(0, fixture.authority.requestCount(a))
         assertEquals(0, fixture.authority.requestCount(default))
     }

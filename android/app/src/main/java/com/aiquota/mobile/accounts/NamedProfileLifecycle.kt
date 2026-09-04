@@ -451,7 +451,12 @@ class NamedProfileLifecycleManager(
                 return LeaseAcquireResult.Rejected(rejected.rejection.capability)
             }
         }
-        return acquire(id, createIfMissing = !existed)
+        val result = acquire(id, createIfMissing = !existed)
+        if (result != LeaseAcquireResult.ProfileUnavailable || !existed) return result
+        // 바인딩 기록은 남았는데 물리 프로필이 사라진 카드는 이 경로에서 영영 열리지 않아
+        // "연결 버튼 무반응"이 된다(2026-09-04 실측: Claude exactLoginStart=reauthRequired).
+        // 사용자가 직접 누른 연결이므로 프로필을 다시 만들어 복구한다.
+        return acquire(id, createIfMissing = true)
     }
 
     private fun acquire(id: ProviderAccountId, createIfMissing: Boolean): LeaseAcquireResult = mutate {
