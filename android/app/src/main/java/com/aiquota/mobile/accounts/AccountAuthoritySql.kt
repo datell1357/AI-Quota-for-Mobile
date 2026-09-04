@@ -230,6 +230,19 @@ internal fun reactivateProviderCard(
     ) { "Deleted account journal disappeared during reactivation" }
 }
 
+/**
+ * 로그아웃한 계정의 사용량 스냅샷을 지운다. 남겨두면 카드가 "연결 끊김"인데도 직전 사용량과
+ * 수집 중 상태를 계속 보여준다(2026-09-04 실측). 단일 계정 앱의 removeProviderSnapshot과
+ * 같은 자리다.
+ */
+internal fun deleteAccountSnapshot(db: SQLiteDatabase, id: ProviderAccountId) {
+    db.delete(
+        "snapshots",
+        "provider_id=? AND account_key=?",
+        arrayOf(id.providerId.storageId, id.accountKey.storageValue()),
+    )
+}
+
 internal fun allocateProviderCardAlias(
     db: SQLiteDatabase,
     providerId: ProviderId,

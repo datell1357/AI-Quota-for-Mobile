@@ -1,5 +1,7 @@
 package com.aiquota.mobile.accounts
 
+import com.aiquota.mobile.local.ProviderUsageSnapshot
+
 /** Immutable dashboard record. Identity is always [accountId], never alias, provider, or rank. */
 data class ProviderCardDisplayRecord(
     val displayRecord: VersionedDisplayRecord,
@@ -103,4 +105,22 @@ enum class AccountRefreshRequestRejection {
 sealed interface AccountRefreshRequestResult {
     data class Accepted(val record: VersionedDisplayRecord) : AccountRefreshRequestResult
     data class Rejected(val reason: AccountRefreshRequestRejection) : AccountRefreshRequestResult
+}
+
+/**
+ * 화면에 쓸 스냅샷. 로그인이 끊긴 카드는 저장된 사용량을 그대로 보여주면 안 된다. 연결 해제나
+ * 로그인 취소 뒤에도 스냅샷에는 직전 "수집 중" 상태와 사용량 줄이 남아 있어, 버튼은 "연결"인데
+ * 화면은 "연결 중 + 사용량"으로 어긋난다(2026-09-04 실측).
+ *
+ * 로그인 창이 떠 있는 동안(AUTHENTICATING)은 실제로 연결 중이므로 손대지 않는다.
+ */
+fun ProviderCardDisplayRecord.displaySnapshot(): ProviderUsageSnapshot {
+    val snapshot = displayRecord.snapshot
+    val signedOut = authState == AccountAuthState.SIGNED_OUT || authState == AccountAuthState.REAUTH_REQUIRED
+    if (!signedOut) return snapshot
+    return ProviderUsageSnapshot.disconnected(accountId.providerId).copy(
+        displayName = snapshot.displayName,
+        updatedAt = snapshot.updatedAt,
+        statusUpdatedAt = snapshot.statusUpdatedAt,
+    )
 }

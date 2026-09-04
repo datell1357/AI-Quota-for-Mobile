@@ -14,6 +14,7 @@ import com.aiquota.mobile.accounts.VersionedDisplayRecord
 import com.aiquota.mobile.local.ProviderConnectionState
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderRefreshState
+import com.aiquota.mobile.local.ProviderUsageLine
 import com.aiquota.mobile.local.ProviderUsageSnapshot
 import com.aiquota.mobile.ui.appLayoutMetrics
 import org.junit.Assert.assertEquals
@@ -100,7 +101,47 @@ class UnifiedDashboardAccountCardsTest {
         println("QA_TASK12_UNIFIED_TRACE=$observed;SIBLINGS=Codex,Codex 2;COLLAPSE=0")
     }
 
-    private fun card(provider: ProviderId, index: Int, alias: String, rank: Int): ProviderCardDisplayRecord {
+    /**
+     * 로그인이 끊긴 카드는 저장된 사용량을 보여주지 않는다. 연결 해제·로그인 취소 뒤에도 스냅샷에는
+     * 직전 사용량과 수집 중 상태가 남아, 버튼은 "연결"인데 화면은 "연결 중 + 사용량"으로 어긋났다
+     * (2026-09-04 실측).
+     */
+    @Test
+    fun signedOutCardsHideStaleUsageWhileConnectedSiblingsKeepTheirs() {
+        val usage = listOf(
+            ProviderUsageLine(key = "claude:session", label = "Claude Session", remainingPercent = 0.44f),
+        )
+        val cards = listOf(
+            card(ProviderId.CLAUDE, 1, "Claude", 0, AccountAuthState.REAUTH_REQUIRED, usage),
+            card(ProviderId.CLAUDE, 2, "Claude 2", 1, AccountAuthState.SIGNED_OUT, usage),
+            card(ProviderId.CODEX, 3, "Codex", 2, AccountAuthState.AUTHENTICATED, usage),
+            card(ProviderId.CLAUDE, 4, "Claude 3", 3, AccountAuthState.AUTHENTICATING, usage),
+        )
+
+        val content = providerCardDashboardContent(cards, emptySet(), emptyMap())
+
+        // 로그인이 끊긴 두 장은 사용량을 감추고 연결 버튼을 노출한다.
+        listOf(content[0], content[1]).forEach { signedOut ->
+            assertEquals(ProviderConnectionState.DISCONNECTED, signedOut.snapshot.connectionState)
+            assertTrue(signedOut.snapshot.lines.isEmpty())
+            assertTrue(signedOut.showConnectAction)
+        }
+        // 별칭은 그대로 유지한다.
+        assertEquals(listOf("Claude", "Claude 2"), content.take(2).map { it.snapshot.displayName })
+        // 연결된 카드와 로그인 창이 떠 있는 카드는 손대지 않는다.
+        assertEquals(usage, content[2].snapshot.lines)
+        assertEquals(ProviderConnectionState.CONNECTED, content[2].snapshot.connectionState)
+        assertEquals(usage, content[3].snapshot.lines)
+    }
+
+    private fun card(
+        provider: ProviderId,
+        index: Int,
+        alias: String,
+        rank: Int,
+        authState: AccountAuthState = AccountAuthState.AUTHENTICATED,
+        lines: List<ProviderUsageLine> = emptyList(),
+    ): ProviderCardDisplayRecord {
         val id = ProviderAccountId(
             provider,
             AccountKey.parseOpaque("acct_${index.toString(16).padStart(32, '0')}")
@@ -111,7 +152,7 @@ class UnifiedDashboardAccountCardsTest {
                 AccountRecord(
                     id = id,
                     state = AccountState.ACTIVE,
-                    authState = AccountAuthState.AUTHENTICATED,
+                    authState = authState,
                     deletionState = AccountDeletionState.NONE,
                     generation = AccountGeneration.of(1),
                     sessionRevision = SessionRevision.of(1),
@@ -121,6 +162,7 @@ class UnifiedDashboardAccountCardsTest {
                 ProviderUsageSnapshot(
                     providerId = provider,
                     connectionState = ProviderConnectionState.CONNECTED,
+                    lines = lines,
                     updatedAt = "2026-08-28T00:00:00Z",
                     statusUpdatedAt = "2026-08-28T00:00:00Z",
                 ),

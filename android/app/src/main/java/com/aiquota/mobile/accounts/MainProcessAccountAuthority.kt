@@ -347,6 +347,7 @@ class MainProcessAccountAuthority private constructor(
         ).copy(modifiedVersion = version)
         writeExactLoginState(db, updated)
         writeAttempt(db, id, updated.generation, updated.sessionRevision, null)
+        deleteAccountSnapshot(db, id)
         writeVersion(db, version)
         true
     }

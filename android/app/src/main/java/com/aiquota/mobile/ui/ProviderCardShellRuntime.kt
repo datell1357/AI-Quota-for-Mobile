@@ -13,6 +13,7 @@ import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.ProviderCardCatalogLoader
 import com.aiquota.mobile.accounts.ProviderCardCatalogPolicy
 import com.aiquota.mobile.accounts.ProviderCardDisplayRecord
+import com.aiquota.mobile.accounts.displaySnapshot
 import com.aiquota.mobile.accounts.ProviderCardMultiplicity
 import com.aiquota.mobile.accounts.ProviderCardProviderPolicy
 import com.aiquota.mobile.accounts.ProviderCardRenameResult
@@ -259,4 +260,4 @@ class ProviderCardShellRuntime private constructor(
 }
 
 internal fun ProviderCardDisplayRecord.routedDetailSnapshot(): ProviderUsageSnapshot =
-    displayRecord.snapshot.copy(displayName = alias)
+    displaySnapshot().copy(displayName = alias)
