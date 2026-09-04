@@ -56,6 +56,7 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -655,6 +656,13 @@ open class WebLoginActivity : Activity() {
         }
 
         override fun onPageFinished(view: WebView, url: String) {
+            // onPageCommitVisible이 이 빈 브리지 문서에서 안 불릴 때가 있어(2026-09-04 실측:
+            // Claude 로그인 후 흰 화면 고정 — 주입 로그는 찍히지만 postClaudeUsagePayload/
+            // postClaudeCollectorError가 claudeBridgeLoadPending 게이트에 막혀 영영 안 옴)
+            // onPageFinished에서도 동일하게 게이트를 풀어 안전망을 둔다.
+            if (isPendingClaudeBridgeNavigation(view, url)) {
+                claudeBridgeLoadPending = false
+            }
             val effectiveUrl = if (isCodexAboutBlankNavigation(url) || isClaudeAboutBlankBridgeNavigation(url)) {
                 "about:blank"
             } else {
@@ -1266,7 +1274,26 @@ open class WebLoginActivity : Activity() {
         Log.i("AIQuotaLogin", "provider=claude nativeCollectorStart=aboutblank reason=$reason from=${hostOf(url)}${pathOf(url)}")
         view.stopLoading()
         loadClaudeAboutBlankBridgeDocument(view)
+        scheduleClaudeNativeCollectionTimeout(activeClaudeBridgeGeneration)
         return true
+    }
+
+    /**
+     * 브리지 문서의 콜백(postClaudeUsagePayload/postClaudeCollectorError)이 어떤 이유로든
+     * 안 오면 흰 화면에서 영영 멈춘다(2026-09-04 실측). Grok·Kimi·Kiro에 적용한 것과 같은
+     * 안전망을 둔다: 시간 내에 못 받으면 사용량 없이 로그인 완료 처리한다.
+     */
+    private fun scheduleClaudeNativeCollectionTimeout(generation: Long?) {
+        loginScope.launch {
+            delay(NATIVE_USAGE_COLLECTION_TIMEOUT_MS)
+            if (finished || providerId != ProviderId.CLAUDE) return@launch
+            if (generation == null || generation != activeClaudeBridgeGeneration) return@launch
+            Log.w("AIQuotaLogin", "provider=claude nativeCollectorTimeout=true")
+            finishConnectedWithoutUsage(
+                "Provider session reached, but trusted usage payload was not available yet.",
+                "claude_native_usage_unavailable"
+            )
+        }
     }
 
     private fun maybeStartGeminiNativeCollection(view: WebView, url: String, pageText: String, reason: String): Boolean {
