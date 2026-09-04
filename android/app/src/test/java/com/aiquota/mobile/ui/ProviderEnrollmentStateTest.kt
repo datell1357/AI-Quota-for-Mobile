@@ -52,18 +52,39 @@ class ProviderEnrollmentStateTest {
                 ProviderEnrollmentSubmission(ProviderId.CLAUDE, null),
                 ProviderEnrollmentSubmission(ProviderId.CURSOR, null),
             ),
-            restored.firstRunSubmissions(),
+            restored.bulkSubmissions(),
         )
     }
 
+    /**
+     * 나중에 누른 추가에서도 여러 개를 한 번에 고를 수 있다. 하나만 고르면 이름을 지어 추가하고,
+     * 둘 이상이면 자동 이름으로 한 번에 추가한다.
+     */
     @Test
-    fun explicitAddKeepsExactlyOneSelection() {
+    fun explicitAddTakesSeveralProvidersAndBulkAddsThem() {
         val state = ProviderEnrollmentState.explicitAdd()
-        state.select(ProviderId.CURSOR)
-        state.select(ProviderId.CODEX)
 
-        assertEquals(ProviderId.CODEX, state.selectedProvider)
-        assertEquals(setOf(ProviderId.CODEX), state.selectedProviders)
+        state.select(ProviderId.CURSOR)
+        assertEquals(ProviderId.CURSOR, state.selectedProvider)
+        assertFalse(state.addsInBulk)
+
+        state.select(ProviderId.CODEX)
+        assertEquals(setOf(ProviderId.CURSOR, ProviderId.CODEX), state.selectedProviders)
+        assertTrue(state.addsInBulk)
+        // 여럿을 고른 동안에는 이름 짓는 단계로 넘어가지 않는다.
+        state.advance()
+        assertEquals(ProviderEnrollmentStep.PICKER, state.step)
+        assertEquals(
+            listOf(ProviderId.CODEX, ProviderId.CURSOR),
+            state.bulkSubmissions().map { it.providerId },
+        )
+
+        // 다시 눌러 해제하면 하나만 남고 이름 짓기로 돌아간다.
+        state.select(ProviderId.CODEX)
+        assertEquals(ProviderId.CURSOR, state.selectedProvider)
+        assertFalse(state.addsInBulk)
+        state.advance()
+        assertEquals(ProviderEnrollmentStep.NAMING, state.step)
     }
 
     @Test

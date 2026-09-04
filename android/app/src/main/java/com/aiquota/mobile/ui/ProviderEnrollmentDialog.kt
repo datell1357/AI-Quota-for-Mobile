@@ -41,7 +41,7 @@ fun ProviderEnrollmentDialog(
             existingAccountIds = existingAccountIds,
             onLater = onLater,
             onStart = {
-                state.firstRunSubmissions().forEach { onSubmit(it) }
+                state.bulkSubmissions().forEach { onSubmit(it) }
                 state.close()
                 onAdded()
             },

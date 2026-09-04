@@ -69,9 +69,7 @@ internal fun ProviderPickerStep(
     ) {
         if (!compactHeight) {
             Text(
-                text = androidx.compose.ui.res.stringResource(
-                    if (state.multiSelect) R.string.provider_picker_body else R.string.provider_picker_body_single
-                ),
+                text = androidx.compose.ui.res.stringResource(R.string.provider_picker_body),
                 style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Paragraph),
                 color = AIQuotaTheme.colors.textMuted,
             )
@@ -124,15 +122,17 @@ internal fun ProviderPickerStep(
                 }
             }
             Button(
-                onClick = if (state.multiSelect) onStart else state::advance,
+                onClick = { if (state.addsInBulk) onStart() else state.advance() },
                 enabled = state.selectedProviders.isNotEmpty(),
             ) {
                 Text(
                     androidx.compose.ui.res.stringResource(
-                        if (state.origin == ProviderEnrollmentOrigin.FIRST_RUN) {
-                            R.string.provider_onboarding_start
-                        } else {
-                            R.string.provider_enrollment_next
+                        when {
+                            state.origin == ProviderEnrollmentOrigin.FIRST_RUN ->
+                                R.string.provider_onboarding_start
+                            // 여럿을 고르면 이름 짓는 단계 없이 바로 추가하므로 "다음"이 아니다.
+                            state.addsInBulk -> R.string.provider_catalog_add
+                            else -> R.string.provider_enrollment_next
                         }
                     )
                 )

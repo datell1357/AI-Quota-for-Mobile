@@ -711,7 +711,15 @@ fun AIQuotaAppShell(
         if (!canPostNotifications) {
             UsageLimitNotificationController.setEnabled(appContext, true)
             notificationEnabled = false
-            openNotificationSettings()
+            // 시스템 설정으로 곧장 보내면 사용자는 토글이 스스로 꺼진 것만 보게 된다. 아직 물어본
+            // 적이 없다면 앱에서 권한을 요청하고, 허용되면 그 자리에서 켠다. 이미 거절당한 뒤라면
+            // 앱이 다시 물을 수 없으므로 그때만 설정 화면으로 안내한다.
+            if (UsageLimitNotificationController.shouldRequestNotificationPermissionOnLaunch(launchContext)) {
+                UsageLimitNotificationController.markNotificationPermissionRequested(appContext)
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                openNotificationSettings()
+            }
             return
         }
 

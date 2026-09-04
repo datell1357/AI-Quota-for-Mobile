@@ -44,10 +44,18 @@ class ProviderEnrollmentState private constructor(
     var alias by mutableStateOf(alias)
     var errorResource by mutableStateOf(errorResource)
 
-    val multiSelect: Boolean get() = origin == ProviderEnrollmentOrigin.FIRST_RUN
+    /** 첫 실행이든 나중에 누른 추가든 여러 개를 한 번에 고를 수 있다. */
+    val multiSelect: Boolean get() = true
 
     /** The single choice of an explicit Add; null while nothing (or several providers) is selected. */
     val selectedProvider: ProviderId? get() = selectedProviders.singleOrNull()
+
+    /**
+     * 하나만 고르면 이름을 지어 추가하고, 둘 이상 고르면 자동 이름으로 한 번에 추가한다.
+     * 첫 실행은 이름 짓는 단계 없이 언제나 한 번에 추가한다.
+     */
+    val addsInBulk: Boolean
+        get() = origin == ProviderEnrollmentOrigin.FIRST_RUN || selectedProviders.size > 1
 
     fun openExplicitAdd() {
         visible = true
@@ -68,7 +76,7 @@ class ProviderEnrollmentState private constructor(
     }
 
     fun advance() {
-        if (!multiSelect && selectedProvider != null) step = ProviderEnrollmentStep.NAMING
+        if (!addsInBulk && selectedProvider != null) step = ProviderEnrollmentStep.NAMING
     }
 
     fun back() = close()
@@ -89,8 +97,8 @@ class ProviderEnrollmentState private constructor(
         )
     }
 
-    /** First-run cards are created with automatic aliases, in the picker's display order. */
-    fun firstRunSubmissions(): List<ProviderEnrollmentSubmission> =
+    /** 한 번에 추가하는 카드는 고른 순서가 아니라 목록에 보이던 순서대로, 자동 이름으로 만든다. */
+    fun bulkSubmissions(): List<ProviderEnrollmentSubmission> =
         ProviderId.defaultOrder()
             .filter { it in selectedProviders }
             .map { ProviderEnrollmentSubmission(it, optionalAlias = null) }
