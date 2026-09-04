@@ -107,7 +107,6 @@ import kotlin.math.roundToInt
 private val ExplorerAccentColor = AIQuotaColors.SurfaceRaised
 /** 대시보드 상단 행의 정사각형 버튼(설정·목록형·카드형) 한 변. */
 private val DashboardHeaderButtonSize = 48.dp
-private val DashboardSemanticTouchTargetSize = 48.dp
 private const val DashboardGaugeBaseHeightDp = 4f
 private const val DashboardGaugeMaxScale = 2f
 private const val DashboardGaugeFullExtraHeightDp = 80f
@@ -468,7 +467,6 @@ fun UnifiedDashboardScreen(
     gaugeColors: Map<ProviderAccountId, String>,
     onCardSelected: (ProviderAccountId) -> Unit,
     onConnectCard: (ProviderAccountId) -> Unit,
-    onRefreshCard: (ProviderAccountId) -> Unit = {},
     onReorderCard: (ProviderAccountId, Int) -> Unit,
     onAddWidget: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -489,7 +487,6 @@ fun UnifiedDashboardScreen(
         gaugeColors = gaugeColors,
         onCardSelected = onCardSelected,
         onConnectCard = onConnectCard,
-        onRefreshCard = onRefreshCard,
         onReorderCard = onReorderCard,
         onAddWidget = onAddWidget,
         onOpenSettings = onOpenSettings,
@@ -654,11 +651,9 @@ internal fun ProviderUsageCard(
     isPlaceholder: Boolean = false,
     dragEnabled: Boolean = true,
     showConnectAction: Boolean = snapshot.shouldShowDashboardConnectAction(),
-    showRefreshAction: Boolean = false,
     forceDraggingVisual: Boolean = false,
     onProviderSelected: (ProviderId) -> Unit,
     onConnectProvider: (ProviderId) -> Unit,
-    onRefreshProvider: (ProviderId) -> Unit = {},
     onReorderProvider: (ProviderId, Int) -> Unit,
     onCardCenterChanged: (ProviderId, DashboardCardCenter) -> Unit,
     onDragStateChanged: (ProviderId, Boolean) -> Unit,
@@ -683,13 +678,11 @@ internal fun ProviderUsageCard(
     } else {
         MaterialTheme.typography.bodyMedium
     }
-    val titleBarBaseHeight = when {
+    val titleBarHeight = when {
         colors.theme == com.aiquota.mobile.local.AppTheme.MACOS && isCompactDashboardCard -> 26.dp
         colors.theme == com.aiquota.mobile.local.AppTheme.MACOS -> 30.dp
         else -> 22.dp
     }
-    val titleBarHeight = (titleBarBaseHeight * layoutMetrics.fontScale)
-        .coerceAtLeast(DashboardSemanticTouchTargetSize)
     val locationRowVerticalPadding = if (isCompactDashboardCard) 3.dp else 4.dp
     val cardContentPadding = if (isCompactDashboardCard) {
         (layoutMetrics.cardPaddingDp - 3).coerceAtLeast(6).dp
@@ -711,11 +704,7 @@ internal fun ProviderUsageCard(
     val dashboardGaugeHeight = dashboardGaugeHeightDp(cardHeightDp, layoutMetrics).dp
     val windowTitle = snapshot.displayName.ifBlank { dashboardProviderWindowTitle(providerId) }
     val statusLabel = snapshot.statusLabel()
-    val primaryActionLabel = when {
-        showConnectAction -> stringResource(R.string.provider_connect)
-        showRefreshAction -> stringResource(R.string.provider_refresh)
-        else -> null
-    }
+    val primaryActionLabel = if (showConnectAction) stringResource(R.string.provider_connect) else null
     val cardSemanticsLabel = dashboardCardSemanticsLabel(
         alias = windowTitle,
         provider = providerId.displayName,
@@ -1066,10 +1055,11 @@ internal fun ProviderUsageCard(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
                                 .then(
-                                    Modifier.defaultMinSize(
-                                        minWidth = 64.dp,
-                                        minHeight = DashboardSemanticTouchTargetSize
-                                    )
+                                    if (isDenseCardText) {
+                                        Modifier.defaultMinSize(minWidth = 64.dp, minHeight = 28.dp)
+                                    } else {
+                                        Modifier
+                                    }
                                 ),
                             contentPadding = if (isDenseCardText) {
                                 PaddingValues(horizontal = 12.dp, vertical = 4.dp)
@@ -1079,32 +1069,6 @@ internal fun ProviderUsageCard(
                         ) {
                             Text(
                                 text = stringResource(R.string.provider_connect),
-                                style = if (isDenseCardText) {
-                                    MaterialTheme.typography.labelSmall
-                                } else {
-                                    LocalTextStyle.current
-                                }
-                            )
-                        }
-                    } else if (showRefreshAction) {
-                        Button(
-                            onClick = { onRefreshProvider(providerId) },
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .then(
-                                    Modifier.defaultMinSize(
-                                        minWidth = 64.dp,
-                                        minHeight = DashboardSemanticTouchTargetSize
-                                    )
-                                ),
-                            contentPadding = if (isDenseCardText) {
-                                PaddingValues(horizontal = 12.dp, vertical = 4.dp)
-                            } else {
-                                ButtonDefaults.ContentPadding
-                            }
-                        ) {
-                            Text(
-                                text = stringResource(R.string.provider_refresh),
                                 style = if (isDenseCardText) {
                                     MaterialTheme.typography.labelSmall
                                 } else {

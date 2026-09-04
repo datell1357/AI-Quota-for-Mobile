@@ -485,10 +485,6 @@ fun AIQuotaAppShell(
         }
     }
 
-    fun refreshExactCard(accountId: ProviderAccountId) {
-        cardRuntime.requestRefresh(accountId)
-    }
-
     fun connectExactCard(accountId: ProviderAccountId) {
         val card = cardRuntime.state.card(accountId) ?: run {
             route = AppRoute.Home
@@ -981,7 +977,6 @@ fun AIQuotaAppShell(
                                     gaugeColors = cardRuntime.gaugeColors,
                                     onCardSelected = ::selectExactCard,
                                     onConnectCard = ::connectExactCard,
-                                    onRefreshCard = ::refreshExactCard,
                                     onReorderCard = cardRuntime::reorder,
                                     onAddWidget = { showDashboardWidgetPicker = true },
                                     onOpenSettings = { route = AppRoute.Settings },
@@ -1149,12 +1144,6 @@ fun AIQuotaAppShell(
                                 } else {
                                     disconnectExactSingleCard(accountId)
                                 }
-                            },
-                            onRenameCard = { accountId, alias, expectedVersion ->
-                                cardRuntime.rename(accountId, alias, expectedVersion)
-                            },
-                            onDeleteCard = { accountId, expectedVersion ->
-                                deleteExactCard(accountId, expectedVersion)
                             },
                             currentTheme = currentTheme,
                             onThemeSelected = ::applyTheme,

@@ -71,31 +71,6 @@ class ExactAccountDashboardUiTest {
     }
 
     @Test
-    fun refreshTargetsExactAccountOnly() {
-        launchDashboard(DATASET_EXACT_REFRESH, VIEW_MODE_GRID, resetFixture = true)
-        val refresh = descendant(card(CODEX_TWO_ALIAS)) { node ->
-            node.isClickable && nodeOrDescendantHasExactLabel(
-                node,
-                targetContext.getString(R.string.provider_refresh)
-            )
-        }
-        val refreshBounds = Rect().also(refresh::getBoundsInScreen)
-        assertTrue(
-            "Exact Refresh action must be clickable for Codex 2\n${dumpTree()}",
-            refresh.isClickable && !refreshBounds.isEmpty
-        )
-        runShell("input tap ${refreshBounds.centerX()} ${refreshBounds.centerY()}")
-        waitForContentChange("exact refresh routing")
-        requireExactText("Selected Refresh requested $CODEX_TWO_ALIAS")
-        requireExactText(targetContext.getString(R.string.provider_status_collecting))
-        assertFalse("Refresh must not target Codex", hasExactText("Selected Refresh requested $CODEX_ALIAS"))
-        assertTrue(
-            "Codex sibling must remain connected",
-            nodeOrDescendantHasExactLabel(card(CODEX_ALIAS), targetContext.getString(R.string.provider_status_connected))
-        )
-    }
-
-    @Test
     fun sessionLossShowsReconnectOnlyForExactCard() {
         launchDashboard(DATASET_EXACT_REAUTH, VIEW_MODE_LIST, resetFixture = true)
         val connectLabels = allNodes().filter { node ->

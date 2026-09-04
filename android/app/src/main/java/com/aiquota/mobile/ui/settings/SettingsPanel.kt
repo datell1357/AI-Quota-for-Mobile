@@ -11,15 +11,11 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -28,8 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -37,7 +31,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,33 +38,22 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.R
 import com.aiquota.mobile.accounts.AccountAuthState
 import com.aiquota.mobile.accounts.ProviderAccountId
-import com.aiquota.mobile.accounts.ProviderCardDeletionRejection
-import com.aiquota.mobile.accounts.ProviderCardDeletionResult
 import com.aiquota.mobile.accounts.ProviderCardDisplayRecord
-import com.aiquota.mobile.accounts.ProviderCardRenameRejection
-import com.aiquota.mobile.accounts.ProviderCardRenameResult
-import com.aiquota.mobile.accounts.DisplayVersion
 import com.aiquota.mobile.local.AppTheme
 import com.aiquota.mobile.local.ProviderConnectionState
 import com.aiquota.mobile.local.ProviderId
@@ -83,7 +65,6 @@ import com.aiquota.mobile.support.BugReportRequest
 import com.aiquota.mobile.ui.AIQuotaTheme
 import com.aiquota.mobile.ui.compactProviderLineBreakStyle
 import com.aiquota.mobile.ui.provider.ProviderIconImage
-import kotlinx.coroutines.delay
 import com.aiquota.mobile.ui.rememberAppLayoutMetrics
 import com.aiquota.mobile.ui.systemAnimationsEnabled
 
@@ -105,8 +86,6 @@ fun SettingsPanel(
     onDisconnectAllProviders: () -> Unit = {},
     onConnectCard: (ProviderAccountId) -> Unit = {},
     onDisconnectCard: (ProviderAccountId) -> Unit = {},
-    onRenameCard: (ProviderAccountId, String, DisplayVersion) -> ProviderCardRenameResult? = { _, _, _ -> null },
-    onDeleteCard: (ProviderAccountId, DisplayVersion) -> ProviderCardDeletionResult? = { _, _ -> null },
     currentTheme: AppTheme = AppTheme.DEFAULT,
     onThemeSelected: (AppTheme) -> Unit = {},
     onReportBug: (BugReportRequest) -> Unit = {},
@@ -147,8 +126,6 @@ fun SettingsPanel(
             providerCards = providerCards,
             onConnectCard = onConnectCard,
             onDisconnectCard = onDisconnectCard,
-            onRenameCard = onRenameCard,
-            onDeleteCard = onDeleteCard,
         )
         SupportSettingsSection(
             onReportBug = onReportBug
@@ -275,8 +252,6 @@ private fun ConnectionManagementSection(
     providerCards: List<ProviderCardDisplayRecord>,
     onConnectCard: (ProviderAccountId) -> Unit,
     onDisconnectCard: (ProviderAccountId) -> Unit,
-    onRenameCard: (ProviderAccountId, String, DisplayVersion) -> ProviderCardRenameResult?,
-    onDeleteCard: (ProviderAccountId, DisplayVersion) -> ProviderCardDeletionResult?,
 ) {
     val layoutMetrics = rememberAppLayoutMetrics()
     val colors = AIQuotaTheme.colors
@@ -381,8 +356,6 @@ private fun ConnectionManagementSection(
                         card = card,
                         onConnect = onConnectCard,
                         onDisconnect = onDisconnectCard,
-                        onRename = onRenameCard,
-                        onDelete = onDeleteCard,
                     )
                 }
             }
@@ -398,324 +371,55 @@ private fun ExactCardConnectionRow(
     card: ProviderCardDisplayRecord,
     onConnect: (ProviderAccountId) -> Unit,
     onDisconnect: (ProviderAccountId) -> Unit,
-    onRename: (ProviderAccountId, String, DisplayVersion) -> ProviderCardRenameResult?,
-    onDelete: (ProviderAccountId, DisplayVersion) -> ProviderCardDeletionResult?,
 ) {
     val colors = AIQuotaTheme.colors
     val action = settingsConnectionAction(card.authState, card.displayRecord.snapshot)
-    val renameFieldFocusRequester = remember(card.accountId) { FocusRequester() }
-    val renameTriggerFocusRequester = remember(card.accountId) { FocusRequester() }
-    val deleteTriggerFocusRequester = remember(card.accountId) { FocusRequester() }
-    var showRename by remember(card.accountId) { mutableStateOf(false) }
-    var renameFocusReturnPending by remember(card.accountId) { mutableStateOf(false) }
-    var alias by remember(card.accountId, card.alias) { mutableStateOf(card.alias) }
-    var renameError by remember { mutableStateOf<Int?>(null) }
-    var renameExpectedVersion by remember { mutableStateOf<DisplayVersion?>(null) }
-    var showDelete by remember { mutableStateOf(false) }
-    var deleteFocusReturnPending by remember(card.accountId) { mutableStateOf(false) }
-    var deleteExpectedVersion by remember { mutableStateOf<DisplayVersion?>(null) }
-    var deleteError by remember { mutableStateOf<Int?>(null) }
-    var deleteBusy by remember { mutableStateOf(false) }
-    var deletePending by remember { mutableStateOf(false) }
-    val renameErrorMessage = renameError?.let { stringResource(it) }
-    val deletePendingStatus = stringResource(R.string.provider_removal_status_pending)
-    LaunchedEffect(showRename, renameFocusReturnPending) {
-        if (!showRename && renameFocusReturnPending) {
-            withFrameNanos { }
-            delay(100L)
-            renameTriggerFocusRequester.requestFocus()
-            renameFocusReturnPending = false
-        }
-    }
-    LaunchedEffect(showDelete, deleteFocusReturnPending) {
-        if (!showDelete && deleteFocusReturnPending) {
-            withFrameNanos { }
-            delay(100L)
-            deleteTriggerFocusRequester.requestFocus()
-            deleteFocusReturnPending = false
-        }
-    }
-    Column(
+    val actionTextColor = settingsConnectionActionTextColor(
+        action = action,
+        connectColor = colors.primary,
+        disconnectColor = colors.textMuted,
+        disabledColor = colors.textMuted
+    )
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            ProviderIconImage(providerId = card.accountId.providerId, modifier = Modifier.size(28.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = card.alias, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                Text(
-                    text = card.accountId.providerId.displayName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.textMuted,
-                )
-            }
+        ProviderIconImage(providerId = card.accountId.providerId, modifier = Modifier.size(28.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = card.alias, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(
+                text = card.accountId.providerId.displayName,
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.textMuted,
+            )
         }
-        // Natural-size buttons that wrap only when the row is too narrow; Material's 48dp minimum
-        // interactive size keeps the touch targets.
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            OutlinedButton(
-                enabled = action != SettingsConnectionAction.NONE,
-                onClick = {
-                    if (action == SettingsConnectionAction.CONNECT) onConnect(card.accountId)
-                    else if (action == SettingsConnectionAction.DISCONNECT) onDisconnect(card.accountId)
-                },
-            ) {
-                Text(
-                    stringResource(
-                        if (action == SettingsConnectionAction.CONNECT) R.string.provider_connect
-                        else R.string.provider_disconnect
-                    )
-                )
-            }
-            TextButton(
-                modifier = Modifier
-                    .focusRequester(renameTriggerFocusRequester)
-                    .focusable(),
-                onClick = {
-                    renameError = null
-                    renameExpectedVersion = card.displayRecord.version
-                    renameFocusReturnPending = true
-                    showRename = true
-                },
-            ) {
-                Text(stringResource(R.string.settings_rename_selected_device))
-            }
-            TextButton(
-                modifier = Modifier
-                    .focusRequester(deleteTriggerFocusRequester)
-                    .focusable(),
-                onClick = {
-                    deleteError = null
-                    deleteBusy = false
-                    deletePending = false
-                    deleteExpectedVersion = card.displayRecord.version
-                    deleteFocusReturnPending = true
-                    showDelete = true
-                },
-            ) {
-                Text(stringResource(R.string.provider_catalog_remove_action))
-            }
-        }
-    }
-    if (showRename) {
-        Dialog(onDismissRequest = { showRename = false }) {
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = colors.panel,
-                border = BorderStroke(1.dp, colors.borderSoft),
-            ) {
-                Column(
-                    modifier = Modifier.padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    LaunchedEffect(Unit) { renameFieldFocusRequester.requestFocus() }
-                    Text(stringResource(R.string.provider_naming_title, card.accountId.providerId.displayName))
-                    OutlinedTextField(
-                        value = alias,
-                        onValueChange = {
-                            alias = it
-                            renameError = null
-                        },
-                        modifier = Modifier
-                            .focusRequester(renameFieldFocusRequester)
-                            .semantics {
-                                if (renameErrorMessage != null) error(renameErrorMessage)
-                            },
-                        label = { Text(stringResource(R.string.provider_naming_label)) },
-                        supportingText = {
-                            renameErrorMessage?.let { message ->
-                                Text(
-                                    text = message,
-                                    modifier = Modifier.semantics {
-                                        liveRegion = LiveRegionMode.Polite
-                                        error(message)
-                                    },
-                                )
-                            }
-                        },
-                        isError = renameErrorMessage != null,
-                        singleLine = true,
-                    )
-                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                        val stackActions = maxWidth < 420.dp ||
-                            androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.5f
-                        val cancelAction: @Composable (Modifier) -> Unit = { buttonModifier ->
-                            TextButton(
-                                modifier = buttonModifier.heightIn(min = 48.dp),
-                                onClick = { showRename = false },
-                            ) {
-                                Text(stringResource(R.string.provider_enrollment_cancel))
-                            }
-                        }
-                        val confirmAction: @Composable (Modifier) -> Unit = { buttonModifier ->
-                            Button(
-                                modifier = buttonModifier.heightIn(min = 48.dp),
-                                onClick = {
-                                    renameExpectedVersion?.let { expectedVersion ->
-                                        when (val result = onRename(card.accountId, alias, expectedVersion)) {
-                                            is ProviderCardRenameResult.Renamed -> showRename = false
-                                            is ProviderCardRenameResult.Rejected -> {
-                                                renameError = settingsRenameErrorResource(result.rejection)
-                                            }
-                                            null -> showRename = false
-                                        }
-                                    }
-                                },
-                            ) {
-                                Text(stringResource(R.string.provider_enrollment_add))
-                            }
-                        }
-                        if (stackActions) {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                cancelAction(Modifier.fillMaxWidth())
-                                confirmAction(Modifier.fillMaxWidth())
-                            }
-                        } else {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-                            ) {
-                                cancelAction(Modifier)
-                                confirmAction(Modifier)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    if (showDelete) {
-        AlertDialog(
-            onDismissRequest = { if (!deleteBusy) showDelete = false },
-            properties = DialogProperties(
-                dismissOnBackPress = !deleteBusy,
-                dismissOnClickOutside = !deleteBusy,
+        OutlinedButton(
+            enabled = action != SettingsConnectionAction.NONE,
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = actionTextColor
             ),
-            title = { Text(stringResource(R.string.provider_removal_confirmation_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        stringResource(
-                            R.string.provider_removal_confirmation_names,
-                            stringResource(
-                                R.string.provider_removal_named_card,
-                                card.alias,
-                                card.accountId.providerId.displayName,
-                            ),
-                        )
-                    )
-                    Text(stringResource(R.string.provider_removal_confirmation_consequence))
-                    if (deleteBusy || deletePending) {
-                        Text(
-                            text = stringResource(R.string.provider_removal_status_pending),
-                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                        )
-                    }
-                    deleteError?.let { error ->
-                        val message = stringResource(error)
-                        Text(
-                            text = message,
-                            modifier = Modifier.semantics {
-                                liveRegion = LiveRegionMode.Polite
-                                error(message)
-                            },
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
+            onClick = {
+                when (action) {
+                    SettingsConnectionAction.CONNECT -> onConnect(card.accountId)
+                    SettingsConnectionAction.DISCONNECT -> onDisconnect(card.accountId)
+                    SettingsConnectionAction.NONE -> Unit
                 }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        deleteExpectedVersion?.let { expectedVersion ->
-                            deleteBusy = true
-                            when (val result = onDelete(card.accountId, expectedVersion)) {
-                                is ProviderCardDeletionResult.Completed -> {
-                                    deleteBusy = false
-                                    deletePending = false
-                                    showDelete = false
-                                }
-                                is ProviderCardDeletionResult.InProgress -> {
-                                    deleteError = null
-                                    deleteBusy = false
-                                    deletePending = true
-                                }
-                                is ProviderCardDeletionResult.Failed -> {
-                                    deleteBusy = false
-                                    deletePending = false
-                                    deleteError = R.string.provider_removal_status_failed
-                                }
-                                is ProviderCardDeletionResult.Rejected -> {
-                                    deleteError = settingsDeleteErrorResource(result.reason)
-                                    deleteBusy = false
-                                    deletePending = false
-                                }
-                                null -> {
-                                    deleteBusy = false
-                                    deletePending = false
-                                    showDelete = false
-                                }
-                            }
-                        }
-                    },
-                    enabled = !deleteBusy,
-                    modifier = Modifier.heightIn(min = 48.dp),
-                ) {
-                    if (deleteBusy) {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .semantics {
-                                    liveRegion = LiveRegionMode.Polite
-                                    contentDescription = deletePendingStatus
-                                },
-                            strokeWidth = 2.dp,
-                        )
-                    } else {
-                        Text(stringResource(R.string.provider_removal_confirm))
+            }
+        ) {
+            Text(
+                stringResource(
+                    when (action) {
+                        SettingsConnectionAction.CONNECT -> R.string.provider_connect
+                        SettingsConnectionAction.DISCONNECT -> R.string.provider_disconnect
+                        SettingsConnectionAction.NONE -> R.string.provider_action_coming_soon
                     }
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showDelete = false },
-                    enabled = !deleteBusy,
-                    modifier = Modifier.heightIn(min = 48.dp),
-                ) {
-                    Text(stringResource(R.string.provider_removal_cancel))
-                }
-            },
-        )
+                )
+            )
+        }
     }
 }
 
-@StringRes
-private fun settingsDeleteErrorResource(reason: ProviderCardDeletionRejection): Int = when (reason) {
-    ProviderCardDeletionRejection.ACCOUNT_MISSING -> R.string.provider_removal_error_missing
-    ProviderCardDeletionRejection.VERSION_MISMATCH -> R.string.provider_removal_error_stale
-}
-
-@StringRes
-private fun settingsRenameErrorResource(rejection: ProviderCardRenameRejection): Int = when (rejection) {
-    ProviderCardRenameRejection.ACCOUNT_MISSING -> R.string.provider_rename_error_missing
-    ProviderCardRenameRejection.ACCOUNT_INACTIVE -> R.string.provider_rename_error_inactive
-    ProviderCardRenameRejection.VERSION_MISMATCH -> R.string.provider_rename_error_stale
-    is ProviderCardRenameRejection.AliasConflict -> R.string.provider_rename_error_alias_conflict
-    is ProviderCardRenameRejection.AliasValidation -> when (rejection.reason) {
-        com.aiquota.mobile.accounts.ProviderCardAliasValidationReason.BLANK -> R.string.provider_enrollment_error_blank
-        com.aiquota.mobile.accounts.ProviderCardAliasValidationReason.TOO_LONG -> R.string.provider_enrollment_error_too_long
-        com.aiquota.mobile.accounts.ProviderCardAliasValidationReason.CONTROL_CHARACTER -> R.string.provider_enrollment_error_control_character
-    }
-}
 
 @Composable
 private fun ThemeSettingsSection(

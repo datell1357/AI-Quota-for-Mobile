@@ -162,14 +162,30 @@ class SettingsConnectionManagementTest {
     fun exactSettingsRowsExposeIdentityAndActionsWithoutHorizontalClipping() {
         val source = File("src/main/java/com/aiquota/mobile/ui/settings/SettingsPanel.kt").readText()
         val exactRow = source.substringAfter("private fun ExactCardConnectionRow")
-            .substringBefore("private fun settingsDeleteErrorResource")
+            .substringBefore("private fun ThemeSettingsSection")
 
-        assertTrue(Regex("Column\\s*\\(\\s*modifier\\s*=\\s*Modifier\\.fillMaxWidth\\(\\)").containsMatchIn(exactRow))
+        assertTrue(Regex("Row\\s*\\(\\s*modifier\\s*=\\s*Modifier\\.fillMaxWidth\\(\\)").containsMatchIn(exactRow))
+        assertTrue(exactRow.contains("Modifier.weight(1f)"))
         assertTrue(exactRow.contains("card.alias"))
         assertTrue(exactRow.contains("card.accountId.providerId.displayName"))
         assertTrue(exactRow.contains("provider_connect"))
-        assertTrue(exactRow.contains("settings_rename_selected_device"))
-        assertTrue(exactRow.contains("provider_catalog_remove_action"))
+        assertTrue(exactRow.contains("provider_disconnect"))
+    }
+
+    /**
+     * 연결 관리에는 연결/연결 해제만 둔다. 카드 이름 변경·제거는 대시보드 쪽 UI가 담당한다
+     * (2026-09-04 회귀: 멀티계정 작업 중 이 행에 이름 변경·제거 버튼이 딸려 들어왔다).
+     */
+    @Test
+    fun exactSettingsRowsOfferOnlyConnectAndDisconnect() {
+        val source = File("src/main/java/com/aiquota/mobile/ui/settings/SettingsPanel.kt").readText()
+        val exactRow = source.substringAfter("private fun ExactCardConnectionRow")
+            .substringBefore("private fun ThemeSettingsSection")
+
+        assertFalse(exactRow.contains("settings_rename_selected_device"))
+        assertFalse(exactRow.contains("provider_catalog_remove_action"))
+        assertFalse(source.contains("onRenameCard"))
+        assertFalse(source.contains("onDeleteCard"))
     }
 
     @Test
@@ -182,17 +198,6 @@ class SettingsConnectionManagementTest {
             )
         )
         assertFalse(source.contains("text = \"버전 : "))
-    }
-
-    @Test
-    fun settingsDialogsReturnFocusToTheirInvokingControls() {
-        val source = File("src/main/java/com/aiquota/mobile/ui/settings/SettingsPanel.kt").readText()
-        val rows = source.substringAfter("private fun ExactCardConnectionRow")
-            .substringBefore("private fun settingsDeleteErrorResource")
-
-        assertTrue(rows.contains("renameTriggerFocusRequester"))
-        assertTrue(rows.contains("deleteTriggerFocusRequester"))
-        assertTrue(rows.contains("requestFocus()"))
     }
 
     @Test

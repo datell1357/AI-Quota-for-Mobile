@@ -195,10 +195,6 @@ private fun ExactProviderCardCatalogPreview(dataset: String, initialViewMode: Da
                         "Connect requested ${ProviderAccountIdStorageCodec.encode(accountId)} $alias"
                     }
                 },
-                onRefreshCard = { accountId ->
-                    busyAccountIds = setOf(accountId)
-                    selectedAlias = cards.firstOrNull { it.accountId == accountId }?.alias?.let { "Refresh requested $it" }
-                },
                 onReorderCard = { accountId, targetIndex ->
                     val ordered = cards.map(ProviderCardDisplayRecord::accountId).toMutableList()
                     if (ordered.remove(accountId)) {

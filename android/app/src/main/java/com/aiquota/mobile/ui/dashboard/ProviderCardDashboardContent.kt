@@ -14,9 +14,6 @@ internal data class ProviderCardDashboardContent(
     val snapshot: ProviderUsageSnapshot,
     val showConnectAction: Boolean = card.authState == AccountAuthState.REAUTH_REQUIRED ||
         snapshot.shouldShowDashboardConnectAction(),
-    val showRefreshAction: Boolean = card.authState != AccountAuthState.REAUTH_REQUIRED &&
-        snapshot.connectionState == ProviderConnectionState.CONNECTED &&
-        snapshot.refreshState != ProviderRefreshState.REFRESHING,
 )
 
 /** Exact immutable mapping consumed by the UnifiedDashboardScreen exact-card overload. */
