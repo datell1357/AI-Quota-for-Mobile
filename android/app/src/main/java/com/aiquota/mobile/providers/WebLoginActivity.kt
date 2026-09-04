@@ -163,7 +163,11 @@ open class WebLoginActivity : Activity() {
             return
         }
         providerId = accountId.providerId
-        if (BuildConfig.MULTI_ACCOUNT_ENABLED && providerId in NAMED_PROFILE_PROVIDERS) {
+        // 카드 상태는 authority가 들고 있으므로 provider를 가리지 않고 이 경로로 완료해야 한다.
+        // named profile provider(Claude·Codex)만 태우던 동안에는 나머지 provider가 로그인에
+        // 성공해도 카드가 "연결 끊김"에 머물렀다(2026-09-04 실측: Kiro 사용량 수집 성공 후에도
+        // auth_state=SIGNED_OUT). 프로필 임대는 여전히 named provider만 잡는다.
+        if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
             val composition = AndroidExactAccountLoginComposition.open(this)
             exactLoginComposition = composition
             val restoredBinding = savedInstanceState?.takeIf {
@@ -180,7 +184,7 @@ open class WebLoginActivity : Activity() {
             when (start) {
                 is ExactAccountLoginStartResult.Opened -> {
                     exactLoginBinding = start.binding
-                    namedProfileLease = requireNotNull(start.lease)
+                    namedProfileLease = start.lease
                 }
                 is ExactAccountLoginStartResult.ReauthenticationRequired -> {
                     exactLoginBinding = start.binding
@@ -2089,17 +2093,31 @@ open class WebLoginActivity : Activity() {
                 ProviderId.CLAUDE -> ClaudeNativeHeaderStore.snapshotRequestContext(claudeNativeFetchHeaders)
                 else -> emptyMap()
             }
-            when (composition.coordinator.complete(binding, context)) {
+            // 이 경로가 조용히 실패하면 로그인에 성공하고도 카드가 "연결 끊김"으로 남는다.
+            // 어디서 끊겼는지 추적할 수 있도록 결과를 남긴다.
+            when (val callback = composition.coordinator.complete(binding, context)) {
                 LoginCallbackResult.Accepted -> {
                     if (publishExactLoginSnapshot(binding, rawPayload)) {
+                        Log.i(
+                            "AIQuotaLogin",
+                            "provider=${providerId.storageId} exactLoginCommitted=true payloadPresent=${!rawPayload.isNullOrBlank()}"
+                        )
                         setExactLoginResult(EXACT_RESULT_SUCCESS)
                     } else {
+                        Log.w(
+                            "AIQuotaLogin",
+                            "provider=${providerId.storageId} exactLoginCommitted=false stage=publishSnapshot"
+                        )
                         composition.coordinator.fail(binding)
                         setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
                     }
                 }
                 LoginCallbackResult.Stale,
                 LoginCallbackResult.PersistenceFailed -> {
+                    Log.w(
+                        "AIQuotaLogin",
+                        "provider=${providerId.storageId} exactLoginCommitted=false stage=complete result=$callback"
+                    )
                     composition.coordinator.fail(binding)
                     setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
                 }

@@ -148,7 +148,16 @@ sealed interface NamedProfileRuntimeDecision {
 }
 
 object NamedProfileRuntimePolicy {
-    private val floor = listOf(152, 0, 7977, 54)
+    /**
+     * WebView 다중 프로필 API가 들어온 Chromium 114를 하한으로 둔다. 실제 지원 여부는
+     * androidx의 MULTI_PROFILE·DELETE_BROWSING_DATA 기능 검사가 판단하고, 이 하한은 그보다
+     * 앞선 빌드를 걸러내는 용도다.
+     *
+     * 이전 하한(152.0.7977.54)은 아직 배포되지 않은 버전대여서 오늘의 어떤 기기도 통과할 수
+     * 없었다. 그래서 두 번째 카드를 연결하는 순간 등록이 거부됐다(2026-09-04 실측: WebView
+     * 145.0.7632.218에서 Codex 연결 시 VERSION_BELOW_SAFE_FLOOR).
+     */
+    private val floor = listOf(114, 0, 0, 0)
 
     fun evaluate(packageName: String?, versionName: String?): NamedProfileRuntimeDecision {
         if (packageName == null || versionName == null)
@@ -432,7 +441,16 @@ class NamedProfileLifecycleManager(
     /** Explicit first Connect creates; reconnect opens only the exact existing physical Profile. */
     fun acquireForExplicitConnect(id: ProviderAccountId): LeaseAcquireResult {
         val existed = binding(id) != null
-        if (!existed) ensureBinding(id)
+        if (!existed) {
+            // 등록이 거부되면 예외가 로그인 화면 생성 도중 그대로 터져 앱이 죽었다(2026-09-04
+            // 실측: 두 번째 카드 연결 시 NamedProfileEnrollmentRejected로 크래시). 거부는
+            // 예외가 아니라 결과로 돌려 호출부가 "연결할 수 없음"으로 처리하게 한다.
+            try {
+                ensureBinding(id)
+            } catch (rejected: NamedProfileEnrollmentRejected) {
+                return LeaseAcquireResult.Rejected(rejected.rejection.capability)
+            }
+        }
         return acquire(id, createIfMissing = !existed)
     }
 
