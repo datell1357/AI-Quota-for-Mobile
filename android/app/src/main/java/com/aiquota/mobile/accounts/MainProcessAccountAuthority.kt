@@ -775,6 +775,51 @@ class MainProcessAccountAuthority private constructor(
     internal fun providerCardDeletion(accountId: ProviderAccountId): ProviderCardDeletionRecord? =
         readProviderCardDeletion(database.readableDatabase, accountId)
 
+    /**
+     * 중단된 로그인을 정리한다. 로그인 화면이 정리 없이 사라지면(앱이 죽거나 강제 종료되거나)
+     * 카드가 AUTHENTICATING에 갇혀 대시보드에 "연결 중"으로 계속 남는다. 프로세스가 새로 뜨는
+     * 시점에는 진행 중인 로그인이 있을 수 없으므로 그런 카드를 재인증 필요로 되돌린다
+     * (2026-09-05 실측: Claude·Codex 카드가 "연결 중 / 로그인을 열었습니다"에 머물렀다).
+     */
+    fun resumeInterruptedLogins(): List<ProviderAccountId> = transaction { db ->
+        val stuck = mutableListOf<ProviderAccountId>()
+        db.query(
+            "accounts",
+            arrayOf("provider_id", "account_key"),
+            "auth_state=? AND state=? AND deletion_state=?",
+            arrayOf(
+                AccountAuthState.AUTHENTICATING.name,
+                AccountState.ACTIVE.name,
+                AccountDeletionState.NONE.name,
+            ),
+            null,
+            null,
+            null,
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                val providerId = ProviderId.fromStorageId(cursor.getString(0)) ?: continue
+                val key = runCatching { AccountKey.parseOpaque(cursor.getString(1)) }.getOrNull()
+                    ?: continue
+                stuck += ProviderAccountId(providerId, key)
+            }
+        }
+        stuck.forEach { accountId ->
+            val account = readAccount(db, accountId) ?: return@forEach
+            val version = readVersion(db).next()
+            writeExactLoginState(
+                db,
+                account.transitionTo(
+                    account.state,
+                    AccountAuthState.REAUTH_REQUIRED,
+                    account.deletionState,
+                ).copy(modifiedVersion = version),
+            )
+            writeAttempt(db, accountId, account.generation, account.sessionRevision, null)
+            writeVersion(db, version)
+        }
+        stuck
+    }
+
     internal fun pendingProviderCardDeletions(): List<ProviderAccountId> =
         pendingProviderCardDeletionIds(database.readableDatabase)
 

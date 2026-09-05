@@ -111,6 +111,9 @@ object MainProcessAccountFeature {
     fun resumePendingDeletions(context: Context): List<ProviderCardDeletionResult> {
         appContext = context.applicationContext
         val hasPending = MainProcessAccountAuthority.open(context).use { authority ->
+            // 프로세스가 새로 떴으니 진행 중인 로그인은 있을 수 없다. 중단된 채 남은 카드를
+            // 먼저 풀어야 "연결 중"에 갇히지 않는다.
+            authority.resumeInterruptedLogins()
             authority.pendingProviderCardDeletions().isNotEmpty()
         }
         if (!hasPending) return emptyList()

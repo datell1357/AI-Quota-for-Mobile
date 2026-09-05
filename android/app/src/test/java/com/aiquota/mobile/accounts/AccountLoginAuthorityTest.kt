@@ -127,6 +127,38 @@ class AccountLoginAuthorityTest {
         assertEquals(siblingBefore, requireNotNull(authority.accountUsageRecord(a)).snapshot)
     }
 
+    /**
+     * 로그인 화면이 정리 없이 사라지면(앱이 죽거나 강제 종료되면) 카드가 AUTHENTICATING에 갇혀
+     * 대시보드에 "연결 중"으로 남는다. 프로세스가 새로 뜰 때 풀어준다.
+     */
+    @Test
+    fun startupReleasesInterruptedLoginsWithoutTouchingSettledCards() {
+        val interrupted = id(1)
+        val settled = id(2)
+        authority.register(seed(interrupted))
+        authority.register(seed(settled))
+        requireNotNull(authority.beginAuthentication(interrupted))
+        assertEquals(
+            AccountAuthState.AUTHENTICATING,
+            requireNotNull(authority.accountUsageRecord(interrupted)).account.authState,
+        )
+
+        val released = authority.resumeInterruptedLogins()
+
+        assertEquals(listOf(interrupted), released)
+        assertEquals(
+            AccountAuthState.REAUTH_REQUIRED,
+            requireNotNull(authority.accountUsageRecord(interrupted)).account.authState,
+        )
+        // 로그인이 끝난 카드는 그대로 둔다.
+        assertEquals(
+            AccountAuthState.AUTHENTICATED,
+            requireNotNull(authority.accountUsageRecord(settled)).account.authState,
+        )
+        // 두 번 돌려도 더 풀 것이 없다.
+        assertTrue(authority.resumeInterruptedLogins().isEmpty())
+    }
+
     private fun seed(id: ProviderAccountId) = AuthorityAccountSeed(
         AccountRecord(
             id,
