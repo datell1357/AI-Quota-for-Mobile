@@ -13,6 +13,9 @@ import com.aiquota.mobile.selectCurrentProcessName
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderUsageSnapshot
 import com.aiquota.mobile.providers.ProviderSnapshotCodec
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 class MainProcessAccountAuthority private constructor(
     private val database: AccountAuthorityDatabase,
@@ -410,7 +413,11 @@ class MainProcessAccountAuthority private constructor(
         return records
     }
 
-    fun abandonAttempt(lease: AttemptLease, requeue: Boolean): Boolean = transaction { db ->
+    fun abandonAttempt(
+        lease: AttemptLease,
+        requeue: Boolean,
+        failureMessage: String? = if (requeue) "Last refresh attempt failed; will retry." else null,
+    ): Boolean = transaction { db ->
         val account = readAccount(db, lease.accountId) ?: return@transaction false
         if (account.generation != lease.generation || account.sessionRevision != lease.sessionRevision) {
             return@transaction false
@@ -429,6 +436,20 @@ class MainProcessAccountAuthority private constructor(
         }
         val version = readVersion(db).next()
         updateAccountVersion(db, lease.accountId, version)
+        failureMessage?.takeIf(String::isNotBlank)?.let { message ->
+            val previous = readExactProviderCardRecord(db, lease.accountId)?.snapshot
+            writeSnapshot(
+                db,
+                lease.accountId,
+                ProviderUsageSnapshot.failedKeepingPrevious(
+                    providerId = lease.accountId.providerId,
+                    previous = previous,
+                    message = message,
+                ),
+                version,
+            )
+            faultInjector.after(AccountAuthorityFaultPoint.SNAPSHOT)
+        }
         writeDemand(db, lease.accountId, demand)
         writeAttempt(db, lease.accountId, lease.generation, lease.sessionRevision, null)
         writeVersion(db, version)
@@ -1011,16 +1032,22 @@ class MainProcessAccountAuthority private constructor(
     private inline fun <T> transaction(block: (SQLiteDatabase) -> T): T {
         val db = database.writableDatabase
         db.beginTransaction()
+        var changed = false
         return try {
+            val before = readVersion(db)
             val result = block(db)
             db.setTransactionSuccessful()
+            changed = readVersion(db) != before
             result
         } finally {
             db.endTransaction()
+            if (changed) committedChanges.update { it + 1 }
         }
     }
 
     companion object {
+        private val committedChanges = MutableStateFlow(0L)
+        val changes = committedChanges.asStateFlow()
         private const val DEFAULT_DATABASE_NAME = AccountAuthorityDatabase.DEFAULT_DATABASE_NAME
         private const val MAX_PAGE_SIZE = 250
 

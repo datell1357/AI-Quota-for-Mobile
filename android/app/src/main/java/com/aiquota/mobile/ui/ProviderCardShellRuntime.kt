@@ -13,6 +13,7 @@ import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.ProviderCardCatalogLoader
 import com.aiquota.mobile.accounts.ProviderCardCatalogPolicy
 import com.aiquota.mobile.accounts.ProviderCardDisplayRecord
+import com.aiquota.mobile.accounts.MainProcessAccountAuthority
 import com.aiquota.mobile.accounts.displaySnapshot
 import com.aiquota.mobile.accounts.ProviderCardMultiplicity
 import com.aiquota.mobile.accounts.ProviderCardProviderPolicy
@@ -147,6 +148,10 @@ class ProviderCardShellRuntime private constructor(
             runCatching { connectorRegistry.connectorFor(providerId).disconnect() }
             sessionResetter.disconnectAndWait(providerId)
             localUsageRepository.removeProviderSnapshot(providerId)
+            val exactLogoutSucceeded = MainProcessAccountAuthority.open(appContext).use { authority ->
+                authority.logoutExact(operation.accountId) { true }
+            }
+            check(exactLogoutSucceeded) { "EXACT_LOGOUT_FAILED" }
             reload()
             state = state.completeOperation(operation)
         } catch (cancelled: CancellationException) {
