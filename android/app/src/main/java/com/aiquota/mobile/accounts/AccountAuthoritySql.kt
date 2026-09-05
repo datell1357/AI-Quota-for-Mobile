@@ -273,12 +273,15 @@ internal fun allocateProviderCardAlias(
               AND alias_normalized_key = base.value || ' ' ||
                   CAST(CAST(substr(alias_normalized_key, length(base.value) + 2) AS INTEGER) AS TEXT)
         ),
-        ordered(suffix, previous) AS (
-            SELECT suffix, lag(suffix, 1, 0) OVER (ORDER BY suffix) FROM used
+        candidates(suffix) AS (
+            SELECT 1
+            UNION ALL
+            SELECT suffix + 1 FROM used
         )
-        SELECT coalesce(
-            (SELECT previous + 1 FROM ordered WHERE suffix > previous + 1 ORDER BY suffix LIMIT 1),
-            (SELECT coalesce(max(suffix), 0) + 1 FROM used)
+        SELECT min(candidates.suffix)
+        FROM candidates
+        WHERE NOT EXISTS (
+            SELECT 1 FROM used WHERE used.suffix = candidates.suffix
         )
         """.trimIndent(),
         arrayOf(base.normalizedKey, providerId.storageId),
