@@ -9,18 +9,25 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.R
+import com.aiquota.mobile.accounts.ProviderCardAddRejection
 import com.aiquota.mobile.accounts.ProviderCardAddResult
 import com.aiquota.mobile.local.AppTheme
 import com.aiquota.mobile.local.ProviderId
@@ -41,9 +48,21 @@ fun ProviderEnrollmentDialog(
             existingAccountIds = existingAccountIds,
             onLater = onLater,
             onStart = {
-                state.bulkSubmissions().forEach { onSubmit(it) }
-                state.close()
-                onAdded()
+                val rejections = state.bulkSubmissions().mapNotNull { submission ->
+                    when (val result = onSubmit(submission)) {
+                        is ProviderCardAddResult.Added -> {
+                            state.select(submission.providerId)
+                            null
+                        }
+                        is ProviderCardAddResult.Rejected -> result.rejection
+                    }
+                }
+                if (rejections.isEmpty()) {
+                    state.close()
+                    onAdded()
+                } else {
+                    state.errorResource = bulkProviderEnrollmentErrorResource(rejections.first())
+                }
             },
         )
         ProviderEnrollmentStep.NAMING -> ProviderNamingDialog(
@@ -86,6 +105,20 @@ private fun ProviderPickerSheet(
                 .padding(horizontal = 8.dp, vertical = 8.dp)
                 .heightIn(min = sheetHeight, max = sheetHeight),
         ) {
+            val errorMessage = state.errorResource?.let { stringResource(it) }
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = metrics.cardPaddingDp.dp)
+                        .semantics {
+                            liveRegion = LiveRegionMode.Polite
+                            error(errorMessage)
+                        },
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
             ProviderPickerStep(
                 state = state,
                 existingAccountIds = existingAccountIds,
@@ -148,3 +181,17 @@ internal fun providerEnrollmentSheetShape(theme: AppTheme): RoundedCornerShape =
     topStart = if (theme == AppTheme.MACOS) 16.dp else 2.dp,
     topEnd = if (theme == AppTheme.MACOS) 16.dp else 2.dp,
 )
+
+private fun bulkProviderEnrollmentErrorResource(rejection: ProviderCardAddRejection): Int = when (rejection) {
+    is ProviderCardAddRejection.UnsupportedProvider -> R.string.provider_enrollment_error_unavailable
+    is ProviderCardAddRejection.MultiplicityExceeded -> R.string.provider_enrollment_error_already_added
+    is ProviderCardAddRejection.AliasConflict -> R.string.provider_enrollment_error_alias_conflict
+    is ProviderCardAddRejection.AliasValidation -> when (rejection.reason) {
+        com.aiquota.mobile.accounts.ProviderCardAliasValidationReason.BLANK ->
+            R.string.provider_enrollment_error_blank
+        com.aiquota.mobile.accounts.ProviderCardAliasValidationReason.TOO_LONG ->
+            R.string.provider_enrollment_error_too_long
+        com.aiquota.mobile.accounts.ProviderCardAliasValidationReason.CONTROL_CHARACTER ->
+            R.string.provider_enrollment_error_control_character
+    }
+}
