@@ -50,7 +50,7 @@
     </receiver>
     <receiver
       android:name=".debug.DebugClaudePrimeReceiver"
-      android:exported="true">
+      android:exported="false">
       <intent-filter>
         <action android:name="com.aiquota.mobile.debug.FORCE_CLAUDE_PRIME" />
       </intent-filter>
