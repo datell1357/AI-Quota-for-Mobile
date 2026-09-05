@@ -1,5 +1,6 @@
 package com.aiquota.mobile.providers
 
+import com.aiquota.mobile.accounts.ProviderAccountId
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -25,35 +26,66 @@ internal object ProviderProbeCooldown {
      */
     const val STRIKES_BEFORE_COOLDOWN = 2
 
-    private val blockedUntilMillis = ConcurrentHashMap<String, Long>()
-    private val strikes = ConcurrentHashMap<String, Int>()
+    private data class ProbeKey(
+        val accountId: ProviderAccountId?,
+        val url: String,
+    )
 
-    fun shouldSkip(url: String, nowMillis: Long = System.currentTimeMillis()): Boolean {
-        val until = blockedUntilMillis[url] ?: return false
+    private val blockedUntilMillis = ConcurrentHashMap<ProbeKey, Long>()
+    private val strikes = ConcurrentHashMap<ProbeKey, Int>()
+
+    fun shouldSkip(url: String, nowMillis: Long = System.currentTimeMillis()): Boolean =
+        shouldSkip(accountId = null, url = url, nowMillis = nowMillis)
+
+    fun shouldSkip(
+        accountId: ProviderAccountId?,
+        url: String,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): Boolean {
+        val key = ProbeKey(accountId, url)
+        val until = blockedUntilMillis[key] ?: return false
         if (nowMillis >= until) {
-            blockedUntilMillis.remove(url)
+            blockedUntilMillis.remove(key)
             // 누적도 함께 비운다. 남겨 두면 만료 후 첫 거절이 곧바로 다시 30분을 채워
             // "연속 2회" 보호가 첫 차단 이후로는 사라진다.
-            strikes.remove(url)
+            strikes.remove(key)
             return false
         }
         return true
     }
 
-    fun record(url: String, status: Int, nowMillis: Long = System.currentTimeMillis()) {
+    fun record(url: String, status: Int, nowMillis: Long = System.currentTimeMillis()) =
+        record(accountId = null, url = url, status = status, nowMillis = nowMillis)
+
+    fun record(
+        accountId: ProviderAccountId?,
+        url: String,
+        status: Int,
+        nowMillis: Long = System.currentTimeMillis(),
+    ) {
+        val key = ProbeKey(accountId, url)
         when {
             status in 200..299 -> {
-                blockedUntilMillis.remove(url)
-                strikes.remove(url)
+                blockedUntilMillis.remove(key)
+                strikes.remove(key)
             }
             status in REJECTED_STATUSES -> {
-                val count = (strikes[url] ?: 0) + 1
-                strikes[url] = count
+                val count = (strikes[key] ?: 0) + 1
+                strikes[key] = count
                 if (count >= STRIKES_BEFORE_COOLDOWN) {
-                    blockedUntilMillis[url] = nowMillis + COOLDOWN_MILLIS
+                    blockedUntilMillis[key] = nowMillis + COOLDOWN_MILLIS
                 }
             }
         }
+    }
+
+    fun reset(accountId: ProviderAccountId) {
+        blockedUntilMillis.keys
+            .filter { it.accountId == accountId }
+            .forEach(blockedUntilMillis::remove)
+        strikes.keys
+            .filter { it.accountId == accountId }
+            .forEach(strikes::remove)
     }
 
     fun reset() {

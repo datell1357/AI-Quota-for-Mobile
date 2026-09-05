@@ -436,6 +436,9 @@ class ProviderBackgroundRefreshService : Service() {
                 Log.d(TAG, "cycleSkipped reason=offline")
                 return
             }
+            if (manualAccountId?.providerId == ProviderId.CURSOR) {
+                ProviderProbeCooldown.reset(manualAccountId)
+            }
             if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
                 runExactRefreshCycle(manualAccountId)
                 return
@@ -1797,6 +1800,7 @@ class ProviderBackgroundRefreshService : Service() {
                 requestHeadersForUrl = { url ->
                     requestHeadersForJob(active, url)
                 },
+                accountId = active.job.binding?.accountId,
                 fetchJson = { _, url, userAgent, requestHeaders ->
                     fetchProviderJsonForJob(active, url, userAgent, requestHeaders)
                 },

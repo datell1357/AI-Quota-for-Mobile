@@ -21,6 +21,7 @@ import com.aiquota.mobile.local.ProviderConnectionState
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderUsageLine
 import com.aiquota.mobile.local.ProviderUsageSnapshot
+import java.io.File
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
@@ -59,6 +60,20 @@ class ProviderBackgroundRefreshServiceExactDispatchTest {
         assertTrue(jobUsesNamedProfileSession(codexJob))
         assertFalse(jobUsesSharedWebSession(claudeJob))
         assertFalse(jobUsesSharedWebSession(codexJob))
+    }
+
+    @Test
+    fun nonNamedCursorBindingFeedsItsAccountIntoBridgeCooldownScope() {
+        val cursorBinding = binding(ProviderId.CURSOR, 6, generation = 1)
+        val cursorJob = attempt(cursorBinding).job
+        val service = File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
+        val bridge = service.substringAfter("private inner class ServiceUsageBridge")
+            .substringBefore("private class ServiceCollectorChromeClient")
+
+        assertFalse(jobUsesNamedProfileSession(cursorJob))
+        assertEquals(cursorBinding.accountId, cursorJob.binding?.accountId)
+        assertTrue(bridge.contains("accountId = active.job.binding?.accountId"))
+        assertFalse(bridge.contains("accountId = active.exactOperation?.binding?.accountId"))
     }
 
     @Test

@@ -1,5 +1,8 @@
 package com.aiquota.mobile.providers
 
+import com.aiquota.mobile.accounts.AccountKey
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.local.ProviderId
 import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -98,6 +101,44 @@ class ProviderProbeCooldownTest {
     }
 
     @Test
+    fun exactManualRefreshAppliesCursorCooldownBypassBeforeExactOrLegacyBranch() {
+        val service = File(
+            "src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt"
+        ).readText()
+        val cycle = service.substringAfter("private suspend fun runRefreshCycle()")
+            .substringBefore("private suspend fun refreshProvider")
+        val bypass = cycle.indexOf("ProviderProbeCooldown.reset")
+        val exactOrLegacyBranch = cycle.indexOf("if (BuildConfig.MULTI_ACCOUNT_ENABLED)")
+        val bypassCall = if (bypass >= 0) cycle.substring(bypass).substringBefore("\n") else ""
+
+        assertTrue("manual refresh must have a cooldown bypass", bypass >= 0)
+        assertTrue("cooldown bypass must run before exact or legacy dispatch", bypass < exactOrLegacyBranch)
+        assertTrue("the bypass must be scoped by the exact manual target", bypassCall.contains("manualAccountId"))
+    }
+
+    @Test
+    fun manualCursorTargetBypassDoesNotClearAutomaticOrNonCursorCooldownState() {
+        val manualCursor = account(ProviderId.CURSOR, 1)
+        val automaticCursor = account(ProviderId.CURSOR, 2)
+        val nonCursor = account(ProviderId.CLAUDE, 3)
+        listOf(manualCursor, automaticCursor, nonCursor).forEach { accountId ->
+            repeat(ProviderProbeCooldown.STRIKES_BEFORE_COOLDOWN) {
+                ProviderProbeCooldown.record(accountId, url, 401, nowMillis = 1_000L)
+            }
+        }
+
+        assertTrue(ProviderProbeCooldown.shouldSkip(manualCursor, url, nowMillis = 1_000L))
+        assertTrue(ProviderProbeCooldown.shouldSkip(automaticCursor, url, nowMillis = 1_000L))
+        assertTrue(ProviderProbeCooldown.shouldSkip(nonCursor, url, nowMillis = 1_000L))
+
+        ProviderProbeCooldown.reset(manualCursor)
+
+        assertFalse(ProviderProbeCooldown.shouldSkip(manualCursor, url, nowMillis = 1_000L))
+        assertTrue(ProviderProbeCooldown.shouldSkip(automaticCursor, url, nowMillis = 1_000L))
+        assertTrue(ProviderProbeCooldown.shouldSkip(nonCursor, url, nowMillis = 1_000L))
+    }
+
+    @Test
     fun cursorProbeLoopConsultsTheCooldown() {
         val fetcher = File(
             "src/main/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcher.kt"
@@ -105,14 +146,19 @@ class ProviderProbeCooldownTest {
         val cursorLoop = fetcher.substringAfter("private fun fetchCursorPayload")
             .substringBefore("private fun fetchCursorWrapped")
 
-        assertTrue(cursorLoop.contains("ProviderProbeCooldown.shouldSkip(probe.url)"))
+        assertTrue(cursorLoop.contains("ProviderProbeCooldown.shouldSkip(accountId, probe.url)"))
         assertTrue(
             "건너뛴 사실이 진단 문자열에 남아야 원인을 추적할 수 있다",
             cursorLoop.contains("skipped:cooldown")
         )
         assertTrue(
             "응답 상태를 기록해야 쿨다운이 갱신된다",
-            fetcher.contains("ProviderProbeCooldown.record(url, status)")
+            fetcher.contains("ProviderProbeCooldown.record(accountId, url, status)")
         )
     }
+
+    private fun account(providerId: ProviderId, index: Int) = ProviderAccountId(
+        providerId,
+        AccountKey.parseOpaque("acct_${index.toString(16).padStart(32, '0')}"),
+    )
 }

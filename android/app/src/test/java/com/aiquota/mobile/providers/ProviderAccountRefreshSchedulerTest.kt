@@ -161,6 +161,51 @@ class ProviderAccountRefreshSchedulerTest {
     }
 
     @Test
+    fun authenticatedActiveValidBindingWithRecoverableUsageStateRemainsEligibleForRetry() {
+        val accountId = id(ProviderId.CLAUDE, 7)
+        val snapshots = listOf(
+            ProviderUsageSnapshot.connectedWithoutUsage(
+                providerId = accountId.providerId,
+                message = "Usage is not available yet.",
+            ),
+            ProviderUsageSnapshot(
+                providerId = accountId.providerId,
+                connectionState = ProviderConnectionState.STALE,
+                message = "Usage is stale.",
+            ),
+            ProviderUsageSnapshot.failedKeepingPrevious(
+                providerId = accountId.providerId,
+                previous = null,
+                message = "Temporary refresh failure.",
+            ),
+        )
+
+        snapshots.forEach { snapshot ->
+            val refreshCard = card(accountId, 0).copy(snapshot = snapshot)
+            val authority = FakeAttemptAuthority(listOf(refreshCard))
+            val scheduler = scheduler(authority, MemoryCursor())
+
+            assertTrue(
+                "${snapshot.connectionState} must remain eligible while the account binding is valid",
+                refreshCard.isEligible(),
+            )
+            val result = scheduler.trigger(listOf(refreshCard), exactTarget = accountId)
+            assertTrue(
+                "${snapshot.connectionState} must launch a recoverable exact retry",
+                result is ProviderRefreshTriggerResult.Launched,
+            )
+            assertEquals(accountId, (result as ProviderRefreshTriggerResult.Launched).attempt.accountId)
+            assertEquals(AccountState.ACTIVE, refreshCard.account.state)
+            assertEquals(AccountAuthState.AUTHENTICATED, refreshCard.account.authState)
+            assertEquals(AccountDeletionState.NONE, refreshCard.account.deletionState)
+            assertEquals(refreshCard.binding, refreshCard.credentialBinding)
+            assertEquals(refreshCard.binding, refreshCard.profileLeaseBinding)
+            assertEquals(refreshCard.binding, refreshCard.nativeContextBinding)
+            scheduler.resetCycle()
+        }
+    }
+
+    @Test
     fun deletedGenerationAndSessionBCallbacksAreRejectedWithoutChangingAOrB() {
         val a = card(id(ProviderId.CLAUDE, 1), 0)
         val b = card(id(ProviderId.CLAUDE, 2), 1)

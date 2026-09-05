@@ -49,7 +49,12 @@ data class ProviderRefreshCard(
     fun isEligible(): Boolean {
         if (demand == AccountDemandSet.NONE || activeRank < 0) return false
         if (snapshot.providerId != accountId.providerId) return false
-        if (snapshot.connectionState != ProviderConnectionState.CONNECTED) return false
+        if (
+            snapshot.connectionState != ProviderConnectionState.CONNECTED &&
+            snapshot.connectionState != ProviderConnectionState.UNAVAILABLE &&
+            snapshot.connectionState != ProviderConnectionState.STALE &&
+            snapshot.connectionState != ProviderConnectionState.ERROR
+        ) return false
         if (account.state != AccountState.ACTIVE || account.authState != AccountAuthState.AUTHENTICATED) return false
         if (account.deletionState != AccountDeletionState.NONE) return false
         if (credentialBinding != binding) return false

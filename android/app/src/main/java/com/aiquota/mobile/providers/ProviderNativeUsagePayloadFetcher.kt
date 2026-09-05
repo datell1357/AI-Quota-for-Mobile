@@ -1,6 +1,7 @@
 package com.aiquota.mobile.providers
 
 import android.util.Log
+import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.local.ProviderId
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -24,9 +25,19 @@ object ProviderNativeUsagePayloadFetcher {
         cookieHeaderForUrl: (String) -> String? = { null },
         bridgePageUrl: String? = null,
         geminiRpcIds: List<String> = emptyList(),
-        requestHeadersForUrl: (String) -> Map<String, String> = { emptyMap() }
+        requestHeadersForUrl: (String) -> Map<String, String> = { emptyMap() },
+        accountId: ProviderAccountId? = null,
     ): String {
-        return bridgeUsagePayload(providerId, userAgent, requestHeadersForUrl, cookieHeaderForUrl, bridgePageUrl, geminiRpcIds, ProviderNativeJsonBridge::fetchJson)
+        return bridgeUsagePayload(
+            providerId,
+            userAgent,
+            requestHeadersForUrl,
+            cookieHeaderForUrl,
+            bridgePageUrl,
+            geminiRpcIds,
+            ProviderNativeJsonBridge::fetchJson,
+            accountId,
+        )
     }
 
     internal fun bridgeUsagePayloadWithFetcher(
@@ -37,6 +48,7 @@ object ProviderNativeUsagePayloadFetcher {
         geminiRpcIds: List<String>,
         requestHeadersForUrl: (String) -> Map<String, String>,
         fetchJson: NativeJsonFetcher,
+        accountId: ProviderAccountId? = null,
     ): String = bridgeUsagePayload(
         providerId,
         userAgent,
@@ -45,6 +57,7 @@ object ProviderNativeUsagePayloadFetcher {
         bridgePageUrl,
         geminiRpcIds,
         fetchJson,
+        accountId,
     )
 
     internal fun codexUsagePayloadForTest(
@@ -62,7 +75,8 @@ object ProviderNativeUsagePayloadFetcher {
         cookieHeaderForUrl: (String) -> String?,
         bridgePageUrl: String?,
         geminiRpcIds: List<String>,
-        fetchJson: NativeJsonFetcher
+        fetchJson: NativeJsonFetcher,
+        accountId: ProviderAccountId?,
     ): String {
         if (!ProviderAboutBlankCollectorPolicy.isEnabled(providerId)) {
             return bridgeError(providerId, "provider_not_allowlisted")
@@ -78,7 +92,7 @@ object ProviderNativeUsagePayloadFetcher {
             }
             ProviderId.GLM -> fetchGlmPayload(cookieHeaderForUrl, requestHeadersForUrl)
             ProviderId.OPENCODE -> fetchOpenCodePayload(userAgent, bridgePageUrl, fetchJson)
-            ProviderId.CURSOR -> fetchCursorPayload()
+            ProviderId.CURSOR -> fetchCursorPayload(accountId = accountId)
             ProviderId.GROK -> fetchGrokPayload()
             ProviderId.KIMI -> fetchKimiPayload()
             ProviderId.KIRO -> fetchKiroPayload()
@@ -115,8 +129,11 @@ object ProviderNativeUsagePayloadFetcher {
         return fetchOpenCodePayload(userAgent, bridgePageUrl, fetchJson).payload
     }
 
-    internal fun cursorUsagePayloadForTest(fetchJson: CursorJsonFetcher): String? {
-        return fetchCursorPayload(fetchJson).payload
+    internal fun cursorUsagePayloadForTest(
+        accountId: ProviderAccountId? = null,
+        fetchJson: CursorJsonFetcher,
+    ): String? {
+        return fetchCursorPayload(fetchJson, accountId).payload
     }
 
     internal fun grokUsagePayloadForTest(
@@ -387,18 +404,19 @@ object ProviderNativeUsagePayloadFetcher {
     }
 
     private fun fetchCursorPayload(
-        fetchJson: CursorJsonFetcher = CursorNativeUsageFetcher::fetchJson
+        fetchJson: CursorJsonFetcher = CursorNativeUsageFetcher::fetchJson,
+        accountId: ProviderAccountId? = null,
     ): NativePayloadResult {
         val statuses = mutableListOf<String>()
         val payload = JSONObject().put("provider", ProviderId.CURSOR.storageId)
         CURSOR_NATIVE_PROBES.forEach { probe ->
             // 계정 구성상 계속 거절당하는 엔드포인트는 잠시 건너뛴다. 오류 응답도 본문을
             // 실어 오기 때문에 60초마다 반복하면 데이터만 축난다.
-            if (ProviderProbeCooldown.shouldSkip(probe.url)) {
+            if (ProviderProbeCooldown.shouldSkip(accountId, probe.url)) {
                 statuses += "${urlStatusLabel(probe.url)}:skipped:cooldown"
                 return@forEach
             }
-            val response = fetchCursorWrapped(probe.url, probe.body, statuses, fetchJson)
+            val response = fetchCursorWrapped(probe.url, probe.body, statuses, fetchJson, accountId)
             if (response.optBoolean("ok", false)) {
                 gatherCursorUsageData(response.jsonValue(), payload, 0)
                 val verified = verifiedPayload(ProviderId.CURSOR, payload, "cursor_usage_unavailable", statuses)
@@ -412,12 +430,13 @@ object ProviderNativeUsagePayloadFetcher {
         url: String,
         body: String?,
         statuses: MutableList<String>,
-        fetchJson: CursorJsonFetcher
+        fetchJson: CursorJsonFetcher,
+        accountId: ProviderAccountId?,
     ): JSONObject {
         val wrapped = runCatching { JSONObject(fetchJson(url, body)) }
             .getOrElse { JSONObject().put("ok", false).put("url", url).put("error", it.javaClass.simpleName) }
         val status = wrapped.optInt("status", -1)
-        ProviderProbeCooldown.record(url, status)
+        ProviderProbeCooldown.record(accountId, url, status)
         statuses += "${urlStatusLabel(url)}:$status:${wrapped.optString("error")}"
         return wrapped
     }
