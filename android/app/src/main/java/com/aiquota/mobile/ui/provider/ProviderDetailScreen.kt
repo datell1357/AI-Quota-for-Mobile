@@ -813,7 +813,7 @@ private fun ProviderPersonalSettingsDialog(
                     onCheckedChange = onResetNotificationChange
                 )
 
-                if (providerId == ProviderId.CLAUDE) {
+                if (providerId == ProviderId.CLAUDE && !com.aiquota.mobile.BuildConfig.MULTI_ACCOUNT_ENABLED) {
                     ProviderPersonalSettingsToggle(
                         title = stringResource(R.string.settings_claude_auto_reset_prime_title),
                         description = stringResource(R.string.settings_claude_auto_reset_prime_description),
