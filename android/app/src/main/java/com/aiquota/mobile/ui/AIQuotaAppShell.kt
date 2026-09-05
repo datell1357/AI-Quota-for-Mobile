@@ -830,7 +830,6 @@ fun AIQuotaAppShell(
                     batteryOptimizationExempt = isBatteryOptimizationExempt(appContext)
                     liveRefreshStatusNowMillis = System.currentTimeMillis()
                     if (
-                        !BuildConfig.MULTI_ACCOUNT_ENABLED &&
                         ForegroundRefreshPolicy.shouldRunForegroundLoop(
                             snapshots = localUsageRepository.readSnapshots(),
                             liveMonitoringEnabled = liveMonitoringEnabled,
@@ -897,7 +896,6 @@ fun AIQuotaAppShell(
 
     LaunchedEffect(snapshots, liveMonitoringEnabled, canPostNotifications) {
         if (
-            !BuildConfig.MULTI_ACCOUNT_ENABLED &&
             ForegroundRefreshPolicy.shouldRunForegroundLoop(
                 snapshots = snapshots,
                 liveMonitoringEnabled = liveMonitoringEnabled,

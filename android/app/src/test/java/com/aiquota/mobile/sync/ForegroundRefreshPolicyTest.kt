@@ -150,4 +150,14 @@ class ForegroundRefreshPolicyTest {
             lines = listOf(ProviderUsageLine(label = "Usage", remainingPercent = 0.5f))
         )
     }
+
+    @Test
+    fun appShellDoesNotDisableExactAccountForegroundLoop() {
+        val source = java.io.File("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt").readText()
+        val legacyOnlyGate = Regex(
+            "!BuildConfig\\.MULTI_ACCOUNT_ENABLED\\s*&&\\s*ForegroundRefreshPolicy\\.shouldRunForegroundLoop"
+        )
+        assertFalse("Exact-account service supports the same opt-in foreground loop", legacyOnlyGate.containsMatchIn(source))
+        assertEquals(2, Regex("ForegroundRefreshPolicy\\.shouldRunForegroundLoop\\(").findAll(source).count())
+    }
 }

@@ -820,6 +820,12 @@ private fun ProviderPersonalSettingsDialog(
                         checked = autoResetPrimeEnabled,
                         onCheckedChange = onAutoResetPrimeChange
                     )
+                } else if (providerId == ProviderId.CLAUDE) {
+                    Text(
+                        text = stringResource(R.string.settings_claude_auto_reset_prime_unavailable),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.textSecondary
+                    )
                 }
 
                 ProviderUsageThresholdToggle(

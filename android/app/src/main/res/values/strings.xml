@@ -22,6 +22,7 @@
     <string name="settings_status_bar_gauges_description">Remaining AI usage is available from the notification shade.</string>
     <string name="settings_claude_auto_reset_prime_title">Auto wake-up</string>
     <string name="settings_claude_auto_reset_prime_description">Sends a message to start the timer.</string>
+    <string name="settings_claude_auto_reset_prime_unavailable">Auto wake-up is not yet supported in multi-account mode. Usage auto-refresh is separate: enable Status bar notification in app settings.</string>
     <string name="settings_notifications_permission_required">Android notifications are off for AI Quota. Turn them on to show the status bar notification.</string>
     <string name="settings_open_notification_settings">Open notification settings</string>
     <string name="settings_battery_optimization_title">Battery optimization</string>
