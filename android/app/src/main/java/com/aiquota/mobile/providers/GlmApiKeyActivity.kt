@@ -14,11 +14,17 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
+import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.R
+import com.aiquota.mobile.accounts.AccountKey
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
 import com.aiquota.mobile.local.ThemePreferencesRepository
 import com.aiquota.mobile.local.LocalUsageRepository
 import com.aiquota.mobile.local.ProviderId
+import com.aiquota.mobile.local.ProviderUsageSnapshot
 import com.aiquota.mobile.localization.withAppLanguageForDeviceLanguage
 import com.aiquota.mobile.ui.appLayoutMetrics
 import com.aiquota.mobile.ui.provider.providerIconRes
@@ -33,9 +39,12 @@ import kotlinx.coroutines.launch
 import android.widget.FrameLayout
 import com.aiquota.mobile.ui.ads.ActivityTopBanner
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.withContext
+import java.util.UUID
 
 internal suspend fun runGlmWebOAuthStartSequence(
     clearStaleSession: suspend () -> Unit,
@@ -54,6 +63,31 @@ class GlmApiKeyActivity : ComponentActivity() {
     private lateinit var webOAuthButton: TextView
     private lateinit var topBanner: ActivityTopBanner
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var exactLogin: ExactSingleAccountLogin? = null
+    private var finished = false
+    private var webLoginNonce: String? = null
+    private val webLoginLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val session = exactLogin ?: return@registerForActivityResult
+        val nonce = webLoginNonce ?: return@registerForActivityResult
+        webLoginNonce = null
+        if (!session.isCurrent()) {
+            finish()
+            return@registerForActivityResult
+        }
+        val loginResult = if (result.resultCode == RESULT_OK) {
+            GlmExactLoginRelay.consumeResult(result.data, session.binding.accountId, nonce)
+        } else null
+        if (loginResult == null) {
+            statusText.text = getString(R.string.glm_connection_status_choose)
+            setActionControlsEnabled(true)
+            return@registerForActivityResult
+        }
+        completeExactLogin(loginResult.snapshot) {
+            GlmUsageRepository(applicationContext).saveAuthenticatedWebSession(
+                loginResult.cookieHeader, loginResult.requestHeaders,
+            )
+        }
+    }
 
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(newBase.withAppLanguageForDeviceLanguage())
@@ -61,10 +95,19 @@ class GlmApiKeyActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
+            exactLogin = ExactSingleAccountLogin.open(this, intent, savedInstanceState)
+            if (exactLogin?.binding?.accountId?.providerId != ProviderId.GLM) {
+                finish()
+                return
+            }
+            webLoginNonce = savedInstanceState?.getString(STATE_WEB_LOGIN_NONCE)
+        }
         title = getString(R.string.glm_connection_title)
         // 이 화면도 전면을 덮으므로 상단 배너를 유지한다.
         topBanner = ActivityTopBanner(this)
         setContentView(createContentView())
+        if (webLoginNonce != null) setActionControlsEnabled(false)
     }
 
     private fun createContentView(): View {
@@ -182,7 +225,15 @@ class GlmApiKeyActivity : ComponentActivity() {
     override fun onDestroy() {
         if (::topBanner.isInitialized) topBanner.destroy()
         activityScope.cancel()
+        if (!finished && !isChangingConfigurations) exactLogin?.cancel()
+        exactLogin?.close()
         super.onDestroy()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        exactLogin?.saveState(outState)
+        webLoginNonce?.let { outState.putString(STATE_WEB_LOGIN_NONCE, it) }
+        super.onSaveInstanceState(outState)
     }
 
     private fun header(style: WidgetConfigureStyle): LinearLayout {
@@ -265,21 +316,35 @@ class GlmApiKeyActivity : ComponentActivity() {
                         ProviderWebSessionCleaner.clearProviderWebSessionAndWait(applicationContext, ProviderId.GLM)
                     },
                     selectWebOAuthMode = {
+                        check(exactLogin?.isCurrent() != false)
                         GlmUsageRepository(applicationContext).useWebOAuth()
                     },
                     openLogin = {
-                        val intent = WebLoginActivity.createIntent(
-                            this@GlmApiKeyActivity,
-                            ProviderId.GLM,
-                            GlmProviderUrls.WEB_LOGIN_URL
-                        )
-                        startActivity(intent)
+                        val session = exactLogin
+                        if (session != null) {
+                            val nonce = UUID.randomUUID().toString()
+                            webLoginNonce = nonce
+                            webLoginLauncher.launch(
+                                GlmExactLoginRelay.launchIntent(this@GlmApiKeyActivity, session.binding.accountId, nonce)
+                            )
+                        } else {
+                            startActivity(WebLoginActivity.createIntent(
+                                this@GlmApiKeyActivity, ProviderId.GLM, GlmProviderUrls.WEB_LOGIN_URL
+                            ))
+                        }
                     }
                 )
             }
             result.onSuccess {
-                finish()
-            }.onFailure {
+                if (exactLogin == null) finish()
+            }.onFailure { error ->
+                if (error is CancellationException) throw error
+                if (isFinishing || isDestroyed) return@onFailure
+                webLoginNonce = null
+                if (exactLogin?.isCurrent() == false) {
+                    finish()
+                    return@onFailure
+                }
                 val repository = LocalUsageRepository(applicationContext)
                 repository.failKeepingPrevious(
                     ProviderId.GLM,
@@ -308,16 +373,47 @@ class GlmApiKeyActivity : ComponentActivity() {
         setActionControlsEnabled(false)
         statusText.text = getString(R.string.glm_connection_status_collecting)
         val appContext = applicationContext
-        Thread {
+        if (exactLogin == null) {
+            Thread {
+                val glmRepository = GlmUsageRepository(appContext)
+                glmRepository.saveApiKey(apiKey)
+                LocalUsageRepository(appContext).markCollecting(ProviderId.GLM)
+                UsageSurfaceRefresher.refresh(appContext, LocalUsageRepository(appContext))
+                val result = glmRepository.fetchUsagePayloadFromStoredCredential()
+                runOnUiThread { handleResult(result) }
+            }.start()
+            return
+        }
+        lifecycleScope.launch {
             val glmRepository = GlmUsageRepository(appContext)
-            glmRepository.saveApiKey(apiKey)
-            LocalUsageRepository(appContext).markCollecting(ProviderId.GLM)
-            UsageSurfaceRefresher.refresh(appContext, LocalUsageRepository(appContext))
-            val result = glmRepository.fetchUsagePayloadFromStoredCredential()
-            runOnUiThread {
+            val result = withContext(Dispatchers.IO) {
+                GlmUsageFetcher.fetchUsagePayload(apiKey)
+            }
+            if (exactLogin?.isCurrent() == false) {
+                finish()
+                return@launch
+            }
+            if (exactLogin != null && result.payload != null) {
+                val snapshot = ProviderUsageNormalizer.normalize(
+                    ProviderId.GLM, result.payload, ProviderPayloadSource.PROVIDER_API
+                ) ?: ProviderUsageSnapshot.connectedWithoutUsage(
+                    ProviderId.GLM, getString(R.string.glm_connection_status_payload_unavailable, result.diagnostic)
+                )
+                completeExactLogin(snapshot) { glmRepository.saveApiKey(apiKey); true }
+            } else {
                 handleResult(result)
             }
-        }.start()
+        }
+    }
+
+    private fun completeExactLogin(snapshot: ProviderUsageSnapshot, persistCredential: () -> Boolean) {
+        if (exactLogin?.complete(snapshot, persistCredential) == true) {
+            finished = true
+            val repository = LocalUsageRepository(applicationContext)
+            repository.saveSnapshot(snapshot)
+            UsageSurfaceRefresher.refresh(applicationContext, repository)
+        }
+        finish()
     }
 
     private fun handleResult(result: GlmUsageResult) {
@@ -333,14 +429,16 @@ class GlmApiKeyActivity : ComponentActivity() {
                 finish()
             }
             result.requiresAuth -> {
-                GlmUsageRepository(appContext).clear()
+                if (exactLogin == null) GlmUsageRepository(appContext).clear()
                 LocalUsageRepository(appContext).markSessionExpired(
                     ProviderId.GLM,
                     getString(R.string.glm_connection_status_invalid_key)
                 )
                 UsageSurfaceRefresher.refresh(appContext, LocalUsageRepository(appContext))
-                statusText.text = getString(R.string.glm_connection_status_invalid_key)
-                setActionControlsEnabled(true)
+                if (!isFinishing && !isDestroyed) {
+                    statusText.text = getString(R.string.glm_connection_status_invalid_key)
+                    setActionControlsEnabled(true)
+                }
             }
             else -> {
                 val message = getString(
@@ -352,8 +450,10 @@ class GlmApiKeyActivity : ComponentActivity() {
                     message
                 )
                 UsageSurfaceRefresher.refresh(appContext, LocalUsageRepository(appContext))
-                statusText.text = message
-                setActionControlsEnabled(true)
+                if (!isFinishing && !isDestroyed) {
+                    statusText.text = message
+                    setActionControlsEnabled(true)
+                }
             }
         }
     }
@@ -393,8 +493,15 @@ class GlmApiKeyActivity : ComponentActivity() {
     }
 
     companion object {
-        fun createIntent(context: Context): Intent {
+        private const val STATE_WEB_LOGIN_NONCE = "glm.webLoginNonce"
+
+        fun createIntent(
+            context: Context,
+            accountId: ProviderAccountId = ProviderAccountId(ProviderId.GLM, AccountKey.reservedDefault()),
+        ): Intent {
+            require(accountId.providerId == ProviderId.GLM)
             return Intent(context, GlmApiKeyActivity::class.java)
+                .putExtra(WebLoginActivity.EXTRA_PROVIDER_ACCOUNT_ID, ProviderAccountIdStorageCodec.encode(accountId))
         }
     }
 }

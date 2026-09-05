@@ -16,9 +16,15 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.TextView
+import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.local.LocalUsageRepository
+import com.aiquota.mobile.accounts.AccountKey
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
 import com.aiquota.mobile.local.ProviderId
+import com.aiquota.mobile.local.ProviderUsageSnapshot
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -36,9 +42,17 @@ class AntigravityLoopbackOAuthActivity : Activity() {
     private lateinit var webView: WebView
     private lateinit var statusView: TextView
     private lateinit var topBanner: ActivityTopBanner
+    private var exactLogin: ExactSingleAccountLogin? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
+            exactLogin = ExactSingleAccountLogin.open(this, intent, savedInstanceState)
+            if (exactLogin?.binding?.accountId?.providerId != ProviderId.ANTIGRAVITY) {
+                finish()
+                return
+            }
+        }
         LocalUsageRepository(applicationContext).markConnecting(ProviderId.ANTIGRAVITY)
         // 이 화면도 전면을 덮으므로 대시보드와 같은 배너를 상단에 유지한다.
         topBanner = ActivityTopBanner(this)
@@ -84,14 +98,22 @@ class AntigravityLoopbackOAuthActivity : Activity() {
             webView.stopLoading()
             webView.destroy()
         }
-        if (!finished) {
+        if (!finished && !isChangingConfigurations &&
+            (!BuildConfig.MULTI_ACCOUNT_ENABLED || exactLogin?.cancel() == true)
+        ) {
             LocalUsageRepository(applicationContext).markLoginCancelled(
                 ProviderId.ANTIGRAVITY,
                 "Provider login was cancelled."
             )
             UsageSurfaceRefresher.refresh(applicationContext, LocalUsageRepository(applicationContext))
         }
+        exactLogin?.close()
         super.onDestroy()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        exactLogin?.saveState(outState)
+        super.onSaveInstanceState(outState)
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -126,6 +148,7 @@ class AntigravityLoopbackOAuthActivity : Activity() {
                     AntigravityFirebaseGateway(applicationContext).startOAuth()
                 }
             }.onFailure { error ->
+                if (error is CancellationException) throw error
                 Log.w(TAG, "webviewOAuth startFailed=${error.javaClass.simpleName}")
             }.getOrNull()
             if (authorizationUrl.isNullOrBlank()) {
@@ -152,16 +175,50 @@ class AntigravityLoopbackOAuthActivity : Activity() {
             val outcome = runCatching {
                 withContext(Dispatchers.IO) {
                     val tokenResult = AntigravityFirebaseGateway(applicationContext).completeOAuth(url)
-                    repository.fetchUsagePayloadFromGatewayTokenResult(tokenResult)
+                    val payload = if (exactLogin == null) {
+                        repository.fetchUsagePayloadFromGatewayTokenResult(tokenResult)
+                    } else if (tokenResult.ok && !tokenResult.accessToken.isNullOrBlank()) {
+                        repository.fetchUsagePayloadWithAccessToken(tokenResult.accessToken, email = null)
+                    } else {
+                        null
+                    }
+                    tokenResult to payload
                 }
             }.onFailure { error ->
+                if (error is CancellationException) throw error
                 Log.w(
                     TAG,
-                    "webviewOAuth completeFailed=${error.javaClass.simpleName} code=${error.message}"
+                    "webviewOAuth completeFailed=${error.javaClass.simpleName}"
                 )
             }
-            val payload = outcome.getOrNull()
+            if (isFinishing || isDestroyed) return@launch
+            val tokenResult = outcome.getOrNull()?.first
+            val payload = outcome.getOrNull()?.second
             val diagnostic = repository.lastFailureDiagnostic()
+            exactLogin?.let { session ->
+                if (!session.isCurrent()) {
+                    finish()
+                } else if (AntigravityOAuthErrorPolicy.requiresFreshSignIn(outcome.exceptionOrNull())) {
+                    finishSignInExpired()
+                } else if (tokenResult?.ok == true && !tokenResult.accessToken.isNullOrBlank()) {
+                    val snapshot = payload?.let {
+                        ProviderUsageNormalizer.normalize(ProviderId.ANTIGRAVITY, it, ProviderPayloadSource.PROVIDER_API)
+                    } ?: ProviderUsageSnapshot.connectedWithoutUsage(
+                        ProviderId.ANTIGRAVITY,
+                        diagnostic ?: "Antigravity OAuth completed, but quota payload was not available."
+                    )
+                    if (session.complete(snapshot) { repository.saveGatewayTokenResult(tokenResult) }) {
+                        finished = true
+                        val usageRepository = LocalUsageRepository(applicationContext)
+                        usageRepository.saveSnapshot(snapshot)
+                        UsageSurfaceRefresher.refresh(applicationContext, usageRepository)
+                    }
+                    finish()
+                } else {
+                    failKeepingPrevious("Antigravity token exchange did not complete.", "antigravity_oauth_token_failed")
+                }
+                return@launch
+            }
             if (!payload.isNullOrBlank()) {
                 completeWithPayload(payload)
             } else if (AntigravityOAuthErrorPolicy.requiresFreshSignIn(outcome.exceptionOrNull())) {
@@ -214,6 +271,10 @@ class AntigravityLoopbackOAuthActivity : Activity() {
 
     private fun finishSignInExpired() {
         if (finished) return
+        if (exactLogin?.cancel() == false) {
+            finish()
+            return
+        }
         finished = true
         val repository = LocalUsageRepository(applicationContext)
         repository.markSessionExpired(
@@ -227,6 +288,10 @@ class AntigravityLoopbackOAuthActivity : Activity() {
 
     private fun failKeepingPrevious(message: String, errorKind: String) {
         if (finished) return
+        if (exactLogin?.cancel() == false) {
+            finish()
+            return
+        }
         finished = true
         val repository = LocalUsageRepository(applicationContext)
         repository.failKeepingPrevious(ProviderId.ANTIGRAVITY, message)
@@ -238,8 +303,13 @@ class AntigravityLoopbackOAuthActivity : Activity() {
     companion object {
         private const val TAG = "AIQuotaAntigravity"
 
-        fun createIntent(context: Context): Intent {
+        fun createIntent(
+            context: Context,
+            accountId: ProviderAccountId = ProviderAccountId(ProviderId.ANTIGRAVITY, AccountKey.reservedDefault()),
+        ): Intent {
+            require(accountId.providerId == ProviderId.ANTIGRAVITY)
             return Intent(context, AntigravityLoopbackOAuthActivity::class.java)
+                .putExtra(WebLoginActivity.EXTRA_PROVIDER_ACCOUNT_ID, ProviderAccountIdStorageCodec.encode(accountId))
         }
     }
 }

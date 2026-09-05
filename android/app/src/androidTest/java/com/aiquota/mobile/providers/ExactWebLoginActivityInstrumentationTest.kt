@@ -20,6 +20,7 @@ import androidx.webkit.ProfileStore
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import com.aiquota.mobile.BuildConfig
 import com.aiquota.mobile.accounts.AccountAuthState
 import com.aiquota.mobile.accounts.AccountDeletionState
 import com.aiquota.mobile.accounts.AccountGeneration
@@ -44,6 +45,7 @@ import java.util.concurrent.atomic.AtomicReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Before
@@ -103,6 +105,43 @@ class ExactWebLoginActivityInstrumentationTest {
             assertTrue(pages.await(TIMEOUT_SECONDS, TimeUnit.SECONDS))
             assertEquals(listOf("B", "B"), observed.toList())
             assertTrue(CookieManager.getInstance().getCookie(SYNTHETIC_URL).orEmpty().contains(fixture.globalCookie))
+        }
+    }
+
+    @Test
+    fun productionNonNamedExactLoginUsesDefaultCookieSourceWithoutNamedLease() {
+        supportedNonNamed()
+        val accountId = ProviderAccountId(ProviderId.OPENCODE, AccountKey.reservedDefault())
+        MainProcessAccountAuthority.open(context).use { authority ->
+            authority.register(
+                AuthorityAccountSeed(
+                    AccountRecord(
+                        accountId,
+                        AccountState.ACTIVE,
+                        AccountAuthState.AUTHENTICATED,
+                        AccountDeletionState.NONE,
+                        AccountGeneration.of(1),
+                        SessionRevision.of(1),
+                    ),
+                    ProviderUsageSnapshot.disconnected(ProviderId.OPENCODE),
+                )
+            )
+        }
+        val defaultCookie = "opencode_default_session=default"
+        setCookie(CookieManager.getInstance(), OPENCODE_USAGE_URL, defaultCookie)
+
+        ActivityScenario.launch<WebLoginActivity>(
+            WebLoginActivity.createIntent(context, accountId, IDLE_URL)
+        ).use { scenario ->
+            scenario.onActivity { activity ->
+                assertEquals(accountId, requireNotNull(activity.exactBindingForTest()).accountId)
+                assertNull(activity.exactProfileNameForTest())
+                assertTrue(
+                    activity.exactNativeRequestHeadersForTest(OPENCODE_USAGE_URL)["Cookie"]
+                        .orEmpty()
+                        .contains(defaultCookie),
+                )
+            }
         }
     }
 
@@ -240,8 +279,21 @@ class ExactWebLoginActivityInstrumentationTest {
     }
 
     private fun supported() {
+        assumeTrue(BuildConfig.MULTI_ACCOUNT_ENABLED)
         assumeTrue(WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE))
         assumeTrue(WebViewFeature.isFeatureSupported(WebViewFeature.DELETE_BROWSING_DATA))
+    }
+
+    private fun supportedNonNamed() {
+        assumeTrue(BuildConfig.MULTI_ACCOUNT_ENABLED)
+    }
+
+    private fun setCookie(manager: CookieManager, url: String, value: String) {
+        val completed = CountDownLatch(1)
+        instrumentation.runOnMainSync {
+            manager.setCookie(url, "$value; Path=/") { completed.countDown() }
+        }
+        assertTrue(completed.await(TIMEOUT_SECONDS, TimeUnit.SECONDS))
     }
 
     private fun attach(
@@ -396,6 +448,7 @@ class ExactWebLoginActivityInstrumentationTest {
         const val TIMEOUT_SECONDS = 20L
         const val SYNTHETIC_URL = "https://appassets.androidplatform.net/task14-correction/page.html"
         const val CODEX_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage"
+        const val OPENCODE_USAGE_URL = "https://opencode.ai/workspace/wrk_123/go"
         const val IDLE_URL = "data:text/html,<html><body>task14-idle</body></html>"
         const val HTML = "<!doctype html>task14"
     }

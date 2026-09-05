@@ -14,6 +14,11 @@ data class GlmUsageResult(
     val diagnostic: String
 )
 
+internal fun usableGlmWebSession(cookieHeader: String?, headers: Map<String, String>): Boolean =
+    !cookieHeader.isNullOrBlank() && headers.any { (name, value) ->
+        name.equals("Authorization", ignoreCase = true) && value.isNotBlank()
+    }
+
 object GlmProviderUrls {
     const val WEB_LOGIN_URL = "https://chat.z.ai/auth"
     const val WEB_CHAT_URL = "https://z.ai/chat"
@@ -275,6 +280,17 @@ class GlmUsageRepository private constructor(
     fun useWebOAuth() {
         dependencies.webSessionStore.clear()
         dependencies.modeStore?.save(GlmConnectionMode.WEB_OAUTH)
+    }
+
+    internal fun saveAuthenticatedWebSession(cookieHeader: String?, headers: Map<String, String>): Boolean {
+        if (!usableGlmWebSession(cookieHeader, headers)) return false
+        useWebOAuth()
+        saveWebSessionCookieHeader(cookieHeader)
+        saveWebSessionRequestHeaders(headers)
+        return usableGlmWebSession(
+            dependencies.webSessionStore.cookieHeader(),
+            dependencies.webSessionStore.requestHeaders(),
+        )
     }
 
     fun saveWebSessionCookieHeader(cookieHeader: String?) {

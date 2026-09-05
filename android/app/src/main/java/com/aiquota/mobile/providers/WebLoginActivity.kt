@@ -72,6 +72,7 @@ open class WebLoginActivity : Activity() {
     private var exactLoginComposition: AndroidExactAccountLoginComposition? = null
     private var exactLoginBinding: AccountLoginSessionBinding? = null
     private var namedProfileLease: NamedProfileLease? = null
+    private var glmExactLoginRelay: GlmExactLoginLaunch? = null
     private lateinit var rootContainer: FrameLayout
     private lateinit var titleView: TextView
     private lateinit var topBanner: ActivityTopBanner
@@ -79,6 +80,7 @@ open class WebLoginActivity : Activity() {
     private var loginTitleHeightPx = 0
     private var mainWebViewDestroyed = false
     private var exactLoginResultSet = false
+    private var glmExactLoginRelayResultSet = false
     @Volatile
     private var finished = false
     private var firstPageLogged = false
@@ -163,11 +165,21 @@ open class WebLoginActivity : Activity() {
             return
         }
         providerId = accountId.providerId
+        if (BuildConfig.MULTI_ACCOUNT_ENABLED && this is GlmWebLoginActivity) {
+            val relay = GlmExactLoginRelay.readLaunch(intent)
+            if (providerId != ProviderId.GLM || relay == null || relay.accountId != accountId) {
+                finished = true
+                setResult(RESULT_CANCELED)
+                finish()
+                return
+            }
+            glmExactLoginRelay = relay
+        }
         // 카드 상태는 authority가 들고 있으므로 provider를 가리지 않고 이 경로로 완료해야 한다.
         // named profile provider(Claude·Codex)만 태우던 동안에는 나머지 provider가 로그인에
         // 성공해도 카드가 "연결 끊김"에 머물렀다(2026-09-04 실측: Kiro 사용량 수집 성공 후에도
         // auth_state=SIGNED_OUT). 프로필 임대는 여전히 named provider만 잡는다.
-        if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
+        if (BuildConfig.MULTI_ACCOUNT_ENABLED && glmExactLoginRelay == null) {
             val composition = AndroidExactAccountLoginComposition.open(this)
             exactLoginComposition = composition
             val restoredBinding = savedInstanceState?.takeIf {
@@ -215,7 +227,7 @@ open class WebLoginActivity : Activity() {
         }
         val definition = ProviderDefinitionRegistry.definitionFor(providerId)
         val repository = LocalUsageRepository(applicationContext)
-        val exactNamedLogin = exactLoginBinding != null
+        val exactNamedLogin = exactLoginBinding != null || glmExactLoginRelay != null
         val previousConnectionState = if (exactNamedLogin) null else {
             repository.readSnapshots().firstOrNull { it.providerId == providerId }?.connectionState
         }
@@ -295,6 +307,8 @@ open class WebLoginActivity : Activity() {
             if (binding != null && exact != null) {
                 exact.coordinator.fail(binding)
                 setExactLoginResult(EXACT_RESULT_REAUTH_REQUIRED)
+            } else if (glmExactLoginRelay != null) {
+                setGlmExactLoginCanceled()
             } else if (oauthCallbackHandled && isGoogleProvider()) {
                 Log.i(
                     "AIQuotaLogin",
@@ -420,6 +434,39 @@ open class WebLoginActivity : Activity() {
     internal fun exactProfileNameForTest(): String? = namedProfileLease?.profileName?.storageValue()
 
     internal fun exactPopupProfileNameForTest(popup: WebView): String? = exactPopupProfileNames[popup]
+
+    private fun finishGlmExactRelay(snapshot: ProviderUsageSnapshot) {
+        val relay = glmExactLoginRelay ?: return
+        if (finished) return
+        val resultIntent = GlmExactLoginRelay.successResultIntent(
+            accountId = relay.accountId,
+            nonce = relay.nonce,
+            snapshot = snapshot,
+            cookieHeader = captureGlmWebSessionCookieHeader(preferCurrent = true),
+            requestHeaders = glmNativeFetchHeaders.toMap(),
+        )
+        if (resultIntent == null) {
+            finished = true
+            setGlmExactLoginCanceled()
+            finish()
+            return
+        }
+        finished = true
+        loginCookieManager().flush()
+        setResult(RESULT_OK, resultIntent)
+        glmExactLoginRelayResultSet = true
+        finish()
+    }
+
+    private fun setGlmExactLoginCanceled() {
+        val relay = glmExactLoginRelay ?: return
+        if (glmExactLoginRelayResultSet) return
+        setResult(
+            RESULT_CANCELED,
+            GlmExactLoginRelay.failureResultIntent(relay.accountId, relay.nonce),
+        )
+        glmExactLoginRelayResultSet = true
+    }
 
     private fun setExactLoginResult(status: String) {
         val binding = exactLoginBinding
@@ -1347,7 +1394,9 @@ open class WebLoginActivity : Activity() {
         glmNativeCollectionStarted = true
         loginCookieManager().flush()
         captureGlmWebSessionCookieHeader()?.let {
-            GlmUsageRepository(applicationContext).saveWebSessionCookieHeader(it)
+            if (glmExactLoginRelay == null) {
+                GlmUsageRepository(applicationContext).saveWebSessionCookieHeader(it)
+            }
         }
         collectorInjectionKeys.clear()
         noteBridgePageUrl("about:blank")
@@ -1398,6 +1447,7 @@ open class WebLoginActivity : Activity() {
 
     private fun saveGlmWebSessionCookieHeader(reason: String, preferCurrent: Boolean = false) {
         val cookieHeader = captureGlmWebSessionCookieHeader(preferCurrent = preferCurrent) ?: return
+        if (glmExactLoginRelay != null) return
         GlmUsageRepository(applicationContext).saveWebSessionCookieHeader(cookieHeader)
         Log.i("AIQuotaLogin", "provider=glm webSessionCookieSaved=true reason=$reason")
     }
@@ -1419,7 +1469,9 @@ open class WebLoginActivity : Activity() {
             glmAuthorizedQuotaResourceSeen = true
             glmNativeFetchHeaders.clear()
             glmNativeFetchHeaders.putAll(headers)
-            GlmUsageRepository(applicationContext).saveWebSessionRequestHeaders(headers)
+            if (glmExactLoginRelay == null) {
+                GlmUsageRepository(applicationContext).saveWebSessionRequestHeaders(headers)
+            }
             saveGlmWebSessionCookieHeader("auth_header_resource", preferCurrent = true)
         }
         Log.i(
@@ -1615,7 +1667,13 @@ open class WebLoginActivity : Activity() {
     ): ProviderNativeJsonRequest? {
         val binding = exactLoginBinding ?: return null
         val lease = namedProfileLease
-        if (lease == null || binding.accountId != accountId || requestProviderId != accountId.providerId) {
+        if (binding.accountId != accountId || requestProviderId != accountId.providerId) {
+            exactLoginComposition?.coordinator?.fail(binding)
+            return null
+        }
+        val cookieSource = lease?.cookieSource ?: if (binding.accountId.providerId !in NAMED_PROFILE_PROVIDERS) {
+            ProviderNativeJsonBridge.legacyGlobalCookieSource()
+        } else {
             exactLoginComposition?.coordinator?.fail(binding)
             return null
         }
@@ -1624,7 +1682,7 @@ open class WebLoginActivity : Activity() {
             url,
             userAgent,
             headers,
-            lease.cookieSource,
+            cookieSource,
         )
     }
 
@@ -2094,6 +2152,20 @@ open class WebLoginActivity : Activity() {
         source: String = ProviderUsageCollectionService.SOURCE_LOGIN
     ) {
         if (finished) return
+        glmExactLoginRelay?.let {
+            val snapshot = rawPayload?.let { payload ->
+                ProviderUsageNormalizer.normalize(
+                    ProviderId.GLM,
+                    payload,
+                    ProviderPayloadSource.STRUCTURED_SCRIPT,
+                )
+            } ?: ProviderUsageSnapshot.connectedWithoutUsage(
+                ProviderId.GLM,
+                "Connected. Usage quota is not available yet.",
+            )
+            finishGlmExactRelay(snapshot)
+            return
+        }
         val composition = exactLoginComposition
         val binding = exactLoginBinding
         if (composition != null && binding != null) {
@@ -2293,6 +2365,17 @@ open class WebLoginActivity : Activity() {
 
     private fun finishGlmNoSubscription(errorKind: String) {
         if (finished) return
+        if (glmExactLoginRelay != null) {
+            finishGlmExactRelay(
+                ProviderUsageSnapshot.connectedWithoutPlan(
+                    providerId = ProviderId.GLM,
+                    previous = null,
+                    planLabel = GlmNoSubscriptionPolicy.PLAN_LABEL,
+                    message = GlmNoSubscriptionPolicy.MESSAGE,
+                )
+            )
+            return
+        }
         finished = true
         loginCookieManager().flush()
         captureDebugProviderSessionCookies("connected_without_plan")
@@ -2310,6 +2393,10 @@ open class WebLoginActivity : Activity() {
 
     private fun finishConnectedWithoutUsage(message: String, errorKind: String) {
         if (finished) return
+        if (glmExactLoginRelay != null) {
+            finishGlmExactRelay(ProviderUsageSnapshot.connectedWithoutUsage(ProviderId.GLM, message))
+            return
+        }
         if (exactLoginBinding != null) {
             finishSuccessfulLogin(null)
             return
@@ -2359,6 +2446,12 @@ open class WebLoginActivity : Activity() {
 
     private fun failKeepingPrevious(message: String, errorKind: String) {
         if (finished) return
+        if (glmExactLoginRelay != null) {
+            finished = true
+            setGlmExactLoginCanceled()
+            finish()
+            return
+        }
         val composition = exactLoginComposition
         val binding = exactLoginBinding
         if (composition != null && binding != null) {
@@ -2408,7 +2501,7 @@ open class WebLoginActivity : Activity() {
 
     private fun captureDebugProviderSessionCookies(reason: String, includeNativeAuthContext: Boolean = false) {
         if (providerId == ProviderId.GEMINI) return
-        if (exactLoginBinding != null) return
+        if (exactLoginBinding != null || glmExactLoginRelay != null) return
         val nativeAuthContext = if (includeNativeAuthContext && providerId == ProviderId.CODEX) {
             CodexNativeHeaderStore.snapshotAuthContext(codexNativeFetchHeaders)
         } else {

@@ -9,6 +9,18 @@ import org.junit.Test
 
 class GlmApiKeyActivityTest {
     @Test
+    fun legacyCollectionSurvivesActivityScopeCancellationAndGuardsUiUpdates() {
+        val source = File("src/main/java/com/aiquota/mobile/providers/GlmApiKeyActivity.kt").readText()
+        val legacy = source.substringAfter("val appContext = applicationContext\n        if (exactLogin == null)")
+            .substringBefore("lifecycleScope.launch")
+        assertTrue(legacy.contains("Thread {"))
+        assertTrue(legacy.contains("runOnUiThread { handleResult(result) }"))
+        val handling = source.substringAfter("private fun handleResult")
+            .substringBefore("private fun setActionControlsEnabled")
+        assertTrue(handling.contains("if (!isFinishing && !isDestroyed)"))
+    }
+
+    @Test
     fun glmConnectionScreenUsesAppThemeInsteadOfPlainPlatformButtons() {
         val source = File("src/main/java/com/aiquota/mobile/providers/GlmApiKeyActivity.kt").readText()
 

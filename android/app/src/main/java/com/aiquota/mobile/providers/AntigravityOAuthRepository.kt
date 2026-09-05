@@ -86,11 +86,20 @@ class AntigravityOAuthRepository(context: Context) {
 
     fun fetchUsagePayloadFromGatewayTokenResult(tokenResult: AntigravityTokenExchangeResult): String? {
         lastFailureDiagnostic = null
+        if (!saveGatewayTokenResult(tokenResult)) return null
+        return fetchUsagePayloadWithAccessToken(requireNotNull(tokenResult.accessToken), email = null)
+    }
+
+    internal fun saveGatewayTokenResult(tokenResult: AntigravityTokenExchangeResult): Boolean {
         if (!tokenResult.ok) {
-            return unavailable("Antigravity Firebase token exchange did not complete.")
+            unavailable("Antigravity Firebase token exchange did not complete.")
+            return false
         }
         val accessToken = tokenResult.accessToken?.takeIf { it.isNotBlank() }
-            ?: return unavailable("Antigravity Firebase token response did not include an access token.")
+        if (accessToken == null) {
+            unavailable("Antigravity Firebase token response did not include an access token.")
+            return false
+        }
         saveTokens(
             tokenJson = tokenResult.toJsonObject(),
             accessToken = accessToken,
@@ -102,7 +111,7 @@ class AntigravityOAuthRepository(context: Context) {
             "collection antigravityOAuthUsage firebaseTokenExchange accessToken=true " +
                 "refreshToken=${!tokenResult.refreshToken.isNullOrBlank()}"
         )
-        return fetchUsagePayloadWithAccessToken(accessToken, email = null)
+        return true
     }
 
     private fun loadCodeAssist(accessToken: String): JSONObject? {

@@ -70,6 +70,31 @@ class ExactAccountLoginCoordinatorTest {
     }
 
     @Test
+    fun resumeNonNamedExactDefaultPreservesDefaultSessionAndRejectsStaleBinding() {
+        val fixture = Fixture()
+        val default = defaultId(ProviderId.OPENCODE)
+        fixture.authority.seed(default)
+        val opened = fixture.open(default)
+
+        assertEquals(
+            ExactAccountLoginStartResult.Opened(opened.binding, null),
+            fixture.restartedCoordinator().resume(opened.binding),
+        )
+        assertEquals("AUTHENTICATING", fixture.authority.state(default))
+        assertTrue(fixture.profileStore.readAll().isEmpty())
+
+        fixture.authority.bumpGenerationAndSession(default)
+        assertEquals(
+            ExactAccountLoginStartResult.Rejected(
+                LoginStartRejection.MISSING_ACCOUNT,
+                opened.binding,
+            ),
+            fixture.restartedCoordinator().resume(opened.binding),
+        )
+        assertEquals("AUTHENTICATING", fixture.authority.state(default))
+    }
+
+    @Test
     fun codexMarkersStayExactAcrossResultRestartLogoutAndVersionChanges() {
         val fixture = Fixture()
         val a = id(ProviderId.CODEX, 1)

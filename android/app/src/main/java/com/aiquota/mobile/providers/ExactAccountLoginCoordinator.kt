@@ -118,6 +118,9 @@ class ExactAccountLoginCoordinator(
         if (!authority.resumeAuthentication(binding)) {
             return ExactAccountLoginStartResult.Rejected(LoginStartRejection.MISSING_ACCOUNT, binding)
         }
+        if (binding.accountId.providerId !in NAMED_PROFILE_PROVIDERS) {
+            return ExactAccountLoginStartResult.Opened(binding, null)
+        }
         return when (val result = profiles.acquireTyped(binding.accountId)) {
             is LeaseAcquireResult.Acquired -> ExactAccountLoginStartResult.Opened(binding, result.lease)
             LeaseAcquireResult.ProfileUnavailable,

@@ -527,8 +527,8 @@ fun AIQuotaAppShell(
             providerSessionResetter.awaitProviderWebSessionCleanup(accountId.providerId)
             val launchResult = runCatching {
                 val loginIntent = when (accountId.providerId) {
-                    ProviderId.GLM -> GlmApiKeyActivity.createIntent(launchContext)
-                    ProviderId.ANTIGRAVITY -> AntigravityLoopbackOAuthActivity.createIntent(launchContext)
+                    ProviderId.GLM -> GlmApiKeyActivity.createIntent(launchContext, accountId)
+                    ProviderId.ANTIGRAVITY -> AntigravityLoopbackOAuthActivity.createIntent(launchContext, accountId)
                     else -> WebLoginActivity.createIntent(launchContext, accountId, startUrl)
                 }
                 if (launchContext !is Activity) loginIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -849,6 +849,14 @@ fun AIQuotaAppShell(
 
     DisposableEffect(cardRuntime) {
         onDispose { cardRuntime.close() }
+    }
+
+    LaunchedEffect(cardRuntime) {
+        if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
+            com.aiquota.mobile.accounts.MainProcessAccountAuthority.changes.collect {
+                cardRuntime.reload()
+            }
+        }
     }
 
     DisposableEffect(localUsageRepository) {

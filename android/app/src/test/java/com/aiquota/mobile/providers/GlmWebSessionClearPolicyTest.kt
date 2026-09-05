@@ -9,6 +9,16 @@ import org.junit.Test
 
 class GlmWebSessionClearPolicyTest {
     @Test
+    fun relayChildDoesNotReadOrMarkLegacyUsageOrCaptureDebugCredentials() {
+        val source = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        assertTrue(source.contains("val exactNamedLogin = exactLoginBinding != null || glmExactLoginRelay != null"))
+        assertTrue(source.contains("if (!exactNamedLogin) repository.markConnecting(providerId)"))
+        val capture = source.substringAfter("private fun captureDebugProviderSessionCookies")
+            .substringBefore("private fun captureGlmWebSessionCookieHeader")
+        assertTrue(capture.contains("if (exactLoginBinding != null || glmExactLoginRelay != null) return"))
+    }
+
+    @Test
     fun claudeCookieUrlsIncludeRootVariants() {
         val cookieUrls = ProviderWebSessionClearPolicy.cookieUrls(ProviderId.CLAUDE)
 
@@ -135,6 +145,41 @@ class GlmWebSessionClearPolicyTest {
         assertTrue(loginActivity.contains("ProviderId.GLM -> GlmWebLoginActivity::class.java"))
         assertTrue(loginActivity.contains("else -> WebLoginActivity::class.java"))
         assertTrue(application.contains("GlmIsolatedWebViewProfile.configureIfNeeded(this)"))
+    }
+
+    @Test
+    fun glmReleaseWebLoginDoesNotRequireMultiAccountRelay() {
+        val loginActivity = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val relayGuard = loginActivity
+            .substringAfter("providerId = accountId.providerId")
+            .substringBefore("// 카드 상태")
+
+        assertTrue(
+            relayGuard.contains("if (BuildConfig.MULTI_ACCOUNT_ENABLED && this is GlmWebLoginActivity)")
+        )
+        assertTrue(relayGuard.contains("GlmExactLoginRelay.readLaunch(intent)"))
+    }
+
+    @Test
+    fun glmExactRelayKeepsChildSessionContextOutOfPersistentRepository() {
+        val loginActivity = File("src/main/java/com/aiquota/mobile/providers/WebLoginActivity.kt").readText()
+        val nativeCollection = loginActivity
+            .substringAfter("private fun maybeStartGlmNativeCollection")
+            .substringBefore("private fun recoverGlmAuthRequiredFromNativeCollection")
+        val cookieCapture = loginActivity
+            .substringAfter("private fun saveGlmWebSessionCookieHeader")
+            .substringBefore("private fun captureGlmNativeFetchHeaders")
+        val headerCapture = loginActivity
+            .substringAfter("private fun captureGlmNativeFetchHeaders")
+            .substringBefore("private fun isGlmTrustedAuthenticatedResource")
+
+        assertTrue(nativeCollection.contains("if (glmExactLoginRelay == null)"))
+        assertTrue(nativeCollection.contains("GlmUsageRepository(applicationContext).saveWebSessionCookieHeader(it)"))
+        assertTrue(cookieCapture.contains("if (glmExactLoginRelay != null) return"))
+        assertTrue(cookieCapture.contains("GlmUsageRepository(applicationContext).saveWebSessionCookieHeader(cookieHeader)"))
+        assertTrue(headerCapture.contains("if (glmExactLoginRelay == null)"))
+        assertTrue(headerCapture.contains("GlmUsageRepository(applicationContext).saveWebSessionRequestHeaders(headers)"))
+        assertFalse(loginActivity.contains("GlmUsageRepository(applicationContext).useWebOAuth()"))
     }
 
     @Test
