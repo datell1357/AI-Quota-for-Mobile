@@ -219,6 +219,16 @@ class ProviderLoginStrategyTest {
     }
 
     @Test
+    fun codexOpenAiAuth403KeepsLoginOpenWithoutAcceptingAuthentication() {
+        val url = "https://auth.openai.com/log-in"
+        assertTrue(ProviderLoginStrategy.shouldKeepCodexLoginOpenForHttpError(url, 403))
+        assertFalse(ProviderLoginStrategy.isLoginComplete(ProviderId.CODEX, url, emptyMap(), ""))
+        assertFalse(ProviderLoginStrategy.shouldKeepCodexLoginOpenForHttpError(url, 500))
+        assertFalse(ProviderLoginStrategy.shouldKeepCodexLoginOpenForHttpError(url.replace("https:", "http:"), 403))
+        assertFalse(ProviderLoginStrategy.shouldKeepCodexLoginOpenForHttpError(url.replace("auth.openai.com", "auth.openai.com.example.org"), 403))
+    }
+
+    @Test
     fun codexAuthChallengeHttp403KeepsLoginOpen() {
         assertTrue(
             ProviderLoginStrategy.shouldKeepCodexLoginOpenForHttpError(

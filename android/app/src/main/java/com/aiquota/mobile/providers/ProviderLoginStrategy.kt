@@ -176,6 +176,7 @@ object ProviderLoginStrategy {
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
         if (!uri.scheme.equals("https", ignoreCase = true)) return false
         val host = uri.host.orEmpty().lowercase(Locale.US)
+        if (host == "auth.openai.com") return true
         if (host != "chatgpt.com") return false
         val path = uri.path.orEmpty().lowercase(Locale.US)
         // The initial analytics document can return a challenge before login.
