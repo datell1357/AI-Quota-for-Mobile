@@ -2446,6 +2446,7 @@ open class WebLoginActivity : Activity() {
 
     private fun failKeepingPrevious(message: String, errorKind: String) {
         if (finished) return
+        Log.w("AIQuotaLogin", "provider=${providerId.storageId} loginFailed errorKind=$errorKind")
         if (glmExactLoginRelay != null) {
             finished = true
             setGlmExactLoginCanceled()

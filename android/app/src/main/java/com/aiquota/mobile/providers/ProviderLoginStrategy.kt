@@ -178,7 +178,10 @@ object ProviderLoginStrategy {
         val host = uri.host.orEmpty().lowercase(Locale.US)
         if (host != "chatgpt.com") return false
         val path = uri.path.orEmpty().lowercase(Locale.US)
-        return path.startsWith("/auth") ||
+        // The initial analytics document can return a challenge before login.
+        // Keep its WebView alive; only a trusted usage payload completes login.
+        return path == "/codex/cloud/settings/analytics" ||
+            path.startsWith("/auth") ||
             path.startsWith("/api/auth") ||
             path.startsWith("/cdn-cgi/challenge-platform")
     }

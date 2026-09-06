@@ -208,6 +208,17 @@ class ProviderLoginStrategyTest {
     }
 
     @Test
+    fun codexAnalyticsEntryHttp403KeepsLoginOpenWithoutCompletingLogin() {
+        val url = ProviderLoginStrategy.CODEX_CALLBACK_RECOVERY_URL
+        assertTrue(ProviderLoginStrategy.shouldKeepCodexLoginOpenForHttpError(url, 403))
+        assertFalse(ProviderLoginStrategy.isLoginComplete(ProviderId.CODEX, url, emptyMap(), ""))
+        assertFalse(ProviderLoginStrategy.shouldKeepCodexLoginOpenForHttpError(url, 500))
+        assertFalse(ProviderLoginStrategy.shouldKeepCodexLoginOpenForHttpError(url.replace("https:", "http:"), 403))
+        assertFalse(ProviderLoginStrategy.shouldKeepCodexLoginOpenForHttpError(url.replace("chatgpt.com", "chatgpt.com.example.org"), 403))
+        assertFalse(ProviderLoginStrategy.shouldKeepCodexLoginOpenForHttpError("https://chatgpt.com/codex/cloud/settings/analytics-other", 403))
+    }
+
+    @Test
     fun codexAuthChallengeHttp403KeepsLoginOpen() {
         assertTrue(
             ProviderLoginStrategy.shouldKeepCodexLoginOpenForHttpError(
