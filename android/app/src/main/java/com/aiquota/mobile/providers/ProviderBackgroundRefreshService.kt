@@ -202,7 +202,26 @@ class ProviderBackgroundRefreshService : Service() {
                 stopSelf(startId)
                 return START_NOT_STICKY
             }
-            ACTION_REFRESH -> requestImmediateRefresh(intent)
+            ACTION_REFRESH -> {
+                val target = resolveProviderServiceIntentTarget(
+                    rawProviderId = intent?.getStringExtra(WidgetRefreshActions.EXTRA_PROVIDER_ID),
+                    rawAccountId = intent?.getStringExtra(EXTRA_PROVIDER_ACCOUNT_ID),
+                    multiAccountEnabled = BuildConfig.MULTI_ACCOUNT_ENABLED,
+                )
+                if (target == ProviderServiceIntentTarget.Rejected) {
+                    val widgetId = intent?.getIntExtra(
+                        WidgetRefreshActions.EXTRA_APP_WIDGET_ID,
+                        AppWidgetManager.INVALID_APPWIDGET_ID
+                    ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
+                    WidgetRefreshFeedback.clearWidgetRefresh(applicationContext, widgetId)
+                    if (ProviderRejectedRefreshPolicy.stopAfterRejectedRequest(running, refreshInProgress)) {
+                        stopSelf(startId)
+                        return START_NOT_STICKY
+                    }
+                    return START_STICKY
+                }
+                requestImmediateRefresh(intent)
+            }
             else -> startRefreshLoop()
         }
         return START_STICKY
