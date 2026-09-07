@@ -155,6 +155,62 @@ class ProviderDefinitionRegistryTest {
     }
 
     @Test
+    fun v43ReleasedSingleProvidersAllowBoundarySafeSubdomainsButNotSuffixLookalikes() {
+        val providerHosts = mapOf(
+            ProviderId.GLM to "z.ai",
+            ProviderId.OPENCODE to "opencode.ai",
+            ProviderId.GEMINI to "gemini.google.com",
+            ProviderId.COPILOT to "github.com",
+            ProviderId.ANTIGRAVITY to "antigravity.google",
+            ProviderId.CURSOR to "cursor.com",
+            ProviderId.GROK to "grok.com",
+            ProviderId.KIRO to "app.kiro.dev"
+        )
+
+        providerHosts.forEach { (providerId, host) ->
+            assertTrue(
+                "provider=${providerId.storageId}",
+                ProviderDefinitionRegistry.isLoginNavigationAllowed(
+                    providerId,
+                    "https://login.$host/account"
+                )
+            )
+            assertTrue(
+                "collector provider=${providerId.storageId}",
+                ProviderDefinitionRegistry.isCollectorNavigationAllowed(
+                    providerId,
+                    "https://api.$host/"
+                )
+            )
+            assertFalse(
+                "provider=${providerId.storageId}",
+                ProviderDefinitionRegistry.isLoginNavigationAllowed(
+                    providerId,
+                    "https://$host.evil.example/account"
+                )
+            )
+            assertFalse(
+                "provider=${providerId.storageId}",
+                ProviderDefinitionRegistry.isLoginNavigationAllowed(
+                    providerId,
+                    "http://login.$host/account"
+                )
+            )
+        }
+    }
+
+    @Test
+    fun claudeAndCodexNavigationRemainExactHostOnly() {
+        assertTrue(ProviderDefinitionRegistry.isLoginNavigationAllowed(ProviderId.CLAUDE, "https://claude.ai/login"))
+        assertTrue(ProviderDefinitionRegistry.isLoginNavigationAllowed(ProviderId.CODEX, "https://chatgpt.com/"))
+        assertFalse(ProviderDefinitionRegistry.isLoginNavigationAllowed(ProviderId.CLAUDE, "https://login.claude.ai/login"))
+        assertFalse(ProviderDefinitionRegistry.isLoginNavigationAllowed(ProviderId.CODEX, "https://login.chatgpt.com/"))
+        assertFalse(ProviderDefinitionRegistry.isLoginNavigationAllowed(ProviderId.CLAUDE, "http://claude.ai/login"))
+        assertFalse(ProviderDefinitionRegistry.isLoginNavigationAllowed(ProviderId.CODEX, "http://chatgpt.com/"))
+        assertFalse(ProviderDefinitionRegistry.isLoginNavigationAllowed(ProviderId.KIMI, "https://login.kimi.com/"))
+    }
+
+    @Test
     fun collectorNavigationAllowlistKeepsHiddenRefreshOnProviderShellsOnly() {
         assertTrue(ProviderDefinitionRegistry.isCollectorNavigationAllowed(ProviderId.CLAUDE, "https://claude.ai/"))
         assertTrue(ProviderDefinitionRegistry.isCollectorNavigationAllowed(ProviderId.CODEX, "https://chatgpt.com/"))

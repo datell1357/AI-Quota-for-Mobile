@@ -42,31 +42,65 @@ object ProviderNativeJsonBridge {
     )
 
     fun fetchJson(request: ProviderNativeJsonRequest): String {
+        return fetchJsonInternal(request) { url -> url.openConnection() as HttpURLConnection }
+    }
+
+    internal fun fetchJsonForTest(
+        request: ProviderNativeJsonRequest,
+        connectionFactory: (URL) -> HttpURLConnection,
+    ): String = fetchJsonInternal(request, connectionFactory)
+
+    private fun fetchJsonInternal(
+        request: ProviderNativeJsonRequest,
+        connectionFactory: (URL) -> HttpURLConnection,
+    ): String {
         if (!isAllowedJsonUrl(request.providerId, request.url)) {
             return wrappedError(request.url, "blocked_provider_json_endpoint").toString()
         }
         val uri = runCatching { URI(request.url) }.getOrNull()
             ?: return wrappedError(request.url, "invalid_url").toString()
-        val origin = "${uri.scheme}://${uri.host}"
-        val headers = assembledHeaders(request, origin)
         return runCatching {
-            val connection = (URL(request.url).openConnection() as HttpURLConnection).apply {
-                connectTimeout = NETWORK_TIMEOUT_MS
-                readTimeout = NETWORK_TIMEOUT_MS
-                instanceFollowRedirects = false
-                requestMethod = "GET"
-                headers.forEach { (name, value) -> setRequestProperty(name, value) }
+            var currentUrl = request.url
+            var status = 0
+            var text = ""
+            for (hop in 0..MAX_REDIRECTS) {
+                val currentUri = URI(currentUrl)
+                val origin = originUrlOf(currentUri)
+                val headers = assembledHeaders(request.copy(url = currentUrl), origin)
+                val response = connectionFactory(URL(currentUrl)).apply {
+                    connectTimeout = NETWORK_TIMEOUT_MS
+                    readTimeout = NETWORK_TIMEOUT_MS
+                    instanceFollowRedirects = false
+                    requestMethod = "GET"
+                    headers.forEach { (name, value) -> setRequestProperty(name, value) }
+                }
+                try {
+                    status = response.responseCode
+                    val location = response.getHeaderField("Location")
+                    if (status in REDIRECT_STATUSES && !location.isNullOrBlank()) {
+                        val nextUrl = URL(URL(currentUrl), location).toString()
+                        if (hop == MAX_REDIRECTS || !canFollowRedirect(request.providerId, currentUrl, nextUrl)) {
+                            val stream = response.errorStream
+                            text = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
+                            break
+                        }
+                        currentUrl = nextUrl
+                        continue
+                    }
+                    val stream = if (status in 200..299) response.inputStream else response.errorStream
+                    text = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
+                    break
+                } finally {
+                    response.disconnect()
+                }
             }
-            val status = connection.responseCode
-            val stream = if (status in 200..299) connection.inputStream else connection.errorStream
-            val text = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }.orEmpty()
-            connection.disconnect()
+            val finalUri = runCatching { URI(currentUrl) }.getOrNull()
             Log.d(
                 TAG,
                 "nativeJson provider=${request.providerId.storageId} status=$status " +
-                    "url=${uri.host.orEmpty()}${uri.path.orEmpty()} cookieHost=${uri.host.orEmpty()}"
+                    "url=${finalUri?.host.orEmpty()}${finalUri?.path.orEmpty()}"
             )
-            wrappedResponse(request.url, status, text).toString()
+            wrappedResponse(currentUrl, status, text).toString()
         }.getOrElse { error ->
             Log.d(
                 TAG,
@@ -76,6 +110,28 @@ object ProviderNativeJsonBridge {
             wrappedError(request.url, error.javaClass.simpleName).toString()
         }
     }
+
+    internal fun canFollowRedirectForTest(providerId: ProviderId, fromUrl: String, toUrl: String): Boolean =
+        canFollowRedirect(providerId, fromUrl, toUrl)
+
+    private fun canFollowRedirect(providerId: ProviderId, fromUrl: String, toUrl: String): Boolean {
+        if (providerId !in REDIRECT_COMPATIBLE_PROVIDERS) return false
+        val from = runCatching { URI(fromUrl) }.getOrNull() ?: return false
+        val to = runCatching { URI(toUrl) }.getOrNull() ?: return false
+        return isAllowedJsonUrl(providerId, fromUrl) &&
+            isAllowedJsonUrl(providerId, toUrl) &&
+            originKeyOf(from).equals(originKeyOf(to), ignoreCase = true)
+    }
+
+    private fun originUrlOf(uri: URI): String = buildString {
+        append(uri.scheme).append("://").append(uri.host)
+        if (uri.port >= 0) append(":").append(uri.port)
+    }
+
+    private fun originKeyOf(uri: URI): String =
+        "${uri.scheme.lowercase()}:${uri.host.lowercase()}:${uri.port.takeIf { it >= 0 } ?: defaultPort(uri.scheme)}"
+
+    private fun defaultPort(scheme: String): Int = if (scheme.equals("https", ignoreCase = true)) 443 else -1
 
     internal fun wrappedResponse(url: String, status: Int, text: String): JSONObject {
         val parsed = runCatching { JSONTokener(text).nextValue() }
@@ -119,7 +175,7 @@ object ProviderNativeJsonBridge {
 
     internal fun assembledHeadersForTest(request: ProviderNativeJsonRequest): Map<String, String> {
         val uri = requireNotNull(runCatching { URI(request.url) }.getOrNull())
-        return assembledHeaders(request, "${uri.scheme}://${uri.host}")
+        return assembledHeaders(request, originUrlOf(uri))
     }
 
     internal fun legacyGlobalCookieSource() = ExactProfileCookieSource { requestUrl, origin ->
@@ -149,4 +205,16 @@ object ProviderNativeJsonBridge {
     private const val TAG = "AIQuotaNativeJson"
     private const val NETWORK_TIMEOUT_MS = 10_000
     private const val RAW_TEXT_LIMIT = 1_000_000
+    private const val MAX_REDIRECTS = 3
+    private val REDIRECT_STATUSES = setOf(301, 302, 303, 307, 308)
+    private val REDIRECT_COMPATIBLE_PROVIDERS = setOf(
+        ProviderId.ANTIGRAVITY,
+        ProviderId.COPILOT,
+        ProviderId.GLM,
+        ProviderId.KIRO,
+        ProviderId.GEMINI,
+        ProviderId.CURSOR,
+        ProviderId.GROK,
+        ProviderId.OPENCODE,
+    )
 }

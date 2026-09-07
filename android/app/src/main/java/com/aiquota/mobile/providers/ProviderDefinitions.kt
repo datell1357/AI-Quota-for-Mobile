@@ -383,13 +383,13 @@ object ProviderDefinitionRegistry {
         val definition = definitionFor(providerId)
         if (providerId == ProviderId.OPENCODE && isOpenCodeDocsUrl(url)) return false
         if ("accounts.google.com" in definition.loginAllowedHosts && isGoogleAccountHost(host)) return true
-        return isHostAllowed(host, definition.loginAllowedHosts)
+        return isHostAllowed(providerId, host, definition.loginAllowedHosts)
     }
 
     fun isCollectorNavigationAllowed(providerId: ProviderId, url: String): Boolean {
         val host = hostOf(url) ?: return false
         if (providerId == ProviderId.OPENCODE && isOpenCodeDocsUrl(url)) return false
-        return isHostAllowed(host, definitionFor(providerId).collectorAllowedHosts)
+        return isHostAllowed(providerId, host, definitionFor(providerId).collectorAllowedHosts)
     }
 
     private fun isOpenCodeDocsUrl(url: String): Boolean {
@@ -404,8 +404,20 @@ object ProviderDefinitionRegistry {
         return GOOGLE_ACCOUNT_HOST.matches(host)
     }
 
-    private fun isHostAllowed(host: String, allowedHosts: Set<String>): Boolean {
-        return host in allowedHosts
+    private fun isHostAllowed(
+        providerId: ProviderId,
+        host: String,
+        allowedHosts: Set<String>
+    ): Boolean {
+        // v43 compatibility: the eight released single providers accepted provider
+        // subdomains. Claude/Codex remain exact-host only as an intentional security
+        // boundary; unreleased providers (such as Kimi) remain exact-host too.
+        if (providerId !in V43_SUBDOMAIN_PROVIDERS) {
+            return host in allowedHosts
+        }
+        return allowedHosts.any { allowed ->
+            host == allowed || host.endsWith(".$allowed")
+        }
     }
 
     private fun codexDefinition(providerId: ProviderId): ProviderDefinition {
@@ -441,4 +453,7 @@ object ProviderDefinitionRegistry {
 
     private val GOOGLE_ACCOUNT_HOST =
         Regex("""^accounts\.google\.(?:com|[a-z]{2}|co\.[a-z]{2}|com\.[a-z]{2})$""")
+
+    private val V43_SUBDOMAIN_PROVIDERS =
+        (ProviderId.defaultOrder() - ProviderId.CLAUDE - ProviderId.CODEX).toSet()
 }
