@@ -92,8 +92,8 @@ android {
         applicationId = "com.aiquota.mobile"
         minSdk = 26
         targetSdk = 36
-        versionCode = 50
-        versionName = "1.2.3"
+        versionCode = 51
+        versionName = "1.2.4"
         testInstrumentationRunner = project.findProperty("aiquota.testInstrumentationRunner")?.toString()
             ?: "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GOOGLE_ANDROID_OAUTH_CLIENT_ID", "\"$googleAndroidOAuthClientId\"")
@@ -145,7 +145,14 @@ android {
                 "proguard-rules.pro"
             )
         }
+        create("internal") {
+            initWith(getByName("release"))
+            matchingFallbacks += "release"
+            buildConfigField("boolean", "MULTI_ACCOUNT_ENABLED", "true")
+        }
     }
+
+    sourceSets.getByName("internal").java.srcDir("src/release/java")
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -171,6 +178,10 @@ tasks.matching { task -> task.name == "processReleaseGoogleServices" }.configure
 }
 
 tasks.matching { task -> task.name in setOf("bundleRelease", "assembleRelease") }.configureEach {
+    dependsOn(verifyReleaseFirebaseResources)
+}
+
+tasks.matching { task -> task.name in setOf("processInternalGoogleServices", "bundleInternal", "assembleInternal") }.configureEach {
     dependsOn(verifyReleaseFirebaseResources)
 }
 
