@@ -162,6 +162,8 @@ internal fun ExactDashboardCardsContent(
                     horizontal = layoutMetrics.contentHorizontalPaddingDp.dp,
                     vertical = layoutMetrics.contentVerticalPaddingDp.dp,
                 ),
+            // Keep the widget/view-mode action row visually separated from the first card.
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
