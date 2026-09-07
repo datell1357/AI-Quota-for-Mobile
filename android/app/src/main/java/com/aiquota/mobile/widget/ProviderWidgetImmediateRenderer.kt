@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.os.Build
 import android.util.SizeF
+import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import androidx.core.os.BundleCompat
@@ -140,6 +141,26 @@ object ProviderWidgetImmediateRenderer {
             "setBackgroundResource",
             providerImmediateBackgroundRes(ThemePreferencesRepository(context).currentTheme())
         )
+        if (cellHeight == 1) {
+            // Keep the reset caption inside the compact 2x1 host bounds.
+            val horizontalPaddingPx = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                10f,
+                context.resources.displayMetrics,
+            ).roundToInt()
+            val compactVerticalPaddingPx = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                4f,
+                context.resources.displayMetrics,
+            ).roundToInt()
+            views.setViewPadding(
+                R.id.provider_immediate_root,
+                horizontalPaddingPx,
+                compactVerticalPaddingPx,
+                horizontalPaddingPx,
+                compactVerticalPaddingPx,
+            )
+        }
         views.setImageViewResource(R.id.provider_immediate_icon, providerIconRes(input.providerId))
         views.setTextViewText(R.id.provider_immediate_name, input.displayName)
         views.setTextViewText(R.id.provider_immediate_status, "")

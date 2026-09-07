@@ -162,7 +162,7 @@ class WidgetGaugeLayoutTest {
 
         assertEquals(7, spec.gaugeHeightDp)
         assertTrue(spec.displayNameTextSizeSp <= 12)
-        assertEquals(10, spec.verticalPaddingDp)
+        assertEquals(4, spec.verticalPaddingDp)
         assertTrue(providerWidgetLabelWidthDp(spec) >= 76)
         assertTrue(providerWidgetValueWidthDp(spec) >= 48)
     }
@@ -364,7 +364,7 @@ class WidgetGaugeLayoutTest {
     }
 
     @Test
-    fun providerTabletWideTwoByOneKeepsCompactHeightButShowsResetCaption() {
+    fun providerTabletWideTwoByOneKeepsCompactHeightAndShowsResetCaption() {
         val effectiveHeight = providerWidgetEffectiveCellHeight(
             cellWidth = 3,
             localHeightDp = 80,
@@ -376,14 +376,15 @@ class WidgetGaugeLayoutTest {
         assertEquals(1, spec.maxLineCount)
         assertTrue(spec.showResetCaption)
         assertTrue(spec.lineRowHeightDp >= 30)
-        assertEquals(10, spec.verticalPaddingDp)
+        assertTrue(providerWidgetEstimatedContentHeightDp(spec) <= 80)
+        assertEquals(4, spec.verticalPaddingDp)
         assertTrue(spec.displayNameTextSizeSp <= 14)
         assertTrue(spec.lineTextSizeSp <= 11)
         assertTrue(spec.detailTextSizeSp <= 8)
     }
 
     @Test
-    fun providerMobileTwoByOneKeepsResetCaptionHidden() {
+    fun providerMobileTwoByOneShowsResetCaptionWithinCompactBounds() {
         val effectiveHeight = providerWidgetEffectiveCellHeight(
             cellWidth = 2,
             localHeightDp = 80,
@@ -392,7 +393,8 @@ class WidgetGaugeLayoutTest {
         val spec = providerWidgetLayoutSpec(cellWidth = 2, cellHeight = 1)
 
         assertEquals(1, effectiveHeight)
-        assertFalse(spec.showResetCaption)
+        assertTrue(spec.showResetCaption)
+        assertTrue(providerWidgetEstimatedContentHeightDp(spec) <= 80)
     }
 
     @Test

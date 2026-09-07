@@ -222,7 +222,10 @@ fun providerWidgetLayoutSpec(
     val normalizedCellHeight = cellHeight.coerceIn(1, 4)
     val wideCompact = normalizedCellWidth == 3 && normalizedCellHeight == 1
     val horizontalPaddingDp = if (normalizedCellWidth == 2) 12 else 16
-    val verticalPaddingDp = WIDGET_VERTICAL_SAFEZONE_DP
+    // The 2x1 provider widget has only one usage row, so reserve a little
+    // extra vertical room for its reset caption while keeping the 80dp host
+    // bounds intact. Larger widgets retain the existing safe zone.
+    val verticalPaddingDp = if (normalizedCellHeight == 1) 4 else WIDGET_VERTICAL_SAFEZONE_DP
     val maxLineCount = when (normalizedCellHeight) {
         1 -> 1
         2 -> 3
@@ -241,6 +244,9 @@ fun providerWidgetLayoutSpec(
             PROVIDER_HEADER_SPACER_HEIGHT_DP
         ) / maxLineCount
     val lineRowHeightDp = when {
+        normalizedCellHeight == 1 -> availableLineHeightDp
+            .coerceAtLeast(gaugeHeightDp + 14)
+            .coerceAtMost(40)
         maxLineCount >= 4 -> availableLineHeightDp
             .coerceAtLeast(gaugeHeightDp + 14)
             .coerceAtMost(PROVIDER_FOUR_ROW_MAX_ROW_HEIGHT_DP)
@@ -280,7 +286,7 @@ fun providerWidgetLayoutSpec(
         lineRowHeightDp = lineRowHeightDp,
         lineGapDp = if (normalizedCellHeight > 1) PROVIDER_EXPANDED_LINE_GAP_DP else 0,
         maxLineCount = maxLineCount,
-        showResetCaption = wideCompact || (normalizedCellHeight > 1 && lineRowHeightDp >= 40)
+        showResetCaption = normalizedCellHeight == 1 || (normalizedCellHeight > 1 && lineRowHeightDp >= 40)
     )
     if (widgetHeightDp <= 0) return baseSpec
 
@@ -317,7 +323,7 @@ fun providerWidgetLayoutSpec(
         gaugeRadiusDp = (adaptiveGaugeHeightDp / 2).coerceAtLeast(1),
         lineRowHeightDp = adaptiveLineRowHeightDp,
         lineGapDp = adaptiveLineGapDp,
-        showResetCaption = wideCompact || (normalizedCellHeight > 1 && adaptiveLineRowHeightDp >= 40)
+        showResetCaption = normalizedCellHeight == 1 || (normalizedCellHeight > 1 && adaptiveLineRowHeightDp >= 40)
     )
 }
 
@@ -437,8 +443,13 @@ fun unifiedWidgetRowVisibleContentHeightDp(spec: UnifiedWidgetLayoutSpec): Int {
 }
 
 fun providerWidgetEstimatedContentHeightDp(spec: ProviderWidgetLayoutSpec): Int {
+    val headerHeightDp = if (spec.cellHeight == 1) {
+        PROVIDER_HEADER_HEIGHT_DP
+    } else {
+        PROVIDER_ESTIMATED_HEADER_HEIGHT_DP
+    }
     return (spec.verticalPaddingDp * 2) +
-        PROVIDER_ESTIMATED_HEADER_HEIGHT_DP +
+        headerHeightDp +
         PROVIDER_HEADER_SPACER_HEIGHT_DP +
         (spec.lineRowHeightDp * spec.maxLineCount) +
         (spec.lineGapDp * (spec.maxLineCount - 1).coerceAtLeast(0))

@@ -92,8 +92,8 @@ android {
         applicationId = "com.aiquota.mobile"
         minSdk = 26
         targetSdk = 36
-        versionCode = 51
-        versionName = "1.2.4"
+        versionCode = 52
+        versionName = "1.2.5"
         testInstrumentationRunner = project.findProperty("aiquota.testInstrumentationRunner")?.toString()
             ?: "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GOOGLE_ANDROID_OAUTH_CLIENT_ID", "\"$googleAndroidOAuthClientId\"")
@@ -168,6 +168,8 @@ android {
         jvmTarget = "17"
     }
 
+    testOptions.unitTests.isIncludeAndroidResources =
+        providers.gradleProperty("aiquota.testIncludeAndroidResources").orNull == "true"
     testOptions.unitTests.all {
         it.systemProperty("sun.net.http.allowRestrictedHeaders", "true")
     }
