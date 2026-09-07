@@ -1,6 +1,7 @@
 package com.aiquota.mobile.sync
 
 import android.content.Context
+import androidx.work.BackoffPolicy
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -21,9 +22,10 @@ object ForegroundRefreshHealthScheduler {
         val periodicWork = PeriodicWorkRequestBuilder<ForegroundRefreshHealthWorker>(
             CHECK_INTERVAL_MINUTES,
             TimeUnit.MINUTES
-        ).build()
+        ).setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.SECONDS).build()
         val oneTimeWork = OneTimeWorkRequestBuilder<ForegroundRefreshHealthWorker>()
             .setInitialDelay(STARTUP_CHECK_DELAY_MINUTES, TimeUnit.MINUTES)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.SECONDS)
             .build()
 
         workManager.enqueueUniquePeriodicWork(
