@@ -372,6 +372,24 @@ test("collectAntigravityUsageForUid stores resolved Antigravity project id", asy
           updatePayload = payload;
         }
       };
+    },
+    async runTransaction(callback) {
+      await callback({
+        async get() {
+          return {
+            exists: true,
+            data() {
+              return {
+                oauthClientId: "client.apps.googleusercontent.com",
+                encryptedRefreshToken: "v1.invalid.invalid.invalid"
+              };
+            }
+          };
+        },
+        update(_ref, payload) {
+          updatePayload = payload;
+        }
+      });
     }
   };
   const fetchImpl = async (url) => {
@@ -438,6 +456,210 @@ test("collectAntigravityUsageForUid returns TOKEN_MISSING when backend token doc
       retryable: false
     }
   );
+});
+
+test("collectAntigravityUsageForUid records decrypt failures without changing the result", async () => {
+  let updatePayload = null;
+  const db = {
+    doc() {
+      return {
+        async get() {
+          return {
+            exists: true,
+            data() {
+              return {
+                oauthClientId: "client.apps.googleusercontent.com",
+                encryptedRefreshToken: "v1.invalid.invalid.invalid"
+              };
+            }
+          };
+        },
+        async update(payload) {
+          updatePayload = payload;
+        }
+      };
+    },
+    async runTransaction(callback) {
+      await callback({
+        async get() {
+          return {
+            exists: true,
+            data() {
+              return {
+                oauthClientId: "client.apps.googleusercontent.com",
+                encryptedRefreshToken: "v1.invalid.invalid.invalid"
+              };
+            }
+          };
+        },
+        update(_ref, payload) {
+          updatePayload = payload;
+        }
+      });
+    }
+  };
+
+  const result = await collectAntigravityUsageForUid({
+    uid: "uid-123",
+    db,
+    tokenMasterKey: Buffer.alloc(32, 7).toString("base64"),
+    oauthClientSecret: "client-secret",
+    now: new Date("2026-05-30T00:00:00.000Z"),
+    fetchImpl: async () => {
+      throw new Error("SHOULD_NOT_FETCH");
+    }
+  });
+
+  assert.deepEqual(result, {
+    ok: false,
+    provider: "antigravity",
+    errorKind: "TOKEN_DECRYPT_FAILED",
+    requiresAuth: false,
+    retryable: false
+  });
+  assert.deepEqual(updatePayload, {
+    lastCollectAt: "2026-05-30T00:00:00.000Z",
+    lastStatus: "COLLECT_FAILED",
+    lastErrorKind: "TOKEN_DECRYPT_FAILED"
+  });
+});
+
+test("collectAntigravityUsageForUid does not let stale refresh failure overwrite newer token state", async () => {
+  const aad = "uid:uid-123:provider:antigravity:oauthClient:client.apps.googleusercontent.com:aad:v1";
+  const tokenMasterKey = Buffer.alloc(32, 7).toString("base64");
+  const encryptedRefreshToken = await encryptRefreshToken({
+    tokenMasterKey,
+    refreshToken: "refresh-secret",
+    aad,
+    randomBytes: () => Buffer.alloc(12, 1)
+  });
+  let transactionUpdateCalled = false;
+  const tokenRef = {
+    async get() {
+      return {
+        exists: true,
+        updateTime: "old-write",
+        data() {
+          return {
+            oauthClientId: "client.apps.googleusercontent.com",
+            encryptedRefreshToken,
+            updatedAt: "2026-05-29T00:00:00.000Z"
+          };
+        }
+      };
+    },
+    async update() {
+      throw new Error("DIRECT_UPDATE_SHOULD_NOT_RUN");
+    }
+  };
+  const db = {
+    doc() {
+      return tokenRef;
+    },
+    async runTransaction(callback) {
+      const transaction = {
+        async get() {
+          return {
+            exists: true,
+            updateTime: "new-write",
+            data() {
+              return {
+                oauthClientId: "client.apps.googleusercontent.com",
+                encryptedRefreshToken: "newer-refresh-ciphertext",
+                updatedAt: "2026-05-30T00:01:00.000Z",
+                lastCollectAt: "2026-05-30T00:01:00.000Z",
+                lastStatus: "CONNECTED"
+              };
+            }
+          };
+        },
+        update() {
+          transactionUpdateCalled = true;
+        }
+      };
+      await callback(transaction);
+    }
+  };
+  const result = await collectAntigravityUsageForUid({
+    uid: "uid-123",
+    db,
+    tokenMasterKey,
+    oauthClientSecret: "client-secret",
+    now: new Date("2026-05-30T00:00:00.000Z"),
+    fetchImpl: async () => jsonResponse(400, { error: "invalid_grant" })
+  });
+
+  assert.equal(result.errorKind, "GOOGLE_REFRESH_FAILED");
+  assert.equal(transactionUpdateCalled, false);
+});
+
+test("collectAntigravityUsageForUid records refresh failures and preserves result when write throws", async () => {
+  const aad = "uid:uid-123:provider:antigravity:oauthClient:client.apps.googleusercontent.com:aad:v1";
+  const tokenMasterKey = Buffer.alloc(32, 7).toString("base64");
+  const encryptedRefreshToken = await encryptRefreshToken({
+    tokenMasterKey,
+    refreshToken: "refresh-secret",
+    aad,
+    randomBytes: () => Buffer.alloc(12, 1)
+  });
+  let transactionCalled = false;
+  const db = {
+    doc() {
+      return {
+        async get() {
+          return {
+            exists: true,
+            data() {
+              return {
+                oauthClientId: "client.apps.googleusercontent.com",
+                encryptedRefreshToken
+              };
+            }
+          };
+        },
+        async update() {
+          throw new Error("SHOULD_NOT_DIRECT_UPDATE");
+        }
+      };
+    },
+    async runTransaction() {
+      transactionCalled = true;
+      throw new Error("DIAGNOSTIC_WRITE_FAILED");
+    }
+  };
+  const result = await collectAntigravityUsageForUid({
+    uid: "uid-123",
+    db,
+    tokenMasterKey,
+    oauthClientSecret: "client-secret",
+    fetchImpl: async () => jsonResponse(400, { error: "invalid_grant" })
+  });
+
+  assert.equal(transactionCalled, true);
+  assert.deepEqual(result, {
+    ok: false,
+    provider: "antigravity",
+    errorKind: "GOOGLE_REFRESH_FAILED",
+    requiresAuth: true,
+    retryable: false
+  });
+
+  let recorded = null;
+  db.runTransaction = async (callback) => callback({
+    get: async (ref) => ref.get(),
+    update: (_ref, payload) => { recorded = payload; }
+  });
+  const recordedResult = await collectAntigravityUsageForUid({
+    uid: "uid-123", db, tokenMasterKey, oauthClientSecret: "client-secret",
+    now: new Date("2026-05-30T00:00:00.000Z"),
+    fetchImpl: async () => jsonResponse(400, { error: "invalid_grant" })
+  });
+  assert.deepEqual(recordedResult, result);
+  assert.deepEqual(recorded, {
+    lastCollectAt: "2026-05-30T00:00:00.000Z",
+    lastStatus: "AUTH_REQUIRED",
+    lastErrorKind: "GOOGLE_REFRESH_FAILED"
+  });
 });
 
 test("collectAntigravityUsageForUid maps private api forbidden without leaking tokens", async () => {

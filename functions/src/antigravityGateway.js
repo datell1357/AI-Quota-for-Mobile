@@ -195,22 +195,42 @@ export function mapAntigravityApiFailure({ status }) {
   };
 }
 
-async function mapAndRecordAntigravityApiFailure({ step, response, tokenRef, now }) {
+async function mapAndRecordAntigravityApiFailure({ step, response, tokenRef, now, db, tokenRecord, tokenSnap }) {
   const result = mapAntigravityApiFailure({ status: response.status });
-  await recordAntigravityCollectFailure({ tokenRef, result, now });
+  await recordAntigravityCollectFailure({ tokenRef, result, now, db, tokenRecord, tokenSnap });
   await logAntigravityApiFailure({ step, response, errorKind: result.errorKind });
   return result;
 }
 
-async function recordAntigravityCollectFailure({ tokenRef, result, now }) {
+async function recordAntigravityCollectFailure({ tokenRef, result, now, db, tokenRecord, tokenSnap }) {
   if (typeof tokenRef?.update !== "function") {
     return;
   }
-  await tokenRef.update({
+  const update = {
     lastCollectAt: now.toISOString(),
     lastStatus: result.requiresAuth ? "AUTH_REQUIRED" : "COLLECT_FAILED",
     lastErrorKind: result.errorKind ?? null
-  });
+  };
+  try {
+    // A direct update can race a relogin; only transaction-capable stores may record diagnostics.
+    if (typeof db?.runTransaction !== "function" || !tokenRecord) {
+      return;
+    }
+    await db.runTransaction(async (transaction) => {
+      const latestSnap = await transaction.get(tokenRef);
+      const latest = latestSnap.exists ? latestSnap.data() : null;
+      if (!latest || latest.encryptedRefreshToken !== tokenRecord.encryptedRefreshToken ||
+          (tokenRecord.updatedAt && latest.updatedAt !== tokenRecord.updatedAt) ||
+          (latestSnap.updateTime && tokenSnap?.updateTime &&
+            String(latestSnap.updateTime) !== String(tokenSnap.updateTime)) ||
+          (latest.lastCollectAt && Date.parse(latest.lastCollectAt) > now.getTime())) {
+        return;
+      }
+      transaction.update(tokenRef, update);
+    });
+  } catch {
+    // Diagnostics are best effort and must never replace the original result.
+  }
 }
 
 async function logAntigravityApiFailure({ step, response, errorKind }) {
@@ -306,6 +326,14 @@ export async function collectAntigravityUsageForUid({
       aad
     });
   } catch {
+    await recordAntigravityCollectFailure({
+      tokenRef,
+      result: { requiresAuth: false, errorKind: "TOKEN_DECRYPT_FAILED" },
+      now,
+      db,
+      tokenRecord,
+      tokenSnap
+    });
     return {
       ok: false,
       provider: "antigravity",
@@ -322,6 +350,14 @@ export async function collectAntigravityUsageForUid({
     oauthClientSecret
   });
   if (!accessTokenResult.ok) {
+    await recordAntigravityCollectFailure({
+      tokenRef,
+      result: accessTokenResult,
+      now,
+      db,
+      tokenRecord,
+      tokenSnap
+    });
     return accessTokenResult;
   }
 
@@ -336,7 +372,10 @@ export async function collectAntigravityUsageForUid({
       step: "loadCodeAssist",
       response: loadResponse,
       tokenRef,
-      now
+      now,
+      db,
+      tokenRecord,
+      tokenSnap
     });
   }
   const loadPayload = await safeJson(loadResponse);
@@ -368,14 +407,17 @@ export async function collectAntigravityUsageForUid({
       step: "fetchAvailableModels",
       response: modelsResponse,
       tokenRef,
-      now
+      now,
+      db,
+      tokenRecord,
+      tokenSnap
     });
   }
 
   const payload = trustedAntigravityPayload(await safeJson(modelsResponse));
   if (!payload) {
     const result = mapAntigravityApiFailure({ status: 200 });
-    await recordAntigravityCollectFailure({ tokenRef, result, now });
+    await recordAntigravityCollectFailure({ tokenRef, result, now, db, tokenRecord, tokenSnap });
     console.info("antigravity_api_failure", JSON.stringify({
       step: "fetchAvailableModelsPayload",
       status: 200,
