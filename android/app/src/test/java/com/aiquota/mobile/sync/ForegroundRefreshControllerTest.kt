@@ -7,6 +7,35 @@ import org.junit.Test
 
 class ForegroundRefreshControllerTest {
     @Test
+    fun serviceStopAcknowledgmentPersistsOffWithoutSendingAnotherCommand() {
+        val starter = RecordingStarter()
+        val preferences = RecordingPreferences()
+        preferences.setLiveMonitoringEnabled(true)
+        val controller = ForegroundRefreshController(starter, preferences)
+        controller.recordServiceStopped()
+        assertTrue(!preferences.liveMonitoringEnabled())
+        assertTrue(starter.actions.isEmpty())
+        val source = java.io.File("src/main/java/com/aiquota/mobile/providers/ProviderBackgroundRefreshService.kt").readText()
+        assertTrue(source.contains(".recordServiceStopped()"))
+        assertTrue(!source.contains(".setLiveMonitoringEnabled(false)"))
+    }
+
+    @Test
+    fun explicitOffFromNewControllerStillSendsStop() {
+        val starter = RecordingStarter()
+        val controller = ForegroundRefreshController(starter)
+        controller.setLiveMonitoringEnabled(false)
+        assertEquals(listOf(ProviderBackgroundRefreshService.ACTION_STOP), starter.actions)
+    }
+
+    @Test
+    fun passiveStopFromNewControllerDoesNotStopExistingService() {
+        val starter = RecordingStarter()
+        ForegroundRefreshController(starter).stopPreciseRefresh()
+        assertTrue(starter.actions.isEmpty())
+    }
+
+    @Test
     fun failedStartCanBeRetriedWithoutDuplicatingSuccessfulStart() {
         var attempts = 0
         val starter = object : ForegroundRefreshController.ServiceStarter {

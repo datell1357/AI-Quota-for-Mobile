@@ -197,7 +197,7 @@ class ProviderBackgroundRefreshService : Service() {
         when (intent?.action ?: ACTION_START) {
             ACTION_STOP -> {
                 com.aiquota.mobile.sync.ForegroundRefreshController(applicationContext)
-                    .setLiveMonitoringEnabled(false)
+                    .recordServiceStopped()
                 stopRefreshLoop()
                 stopSelf(startId)
                 return START_NOT_STICKY

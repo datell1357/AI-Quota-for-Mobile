@@ -51,7 +51,7 @@ class ForegroundRefreshController {
         if (enabled) {
             startPreciseRefresh()
         } else {
-            stopPreciseRefresh()
+            stopPreciseRefresh(force = true)
         }
     }
 
@@ -68,10 +68,20 @@ class ForegroundRefreshController {
     }
 
     fun stopPreciseRefresh() {
+        stopPreciseRefresh(force = false)
+    }
+
+    private fun stopPreciseRefresh(force: Boolean) {
         healthScheduler.cancel()
-        if (!preciseRefreshRequested) return
-        preciseRefreshRequested = false
+        if (!force && !preciseRefreshRequested) return
         serviceStarter.start(ProviderBackgroundRefreshService.ACTION_STOP)
+        preciseRefreshRequested = false
+    }
+
+    internal fun recordServiceStopped() {
+        preferences.setLiveMonitoringEnabled(false)
+        healthScheduler.cancel()
+        preciseRefreshRequested = false
     }
 
     internal interface ServiceStarter {
