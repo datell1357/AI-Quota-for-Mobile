@@ -7,6 +7,22 @@ import org.junit.Test
 
 class ForegroundRefreshControllerTest {
     @Test
+    fun failedStartCanBeRetriedWithoutDuplicatingSuccessfulStart() {
+        var attempts = 0
+        val starter = object : ForegroundRefreshController.ServiceStarter {
+            override fun start(action: String) {
+                attempts++
+                if (attempts == 1) throw IllegalStateException("start denied")
+            }
+        }
+        val controller = ForegroundRefreshController(starter)
+        assertTrue(runCatching { controller.startPreciseRefresh() }.isFailure)
+        controller.startPreciseRefresh()
+        controller.startPreciseRefresh()
+        assertEquals(2, attempts)
+    }
+
+    @Test
     fun controllerStartsAndStopsBackgroundRefreshForegroundService() {
         val starter = RecordingStarter()
         val controller = ForegroundRefreshController(starter)

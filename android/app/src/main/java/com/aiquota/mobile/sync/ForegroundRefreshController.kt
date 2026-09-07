@@ -58,8 +58,13 @@ class ForegroundRefreshController {
     fun startPreciseRefresh() {
         if (preciseRefreshRequested) return
         preciseRefreshRequested = true
-        healthScheduler.schedule()
-        serviceStarter.start(ProviderBackgroundRefreshService.ACTION_START)
+        try {
+            healthScheduler.schedule()
+            serviceStarter.start(ProviderBackgroundRefreshService.ACTION_START)
+        } catch (error: Exception) {
+            preciseRefreshRequested = false
+            throw error
+        }
     }
 
     fun stopPreciseRefresh() {
