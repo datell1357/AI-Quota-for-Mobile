@@ -9,6 +9,7 @@
 - 다시 추가하면 새 UUID를 발급한다. 위젯·패널·메뉴 고정 선택에 남아 있는 이전 UUID를 새 계정으로 자동 대체하지 않는다. 중간 계정을 제거한 뒤 새 계정은 현재 마지막 순서 뒤에 추가한다.
 - GLM의 키·지역·범위를 바꾸려면 제거 후 새로 연결한다. 연결 해제로 기존 키 결합을 우회하지 않는다.
 - 정리할 인증정보가 남으면 대시보드의 설정 링크와 설정의 재시도 버튼을 표시한다. 앱 시작과 활성화 때도 재시도하며 Keychain 권한 창을 백그라운드에서 열지 않는다.
+- 로그인 창을 닫을 때 WKWebView를 별도 native container에서 분리하고 정리를 재요청한다. WebKit이 로딩 중인 뷰를 비동기로 해제할 수 있어 1초·3초 간격으로 최대 두 번 더 시도한다. 겹친 정리 요청은 후속 실행으로 합치며 계속 실패하면 영구 기록과 설정의 재시도를 유지한다.
 
 ## 영구 수명주기 기록
 
@@ -45,6 +46,8 @@ SQLite schema 2의 `credential_resources`에는 credential reference·계정 UUI
 WebKit의 모든 store 초기화 전에 static identifier 조회를 호출하면 macOS 26.6.2에서 `WebsiteDataStoreIO` 충돌이 발생하는 것을 별도 프로세스 검사로 재현했다. 비영구 store로 WebKit을 초기화하고 조회가 끝날 때까지 유지해 해결했다. persistent store를 새로 만들거나 private API를 호출하지 않는다. 실패 기록과 수정 후 8단계 결과를 모두 보존한다.
 
 검증 명령은 `macos/README.md`에 있다. 단계별 원문 로그와 결과는 Git 제외 `artifacts/macos-20260917-account-lifecycle/verification.json`에 기록한다. 새 프로필과 합성 Keychain 항목만 사용했으며 실계정 인증·제공자 요청은 실행하지 않았다.
+
+후속 [Cursor 웹 연결 단계](cursor-web-login.ko.md)에서는 실제 공개 로그인 화면을 열고 빠르게 취소할 때 profile 정리가 남는 경로를 재현했다. native container 분리와 제한된 재시도 후 같은 앱에서 두 번 연속 취소해 재시작 없이 SQLite 정리 기록 0개와 대기 표시 해소를 확인했다. QA 계정 12개의 payload·sequence·completed는 이전 저장소와 일치했다. 해당 추가 검증은 `artifacts/macos-20260917-cursor/`에 보관한다.
 
 ## 남은 경계
 

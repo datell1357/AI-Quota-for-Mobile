@@ -65,6 +65,12 @@ no-subscription response clears usage without inventing a full quota. See
 live-account and web-login work. To use a different key or scope, explicitly remove the old local
 account and add a new connection; existing widget selections keep the old, now-missing account ID.
 
+Cursor has an isolated web-login sheet and collector for the verified individual account. It checks
+the remote subject before and after reading usage, preserves separate percent/request/known-USD
+metrics and keeps the last reading on malformed or failed responses. Nine Android regression inputs
+are included in the collector tests. See [Docs/cursor-web-login.ko.md](Docs/cursor-web-login.ko.md)
+for request policy, native UI evidence and the outstanding live-account, team and local-app routes.
+
 ## Authentication package
 
 ```sh
@@ -79,7 +85,7 @@ coordinator while preserving another account. It never inspects existing credent
 Login replacement keeps the previous session until new
 credentials are saved and the SQLite account revision commits. Persistent WebKit stores are keyed
 by profile UUID. OAuth refresh coordination only accepts credentials owned by AI Quota.
-Claude, Codex and Grok web verification are connected; successful live-account authentication and the
+Claude, Codex, Cursor and Grok web verification are connected; successful live-account authentication and the
 remaining providers/registered OAuth clients are still pending.
 
 The third command runs a native AppKit probe in eight separate processes. It verifies two synthetic
@@ -94,6 +100,8 @@ does not establish live-login persistence, crash recovery or application-update 
 
 Account removal, disconnect and login replacement record retired resources before cleanup. Failed
 Keychain/WebKit cleanup remains in SQLite for startup, app-activation or explicit Settings retry.
+Closing a sheet detaches the native web view and requests cleanup with at most two delayed retries
+for WebKit's asynchronous release; continuing failures keep the journal and pending indicator.
 External CLI credential files are never removed. See [Docs/account-lifecycle.ko.md](Docs/account-lifecycle.ko.md)
 for the state transitions, migration, race tests and verification limits.
 
@@ -114,7 +122,7 @@ The host checks the running code's signing team and group entitlement before res
 Shared-file writes are coalesced separately from displaying accounts and collecting usage.
 
 The dashboard, account editing, provider selection, onboarding, Korean/English, themes and collection
-preferences and Claude/Codex/Grok login screens are wired to the local authority. The other provider
+preferences and Claude/Codex/Cursor/Grok login screens are wired to the local authority. The other provider
 login screens and signed WidgetKit runtime verification are still pending; adding an account card does not authenticate it. See the status document for
 actual native UI verification and remaining notification, menu-bar and signing checks.
 

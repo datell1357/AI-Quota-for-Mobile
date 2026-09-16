@@ -1,0 +1,194 @@
+{
+  "source": "android/app/src/test/java/com/aiquota/mobile/providers/ProviderUsageNormalizerTest.kt",
+  "sourceSHA256": "eefc278c1721e55d9216c200856ae3b90321579c125d75de78b9e33bcf130157",
+  "note": "Android 1.2.2(55) synthetic regression input; not a live Cursor response",
+  "fixtures": [
+    {
+      "name": "cursorUsageApiNormalizesCurrentPeriodUsage",
+      "payload": {
+        "membershipType": "Free",
+        "email": "user@example.com",
+        "planUsage": {
+          "totalPercentUsed": 4,
+          "resetAt": 1781677951075
+        }
+      },
+      "expected": {
+        "cursor:total": 0.96
+      }
+    },
+    {
+      "name": "cursorPercentUsageSurvivesZeroLimitAmounts",
+      "payload": {
+        "membershipType": "Pro",
+        "planUsage": {
+          "totalPercentUsed": 4,
+          "used": 0,
+          "limit": 0,
+          "remaining": 0
+        }
+      },
+      "expected": {
+        "cursor:total": 0.96
+      }
+    },
+    {
+      "name": "cursorPercentFieldsTreatOneAsOnePercentNotOneHundredPercent",
+      "payload": {
+        "membershipType": "Pro",
+        "planUsage": {
+          "totalPercentUsed": 1,
+          "autoPercentUsed": 1,
+          "apiPercentUsed": 1,
+          "breakdown": {
+            "onDemand": 1
+          }
+        }
+      },
+      "expected": {
+        "cursor:total": 0.99,
+        "cursor:auto": 0.99,
+        "cursor:api": 0.99,
+        "cursor:on_demand": 0.99
+      }
+    },
+    {
+      "name": "cursorRequestBucketsNormalizeAsRequests",
+      "payload": {
+        "membershipType": "Pro",
+        "billingCycleEnd": 1781677951075,
+        "requestUsage": {
+          "gpt-4": {
+            "numRequests": 77,
+            "maxRequestUsage": 500
+          },
+          "premium": {
+            "numRequests": 10,
+            "maxRequestUsage": 100
+          }
+        }
+      },
+      "expected": {
+        "cursor:requests": 0.855
+      }
+    },
+    {
+      "name": "cursorCombinedPlanAndRequestsNormalizeBothRows",
+      "payload": {
+        "membershipType": "Pro",
+        "billingCycleStart": 1772556293029,
+        "billingCycleEnd": 1775234693029,
+        "planUsage": {
+          "totalPercentUsed": 4
+        },
+        "requestUsage": {
+          "gpt-4": {
+            "numRequests": 77,
+            "maxRequestUsage": 500
+          }
+        }
+      },
+      "expected": {
+        "cursor:total": 0.96,
+        "cursor:requests": 0.846
+      }
+    },
+    {
+      "name": "cursorPlanUsagePercentBreakdownNormalizesAutoAndApiRows",
+      "payload": {
+        "membershipType": "Free",
+        "billingCycleEnd": 1781677951075,
+        "planUsage": {
+          "totalSpend": 8,
+          "bonusSpend": 8,
+          "totalPercentUsed": 4,
+          "autoPercentUsed": 8,
+          "apiPercentUsed": 0
+        }
+      },
+      "expected": {
+        "cursor:total": 0.96,
+        "cursor:auto": 0.92,
+        "cursor:api": 1
+      }
+    },
+    {
+      "name": "cursorPlanUsageStructuredBreakdownNormalizesAutoApiAndOnDemandRows",
+      "payload": {
+        "membershipType": "Pro",
+        "billingCycleEnd": 1781677951075,
+        "planUsage": {
+          "totalPercentUsed": 20,
+          "breakdown": {
+            "auto": {
+              "used": 12,
+              "limit": 100
+            },
+            "api": {
+              "remaining": 90,
+              "limit": 100
+            },
+            "onDemand": {
+              "remaining": 15,
+              "limit": 20
+            }
+          }
+        }
+      },
+      "expected": {
+        "cursor:total": 0.8,
+        "cursor:auto": 0.88,
+        "cursor:api": 0.9,
+        "cursor:on_demand": 0.75
+      }
+    },
+    {
+      "name": "cursorIndividualUsageBreakdownNormalizesPlanBreakdownAndOnDemandRows",
+      "payload": {
+        "membershipType": "Pro",
+        "billingCycleEnd": 1781677951075,
+        "individualUsage": {
+          "plan": {
+            "limit": 100,
+            "remaining": 80,
+            "breakdown": [
+              {
+                "label": "Auto",
+                "used": 9,
+                "limit": 100
+              },
+              {
+                "label": "API",
+                "remaining": 95,
+                "limit": 100
+              }
+            ]
+          },
+          "onDemand": {
+            "limit": 20,
+            "remaining": 19
+          }
+        }
+      },
+      "expected": {
+        "cursor:total": 0.8,
+        "cursor:auto": 0.91,
+        "cursor:api": 0.95,
+        "cursor:on_demand": 0.95
+      }
+    },
+    {
+      "name": "cursorIndividualUsageZeroSummaryIsRejected",
+      "payload": {
+        "individualUsage": {
+          "plan": {
+            "used": 0,
+            "limit": 0,
+            "remaining": 0
+          }
+        }
+      },
+      "expected": null
+    }
+  ]
+}

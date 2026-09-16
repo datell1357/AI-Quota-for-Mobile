@@ -29,6 +29,7 @@ public struct StoredAccountSessionSource: AccountSessionSource {
                 case .grok: url = URL(string: "https://grok.com/")!
                 case .claude: url = URL(string: "https://claude.ai/")!
                 case .codex: url = URL(string: "https://chatgpt.com/")!
+                case .cursor: url = CursorWebClient.origin
                 default: throw CollectorError.unsupported
                 }
                 let scoped = WebCookieSession(profileID: profile, origin: url, store: webProfiles,

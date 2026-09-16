@@ -98,7 +98,8 @@ import WebKit
         }
     }
     func cancel() async -> Bool {
-        webView?.stopLoading(); webView?.navigationDelegate = nil; webView?.uiDelegate = nil; webView = nil
+        webView?.stopLoading(); webView?.navigationDelegate = nil; webView?.uiDelegate = nil
+        webView?.removeFromSuperview(); webView = nil
         guard phase != .finished else { return true }
         if let attempt, let login = model.login, !(await login.cancel(attempt)) { return false }
         cancelled = true

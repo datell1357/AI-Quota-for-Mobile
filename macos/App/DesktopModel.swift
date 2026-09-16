@@ -38,6 +38,8 @@ private struct CollectorRegistry: UsageCollector {
     private(set) var accountOperations = Set<UUID>()
     private(set) var credentialCleanupPending = false
     private(set) var cleaningCredentials = false
+    private var credentialCleanupRequested = false
+    private var dismissedSheetCleanup: Task<Void, Never>?
     private var loginRetryTasks: [UUID: Task<Void, Never>] = [:]
     var notificationStatus: UNAuthorizationStatus = .notDetermined
     var loginItemStatus = SMAppService.mainApp.status
@@ -93,7 +95,7 @@ private struct CollectorRegistry: UsageCollector {
             try await login.recoverAbandonedLogins()
             self.login = login
             let source = StoredAccountSessionSource(login: login, webProfiles: webProfiles)
-            let registry = CollectorRegistry(collectors: [.claude: ClaudeWebCollector(sessions: source), .codex: CodexSubscriptionCollector(sessions: source), .grok: GrokWeeklyCollector(sessions: source), .glm: GLMAPICollector(sessions: source)])
+            let registry = CollectorRegistry(collectors: [.claude: ClaudeWebCollector(sessions: source), .codex: CodexSubscriptionCollector(sessions: source), .cursor: CursorWebCollector(sessions: source), .grok: GrokWeeklyCollector(sessions: source), .glm: GLMAPICollector(sessions: source)])
             let coordinator = RefreshCoordinator(repository: repository, collector: registry, didUpdate: { [weak self] _ in await self?.reload() })
             self.coordinator = coordinator
             if ProcessInfo.processInfo.arguments.contains("--data-directory") {
@@ -227,11 +229,30 @@ private struct CollectorRegistry: UsageCollector {
         await reload(); await retryCredentialCleanup()
     }
     func retryCredentialCleanup() async {
-        guard let login, !cleaningCredentials else { return }
+        guard let login else { return }
+        credentialCleanupRequested = true
+        guard !cleaningCredentials else { return }
         cleaningCredentials = true
         defer { cleaningCredentials = false }
-        do { credentialCleanupPending = try await login.retryCleanup() > 0 }
-        catch { credentialCleanupPending = true }
+        repeat {
+            credentialCleanupRequested = false
+            do { credentialCleanupPending = try await login.retryCleanup() > 0 }
+            catch { credentialCleanupPending = true }
+        } while credentialCleanupRequested
+    }
+    func cleanupAfterSheetDismissal() {
+        dismissedSheetCleanup?.cancel()
+        dismissedSheetCleanup = Task { [weak self] in
+            guard let self else { return }
+            await retryCredentialCleanup()
+            // WebKit can retain a loading view after AppKit detaches it. Bounded retries allow
+            // that asynchronous release; persistent failures remain journaled and user-visible.
+            for delay in [1, 3] {
+                guard credentialCleanupPending, !Task.isCancelled else { return }
+                do { try await Task.sleep(for: .seconds(delay)) } catch { return }
+                await retryCredentialCleanup()
+            }
+        }
     }
     func reorder(_ id: UUID, offset: Int) async {
         guard let repository else { return }

@@ -20,13 +20,15 @@ struct WebLoginSheet: View {
             }
             Text(flow.service == .grok
                  ? model.text("Google 또는 X 등을 통해 로그인을 마친 뒤 ‘계정 확인’을 누르세요. 메시지를 보낼 필요 없이 개인 계정의 사용량을 확인해 연결합니다.", "After signing in with Google, X or another method, choose Check account. Your personal account's usage is verified without sending a message.")
+                 : flow.service == .cursor
+                 ? model.text("Cursor 웹 로그인을 마친 뒤 ‘계정 확인’을 누르세요. 이 화면의 계정과 사용량을 확인하며, 설치된 Cursor 앱의 계정은 가져오지 않습니다.", "Sign in to Cursor here, then choose Check account. This web account and its usage are verified independently of the installed Cursor app.")
                  : model.text("로그인을 마친 뒤 ‘계정 확인’을 누르세요. 선택한 워크스페이스의 사용량을 확인해야 연결됩니다.", "After signing in, choose Check account. The selected workspace's usage must be verified before connecting."))
                 .foregroundStyle(.secondary)
             if let error = flow.errorMessage {
                 Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
             }
-            if let webView = flow.webView {
-                LoginWebView(webView: webView).frame(maxWidth: .infinity, maxHeight: .infinity)
+            if flow.webView != nil {
+                LoginWebView(flow: flow).frame(maxWidth: .infinity, maxHeight: .infinity)
                     .overlay { if flow.busy { Color.black.opacity(0.12); ProgressView().controlSize(.large) } }
             } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
             if let discovery = flow.discovery {
@@ -66,7 +68,18 @@ struct WebLoginSheet: View {
 }
 
 private struct LoginWebView: NSViewRepresentable {
-    let webView: WKWebView
-    func makeNSView(context: Context) -> WKWebView { webView }
-    func updateNSView(_ nsView: WKWebView, context: Context) {}
+    let flow: WebLoginFlow
+    // SwiftUI can cache its native view after dismissing a sheet. Cache an empty host instead of
+    // the WKWebView itself so cancellation can release the profile before the next sheet opens.
+    func makeNSView(context: Context) -> NSView { NSView() }
+    func updateNSView(_ nsView: NSView, context: Context) {
+        guard let webView = flow.webView, webView.superview !== nsView else { return }
+        for child in nsView.subviews { child.removeFromSuperview() }
+        webView.frame = nsView.bounds
+        webView.autoresizingMask = [.width, .height]
+        nsView.addSubview(webView)
+    }
+    static func dismantleNSView(_ nsView: NSView, coordinator: ()) {
+        for child in nsView.subviews { child.removeFromSuperview() }
+    }
 }

@@ -40,7 +40,10 @@ private struct DesktopRoot<Content: View>: View {
                 if phase == .active { Task { await model.updatePermissionStatus(); await model.retryCredentialCleanup() } }
             }
             .sheet(item: Binding(get: { presentsSheets ? model.sheet : nil },
-                                 set: { if presentsSheets { model.sheet = $0 } })) { sheet in
+                                 set: { if presentsSheets { model.sheet = $0 } }), onDismiss: {
+                // WebKit may reject profile removal while the sheet still retains its web view.
+                model.cleanupAfterSheetDismissal()
+            }) { sheet in
                 Group {
                     switch sheet {
                     case .providers: ProviderChooser()
