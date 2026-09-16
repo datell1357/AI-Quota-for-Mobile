@@ -55,6 +55,14 @@ login/identity verification and the other adapters remain pending.
 Dependency pins and preserved license texts are under `Packages/AIQuotaCollectors/Package.resolved`
 and `Resources/ThirdPartyLicenses`.
 
+GLM now has a native API-key connection sheet and an account-scoped collector for Global/CN,
+personal/team quotas. Verified keys are stored in Keychain. The quota API exposes no user ID:
+the connection is explicitly bound to a credential fingerprint and the selected scope, which are
+excluded from display snapshots. Empty/invalid responses preserve the last reading; an explicit
+no-subscription response clears usage without inventing a full quota. See
+[Docs/glm-api-key.ko.md](Docs/glm-api-key.ko.md) for the contract, regression evidence and remaining
+live-account, web-login and key/scope replacement work.
+
 ## Authentication package
 
 ```sh

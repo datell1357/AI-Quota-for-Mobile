@@ -12,9 +12,9 @@ import WidgetKit
 
 struct AccountSelection: Identifiable { let id: UUID }
 enum DesktopSheet: Identifiable {
-    case providers, edit(AccountSelection), connect(AccountSelection), widgets
+    case providers, edit(AccountSelection), connect(AccountSelection), glmAPIKey(AccountSelection), widgets
     var id: String {
-        switch self { case .providers: "providers"; case .edit(let account): "edit-\(account.id)"; case .connect(let account): "connect-\(account.id)"; case .widgets: "widgets" }
+        switch self { case .providers: "providers"; case .edit(let account): "edit-\(account.id)"; case .connect(let account): "connect-\(account.id)"; case .glmAPIKey(let account): "glm-api-key-\(account.id)"; case .widgets: "widgets" }
     }
 }
 
@@ -88,7 +88,7 @@ private struct CollectorRegistry: UsageCollector {
             self.repository = repository
             let login = LoginCoordinator(repository: repository, vault: KeychainCredentialVault()); self.login = login
             let source = StoredAccountSessionSource(login: login, webProfiles: webProfiles)
-            let registry = CollectorRegistry(collectors: [.claude: ClaudeWebCollector(sessions: source), .codex: CodexSubscriptionCollector(sessions: source), .grok: GrokWeeklyCollector(sessions: source)])
+            let registry = CollectorRegistry(collectors: [.claude: ClaudeWebCollector(sessions: source), .codex: CodexSubscriptionCollector(sessions: source), .grok: GrokWeeklyCollector(sessions: source), .glm: GLMAPICollector(sessions: source)])
             let coordinator = RefreshCoordinator(repository: repository, collector: registry, didUpdate: { [weak self] _ in await self?.reload() })
             self.coordinator = coordinator
             if ProcessInfo.processInfo.arguments.contains("--data-directory") {

@@ -105,6 +105,26 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "C48DE2FA3EC673796CB1621A";
 		};
+		"0F43758DD0ACDB46958D2209" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/GLMAPIKeyFlow.swift";
+			"sourceTree" = "<group>";
+		};
+		"F4FA9A8BC5B6D4F9BE27A7C8" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "0F43758DD0ACDB46958D2209";
+		};
+		"4E0D2DDB356A881302D20789" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/GLMAPIKeySheet.swift";
+			"sourceTree" = "<group>";
+		};
+		"F2A39B41095916FA195FE061" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "4E0D2DDB356A881302D20789";
+		};
 		"E421DE4BB0F0B0D403F55EE9" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -296,6 +316,8 @@
 				"4C66D44041444A51E8BC1AC3",
 				"BB37325D77217DFCAF99A95F",
 				"C48DE2FA3EC673796CB1621A",
+				"0F43758DD0ACDB46958D2209",
+				"4E0D2DDB356A881302D20789",
 				"E421DE4BB0F0B0D403F55EE9",
 				"3E1B078E8ED8FFAA81539565",
 				"D6AEB21F842D664D51957399",
@@ -376,6 +398,8 @@
 				"7944E59FE06782CD55A0CF45",
 				"C3FB253ECE328D808E47BFF3",
 				"57FE3EA0A2AD4E4A5A012D8B",
+				"F4FA9A8BC5B6D4F9BE27A7C8",
+				"F2A39B41095916FA195FE061",
 				"011022ADDEE17783E8392387",
 				"8303EE0AE0E2C4B11843F6A1",
 				"F3FE5820138085190FFBAAA0",

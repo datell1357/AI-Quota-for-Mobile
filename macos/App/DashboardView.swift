@@ -127,6 +127,11 @@ struct AccountDetailView: View {
                         Task { await model.addAccount(account.provider) }
                     }.accessibilityIdentifier("account.addAnother")
                 }
+                if account.provider == .glm {
+                    Button(model.text("API 키로 연결", "Connect with API key")) {
+                        model.sheet = .glmAPIKey(AccountSelection(id: account.id))
+                    }.buttonStyle(.borderedProminent).accessibilityIdentifier("account.connectGLM")
+                }
                 if account.state != .disconnected {
                     Button(model.text("연결 해제", "Disconnect"), role: .destructive) { confirmingDisconnect = true }
                 }
