@@ -118,6 +118,12 @@ preferences and Claude/Codex/Grok login screens are wired to the local authority
 login screens and signed WidgetKit runtime verification are still pending; adding an account card does not authenticate it. See the status document for
 actual native UI verification and remaining notification, menu-bar and signing checks.
 
+Notifications are claimed from the current account database immediately before submission. Account
+removal/disconnect pauses that account's submissions and retracts an overlapping request before
+changing the account. The existing at-most-once policy can still lose a notification if the process
+exits or the OS rejects it after consumption. See [Docs/notification-delivery.ko.md](Docs/notification-delivery.ko.md)
+for race tests and the outstanding real OS delivery/retraction checks.
+
 ## System widgets
 
 The generated project embeds `AIQuotaWidgets.appex`. It contains six configurable kinds: account,

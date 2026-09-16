@@ -320,6 +320,26 @@ public actor AccountRepository {
         try database.execute("UPDATE notification_events SET delivered=1 WHERE id=?", [.text(id)])
     }
 
+    /// Atomically consume a still-pending event with its current account, never a cached UI snapshot.
+    /// Consumption precedes OS submission to preserve the existing at-most-once delivery policy.
+    public func claimNotification(_ id: String) throws -> (event: UsageNotification, account: Account)? {
+        try database.transaction {
+            guard let payload = try database.scalar("SELECT payload FROM notification_events WHERE id=? AND delivered=0", [.text(id)])
+            else { return nil }
+            let event = try decode(UsageNotification.self, payload)
+            let account = try account(event.accountID)
+            try markNotificationDelivered(id)
+            guard account.credentialReference != nil, account.state == .connected || account.state == .stale else { return nil }
+            switch event.kind {
+            case .lowRemaining:
+                guard let threshold = account.notifications.thresholdPercent, threshold == event.thresholdPercent else { return nil }
+            case .resetBoundary:
+                guard account.notifications.resetEnabled else { return nil }
+            }
+            return (event, account)
+        }
+    }
+
     public func displaySnapshot(now: Date = .now) throws -> WidgetSnapshot {
         try database.transaction {
             let revision = try integer("SELECT value FROM metadata WHERE key='revision'")

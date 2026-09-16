@@ -59,7 +59,7 @@ private struct CollectorRegistry: UsageCollector {
     private var reloadSequence: UInt64 = 0
     private var environmentMonitor: EnvironmentMonitor?
     @ObservationIgnored private var panelController: DesktopPanelController?
-    let notificationDelivery = NotificationDelivery()
+    let notificationDelivery = NotificationDispatcher()
 
     func text(_ korean: String, _ english: String) -> String { preferences.usesKorean ? korean : english }
     var visibleAccounts: [DisplayAccount] { snapshot.accounts.filter { !$0.isHidden } }
@@ -137,7 +137,7 @@ private struct CollectorRegistry: UsageCollector {
             snapshot = updated
             schedulePublication()
             Task {
-                do { try await notificationDelivery.deliver(repository: repository, snapshot: updated, korean: preferences.usesKorean) }
+                do { try await notificationDelivery.deliver(repository: repository, sender: SystemNotificationSender(korean: preferences.usesKorean)) }
                 catch { show(error) }
             }
         } catch { show(error) }
@@ -205,19 +205,26 @@ private struct CollectorRegistry: UsageCollector {
     func disconnect(_ id: UUID) async {
         guard let login, accountOperations.insert(id).inserted else { return }
         defer { accountOperations.remove(id) }
-        do { await coordinator?.cancelAccount(id); try await login.disconnect(id); await reload(); await retryCredentialCleanup() }
+        await notificationDelivery.beginAccountChange(id)
+        await notificationDelivery.drainAccount(id)
+        do { await coordinator?.cancelAccount(id); try await login.disconnect(id) }
         catch { show(error) }
+        await notificationDelivery.endAccountChange(id)
+        await reload(); await retryCredentialCleanup()
     }
     func removeAccount(_ id: UUID) async {
         guard let login, accountOperations.insert(id).inserted else { return }
         defer { accountOperations.remove(id) }
+        await notificationDelivery.beginAccountChange(id)
+        await notificationDelivery.drainAccount(id)
         do {
             await coordinator?.cancelAccount(id)
             try await login.removeAccount(id)
             loginRetryTasks.removeValue(forKey: id)?.cancel(); loginRetryAfter[id] = nil
             if selectedAccountID == id { selectedAccountID = nil }
-            await reload(); await retryCredentialCleanup()
         } catch { show(error) }
+        await notificationDelivery.endAccountChange(id)
+        await reload(); await retryCredentialCleanup()
     }
     func retryCredentialCleanup() async {
         guard let login, !cleaningCredentials else { return }
