@@ -1,0 +1,10 @@
+{
+  "provenance": {
+    "file": "android/app/src/test/java/com/aiquota/mobile/providers/GrokWeeklyCreditsFetcherTest.kt",
+    "sha256": "81d1186c78efcdd4a5499de010dfb5325a41a53c8ff7bf23e545e89bdc9744fe",
+    "fixture": "zeroUsageResponse"
+  },
+  "hex": "00000000480a4612001a00220c0889e880d40610f8feebb6012a0c0889dda5d40610f8feebb601421e0802120c0889e880d40610f8feebb6011a0c0889dda5d40610f8feebb601580162006801800000000f677270632d7374617475733a300d0a",
+  "remainingFraction": 1,
+  "resetsAt": "2026-08-22T09:40:25Z"
+}

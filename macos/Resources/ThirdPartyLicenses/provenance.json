@@ -1,0 +1,104 @@
+{
+  "resolvedFrom": "../../Packages/AIQuotaCollectors/Package.resolved",
+  "files": [
+    {
+      "dependency": "CodexBar",
+      "source": "LICENSE",
+      "file": "CodexBar-LICENSE.txt",
+      "sha256": "14293556b79940745123d0160c71d27ed0e9fe9b8a848093f3ed78f4853caafe",
+      "sourceSHA256": "14293556b79940745123d0160c71d27ed0e9fe9b8a848093f3ed78f4853caafe"
+    },
+    {
+      "dependency": "CodexBar",
+      "source": "Sources/CQuickJS/LICENSE",
+      "file": "CodexBar-Sources-CQuickJS-LICENSE.txt",
+      "sha256": "d87922bc69421b002ec2dc1aaffe02eabd12ca6b6212273691fb8231f238b5a1",
+      "sourceSHA256": "96f73f9d2a16c21a36b418f06073be26e7d6d5e7c1bc99756b21a4f2c74ef171"
+    },
+    {
+      "dependency": "CodexBar",
+      "source": "docs/THIRD_PARTY_LICENSES.md",
+      "file": "CodexBar-docs-THIRD_PARTY_LICENSES.md.txt",
+      "sha256": "ff51177d3ce102136992d9d483238fa35fa395033de9cde8552a66e65a51fd21",
+      "sourceSHA256": "ff51177d3ce102136992d9d483238fa35fa395033de9cde8552a66e65a51fd21"
+    },
+    {
+      "dependency": "SweetCookieKit",
+      "source": "LICENSE",
+      "file": "SweetCookieKit-LICENSE.txt",
+      "sha256": "14293556b79940745123d0160c71d27ed0e9fe9b8a848093f3ed78f4853caafe",
+      "sourceSHA256": "14293556b79940745123d0160c71d27ed0e9fe9b8a848093f3ed78f4853caafe"
+    },
+    {
+      "dependency": "swift-crypto",
+      "source": "LICENSE.txt",
+      "file": "swift-crypto-LICENSE.txt.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "sourceSHA256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "dependency": "swift-crypto",
+      "source": "NOTICE.txt",
+      "file": "swift-crypto-NOTICE.txt.txt",
+      "sha256": "b3ddc2ae068e76b3beb71be03c0400f90090f9469aa491bf7b1ac42320af37b8",
+      "sourceSHA256": "b3ddc2ae068e76b3beb71be03c0400f90090f9469aa491bf7b1ac42320af37b8"
+    },
+    {
+      "dependency": "swift-log",
+      "source": "LICENSE.txt",
+      "file": "swift-log-LICENSE.txt.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "sourceSHA256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "dependency": "swift-log",
+      "source": "NOTICE.txt",
+      "file": "swift-log-NOTICE.txt.txt",
+      "sha256": "879b241d49b407215a0ad8e1c6a71c358d7b29591b090cf379d37a5f50cff918",
+      "sourceSHA256": "879b241d49b407215a0ad8e1c6a71c358d7b29591b090cf379d37a5f50cff918"
+    },
+    {
+      "dependency": "swift-asn1",
+      "source": "LICENSE.txt",
+      "file": "swift-asn1-LICENSE.txt.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "sourceSHA256": "8c6db340475136df3c1201d458fa5755698eace76e510471ecc9d857d6083dac"
+    },
+    {
+      "dependency": "swift-asn1",
+      "source": "NOTICE.txt",
+      "file": "swift-asn1-NOTICE.txt.txt",
+      "sha256": "570ef2dc97e91403cb8a9b322a66cdd4107821d225a20e7df892700d7ad9586b",
+      "sourceSHA256": "11dd3b3b783e6ec26098dd38ebc962986ea109b85447e28e62867b83bd0f8c5b"
+    },
+    {
+      "dependency": "Commander",
+      "source": "LICENSE",
+      "file": "Commander-LICENSE.txt",
+      "sha256": "14293556b79940745123d0160c71d27ed0e9fe9b8a848093f3ed78f4853caafe",
+      "sourceSHA256": "14293556b79940745123d0160c71d27ed0e9fe9b8a848093f3ed78f4853caafe"
+    },
+    {
+      "dependency": "KeyboardShortcuts",
+      "source": "license",
+      "file": "KeyboardShortcuts-license.txt",
+      "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3",
+      "sourceSHA256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+    },
+    {
+      "dependency": "Sparkle",
+      "source": "LICENSE",
+      "file": "Sparkle-LICENSE.txt",
+      "sha256": "816be66341dd11b22806862dffd8392b240babaced1cdf24da2ff413ef00c3fd",
+      "sourceSHA256": "389a4e4e9a32f059775b13a06e25a591445ba229d2838d26dd3e7c0c45127cfe"
+    },
+    {
+      "dependency": "Vortex",
+      "source": "LICENSE",
+      "file": "Vortex-LICENSE.txt",
+      "sha256": "5ecac440fbe9e244840edb76b386403bfc0384f229383959c2a3423319bf0e5d",
+      "sourceSHA256": "5ecac440fbe9e244840edb76b386403bfc0384f229383959c2a3423319bf0e5d"
+    }
+  ],
+  "formatting": "Trailing whitespace and trailing empty lines removed; license wording unchanged."
+}

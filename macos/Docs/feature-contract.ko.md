@@ -53,7 +53,7 @@
 
 ## CodexBar 연결 조사
 
-고정 커밋 `928166f899471bbdcb72210641cdec91324d0154`의 [Package.swift](https://raw.githubusercontent.com/datell1357/CodexBar/928166f899471bbdcb72210641cdec91324d0154/Package.swift)를 재확인했다. Swift 6.2/macOS 14, `CodexBarCore` library product와 `Resources` 처리, SweetCookieKit/Crypto/Logging/CQuickJS 의존성이 있다. Swift 파일 복사만으로 연결을 완료할 수 없다. 아직 의존성 resolve·빌드나 실제 어댑터 연결을 실행하지 않았다.
+고정 커밋 `928166f899471bbdcb72210641cdec91324d0154`의 [Package.swift](https://raw.githubusercontent.com/datell1357/CodexBar/928166f899471bbdcb72210641cdec91324d0154/Package.swift)를 재확인했다. Swift 6.2/macOS 14, `CodexBarCore` library product와 `Resources` 처리, SweetCookieKit/Crypto/Logging/CQuickJS 의존성이 있다. SPM resolve·실제 컴파일·Codex 파서 연결을 완료했다. GLM 리소스는 독립 실행 파일에서 실제 JS 엔진과 합성 전송으로 확인했다. Codex/Grok 수집기의 계정 분리·HTTP 오류 경로는 검증했으며 실계정 로그인·수집은 아직 검증하지 않았다.
 
 
 전체 출시 조건은 ../../docs/macos-implementation-plan.ko.md를 따른다.

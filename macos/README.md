@@ -29,3 +29,20 @@ The core uses system SQLite and CryptoKit. It has no third-party Swift package d
 `AccountRepository` is the single account authority. Collectors must obtain a lease and return a
 verified `RemoteIdentity`; presentation changes never mutate identity. `SnapshotFileStore` writes
 only the display projection, and WidgetKit must not read the account database or credentials.
+
+## Collectors and dependency resources
+
+```sh
+bash macos/Scripts/test-collectors.sh
+```
+
+This resolves the pinned CodexBarCore dependency, builds the collectors, stages a separate resource
+smoke host, runs the bundled GLM JavaScript plugin against synthetic HTTP responses, and runs the
+Swift tests. Temporary smoke hosts are retained under `.build/collectors`. XCTest's executable is
+outside the product directory; the resource test therefore launches our actual executable host.
+
+`CodexSubscriptionCollector` and `GrokWeeklyCollector` require an account-scoped
+`AccountSessionSource`. They do not read global browser cookies or rotate CLI refresh tokens.
+Authenticated live-provider access, Keychain integration, and the other adapters remain pending.
+Dependency pins and preserved license texts are under `Packages/AIQuotaCollectors/Package.resolved`
+and `Resources/ThirdPartyLicenses`.
