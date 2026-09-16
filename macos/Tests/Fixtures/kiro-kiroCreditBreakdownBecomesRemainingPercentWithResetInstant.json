@@ -1,0 +1,30 @@
+{
+  "id": "kiroCreditBreakdownBecomesRemainingPercentWithResetInstant",
+  "provider": "kiro",
+  "source": "NETWORK_RESPONSE",
+  "provenance": {
+    "file": "android/app/src/test/java/com/aiquota/mobile/providers/ProviderUsageNormalizerTest.kt",
+    "test": "kiroCreditBreakdownBecomesRemainingPercentWithResetInstant",
+    "sha256": "eefc278c1721e55d9216c200856ae3b90321579c125d75de78b9e33bcf130157"
+  },
+  "payload": {
+    "provider": "kiro",
+    "plan": "KIRO PRO MAX",
+    "planType": "Q_DEVELOPER_STANDALONE_PRO_MAX",
+    "resetsAt": 1785542400,
+    "entries": [
+      {
+        "key": "kiro:credit",
+        "label": "Credits",
+        "used": 66.05,
+        "limit": 5000.0,
+        "resetsAt": 1785542400
+      }
+    ]
+  },
+  "expectedRemainingFractions": [
+    0.98679
+  ],
+  "tolerance": 0.001,
+  "note": "Android regression input and assertions. Synthetic identifiers only. Not live macOS evidence."
+}

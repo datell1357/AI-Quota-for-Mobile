@@ -1,0 +1,45 @@
+{
+  "id": "glmCreditLimitResponseNormalizesFiveHourAndWeeklyWindows",
+  "provider": "glm",
+  "source": "PROVIDER_API",
+  "provenance": {
+    "file": "android/app/src/test/java/com/aiquota/mobile/providers/ProviderUsageNormalizerTest.kt",
+    "test": "glmCreditLimitResponseNormalizesFiveHourAndWeeklyWindows",
+    "sha256": "eefc278c1721e55d9216c200856ae3b90321579c125d75de78b9e33bcf130157"
+  },
+  "payload": {
+    "code": 200,
+    "msg": "操作成功",
+    "success": true,
+    "data": {
+      "limits": [
+        {
+          "type": "CREDIT_LIMIT",
+          "unit": 3,
+          "number": 5,
+          "usage": 2000,
+          "currentValue": 500,
+          "remaining": 1500,
+          "percentage": 25
+        },
+        {
+          "type": "CREDIT_LIMIT",
+          "unit": 6,
+          "number": 1,
+          "usage": 10000,
+          "currentValue": 0,
+          "remaining": 10000,
+          "percentage": 0,
+          "nextResetTime": 1786541561993
+        }
+      ],
+      "level": "lite"
+    }
+  },
+  "expectedRemainingFractions": [
+    0.75,
+    1.0
+  ],
+  "tolerance": 0.001,
+  "note": "Android regression input and assertions. Synthetic identifiers only. Not live macOS evidence."
+}

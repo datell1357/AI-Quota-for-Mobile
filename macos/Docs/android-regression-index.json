@@ -1,0 +1,1055 @@
+{
+  "formatVersion": 1,
+  "purpose": "Android regression source index for later macOS fixture migration; not runtime evidence",
+  "files": [
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/providers/ProviderUsageNormalizerTest.kt",
+      "sha256": "eefc278c1721e55d9216c200856ae3b90321579c125d75de78b9e33bcf130157",
+      "tests": [
+        {
+          "name": "claudeUsageApiNormalizesQuotaWindows",
+          "line": 15
+        },
+        {
+          "name": "claudeSkipsUnusedInternalCodenameBucketsButKeepsRealOnes",
+          "line": 42
+        },
+        {
+          "name": "claudeUsedPercentOneMeansOnePercentNotOneHundredPercent",
+          "line": 71
+        },
+        {
+          "name": "claudeStructuredWeeklyUtilizationOneMeansOnePercentNotOneHundredPercent",
+          "line": 96
+        },
+        {
+          "name": "claudeUsageApiNormalizesModelAndCoworkBuckets",
+          "line": 115
+        },
+        {
+          "name": "claudeUsageApiNormalizesAdditionalAliasAndContainerBuckets",
+          "line": 142
+        },
+        {
+          "name": "claudeUsageApiNormalizesCurrentRawExtraUsageAndIgnoresNullBuckets",
+          "line": 195
+        },
+        {
+          "name": "claudePlanFallsBackToSubscriptionMetadata",
+          "line": 237
+        },
+        {
+          "name": "claudePlanIgnoresDateLikeTopLevelLabelAndFallsBackToValidMetadata",
+          "line": 255
+        },
+        {
+          "name": "claudePlanIgnoresTimestampLikeSubscriptionMetadata",
+          "line": 274
+        },
+        {
+          "name": "claudePlanIgnoresNaturalLanguageDateLikeLabel",
+          "line": 292
+        },
+        {
+          "name": "claudePlanIgnoresResetAndBillingWindowLabel",
+          "line": 310
+        },
+        {
+          "name": "claudeRawRemainingAmountWithoutLimitIsRejected",
+          "line": 341
+        },
+        {
+          "name": "glmQuotaLimitResponseNormalizesTokenAndMcpLimits",
+          "line": 358
+        },
+        {
+          "name": "glmCreditLimitResponseNormalizesFiveHourAndWeeklyWindows",
+          "line": 400
+        },
+        {
+          "name": "glmQuotaLimitResponseKeepsPercentageOnlyTokenLimits",
+          "line": 433
+        },
+        {
+          "name": "glmQuotaLimitResponseSortsFiveHourWeeklyMonthlyRegardlessOfPayloadOrder",
+          "line": 481
+        },
+        {
+          "name": "glmWebPayloadSeparatesFiveHourAndWeeklyTokenLimits",
+          "line": 523
+        },
+        {
+          "name": "glmPlanNormalizesCodingPlanNamesToTierOnly",
+          "line": 564
+        },
+        {
+          "name": "opencodeVisibleDomPayloadNormalizesGoLimitsAndZenCredits",
+          "line": 599
+        },
+        {
+          "name": "opencodePayloadWithoutTrustedUsageMetricIsRejected",
+          "line": 656
+        },
+        {
+          "name": "codexWhamNormalizesPlanClaimsAndWindows",
+          "line": 678
+        },
+        {
+          "name": "codexPlanFallsBackToSubscriptionApiMetadata",
+          "line": 703
+        },
+        {
+          "name": "codexPlanFallsBackToSubscriptionListMetadata",
+          "line": 725
+        },
+        {
+          "name": "codexVisibleDomPayloadNormalizesSeparateSparkWindowsAndCredits",
+          "line": 754
+        },
+        {
+          "name": "codexVisibleDomPayloadKeepsOnePercentRemainingAsOnePercent",
+          "line": 806
+        },
+        {
+          "name": "codexVisibleDomSparkWindowsInheritMatchingResetTextWhenMissing",
+          "line": 840
+        },
+        {
+          "name": "codexVisibleDomPayloadDoesNotBorrowWeeklyResetForIdleSessionWindows",
+          "line": 878
+        },
+        {
+          "name": "codexWhamPrefersRemainingPercentWhenUsedPercentConflictsAfterReset",
+          "line": 918
+        },
+        {
+          "name": "codexWhamNormalizesSingularAndSiblingLimitShapes",
+          "line": 942
+        },
+        {
+          "name": "codexBareCreditsBalanceIsNotTreatedAsPercent",
+          "line": 967
+        },
+        {
+          "name": "codexCreditsBalanceWithoutLimitIsRejected",
+          "line": 986
+        },
+        {
+          "name": "codexStructuredPagePayloadNormalizesNestedUsageShape",
+          "line": 1001
+        },
+        {
+          "name": "codexCompactScriptPayloadNormalizesStoreApkRows",
+          "line": 1025
+        },
+        {
+          "name": "codexCompactRowsWithoutProviderPrefixStillNormalizeSessionAndWeekly",
+          "line": 1050
+        },
+        {
+          "name": "codexCompactRowsPreferRemainingPercentOverAmbiguousUsedField",
+          "line": 1073
+        },
+        {
+          "name": "codexCompactRowsCanReportZeroRemaining",
+          "line": 1096
+        },
+        {
+          "name": "codexAuthoritativeRateLimitCanReportZeroRemaining",
+          "line": 1120
+        },
+        {
+          "name": "codexSingleWindowIsLabelledWeeklyAndTwoWindowsKeepSessionAndWeekly",
+          "line": 1139
+        },
+        {
+          "name": "geminiCompactPayloadWithoutModelIdsIsRejected",
+          "line": 1165
+        },
+        {
+          "name": "geminiCompactPayloadDoesNotCreateCollapsedLimitRows",
+          "line": 1186
+        },
+        {
+          "name": "geminiUsagePageLimitPayloadNormalizesDomRows",
+          "line": 1207
+        },
+        {
+          "name": "geminiPayloadWithoutUsageMetricIsRejected",
+          "line": 1237
+        },
+        {
+          "name": "geminiUnknownPlanAndUnsupportedUsageLabelsAreRejected",
+          "line": 1257
+        },
+        {
+          "name": "geminiNetworkCodeAssistQuotaBucketsAreRejected",
+          "line": 1278
+        },
+        {
+          "name": "geminiNetworkCodeAssistPercentBucketsAreRejected",
+          "line": 1299
+        },
+        {
+          "name": "geminiCliOAuthQuotaPayloadNormalizesTargetShape",
+          "line": 1318
+        },
+        {
+          "name": "geminiCliOAuthQuotaPayloadHidesUnavailableFreePlanProBuckets",
+          "line": 1350
+        },
+        {
+          "name": "geminiCliOAuthQuotaPayloadKeepsExhaustedPaidPlanProBuckets",
+          "line": 1389
+        },
+        {
+          "name": "geminiLoadCodeAssistTierControlsPlanLabel",
+          "line": 1414
+        },
+        {
+          "name": "geminiCodeAssistRequestsCarryProjectContext",
+          "line": 1431
+        },
+        {
+          "name": "geminiStructuredCodeAssistPayloadUsesPaidTierAndTrustedQuotaBuckets",
+          "line": 1445
+        },
+        {
+          "name": "geminiStructuredCodeAssistPayloadDoesNotInventUnknownPlan",
+          "line": 1483
+        },
+        {
+          "name": "geminiAuthenticatedPlanPayloadWithoutQuotaMetricIsRejected",
+          "line": 1515
+        },
+        {
+          "name": "geminiAuthenticatedSessionPayloadWithoutQuotaMetricIsRejected",
+          "line": 1539
+        },
+        {
+          "name": "geminiAuthenticatedUltraPayloadWithoutQuotaMetricIsRejected",
+          "line": 1563
+        },
+        {
+          "name": "copilotEntitlementNormalizesPremiumQuota",
+          "line": 1587
+        },
+        {
+          "name": "copilotNestedQuotaShapeNormalizesSubscriptionLimits",
+          "line": 1608
+        },
+        {
+          "name": "copilotQuotaSnapshotsNormalizePremiumInteractions",
+          "line": 1640
+        },
+        {
+          "name": "copilotQuotaSnapshotsWinOverLegacyZeroPremiumRequests",
+          "line": 1674
+        },
+        {
+          "name": "copilotBillingPremiumRequestsWinOverLegacyZeroPremiumRequests",
+          "line": 1710
+        },
+        {
+          "name": "copilotBillingPremiumRequestsWinOverZeroQuotaSnapshot",
+          "line": 1747
+        },
+        {
+          "name": "copilotBillingZeroEntitlementDoesNotCreateFakeZeroPercentGauge",
+          "line": 1786
+        },
+        {
+          "name": "copilotLimitedUserQuotasNormalizeFreeTierChatAndCompletions",
+          "line": 1823
+        },
+        {
+          "name": "copilotMissingCompletionQuotaDoesNotCreateZeroCompletionLine",
+          "line": 1852
+        },
+        {
+          "name": "copilotFeaturesPageUsageUsesGlobalResetForChatAndCompletions",
+          "line": 1875
+        },
+        {
+          "name": "copilotRemainingCountWithoutPercentOrLimitIsRejected",
+          "line": 1901
+        },
+        {
+          "name": "cursorUsageApiNormalizesCurrentPeriodUsage",
+          "line": 1922
+        },
+        {
+          "name": "cursorPercentUsageSurvivesZeroLimitAmounts",
+          "line": 1943
+        },
+        {
+          "name": "cursorPercentFieldsTreatOneAsOnePercentNotOneHundredPercent",
+          "line": 1965
+        },
+        {
+          "name": "cursorRequestBucketsNormalizeAsRequests",
+          "line": 1991
+        },
+        {
+          "name": "cursorCombinedPlanAndRequestsNormalizeBothRows",
+          "line": 2016
+        },
+        {
+          "name": "cursorPlanUsagePercentBreakdownNormalizesAutoAndApiRows",
+          "line": 2039
+        },
+        {
+          "name": "cursorPlanUsageStructuredBreakdownNormalizesAutoApiAndOnDemandRows",
+          "line": 2066
+        },
+        {
+          "name": "cursorIndividualUsageBreakdownNormalizesPlanBreakdownAndOnDemandRows",
+          "line": 2093
+        },
+        {
+          "name": "cursorIndividualUsageZeroSummaryIsRejected",
+          "line": 2124
+        },
+        {
+          "name": "antigravityCompactPayloadNormalizesStoreApkRows",
+          "line": 2141
+        },
+        {
+          "name": "antigravityPercentFieldsTreatOneAsOnePercentNotOneHundredPercent",
+          "line": 2168
+        },
+        {
+          "name": "antigravityCollectedPayloadDerivesPlanAndUsageLabels",
+          "line": 2193
+        },
+        {
+          "name": "antigravityAvailableModelsAreSortedByProductPriority",
+          "line": 2235
+        },
+        {
+          "name": "antigravityPayloadWithoutUsageMetricIsRejected",
+          "line": 2305
+        },
+        {
+          "name": "remainingAliasesAcceptZeroAndFullBoundariesAcrossProviders",
+          "line": 2325
+        },
+        {
+          "name": "genericDomTextDoesNotBecomeLiveUsage",
+          "line": 2360
+        },
+        {
+          "name": "snapshotJsonDropsSensitiveFields",
+          "line": 2371
+        },
+        {
+          "name": "grokRateLimitBucketsNormalizeToQueryLines",
+          "line": 2385
+        },
+        {
+          "name": "kimiEntriesNormalizeUsedRatioToRemainingPercent",
+          "line": 2418
+        },
+        {
+          "name": "kimiPercentStyleRatioIsTreatedAsPercentNotFraction",
+          "line": 2442
+        },
+        {
+          "name": "kiroCreditBreakdownBecomesRemainingPercentWithResetInstant",
+          "line": 2455
+        },
+        {
+          "name": "kiroSentinelLimitIsTreatedAsUncappedUsage",
+          "line": 2484
+        },
+        {
+          "name": "kiroPayloadWithoutUsableEntriesIsRejected",
+          "line": 2501
+        },
+        {
+          "name": "grokBucketWithoutWaitTimeHasNoResetGuess",
+          "line": 2519
+        }
+      ],
+      "validation": "inventoried only; not executed"
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/providers/ProviderNativeUsagePayloadFetcherTest.kt",
+      "sha256": "dc4892b1a0cd191c5b892c42d7a72609dc0ec4dbb304325fa905e90a8ec1b45f",
+      "tests": [
+        {
+          "name": "geminiIsCollectedThroughAboutBlankUsagePageNativeFetcher",
+          "line": 15
+        },
+        {
+          "name": "glmIsCollectedThroughAboutBlankNativeWebSessionFetcher",
+          "line": 26
+        },
+        {
+          "name": "claudeNativeUsagePayloadFetchUsesForwardedWebViewHeaders",
+          "line": 41
+        },
+        {
+          "name": "claudeNativeUsagePayloadIgnoresDateLikeGenericSubscriptionMetadata",
+          "line": 62
+        },
+        {
+          "name": "claudeNativeUsagePayloadUsesExplicitSafeSubscriptionPlanMetadata",
+          "line": 79
+        },
+        {
+          "name": "claudeDebugObservationKeepsFetchOrderAndPayloadBytes",
+          "line": 93
+        },
+        {
+          "name": "claudeDebugObservationUsesOnlyStructuralAllowlistedFields",
+          "line": 117
+        },
+        {
+          "name": "nativeUsageDiagnosticsExposeOnlySafeOptimizationMetrics",
+          "line": 159
+        },
+        {
+          "name": "cursorIsCollectedThroughAboutBlankNativeWebSessionFetcher",
+          "line": 180
+        },
+        {
+          "name": "cursorNativeUsagePayloadNormalizesCurrentPeriodUsage",
+          "line": 201
+        },
+        {
+          "name": "cursorNativeUsagePayloadStopsAfterTrustedCurrentPeriodUsage",
+          "line": 245
+        },
+        {
+          "name": "cursorNativeUsagePayloadContinuesAfterUntrustedCurrentPeriodUsage",
+          "line": 273
+        },
+        {
+          "name": "geminiNativeUsageSourceRejectsGenericOnlyCodeAssistAndDomFallbacks",
+          "line": 303
+        },
+        {
+          "name": "geminiUsagePageBatchExecutePayloadNormalizesUsedFiveHourAndWeeklyLimits",
+          "line": 324
+        },
+        {
+          "name": "geminiUsagePageBatchExecuteFractionRowNormalizesUsedFiveHourAndWeeklyLimits",
+          "line": 361
+        },
+        {
+          "name": "codexNativeUsagePayloadFetchUsesForwardedWebViewHeaders",
+          "line": 393
+        },
+        {
+          "name": "opencodeNativeUsagePayloadFetchesStoredGoUrlThroughNativeBridge",
+          "line": 425
+        },
+        {
+          "name": "cursorNativeUsagePayloadBuildsFromNativeFetchResultsWithoutDomFallback",
+          "line": 477
+        },
+        {
+          "name": "opencodeNativeUsagePayloadExtractsEmbeddedUsageJsonFromFetchedGoHtml",
+          "line": 520
+        },
+        {
+          "name": "opencodeNativeUsagePayloadExtractsServerUsageObjectFromFetchedGoHtml",
+          "line": 576
+        },
+        {
+          "name": "opencodeNativeUsagePayloadFetchesServerSubscriptionWhenGoHtmlHasNoUsageSignals",
+          "line": 627
+        },
+        {
+          "name": "opencodeNativeUsagePayloadFormatsResetSecondsWithSecondUnit",
+          "line": 684
+        },
+        {
+          "name": "opencodeNativeUsagePayloadRejectsBootstrapJsonWithoutUsageMetrics",
+          "line": 721
+        },
+        {
+          "name": "opencodeNativeUsagePayloadRejectsEmbeddedBootstrapBalanceWithoutCreditContext",
+          "line": 750
+        },
+        {
+          "name": "codexNativeUsagePayloadUsesWhamUsageWhenDashboardHasNoUsage",
+          "line": 781
+        },
+        {
+          "name": "codexNativeUsageSurvivesAncillary403WhenWhamUsageSucceeds",
+          "line": 811
+        },
+        {
+          "name": "codexNativeUsageIsNullWhenWhamUsageUnavailable",
+          "line": 842
+        },
+        {
+          "name": "codexNativeUsagePayloadDoesNotUseDashboardHtmlFallback",
+          "line": 860
+        },
+        {
+          "name": "codexNativeFetchedPayloadUsesWhamUsageJsonWithoutDomFallback",
+          "line": 882
+        },
+        {
+          "name": "grokNativeUsagePayloadCollectsOnlyWeeklyLine",
+          "line": 960
+        },
+        {
+          "name": "grokNativeUsagePayloadIsNullWhenWeeklyLimitIsUnavailable",
+          "line": 976
+        },
+        {
+          "name": "kimiNativeUsagePayloadCollectsSubscriptionRateLimitsAndGifts",
+          "line": 983
+        },
+        {
+          "name": "kimiNativeUsagePayloadIsNullWhenUnauthorized",
+          "line": 1014
+        },
+        {
+          "name": "kiroNativeUsagePayloadCollectsCreditBreakdownFromCapturedCborResponse",
+          "line": 1023
+        },
+        {
+          "name": "kiroNativeUsagePayloadIsNullWhenSessionCookieIsMissing",
+          "line": 1065
+        },
+        {
+          "name": "kiroNativeUsagePayloadIsNullWhenCborDecodeFails",
+          "line": 1074
+        },
+        {
+          "name": "kiroSessionExpiryIsReportedSeparatelyFromOtherFailures",
+          "line": 1083
+        }
+      ],
+      "validation": "inventoried only; not executed"
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/providers/GeminiUsagePageNativeFetcherTest.kt",
+      "sha256": "949c043dc558cd2d0a3c26f7fde2a4a6c6d9bc8aec5e6b1d032cb0bd9b0677bf",
+      "tests": [
+        {
+          "name": "usagePageHtmlSuppliesNativeRpcParams",
+          "line": 14
+        },
+        {
+          "name": "usagePageHtmlAllowsReadOnlyRpcWithoutAtToken",
+          "line": 32
+        },
+        {
+          "name": "usagePageHtmlAcceptsNonAd1AtTokenPrefix",
+          "line": 54
+        },
+        {
+          "name": "batchExecuteResponseInCurrentFormatParsesUsageLines",
+          "line": 74
+        },
+        {
+          "name": "accountScopedUsagePageSuppliesAccountScopedRpcSourcePath",
+          "line": 96
+        },
+        {
+          "name": "batchExecuteDiscoveryMetadataIsRedactedAndQuotaShaped",
+          "line": 115
+        },
+        {
+          "name": "batchExecuteJsf9QcDirectRowsPreserveSanitizedMetadata",
+          "line": 143
+        },
+        {
+          "name": "batchExecuteRpcDropsMalformedAndDateLikeMetadata",
+          "line": 166
+        },
+        {
+          "name": "batchExecuteDiscoveryMetadataSummarizesCandidateShapeWithoutRawPayload",
+          "line": 183
+        },
+        {
+          "name": "batchExecuteNestedOtAQ7bPayloadIsMetadataOnly",
+          "line": 206
+        },
+        {
+          "name": "usagePageHtmlDiscoveryMetadataIsRedactedAndListsCandidateRpcIds",
+          "line": 228
+        },
+        {
+          "name": "usagePageHtmlDiscoveryDecodesEscapedRpcIdSeparators",
+          "line": 261
+        },
+        {
+          "name": "usagePageBootstrapPayloadParsesQuotaRowsWithoutDomFallback",
+          "line": 281
+        },
+        {
+          "name": "usagePageBootstrapPayloadCarriesAccountPlanMetadata",
+          "line": 301
+        },
+        {
+          "name": "normalRpcPayloadReceivesHtmlMetadataWithoutChangingQuotaRows",
+          "line": 319
+        },
+        {
+          "name": "compactMetadataRequiresValidPairAndSkipsArbitraryObjectForLaterValidObject",
+          "line": 337
+        },
+        {
+          "name": "geminiNativeCollectionDoesNotDependOnUsagePageDomSessionCapture",
+          "line": 351
+        }
+      ],
+      "validation": "inventoried only; not executed"
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/providers/GlmUsageFetcherTest.kt",
+      "sha256": "cbfd87318dd4ae66a9c10b6c81481f2581db6ea4647ebc2a2603309241a18446",
+      "tests": [
+        {
+          "name": "retriesWithoutBearerAfterBearerUnauthorizedResponse",
+          "line": 23
+        },
+        {
+          "name": "retriesWithoutBearerWhenBearerResponseOnlyContainsMcpQuota",
+          "line": 79
+        },
+        {
+          "name": "webSessionFetchPreservesCapturedNativeHeaders",
+          "line": 128
+        },
+        {
+          "name": "webSessionFetchRejectsCookieOnlySessionBeforeNetwork",
+          "line": 196
+        },
+        {
+          "name": "repositoryWebSessionFetchReplaysSavedAuthorizationHeadersFromFreshStoreInstance",
+          "line": 209
+        },
+        {
+          "name": "repositoryWebSessionFetchKeepsCookieOnlyStateAuthRequired",
+          "line": 287
+        },
+        {
+          "name": "webSessionFetchAddsPlanFromExplicitTierResponseWithoutBreakingUsage",
+          "line": 305
+        },
+        {
+          "name": "webSessionFetchIgnoresDateOnlyAndGenericPlanFields",
+          "line": 356
+        },
+        {
+          "name": "webSessionFetchSkipsPlanWhenIncludePlanIsFalseAndKeepsQuotaRows",
+          "line": 407
+        },
+        {
+          "name": "webSessionPlanFailureKeepsSuccessfulUsageUnauthenticated",
+          "line": 454
+        }
+      ],
+      "validation": "inventoried only; not executed"
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/providers/CopilotNativeUsageFetcherTest.kt",
+      "sha256": "0b475324af3e6c20ef128a91cfc89f97e6d47f5899b7030a8512e0df003d2baa",
+      "tests": [
+        {
+          "name": "nativeCopilotFetchRequiresTokenBackedAuth",
+          "line": 12
+        },
+        {
+          "name": "nativeCopilotPayloadCarriesPremiumBillingCardIntoNormalizer",
+          "line": 17
+        },
+        {
+          "name": "nativeCopilotPayloadCarriesInlineSuggestionsFromInternalUserQuota",
+          "line": 63
+        },
+        {
+          "name": "copilotAuthTokenIsConvertedToGitHubBearerHeader",
+          "line": 110
+        },
+        {
+          "name": "copilotTokenCanBeRetriedAsGitHubApiTokenHeader",
+          "line": 126
+        },
+        {
+          "name": "copilotInternalUserResponseBuildsInlineSuggestionPayload",
+          "line": 142
+        },
+        {
+          "name": "githubSessionInternalUserEndpointIsAllowed",
+          "line": 173
+        },
+        {
+          "name": "nativeCopilotFetcherRejectsNonHttpsEndpointsBeforeNetworkAccess",
+          "line": 179
+        },
+        {
+          "name": "productionCopilotFetcherDoesNotUseSettingsOrBillingHtmlFallback",
+          "line": 186
+        }
+      ],
+      "validation": "inventoried only; not executed"
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/providers/CursorNativeUsageFetcherTest.kt",
+      "sha256": "2161783b3ecb8d783a4470fd09d0116c21f21fca03db11dcec59e8c3efe55e57",
+      "tests": [
+        {
+          "name": "nativeCursorFetcherRejectsNonHttpsEndpointsBeforeNetworkAccess",
+          "line": 7
+        }
+      ],
+      "validation": "inventoried only; not executed"
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/providers/ProviderUsageThresholdNotificationPolicyTest.kt",
+      "sha256": "c0a2a5994911163cee0f3fbc073cecfc3a4973d610e1bf2dd19b3fc8d09b53d5",
+      "tests": [
+        {
+          "name": "aboveThresholdArmsWithoutNotifying",
+          "line": 21
+        },
+        {
+          "name": "droppingToThresholdNotifiesOnceAndDisarms",
+          "line": 28
+        },
+        {
+          "name": "stayingLowDoesNotNotifyAgain",
+          "line": 36
+        },
+        {
+          "name": "smallOscillationDoesNotRearmButSufficientRecoveryDoes",
+          "line": 43
+        },
+        {
+          "name": "recoveryMarginStillAllowsFullRecoveryAtHighThreshold",
+          "line": 54
+        },
+        {
+          "name": "recoveringAboveThresholdReArms",
+          "line": 60
+        },
+        {
+          "name": "firstObservationAlreadyLowIsSuppressed",
+          "line": 67
+        },
+        {
+          "name": "disabledCardIsIgnored",
+          "line": 74
+        },
+        {
+          "name": "refreshingAndDisconnectedCardsAreSkipped",
+          "line": 82
+        },
+        {
+          "name": "linesTrackIndependentlyWithinOneCard",
+          "line": 94
+        }
+      ],
+      "validation": "inventoried only; not executed"
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/providers/ProviderResetNotificationPolicyTest.kt",
+      "sha256": "53143cf139fb5d257975365e98f3344f816ba0bb7729060ddb960034bd2d424f",
+      "tests": [
+        {
+          "name": "watchesFutureResetWithoutNotifying",
+          "line": 23
+        },
+        {
+          "name": "notifiesOnceWhenWallClockCrossesWatchedReset",
+          "line": 30
+        },
+        {
+          "name": "suppressesResetAlreadyPastOnFirstObservation",
+          "line": 39
+        },
+        {
+          "name": "storedResetNotifiesWhenProviderDropsTimestamp",
+          "line": 46
+        },
+        {
+          "name": "subSecondJitterDoesNotRenotify",
+          "line": 56
+        },
+        {
+          "name": "disabledRefreshingAndDisconnectedCardsAreIgnored",
+          "line": 67
+        },
+        {
+          "name": "linesNotifyIndependentlyWithinOneCard",
+          "line": 88
+        },
+        {
+          "name": "olderResetMustNotReplayAfterANewerBoundaryWasAlreadyNotified",
+          "line": 109
+        },
+        {
+          "name": "changingPastResetTimestampsDoesNotProduceANewAlertEveryRefresh",
+          "line": 117
+        },
+        {
+          "name": "migratedSubsecondStateDoesNotReplayAnAlreadyNotifiedBoundary",
+          "line": 130
+        },
+        {
+          "name": "genuinelyNewFutureWindowStillNotifiesAfterPreviousWindowCompleted",
+          "line": 137
+        }
+      ],
+      "validation": "inventoried only; not executed"
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/providers/GrokLoginCompletionTest.kt",
+      "sha256": "f55b0d97400c3152999e8077ca6eac065318f9869523cd8397e774495f290e5f",
+      "tests": [
+        {
+          "name": "weeklyCreditsRequestStartsLoginCollectionWithoutTheLegacyRateLimitsRequest",
+          "line": 9
+        },
+        {
+          "name": "legacyRateLimitsRequestStillStartsCollection",
+          "line": 17
+        },
+        {
+          "name": "unrelatedOriginsAndResourcesDoNotStartLoginCollection",
+          "line": 23
+        },
+        {
+          "name": "authenticatedChatStartsCollectionEvenWhenItMakesNoUsageRequest",
+          "line": 33
+        },
+        {
+          "name": "guestChatAndTrackingCookiesDoNotCompleteLogin",
+          "line": 42
+        },
+        {
+          "name": "signInSsoAndUntrustedPagesStayOpenEvenWithExistingSessionCookies",
+          "line": 50
+        }
+      ],
+      "validation": "inventoried only; not executed"
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/providers/V43RefreshRecoveryRegressionTest.kt",
+      "sha256": "b4c571f5f2490bfab8afc5c8bb80635fcadb0657adbba2cf4587b549d71e1efe",
+      "tests": [
+        {
+          "name": "automaticAuthFailurePreservesEveryReleasedProviderAndAllowsTheNextAttempt",
+          "line": 21
+        },
+        {
+          "name": "manualAuthFailureStillRequiresLoginAndAutomaticFailureCannotUndoExplicitInvalidation",
+          "line": 44
+        },
+        {
+          "name": "emptyExactCycleStopsInsteadOfSchedulingAnotherTick",
+          "line": 64
+        },
+        {
+          "name": "queuedManualRequestAndTemporaryWaitKeepTheirNextTick",
+          "line": 75
+        }
+      ],
+      "validation": "inventoried only; not executed"
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/providers/ProviderAccountRefreshSchedulerTest.kt",
+      "sha256": "e64b2b7bf7f624b75b751ab2ecd40107d3c0e94714a488d70aba746c87dea7b1",
+      "tests": [
+        {
+          "name": "zeroOneAndThousandEligibleCardsUseStableDurableFairCursor",
+          "line": 35
+        },
+        {
+          "name": "repeatedCyclesWrapWithoutStarvingAnyCardAndKeepRankOrder",
+          "line": 66
+        },
+        {
+          "name": "secondTriggerCoalescesWhileOneGlobalCollectorIsActive",
+          "line": 90
+        },
+        {
+          "name": "batchLaunchesAtMostFourAndFailureTimeoutCancelAdvanceExactQueue",
+          "line": 110
+        },
+        {
+          "name": "disconnectedReauthDeletedInactiveAndStaleBindingsAreNeverSelected",
+          "line": 136
+        },
+        {
+          "name": "authenticatedActiveValidBindingWithRecoverableUsageStateRemainsEligibleForRetry",
+          "line": 163
+        },
+        {
+          "name": "deletedGenerationAndSessionBCallbacksAreRejectedWithoutChangingAOrB",
+          "line": 208
+        },
+        {
+          "name": "exactNoncePublishesOnceToBAndDuplicateOrLateCallbackIsRejected",
+          "line": 234
+        },
+        {
+          "name": "retainedWebViewProfileAndNativeHeadersAreExactBindingKeyed",
+          "line": 252
+        },
+        {
+          "name": "schedulerTimeoutCleanupCallbackTargetsOnlyExactB",
+          "line": 268
+        },
+        {
+          "name": "malformedIntentFailsClosedAndDisabledModeUsesReservedDefaultOnly",
+          "line": 321
+        },
+        {
+          "name": "resetClearsSchedulerStateEvenWhenAuthorityAbandonThrows",
+          "line": 344
+        },
+        {
+          "name": "automaticCycleSkipsGlmWithoutSubscriptionButManualStillCollectsIt",
+          "line": 359
+        },
+        {
+          "name": "googlePendingWaitsWithoutStoppingAndBecomesDueAtTheExistingDeadline",
+          "line": 373
+        },
+        {
+          "name": "resetPriorityIsExactPerAccountAndDoesNotStarveAccountsOutsideTheBatch",
+          "line": 389
+        },
+        {
+          "name": "coalescedAutomaticRequestStillUsesSubscriptionPolicy",
+          "line": 417
+        },
+        {
+          "name": "ineligibleManualTargetDoesNotStopAnotherAuthenticatedAccount",
+          "line": 429
+        }
+      ],
+      "validation": "inventoried only; not executed"
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/local/ProviderUsageFreshnessTest.kt",
+      "sha256": "e4e26b353a4266aff6b63852a86ac5aaf874160a9f42b8760480ce140ef2e1fe",
+      "tests": [
+        {
+          "name": "connectedWithLinesIsFresh",
+          "line": 9
+        },
+        {
+          "name": "staleWithLinesKeepsLastKnownUsageAndShowsDelay",
+          "line": 19
+        },
+        {
+          "name": "oldConnectedUsageIsDelayedWithoutChangingTheStoredSessionOrValues",
+          "line": 30
+        },
+        {
+          "name": "interactiveAuthRequiredKeepsLastKnownUsageButNeedsReconnect",
+          "line": 39
+        }
+      ],
+      "validation": "inventoried only; not executed"
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/widget/WidgetCapacityNoticeTest.kt",
+      "sha256": "8e606c7ea0f0e228e7d78e2abc1c97a4b4dc94d9719c59b81d0906321bd47fb1",
+      "tests": [
+        {
+          "name": "eightSelectedAccountsIdentifyThoseOutsideSixAccountDashboard",
+          "line": 21
+        },
+        {
+          "name": "compactDashboardWarnsAfterFourAccountsAndClearsAfterHidingOverflow",
+          "line": 28
+        },
+        {
+          "name": "responsiveSizesExposeTheRangeInsteadOfPromisingAllSixAlwaysFit",
+          "line": 36
+        },
+        {
+          "name": "batteryUsesItsOwnSmallAndLargeSizeCapacity",
+          "line": 42
+        },
+        {
+          "name": "batteryDoesNotCountAnAccountWithoutGaugeDataAgainstItsCapacity",
+          "line": 49
+        },
+        {
+          "name": "legacyHostOptionsAndEmptyOptionsUseRendererFallbacks",
+          "line": 60
+        },
+        {
+          "name": "selectionStopsAtSixAndCanResumeAfterRemoval",
+          "line": 71
+        },
+        {
+          "name": "batteryCaptionOnlyAppearsForRepeatedDisplayedProviders",
+          "line": 81
+        }
+      ],
+      "validation": "inventoried only; not executed"
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/widget/DelayedUsagePresentationTest.kt",
+      "sha256": "20afaa37698a1003aa0a8643176c835e72747ee322db1724859b7c014ad6e709",
+      "tests": [
+        {
+          "name": "appWidgetsAndNotificationsDistinguishOldUsageWithoutChangingRatiosOrAccountOrder",
+          "line": 18
+        },
+        {
+          "name": "failureCountDoesNotExtendTheSixtySecondAutomaticInterval",
+          "line": 46
+        }
+      ],
+      "validation": "inventoried only; not executed"
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/ui/ProviderEnrollmentStateTest.kt",
+      "sha256": "d2fc0efa1e95b6104208fdb04f4b9e2e6151b3fef896fd3a2a78fb3730779f65",
+      "tests": [
+        {
+          "name": "welcomeIsFirstRunOnlyAndSurvivesRecreation",
+          "line": 14
+        },
+        {
+          "name": "bulkSelectionRespectsAvailableProvidersAndClearDoesNotSubmit",
+          "line": 25
+        },
+        {
+          "name": "selectedProviderAndNameRestoreWhenActivityIsRecreated",
+          "line": 40
+        },
+        {
+          "name": "firstRunTogglesSeveralProvidersRestoresThemAndSubmitsAutomaticAliasesInDisplayOrder",
+          "line": 59
+        },
+        {
+          "name": "explicitAddTakesSeveralProvidersAndBulkAddsThem",
+          "line": 89
+        },
+        {
+          "name": "backFromNamingClosesAndClearsWithoutSubmitting",
+          "line": 116
+        },
+        {
+          "name": "cancellingPickerClearsTransientInputAndCreatesNoRequest",
+          "line": 135
+        },
+        {
+          "name": "dialogShapeUsesExistingThemeSpecificRadii",
+          "line": 153
+        },
+        {
+          "name": "blankNameSubmitsAutomaticAliasSelection",
+          "line": 164
+        }
+      ],
+      "validation": "inventoried only; not executed"
+    }
+  ]
+}

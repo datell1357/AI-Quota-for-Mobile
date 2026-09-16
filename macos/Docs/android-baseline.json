@@ -1,0 +1,82 @@
+{
+  "release": "1.2.2(55)",
+  "baseGitHead": "1384050310928cdf48b8a757a7e9491909579896",
+  "snapshotFileCount": 718,
+  "sourceManifestSHA256": "3f7f50a22a08ff80d7b5a509d32eb1c494377c4aae75c1bcbbe6c8d559574937",
+  "verifiedAt": "2026-09-16",
+  "changed": 0,
+  "missing": 0,
+  "note": "Baseline is the recovered Android working-tree snapshot, not this branch HEAD. Android files in this worktree are older and are not the parity source. No Android runtime verification performed here.",
+  "sources": [
+    {
+      "path": "android/app/build.gradle.kts",
+      "sha256": "ea41c3d1c50289ca530e43a699e42159be613e0d1909260dce43c4040ff22661",
+      "bytes": 9736
+    },
+    {
+      "path": "android/app/src/main/java/com/aiquota/mobile/local/ProviderModels.kt",
+      "sha256": "c97711feb6a04e5152c331e5f4a79df1a54caf2a1c2553c05709d9901056b361",
+      "bytes": 11318
+    },
+    {
+      "path": "android/app/src/main/java/com/aiquota/mobile/providers/GeminiUsagePageNativeFetcher.kt",
+      "sha256": "8afb9977ada85484ce37edda2aebf4130e05bed2c9dbdba9e2b0287e9607ab62",
+      "bytes": 44950
+    },
+    {
+      "path": "android/app/src/main/java/com/aiquota/mobile/providers/GrokWeeklyCreditsFetcher.kt",
+      "sha256": "f6c6b45304ec0e1c26b1847ad494c26393922a6913c036495d66edf21464e3ca",
+      "bytes": 8222
+    },
+    {
+      "path": "android/app/src/main/java/com/aiquota/mobile/providers/ProviderDefinitions.kt",
+      "sha256": "b5127e90a6922324091f8b88cd01b792b0a238bdd09b9a204febf345f8497c7d",
+      "bytes": 18485
+    },
+    {
+      "path": "android/app/src/main/java/com/aiquota/mobile/providers/ProviderRefreshPlan.kt",
+      "sha256": "2301a6fbf1119534ae0fc354f1e7ad0c72543a7f79e2cbc4834fd9a87953e218",
+      "bytes": 8167
+    },
+    {
+      "path": "android/app/src/main/java/com/aiquota/mobile/providers/ProviderResetNotificationPolicy.kt",
+      "sha256": "ae6075e4c8b68a549ae0c207bc4400290816667dabb9e1281716d10d462478e6",
+      "bytes": 3549
+    },
+    {
+      "path": "android/app/src/main/java/com/aiquota/mobile/providers/ProviderUsageNormalizer.kt",
+      "sha256": "60cc4f164c94d470903cebb03700fa83f4fe6a138b26119bd0deb1a3ec87e3e2",
+      "bytes": 98988
+    },
+    {
+      "path": "android/app/src/main/java/com/aiquota/mobile/providers/ProviderUsageThresholdNotificationPolicy.kt",
+      "sha256": "175a0462e05f7ffaee5f794b6e0b9983b310670580f0920e3abc19d473402ce3",
+      "bytes": 2984
+    },
+    {
+      "path": "android/app/src/main/java/com/aiquota/mobile/ui/ProviderEnrollmentState.kt",
+      "sha256": "1aa0c2b542612c43c8f2f63c577c3cef2ce2a83ba017609625a6705cd7d987e3",
+      "bytes": 5810
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/providers/GeminiUsagePageNativeFetcherTest.kt",
+      "sha256": "949c043dc558cd2d0a3c26f7fde2a4a6c6d9bc8aec5e6b1d032cb0bd9b0677bf",
+      "bytes": 15952
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/providers/GrokWeeklyCreditsFetcherTest.kt",
+      "sha256": "81d1186c78efcdd4a5499de010dfb5325a41a53c8ff7bf23e545e89bdc9744fe",
+      "bytes": 4075
+    },
+    {
+      "path": "android/app/src/test/java/com/aiquota/mobile/providers/ProviderUsageNormalizerTest.kt",
+      "sha256": "eefc278c1721e55d9216c200856ae3b90321579c125d75de78b9e33bcf130157",
+      "bytes": 93774
+    },
+    {
+      "path": "android/build.gradle.kts",
+      "sha256": "3603a12288489c715d45f6d739bac83ef99590ed941d204278f63b8dea69654a",
+      "bytes": 286
+    }
+  ]
+}

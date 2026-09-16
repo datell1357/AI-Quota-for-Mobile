@@ -1,0 +1,32 @@
+{
+  "id": "codexWhamNormalizesPlanClaimsAndWindows",
+  "provider": "codex",
+  "source": "PROVIDER_API",
+  "provenance": {
+    "file": "android/app/src/test/java/com/aiquota/mobile/providers/ProviderUsageNormalizerTest.kt",
+    "test": "codexWhamNormalizesPlanClaimsAndWindows",
+    "sha256": "eefc278c1721e55d9216c200856ae3b90321579c125d75de78b9e33bcf130157"
+  },
+  "payload": {
+    "plan_type": "prolite",
+    "rate_limits": {
+      "primary_window": {
+        "used_percent": 20,
+        "reset_after_seconds": 18000
+      },
+      "secondary_window": {
+        "used_percent": 50
+      },
+      "spark": {
+        "used_percent": 3
+      }
+    }
+  },
+  "expectedRemainingFractions": [
+    0.8,
+    0.5,
+    0.97
+  ],
+  "tolerance": 0.001,
+  "note": "Android regression input and assertions. Synthetic identifiers only. Not live macOS evidence."
+}
