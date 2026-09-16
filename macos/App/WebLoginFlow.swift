@@ -119,6 +119,12 @@ import WebKit
     private func show(_ error: any Error) {
         if error is CancellationError { return }
         switch error {
+        case KiroSessionError.profileSelectionRequired:
+            errorMessage = model.text("Kiro 웹 화면에서 사용할 프로필을 선택한 뒤 다시 확인해 주세요.", "Select your profile in the Kiro web page, then check again.")
+        case KiroSessionError.unsupportedIdentityProvider:
+            errorMessage = model.text("조직의 Kiro 프로필 연결은 아직 지원하지 않습니다. 현재 GitHub·Google·Builder ID 개인 로그인을 지원합니다.", "Organization profile connections are not supported yet. GitHub, Google and Builder ID personal sign-ins are supported.")
+        case KiroSessionError.accountRestricted:
+            errorMessage = model.text("Kiro가 계정 접근을 제한했습니다. Kiro 웹 화면에서 계정 상태를 확인해 주세요.", "Kiro has restricted access to this account. Check its status in the Kiro web page.")
         case OpenCodeSessionError.multipleAccounts:
             errorMessage = model.text("이 로그인 화면에 OpenCode 계정이 여러 개 연결되어 있습니다. 웹 화면에서 다른 계정을 로그아웃하고 사용할 계정 하나만 남긴 뒤 다시 확인해 주세요.", "This sign-in session contains multiple OpenCode accounts. Sign out of the other accounts in the web page, leaving only the account you want to connect, then check again.")
         case CoreError.identityMismatch:

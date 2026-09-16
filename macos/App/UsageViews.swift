@@ -34,12 +34,19 @@ struct UsageMetricView: View {
                     Spacer()
                     if metric.accuracy == .estimated { Text(model.text("추정값", "Estimated")) }
                 }.font(.caption).foregroundStyle(.secondary)
-                if let used = metric.used, let limit = metric.limit {
-                    Text(model.text("사용: ", "Used: ") + number(used) + " / " + number(limit) + " " + metric.unit)
+                if let used = metric.used {
+                    Text(model.text("사용: ", "Used: ") + number(used) + (metric.limit.map { " / " + number($0) } ?? "") + " " + metric.unit)
                         .font(.caption).foregroundStyle(.secondary)
+                }
+                if metric.status == .unknown, metric.used != nil {
+                    Text(model.text("잔여 한도 확인 불가", "Remaining limit unavailable")).font(.caption).foregroundStyle(.secondary)
                 }
                 if let reset = metric.resetsAt {
                     Text(model.text("리셋 예정: ", "Resets: ") + reset.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                if let expiry = metric.expiresAt {
+                    Text(model.text("만료: ", "Expires: ") + expiry.formatted(date: .abbreviated, time: .shortened))
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -52,7 +59,7 @@ struct UsageMetricView: View {
             metric.remainingFraction.map { $0.formatted(.percent.precision(.fractionLength(0...1))) + model.text(" 남음", " left") } ?? "—"
         case .unlimited: model.text("무제한", "Unlimited")
         case .balance: metric.remaining.map { number($0) + " " + metric.unit } ?? "—"
-        case .unknown: model.text("확인 불가", "Unknown")
+        case .unknown: metric.used.map { number($0) + " " + metric.unit + model.text(" 사용", " used") } ?? model.text("확인 불가", "Unknown")
         case .unsupported: model.text("제공되지 않음", "Not provided")
         }
     }

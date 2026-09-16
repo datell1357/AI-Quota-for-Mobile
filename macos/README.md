@@ -78,6 +78,13 @@ parser reads a bounded data subset without evaluating JavaScript. See
 [Docs/opencode-web-login.ko.md](Docs/opencode-web-login.ko.md) for query provenance, units,
 regression evidence and the outstanding authenticated-account and migrated-console checks.
 
+Kiro has an isolated personal web-login sheet and a bounded CBOR collector. It verifies the remote
+subject before and after collection, keeps monthly credits, trials, bonuses, prepaid credits and
+overage separate, and preserves known consumption when the remaining limit is unknown. Grant
+expiry is distinct from quota reset in storage, app views and widgets. See
+[Docs/kiro-web-login.ko.md](Docs/kiro-web-login.ko.md) for wire provenance, regression and native UI
+evidence, and the outstanding live-account, enterprise and token-expiry checks.
+
 ## Authentication package
 
 ```sh
@@ -92,7 +99,7 @@ coordinator while preserving another account. It never inspects existing credent
 Login replacement keeps the previous session until new
 credentials are saved and the SQLite account revision commits. Persistent WebKit stores are keyed
 by profile UUID. OAuth refresh coordination only accepts credentials owned by AI Quota.
-Claude, Codex, Cursor, Grok and OpenCode web verification are connected; successful live-account authentication and the
+Claude, Codex, Cursor, Grok, OpenCode and Kiro web verification are connected; successful live-account authentication and the
 remaining providers/registered OAuth clients are still pending.
 
 The third command runs a native AppKit probe in eight separate processes. It verifies two synthetic
@@ -129,7 +136,7 @@ The host checks the running code's signing team and group entitlement before res
 Shared-file writes are coalesced separately from displaying accounts and collecting usage.
 
 The dashboard, account editing, provider selection, onboarding, Korean/English, themes and collection
-preferences and Claude/Codex/Cursor/Grok/OpenCode login screens are wired to the local authority. The other provider
+preferences and Claude/Codex/Cursor/Grok/OpenCode/Kiro login screens are wired to the local authority. The other provider
 login screens and signed WidgetKit runtime verification are still pending; adding an account card does not authenticate it. See the status document for
 actual native UI verification and remaining notification, menu-bar and signing checks.
 
@@ -153,7 +160,7 @@ python3 macos/Scripts/verify-widget-bundle.py 'macos/.build/xcode/Build/Products
 ```
 
 The first command runs the real intent/query/timeline and view code against a synthetic SQLite
-producer, then renders 27 PNGs (including signed OpenCode balances) in a separate native host. The second validates the actual embedded
+producer, then renders 33 PNGs (including signed OpenCode balances and Kiro consumption/expiry) in a separate native host. The second validates the actual embedded
 extension and selection limits extracted by Xcode. These checks do not establish signed App Group
 access, WidgetKit gallery registration or OS-persisted independent configurations. See
 [Docs/widget-contract.ko.md](Docs/widget-contract.ko.md) for the full contract and outstanding gates.

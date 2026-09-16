@@ -16,7 +16,8 @@ struct QuotaWidgetContent: View {
                 Label("AI Quota", systemImage: "chart.pie.fill").font(.system(size: 11, weight: .semibold)).fixedSize()
                 Spacer(minLength: 4)
                 if let p = presentation, !p.slots.isEmpty {
-                    Text((p.size == .small ? text("잔여", "Left") : text("잔여량", "Remaining")) + (p.kind == .provider ? "" : " · \(p.slots.count)"))
+                    Text((p.slots.contains(where: { $0.metrics.contains { $0.status == .unknown && $0.used != nil } })
+                          ? text("사용량", "Usage") : p.size == .small ? text("잔여", "Left") : text("잔여량", "Remaining")) + (p.kind == .provider ? "" : " · \(p.slots.count)"))
                         .font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)
                 }
             }
@@ -175,12 +176,20 @@ private struct ProviderWidgetDetail: View {
     }
     private func metricRow(_ metric: UsageMetric) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
+            if size == .small, metric.status == .unknown, metric.used != nil {
+                Text(copy.label(metric)).font(.system(size: 10)).foregroundStyle(.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                Text(copy.value(metric)).font(.system(size: 22, weight: .semibold, design: .rounded))
+                    .monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+              HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(copy.label(metric)).font(.system(size: 10)).foregroundStyle(.secondary)
                     .lineLimit(2).minimumScaleFactor(0.7)
                 Spacer(minLength: 0)
                 Text(copy.value(metric)).font(.system(size: size == .small ? 22 : 18, weight: .semibold, design: .rounded))
                     .monospacedDigit().lineLimit(1).minimumScaleFactor(0.65)
+              }
             }
             if let fraction = metric.remainingFraction, metric.status == .limited {
                 GeometryReader { geometry in
@@ -188,7 +197,13 @@ private struct ProviderWidgetDetail: View {
                         .overlay(alignment: .leading) { Capsule().fill(fraction <= 0.2 ? Color.orange : .accentColor).frame(width: geometry.size.width * fraction) }
                 }.frame(height: 4).accessibilityHidden(true)
             }
-            if let reset = metric.resetsAt {
+            if metric.status == .unknown, metric.used != nil {
+                Text(korean ? "잔여 한도 미확인" : "Remaining limit unknown").font(.system(size: 9)).foregroundStyle(.secondary)
+            }
+            if let expiry = metric.expiresAt {
+                Text((korean ? "만료 " : "Expires ") + expiry.formatted(.dateTime.month(.twoDigits).day(.twoDigits).hour().minute().locale(copy.locale)))
+                    .font(.system(size: 9)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            } else if let reset = metric.resetsAt {
                 Text((korean ? "리셋 " : "Resets ") + reset.formatted(.dateTime.month(.twoDigits).day(.twoDigits).hour().minute().locale(copy.locale)))
                     .font(.system(size: 9)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             } else { Text(copy.period(metric.period)).font(.system(size: 9)).foregroundStyle(.secondary) }
@@ -232,7 +247,9 @@ struct WidgetUsageText {
         case .limited: return metric.remainingFraction.map { $0.formatted(.percent.precision(.fractionLength(0...1)).locale(locale)) } ?? "—"
         case .balance: return metric.remaining.map { $0.formatted(.number.precision(.fractionLength(0...2)).locale(locale)) + " " + metric.unit } ?? "—"
         case .unlimited: return korean ? "무제한" : "Unlimited"
-        case .unknown: return korean ? "미확인" : "Unknown"
+        case .unknown: return metric.used.map {
+            $0.formatted(.number.precision(.fractionLength(0...2)).locale(locale)) + " " + metric.unit + (korean ? " 사용" : " used")
+        } ?? (korean ? "미확인" : "Unknown")
         case .unsupported: return korean ? "미제공" : "Not provided"
         }
     }
@@ -257,7 +274,9 @@ struct WidgetUsageText {
     }
     func accessibility(_ slot: WidgetAccountSlot, at date: Date) -> String {
         [alias(slot), slot.account?.provider.displayName ?? "", value(slot.representative),
-         korean ? "남은 사용량" : "remaining", slot.account?.fetchedAt?.formatted(date: .complete, time: .standard) ?? fetched(nil), status(slot, at: date)]
+         slot.representative?.status == .unknown && slot.representative?.used != nil
+             ? (korean ? "잔여 한도 미확인" : "remaining limit unknown") : (korean ? "남은 사용량" : "remaining"),
+         slot.account?.fetchedAt?.formatted(date: .complete, time: .standard) ?? fetched(nil), status(slot, at: date)]
             .filter { !$0.isEmpty }.joined(separator: ", ")
     }
 }

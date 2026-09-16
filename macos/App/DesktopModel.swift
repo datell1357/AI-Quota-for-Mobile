@@ -95,7 +95,7 @@ private struct CollectorRegistry: UsageCollector {
             try await login.recoverAbandonedLogins()
             self.login = login
             let source = StoredAccountSessionSource(login: login, webProfiles: webProfiles)
-            let registry = CollectorRegistry(collectors: [.claude: ClaudeWebCollector(sessions: source), .codex: CodexSubscriptionCollector(sessions: source), .cursor: CursorWebCollector(sessions: source), .grok: GrokWeeklyCollector(sessions: source), .glm: GLMAPICollector(sessions: source), .opencode: OpenCodeWebCollector(sessions: source)])
+            let registry = CollectorRegistry(collectors: [.claude: ClaudeWebCollector(sessions: source), .codex: CodexSubscriptionCollector(sessions: source), .cursor: CursorWebCollector(sessions: source), .grok: GrokWeeklyCollector(sessions: source), .glm: GLMAPICollector(sessions: source), .opencode: OpenCodeWebCollector(sessions: source), .kiro: KiroWebCollector(sessions: source)])
             let coordinator = RefreshCoordinator(repository: repository, collector: registry, didUpdate: { [weak self] _ in await self?.reload() })
             self.coordinator = coordinator
             if ProcessInfo.processInfo.arguments.contains("--data-directory") {

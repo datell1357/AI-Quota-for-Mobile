@@ -1,0 +1,25 @@
+{
+  "id": "kiroSentinelLimitIsTreatedAsUncappedUsage",
+  "provider": "kiro",
+  "source": "NETWORK_RESPONSE",
+  "provenance": {
+    "file": "android/app/src/test/java/com/aiquota/mobile/providers/ProviderUsageNormalizerTest.kt",
+    "test": "kiroSentinelLimitIsTreatedAsUncappedUsage",
+    "sha256": "eefc278c1721e55d9216c200856ae3b90321579c125d75de78b9e33bcf130157"
+  },
+  "payload": {
+    "entries": [
+      {
+        "key": "kiro:credit",
+        "label": "Credits",
+        "used": 320.0,
+        "limit": 999999
+      }
+    ]
+  },
+  "expectedRemainingFractions": [
+    null
+  ],
+  "tolerance": 0.001,
+  "note": "Android regression input and assertions. Synthetic identifiers only. Not live macOS evidence."
+}

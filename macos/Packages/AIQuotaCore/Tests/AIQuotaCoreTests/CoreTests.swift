@@ -73,6 +73,31 @@ private func collect(_ repository: AccountRepository, _ account: Account, fracti
     }
 }
 
+@Test func knownConsumptionAndBonusExpirySurviveStorageWithoutInventingQuotaOrReset() async throws {
+    let url = try temporaryURL(), repository = try AccountRepository(url: url), account = try await connect(repository)
+    let used = try UsageMetric(id: "kiro:credit", label: "Credits", period: "month", unit: "credits", status: .unknown, used: 320)
+    let bonus = try UsageMetric(id: "kiro:bonus", label: "Bonus", period: "bonus", unit: "credits", remainingFraction: 0.75,
+                                used: 2.5, limit: 10, expiresAt: start.addingTimeInterval(30))
+    let first = try await repository.beginCollection(account.id, now: start)
+    _ = try await repository.accept(UsageReport(identity: first.identity, fetchedAt: start, metrics: [used,bonus]), for: first, now: start)
+    let reopened = try AccountRepository(url: url)
+    #expect(try await reopened.usage(account.id)?.metrics == [used,bonus])
+    let later = start.addingTimeInterval(60), lease = try await reopened.beginCollection(account.id, now: later)
+    let notifications = try await reopened.accept(UsageReport(identity: lease.identity, fetchedAt: later, metrics: [used,bonus]), for: lease, now: later)
+    #expect(notifications.isEmpty)
+    let file = url.deletingLastPathComponent().appendingPathComponent("kiro-snapshot.json")
+    _ = try await SnapshotFileStore(url: file, repository: reopened).publish(now: later)
+    let metrics = try SnapshotFileStore.read(from: file).accounts.first?.metrics
+    #expect(metrics == [used,bonus] && metrics?.first?.remainingFraction == nil && metrics?.last?.resetsAt == nil)
+    var old = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(bonus)) as? [String: Any])
+    old["expiresAt"] = nil
+    #expect(try JSONDecoder().decode(UsageMetric.self, from: JSONSerialization.data(withJSONObject: old)).expiresAt == nil)
+    #expect(throws: CoreError.invalidMetric) { try UsageMetric(id: "x", label: "x", period: "month", status: .unknown, used: -1) }
+    #expect(throws: CoreError.invalidMetric) { try UsageMetric(id: "x", label: "x", period: "month", status: .unknown, used: 1, limit: 10) }
+    #expect(throws: CoreError.invalidMetric) { try UsageMetric(id: "x", label: "x", period: "month", status: .unsupported, used: 1) }
+    #expect(throws: CoreError.invalidMetric) { try UsageMetric(id: "x", label: "x", period: "month", remainingFraction: 1, expiresAt: Date(timeIntervalSince1970: .infinity)) }
+}
+
 @Test func staleSequenceSessionAndDisconnectedResponsesAreRejected() async throws {
     let repository = try AccountRepository(url: temporaryURL())
     let account = try await connect(repository)

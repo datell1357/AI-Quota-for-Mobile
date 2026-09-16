@@ -126,18 +126,19 @@ public struct UsageMetric: Codable, Equatable, Identifiable, Sendable {
     public let limit: Double?
     public let resetsAt: Date?
     public let startsAt: Date?
+    public let expiresAt: Date?
     public let source: MetricSource
     public let accuracy: MetricAccuracy
 
     public init(id: String, label: String, period: String, unit: String = "percent",
                 status: QuotaStatus = .limited, remainingFraction: Double? = nil,
                 used: Double? = nil, remaining: Double? = nil, limit: Double? = nil,
-                resetsAt: Date? = nil, startsAt: Date? = nil,
+                resetsAt: Date? = nil, startsAt: Date? = nil, expiresAt: Date? = nil,
                 source: MetricSource = .webAPI, accuracy: MetricAccuracy = .measured) throws {
         guard [id, label, period, unit].allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }),
               [used, limit].compactMap({ $0 }).allSatisfy({ $0.isFinite && $0 >= 0 }),
               remaining.map({ $0.isFinite && (status == .balance || $0 >= 0) }) != false,
-              [resetsAt, startsAt].compactMap({ $0 }).allSatisfy({ (-62_135_596_800...253_402_300_799).contains($0.timeIntervalSince1970) })
+              [resetsAt, startsAt, expiresAt].compactMap({ $0 }).allSatisfy({ (-62_135_596_800...253_402_300_799).contains($0.timeIntervalSince1970) })
         else { throw CoreError.invalidMetric }
         if let startsAt, let resetsAt, startsAt >= resetsAt { throw CoreError.invalidMetric }
         switch status {
@@ -148,17 +149,21 @@ public struct UsageMetric: Codable, Equatable, Identifiable, Sendable {
             guard remaining != nil, remainingFraction == nil, limit == nil else { throw CoreError.invalidMetric }
         case .unlimited:
             guard remainingFraction == nil, limit == nil, remaining == nil else { throw CoreError.invalidMetric }
-        case .unknown, .unsupported:
+        case .unknown:
+            // Consumption can be known even when the service withholds a per-user ceiling.
+            guard remainingFraction == nil, remaining == nil, limit == nil else { throw CoreError.invalidMetric }
+        case .unsupported:
             guard remainingFraction == nil, used == nil, remaining == nil, limit == nil else { throw CoreError.invalidMetric }
         }
         self.id = id; self.label = label; self.period = period; self.unit = unit
         self.status = status; self.remainingFraction = remainingFraction
         self.used = used; self.remaining = remaining; self.limit = limit
         self.resetsAt = resetsAt; self.startsAt = startsAt; self.source = source; self.accuracy = accuracy
+        self.expiresAt = expiresAt
     }
 
     enum CodingKeys: CodingKey {
-        case id, label, period, unit, status, remainingFraction, used, remaining, limit, resetsAt, startsAt, source, accuracy
+        case id, label, period, unit, status, remainingFraction, used, remaining, limit, resetsAt, startsAt, expiresAt, source, accuracy
     }
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -171,6 +176,7 @@ public struct UsageMetric: Codable, Equatable, Identifiable, Sendable {
                       limit: c.decodeIfPresent(Double.self, forKey: .limit),
                       resetsAt: c.decodeIfPresent(Date.self, forKey: .resetsAt),
                       startsAt: c.decodeIfPresent(Date.self, forKey: .startsAt),
+                      expiresAt: c.decodeIfPresent(Date.self, forKey: .expiresAt),
                       source: c.decode(MetricSource.self, forKey: .source),
                       accuracy: c.decode(MetricAccuracy.self, forKey: .accuracy))
     }

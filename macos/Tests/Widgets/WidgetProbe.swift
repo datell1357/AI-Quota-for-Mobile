@@ -129,12 +129,34 @@ private func check(_ value: @autoclosure () -> Bool, _ message: String) throws {
             try render(WidgetPreviewTile(item: signedCase, date: now, locale: locale),
                        to: root.appendingPathComponent("opencode-negative-balance-\(locale).png"))
         }
-        let summary: [String: Any] = ["nativeIntentChecks": "passed", "accounts": 6, "widgetKinds": 6,
+        let kiro = try await repository.add(provider: .kiro, alias: "Kiro 사용량 테스트", now: now)
+        let kiroIdentity = try RemoteIdentity(subject: "synthetic-kiro", product: "kiro-web-subscription")
+        try await repository.connect(kiro.id, expectedGeneration: kiro.generation, expectedSessionRevision: 0,
+                                     identity: kiroIdentity, method: .webSession, owner: .aiQuota, credentialReference: UUID(), now: now)
+        let consumption = try UsageMetric(id: "kiro:credit", label: "Credits", period: "month", unit: "credits", status: .unknown, used: 320)
+        let bonus = try UsageMetric(id: "kiro:bonus", label: "Bonus credits", period: "bonus", unit: "credits",
+                                   remainingFraction: 0.75, used: 2.5, limit: 10, expiresAt: now.addingTimeInterval(3600))
+        let kiroLease = try await repository.beginCollection(kiro.id, now: now)
+        _ = try await repository.accept(UsageReport(identity: kiroIdentity, fetchedAt: now, metrics: [consumption,bonus]), for: kiroLease, now: now)
+        try await SnapshotFileStore(url: file, repository: repository).publish(now: now)
+        let kiroSnapshot = try SnapshotFileStore.read(from: file)
+        let kiroEntities = try await WidgetAccountQuery(snapshot: kiroSnapshot).entities(for: [kiro.id.uuidString])
+        let kiroIntent = ProviderWidgetIntent(); kiroIntent.account = kiroEntities.first
+        let kiroMedium = makeCase("kiro-usage-medium", kiroIntent, .systemMedium, now, kiroSnapshot)
+        let kiroDisplayed = kiroMedium.presentation?.slots.first?.account?.metrics
+        try check(WidgetUsageText(korean: false).value(kiroDisplayed?.first) == "320 credits used", "Known usage must not be labeled unlimited or remaining")
+        try check(kiroDisplayed?.last?.expiresAt == now.addingTimeInterval(3600) && kiroDisplayed?.last?.resetsAt == nil, "Bonus expiry must not become a quota reset")
+        let kiroCases = [makeCase("kiro-usage-small", kiroIntent, .systemSmall, now, kiroSnapshot), kiroMedium,
+                        makeCase("kiro-usage-large", kiroIntent, .systemLarge, now, kiroSnapshot)]
+        for locale in ["ko_KR", "en_US"] {
+            for item in kiroCases { try render(WidgetPreviewTile(item: item, date: now, locale: locale), to: root.appendingPathComponent("\(item.id)-\(locale).png")) }
+        }
+        let summary: [String: Any] = ["nativeIntentChecks": "passed", "accounts": 6, "additionalMetricAccounts": 2, "widgetKinds": 6,
                                       "layouts": 8, "locales": ["ko_KR", "en_US"], "producer": "SQLite -> SnapshotFileStore -> AccountQuery -> TimelineProvider -> SwiftUI",
-                                      "signedBalance": "OpenCode -1.25 USD preserved", "renderedPNGs": 27,
+                                      "signedBalance": "OpenCode -1.25 USD preserved", "knownConsumption": "Kiro 320 credits used, quota unknown; bonus expiry separate", "renderedPNGs": 33,
                                       "runtimeBoundary": "Standalone native render host; not WidgetKit gallery or signed App Group"]
         try JSONSerialization.data(withJSONObject: summary, options: [.prettyPrinted, .sortedKeys]).write(to: root.appendingPathComponent("verification.json"))
-        print("PASS: producer/consumer, six intent kinds, per-instance order, missing IDs, overflow, unsupported resize, signed OpenCode balance, and 27 rendered PNGs")
+        print("PASS: producer/consumer, six intent kinds, per-instance order, missing IDs, overflow, unsupported resize, signed balance, Kiro consumption/expiry, and 33 rendered PNGs")
         print(root.path)
     }
     private static func makeCase<I: AccountWidgetIntent>(_ name: String, _ intent: I, _ family: WidgetFamily, _ now: Date, _ snapshot: WidgetSnapshot?) -> WidgetRenderCase {
