@@ -30,7 +30,7 @@ struct GLMAPIKeySheet: View {
                 SecureField("API key", text: $flow.apiKey).accessibilityIdentifier("glm.key")
             }.disabled(flow.busy || flow.loading)
             if flow.existingBinding != nil {
-                Text(model.text("이 연결은 기존 API 키와 지역·범위에 연결되어 있습니다. 다시 연결할 때 같은 정보를 입력하세요.", "This connection is bound to its API key, region and scope. Enter the same details when reconnecting."))
+                Text(model.text("다시 연결할 때 같은 API 키와 범위를 입력하세요. 다른 키는 계정 상세에서 ‘계정 제거’ 후 새로 추가해 연결할 수 있습니다.", "Reconnect with the same API key and scope. To use another key, remove this account from its detail page and add it again."))
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             if let error = flow.errorMessage {

@@ -18,12 +18,12 @@ private func cookie(_ name: String, value: String = "synthetic", domain: String,
     #expect(throws: (any Error).self) { try IsolatedWebProfiles.cookieHeader(cookies, for: URL(string: "http://claude.ai/")!, now: now) }
 }
 
-@MainActor @Test func nativeWebKitConfigurationsUseIndependentPersistentIdentifiers() {
+@MainActor @Test func nativeWebKitConfigurationsUseIndependentPersistentIdentifiers() throws {
     let profiles = IsolatedWebProfiles()
     let a = UUID(); let b = UUID()
-    let first = profiles.configuration(for: a)
-    let again = profiles.configuration(for: a)
-    let second = profiles.configuration(for: b)
+    let first = try profiles.configuration(for: a)
+    let again = try profiles.configuration(for: a)
+    let second = try profiles.configuration(for: b)
     #expect(first.websiteDataStore.identifier == a)
     #expect(second.websiteDataStore.identifier == b)
     #expect(first.websiteDataStore === again.websiteDataStore)

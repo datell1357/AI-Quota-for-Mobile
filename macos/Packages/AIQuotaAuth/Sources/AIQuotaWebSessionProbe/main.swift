@@ -4,9 +4,9 @@ import Foundation
 import WebKit
 
 // Invoke write and read as separate processes with two freshly generated, probe-only UUIDs.
-// No network request is made and no existing application profile is discovered or enumerated.
+// No network request is made. Removal checks only the two probe-owned identifiers.
 let arguments = Array(CommandLine.arguments.dropFirst())
-let modes = ["write", "read", "renew", "read-renewed", "expire", "read-expired"]
+let modes = ["write", "read", "renew", "read-renewed", "expire", "read-expired", "retire-first", "read-retired"]
 guard arguments.count == 3, modes.contains(arguments[0]),
       let firstID = UUID(uuidString: arguments[1]), let secondID = UUID(uuidString: arguments[2]), firstID != secondID else {
     fputs("Usage: AIQuotaWebSessionProbe \(modes.joined(separator: "|")) fresh-profile-a fresh-profile-b\n", stderr)
@@ -35,7 +35,7 @@ guard arguments.count == 3, modes.contains(arguments[0]),
         }
     }
     private func loadProfile(_ id: UUID) async throws {
-        let view = WKWebView(frame: .zero, configuration: profiles.configuration(for: id))
+        let view = try WKWebView(frame: .zero, configuration: profiles.configuration(for: id))
         view.navigationDelegate = self
         views.append(view)
         try await withCheckedThrowingContinuation { continuation in
@@ -53,6 +53,24 @@ guard arguments.count == 3, modes.contains(arguments[0]),
         loads.removeValue(forKey: ObjectIdentifier(webView))?.resume(throwing: error)
     }
     private func run() async throws {
+        if ["retire-first", "read-retired"].contains(mode) {
+            if mode == "retire-first" {
+                _ = try await profiles.cookies(profileID: firstID)
+                try await profiles.removeProfile(firstID)
+                try await profiles.removeProfile(firstID)
+                do {
+                    _ = try profiles.configuration(for: firstID)
+                    throw AuthenticationError.invalidCredential
+                } catch AuthenticationError.cancelled { }
+            }
+            let firstExists = await IsolatedWebProfiles.containsProfile(firstID)
+            let secondExists = await IsolatedWebProfiles.containsProfile(secondID)
+            guard !firstExists, secondExists,
+                  try await profiles.cookieHeader(for: origin, profileID: secondID) == "session=synthetic-other"
+            else { throw AuthenticationError.invalidCredential }
+            print("WebKit \(mode): retired profile absent; other profile and cookie preserved")
+            return
+        }
         if mode == "write" {
             // Match login's WebKit view lifecycle. Later processes intentionally create no web view.
             try await loadProfile(firstID)

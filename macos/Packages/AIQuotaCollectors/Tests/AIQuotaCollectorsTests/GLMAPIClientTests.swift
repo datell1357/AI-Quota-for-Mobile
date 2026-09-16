@@ -288,3 +288,23 @@ private actor GLMDelayedTransport: HTTPTransport {
     #expect(await vault.records.isEmpty)
     #expect(try await repository.account(account.id).state == .disconnected)
 }
+
+@Test func glmCanConnectANewKeyAndScopeAfterExplicitAccountRemovalWithoutReusingWidgetIdentity() async throws {
+    let repository = try glmRepository(); let vault = GLMVault(); let login = LoginCoordinator(repository: repository, vault: vault)
+    let transport = GLMTransport([HTTPResult(status: 200, body: glmBody), HTTPResult(status: 200, body: glmBody)])
+    let verifier = GLMAPIKeyLogin(login: login, client: GLMAPIClient(transport: transport))
+    let first = try await repository.add(provider: .glm, alias: "Old key")
+    let firstAttempt = try await login.begin(first.id)
+    _ = try await verifier.complete(firstAttempt, apiKey: glmKey, configuration: GLMAPIConfiguration())
+    let widget = try WidgetSelection(kind: .provider, accountIDs: [first.id])
+    try await login.removeAccount(first.id)
+    #expect(await vault.records.isEmpty)
+    let second = try await repository.add(provider: .glm, alias: "New team key")
+    let secondAttempt = try await login.begin(second.id)
+    let scope = try GLMAPIConfiguration(region: .china, scope: .team, organization: "fixture-org", project: "fixture-project")
+    _ = try await verifier.complete(secondAttempt, apiKey: "new-synthetic-key", configuration: scope)
+    #expect(first.id != second.id)
+    #expect(try await repository.account(second.id).identity == scope.binding(apiKey: "new-synthetic-key"))
+    #expect(try await widget.resolve(in: repository.displaySnapshot()).first! == nil)
+    #expect(await vault.records.count == 1)
+}

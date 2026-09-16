@@ -29,7 +29,9 @@ public actor AccountRepository {
             let existing = try accounts()
             guard provider.supportsMultipleAccounts || !existing.contains(where: { $0.provider == provider })
             else { throw CoreError.singleAccountOnly }
-            let account = try Account(provider: provider, alias: alias, order: existing.count, now: now)
+            let lastOrder = existing.map(\.order).max() ?? -1
+            guard lastOrder < Int.max else { throw CoreError.invalidOrder }
+            let account = try Account(provider: provider, alias: alias, order: lastOrder + 1, now: now)
             try database.execute("INSERT INTO accounts (id,payload) VALUES (?,?)", [.text(account.id.uuidString), .text(try encode(account))])
             try bumpRevision()
             return account
@@ -48,6 +50,8 @@ public actor AccountRepository {
             if let old = account.identity, old != identity { throw CoreError.identityMismatch }
             guard !(try accounts()).contains(where: { $0.id != id && $0.provider == account.provider && $0.identity == identity })
             else { throw CoreError.duplicateRemoteIdentity }
+            try activateCredential(credentialReference, for: account)
+            if let old = account.credentialReference, old != credentialReference { try retireCredential(old, for: account) }
             account.identity = identity; account.authenticationMethod = method
             account.credentialOwner = owner; account.credentialReference = credentialReference
             account.sessionRevision += 1; account.state = .connected; account.statusChangedAt = now
@@ -58,6 +62,7 @@ public actor AccountRepository {
     public func disconnect(_ id: UUID, now: Date = .now) throws {
         try database.transaction {
             var account = try account(id)
+            try retireCredentials(for: account)
             account.generation = UUID(); account.sessionRevision += 1
             account.credentialReference = nil; account.state = .disconnected; account.statusChangedAt = now
             try save(account)
@@ -71,9 +76,108 @@ public actor AccountRepository {
     /// Removes only the explicit local account. Widget selections retain the now-missing ID.
     public func remove(_ id: UUID) throws {
         try database.transaction {
-            _ = try account(id)
+            try retireCredentials(for: account(id))
             try database.execute("DELETE FROM accounts WHERE id = ?", [.text(id.uuidString)])
             try bumpRevision()
+        }
+    }
+
+    /// Record the new reference before any Keychain write or WebKit store creation.
+    public func reserveCredential(_ reference: UUID, accountID: UUID, expectedGeneration: UUID,
+                                  expectedSessionRevision: UInt64) throws {
+        try database.transaction {
+            let account = try account(accountID)
+            guard account.generation == expectedGeneration, account.sessionRevision == expectedSessionRevision,
+                  try credentialResource(reference) == nil,
+                  !(try accounts()).contains(where: { $0.credentialReference == reference }) else { throw CoreError.staleAttempt }
+            try saveResource(CredentialResource(id: reference, accountID: accountID, state: .prepared, needsInspection: false))
+        }
+    }
+
+    public func prepareWebProfile(_ profileID: UUID, reference: UUID) throws {
+        try database.transaction {
+            guard var resource = try credentialResource(reference), resource.state == .prepared,
+                  resource.webProfileID == nil || resource.webProfileID == profileID else { throw CoreError.staleAttempt }
+            guard !(try credentialResources()).contains(where: { $0.id != reference && $0.webProfileID == profileID })
+            else { throw CoreError.identityMismatch }
+            resource.webProfileID = profileID
+            try saveResource(resource)
+        }
+    }
+
+    public func retirePreparedCredential(_ reference: UUID) throws {
+        try database.transaction {
+            guard var resource = try credentialResource(reference) else { return }
+            guard resource.state != .active,
+                  !(try accounts()).contains(where: { $0.credentialReference == reference }) else { throw CoreError.staleAttempt }
+            resource.state = .retired; try saveResource(resource)
+        }
+    }
+
+    /// Call once before accepting new login attempts in the host process.
+    public func recoverAbandonedCredentials() throws {
+        try database.transaction {
+            let active = Set(try accounts().compactMap(\.credentialReference))
+            for var resource in try credentialResources() {
+                let state: CredentialResource.State = active.contains(resource.id) ? .active : .retired
+                if resource.state != state { resource.state = state; try saveResource(resource) }
+            }
+        }
+    }
+
+    public func credentialsNeedingCleanup() throws -> [CredentialResource] {
+        let active = Set(try accounts().compactMap(\.credentialReference))
+        return try credentialResources().filter { $0.state == .retired && !active.contains($0.id) }
+    }
+
+    public func resolveCredentialCleanup(_ reference: UUID, webProfileID: UUID?) throws {
+        try database.transaction {
+            guard var resource = try cleanupResource(reference) else { throw CoreError.staleAttempt }
+            if let webProfileID {
+                guard !(try credentialResources()).contains(where: { $0.id != reference && $0.webProfileID == webProfileID })
+                else { throw CoreError.identityMismatch }
+            }
+            resource.webProfileID = webProfileID; resource.needsInspection = false
+            try saveResource(resource)
+        }
+    }
+
+    public func finishCredentialCleanup(_ reference: UUID) throws {
+        try database.transaction {
+            guard let resource = try cleanupResource(reference), !resource.needsInspection else { throw CoreError.staleAttempt }
+            try database.execute("DELETE FROM credential_resources WHERE reference=?", [.text(reference.uuidString)])
+        }
+    }
+
+    private func cleanupResource(_ reference: UUID) throws -> CredentialResource? {
+        try credentialsNeedingCleanup().first { $0.id == reference }
+    }
+    private func credentialResources() throws -> [CredentialResource] {
+        try database.query("SELECT payload FROM credential_resources ORDER BY reference").map { try decode(CredentialResource.self, $0[0]) }
+    }
+    private func credentialResource(_ reference: UUID) throws -> CredentialResource? {
+        guard let json = try database.scalar("SELECT payload FROM credential_resources WHERE reference=?", [.text(reference.uuidString)]) else { return nil }
+        return try decode(CredentialResource.self, json)
+    }
+    private func saveResource(_ resource: CredentialResource) throws {
+        try database.execute("INSERT INTO credential_resources VALUES (?,?) ON CONFLICT(reference) DO UPDATE SET payload=excluded.payload",
+                             [.text(resource.id.uuidString), .text(try encode(resource))])
+    }
+    private func activateCredential(_ reference: UUID, for account: Account) throws {
+        var resource = try credentialResource(reference) ?? CredentialResource(id: reference, accountID: account.id, state: .prepared, needsInspection: true)
+        guard resource.accountID == account.id, resource.state != .retired,
+              !(try accounts()).contains(where: { $0.id != account.id && $0.credentialReference == reference }) else { throw CoreError.staleAttempt }
+        resource.state = .active; try saveResource(resource)
+    }
+    private func retireCredential(_ reference: UUID, for account: Account) throws {
+        var resource = try credentialResource(reference) ?? CredentialResource(id: reference, accountID: account.id, state: .active, needsInspection: true)
+        guard resource.accountID == account.id else { throw CoreError.identityMismatch }
+        resource.state = .retired; try saveResource(resource)
+    }
+    private func retireCredentials(for account: Account) throws {
+        if let reference = account.credentialReference { try retireCredential(reference, for: account) }
+        for resource in try credentialResources() where resource.accountID == account.id && resource.state != .retired {
+            try retireCredential(resource.id, for: account)
         }
     }
 

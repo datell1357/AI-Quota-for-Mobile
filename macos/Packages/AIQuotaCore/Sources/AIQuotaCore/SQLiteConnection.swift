@@ -25,7 +25,7 @@ final class SQLiteConnection: @unchecked Sendable {
         sqlite3_busy_timeout(database, 5000)
         do {
             let version = Int(try scalar("PRAGMA user_version") ?? "0") ?? 0
-            guard version <= 1 else { throw CoreError.unsupportedSchema(version) }
+            guard version <= 2 else { throw CoreError.unsupportedSchema(version) }
             try execute("PRAGMA foreign_keys = ON")
             if version == 0 {
                 // Existing unversioned data is preserved before introducing the schema.
@@ -40,6 +40,16 @@ final class SQLiteConnection: @unchecked Sendable {
                     try execute("CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value INTEGER NOT NULL)")
                     try execute("INSERT OR IGNORE INTO metadata VALUES ('revision', 0)")
                     try execute("PRAGMA user_version = 1")
+                }
+            }
+            if version < 2 {
+                if version == 1 {
+                    try backup(to: url.appendingPathExtension("before-v2-\(UUID().uuidString).sqlite"))
+                }
+                try transaction {
+                    // No FK cascade: retired resources must survive account deletion until cleanup succeeds.
+                    try execute("CREATE TABLE IF NOT EXISTS credential_resources (reference TEXT PRIMARY KEY, payload TEXT NOT NULL)")
+                    try execute("PRAGMA user_version = 2")
                 }
             }
             try execute("PRAGMA journal_mode = WAL")

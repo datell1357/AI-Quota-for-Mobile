@@ -35,6 +35,9 @@ private struct CollectorRegistry: UsageCollector {
     private(set) var awake = true
     private(set) var widgetSharingAvailable = false
     private(set) var loginRetryAfter: [UUID: Date] = [:]
+    private(set) var accountOperations = Set<UUID>()
+    private(set) var credentialCleanupPending = false
+    private(set) var cleaningCredentials = false
     private var loginRetryTasks: [UUID: Task<Void, Never>] = [:]
     var notificationStatus: UNAuthorizationStatus = .notDetermined
     var loginItemStatus = SMAppService.mainApp.status
@@ -86,7 +89,9 @@ private struct CollectorRegistry: UsageCollector {
             preferences = try DesktopPreferences.load(from: preferencesURL!)
             let repository = try AccountRepository(url: root.appendingPathComponent("accounts.sqlite"))
             self.repository = repository
-            let login = LoginCoordinator(repository: repository, vault: KeychainCredentialVault()); self.login = login
+            let login = LoginCoordinator(repository: repository, vault: KeychainCredentialVault(), profiles: webProfiles)
+            try await login.recoverAbandonedLogins()
+            self.login = login
             let source = StoredAccountSessionSource(login: login, webProfiles: webProfiles)
             let registry = CollectorRegistry(collectors: [.claude: ClaudeWebCollector(sessions: source), .codex: CodexSubscriptionCollector(sessions: source), .grok: GrokWeeklyCollector(sessions: source), .glm: GLMAPICollector(sessions: source)])
             let coordinator = RefreshCoordinator(repository: repository, collector: registry, didUpdate: { [weak self] _ in await self?.reload() })
@@ -110,6 +115,7 @@ private struct CollectorRegistry: UsageCollector {
         }
         loading = false
         synchronizePanel()
+        Task { await retryCredentialCleanup() }
     }
     private func dataDirectory() throws -> URL {
         let args = ProcessInfo.processInfo.arguments
@@ -197,9 +203,28 @@ private struct CollectorRegistry: UsageCollector {
         } catch { show(error); return false }
     }
     func disconnect(_ id: UUID) async {
-        guard let repository else { return }
-        do { await coordinator?.cancelAccount(id); try await repository.disconnect(id); await reload() }
+        guard let login, accountOperations.insert(id).inserted else { return }
+        defer { accountOperations.remove(id) }
+        do { await coordinator?.cancelAccount(id); try await login.disconnect(id); await reload(); await retryCredentialCleanup() }
         catch { show(error) }
+    }
+    func removeAccount(_ id: UUID) async {
+        guard let login, accountOperations.insert(id).inserted else { return }
+        defer { accountOperations.remove(id) }
+        do {
+            await coordinator?.cancelAccount(id)
+            try await login.removeAccount(id)
+            loginRetryTasks.removeValue(forKey: id)?.cancel(); loginRetryAfter[id] = nil
+            if selectedAccountID == id { selectedAccountID = nil }
+            await reload(); await retryCredentialCleanup()
+        } catch { show(error) }
+    }
+    func retryCredentialCleanup() async {
+        guard let login, !cleaningCredentials else { return }
+        cleaningCredentials = true
+        defer { cleaningCredentials = false }
+        do { credentialCleanupPending = try await login.retryCleanup() > 0 }
+        catch { credentialCleanupPending = true }
     }
     func reorder(_ id: UUID, offset: Int) async {
         guard let repository else { return }

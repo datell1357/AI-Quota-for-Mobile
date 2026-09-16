@@ -37,7 +37,7 @@ private struct DesktopRoot<Content: View>: View {
                 openWindow(id: "dashboard"); NSApp.activate(ignoringOtherApps: true)
             }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { Task { await model.updatePermissionStatus() } }
+                if phase == .active { Task { await model.updatePermissionStatus(); await model.retryCredentialCleanup() } }
             }
             .sheet(item: Binding(get: { presentsSheets ? model.sheet : nil },
                                  set: { if presentsSheets { model.sheet = $0 } })) { sheet in

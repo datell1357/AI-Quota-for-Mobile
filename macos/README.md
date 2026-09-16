@@ -35,7 +35,8 @@ an older installation's cache even when that file has a higher revision. Conflic
 files are preserved beside the snapshot as `*.before-rebuild-<UUID>.json` before atomic replacement.
 Unknown snapshot schema versions and filesystem access errors stop publication without overwriting
 the existing file. This assumes one running host writer; restore the account database with the app
-closed. The JSON schema and SQLite schema remain unchanged.
+closed. The display JSON schema remains at version 1. SQLite schema 2 adds the host-only credential
+lifecycle journal, with a SQLite backup before migrating existing version 1 data.
 
 ## Collectors and dependency resources
 
@@ -61,7 +62,8 @@ the connection is explicitly bound to a credential fingerprint and the selected 
 excluded from display snapshots. Empty/invalid responses preserve the last reading; an explicit
 no-subscription response clears usage without inventing a full quota. See
 [Docs/glm-api-key.ko.md](Docs/glm-api-key.ko.md) for the contract, regression evidence and remaining
-live-account, web-login and key/scope replacement work.
+live-account and web-login work. To use a different key or scope, explicitly remove the old local
+account and add a new connection; existing widget selections keep the old, now-missing account ID.
 
 ## Authentication package
 
@@ -71,20 +73,29 @@ swift run --package-path macos/Packages/AIQuotaAuth --scratch-path macos/.build/
 bash macos/Scripts/test-web-sessions.sh
 ```
 
-The second command creates, reads and removes one synthetic item under a unique Keychain service.
-It never inspects existing credentials. Login replacement keeps the previous session until new
+The second command creates, reads and removes synthetic items under a unique Keychain service.
+It also runs account removal and abandoned-login recovery through the real repository and login
+coordinator while preserving another account. It never inspects existing credentials.
+Login replacement keeps the previous session until new
 credentials are saved and the SQLite account revision commits. Persistent WebKit stores are keyed
 by profile UUID. OAuth refresh coordination only accepts credentials owned by AI Quota.
 Claude, Codex and Grok web verification are connected; successful live-account authentication and the
 remaining providers/registered OAuth clients are still pending.
 
-The third command runs a native AppKit probe in six separate processes. It verifies two synthetic
+The third command runs a native AppKit probe in eight separate processes. It verifies two synthetic
 WebKit profiles, response-cookie rotation, background renewal without a web view, expiration and
-restoration after normal application termination. It creates fresh profile UUIDs and retains its
-QA artifacts under `artifacts/macos-web-session-probes`; it never enumerates existing profiles.
+restoration after normal application termination, then removes only the first profile and checks
+its absence in a new process while preserving the second profile's cookie. It creates fresh profile
+UUIDs and retains its QA artifacts under `artifacts/macos-web-session-probes`. The WebKit identifier
+query checks those known UUIDs; it does not read any other profile's cookies or website data.
 `IsolatedWebProfiles` opens cookie data records before the first background cookie access so a
 new process does not mistake an uninitialized persistent store for an empty session. This probe
 does not establish live-login persistence, crash recovery or application-update behavior.
+
+Account removal, disconnect and login replacement record retired resources before cleanup. Failed
+Keychain/WebKit cleanup remains in SQLite for startup, app-activation or explicit Settings retry.
+External CLI credential files are never removed. See [Docs/account-lifecycle.ko.md](Docs/account-lifecycle.ko.md)
+for the state transitions, migration, race tests and verification limits.
 
 ## Native host application
 

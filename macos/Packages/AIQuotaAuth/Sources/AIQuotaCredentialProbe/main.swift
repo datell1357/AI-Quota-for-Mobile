@@ -6,6 +6,7 @@ import Foundation
 let vault = KeychainCredentialVault(service: "com.aiquota.macos.validation.\(UUID().uuidString)")
 let reference = UUID()
 var created = false
+var lifecycleReferences: [UUID] = []
 do {
     let identity = try RemoteIdentity(subject: "synthetic-probe", product: "keychain-smoke")
     let record = try CredentialRecord(accountID: UUID(), provider: .glm, identity: identity, kind: .apiKey, secret: "synthetic-keychain-roundtrip")
@@ -18,10 +19,46 @@ do {
     do { _ = try await vault.read(reference); throw AuthenticationError.invalidCredential }
     catch AuthenticationError.missingCredential { }
     print("Native Keychain create/read/remove verified with an isolated synthetic item")
+
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent("AIQuotaKeychainLifecycle-\(UUID())/accounts.sqlite")
+    let repository = try AccountRepository(url: url)
+    let login = LoginCoordinator(repository: repository, vault: vault)
+    let first = try await repository.add(provider: .codex, alias: "Synthetic first")
+    let second = try await repository.add(provider: .codex, alias: "Synthetic second")
+    func lifecycleRecord(_ account: Account) throws -> CredentialRecord {
+        try CredentialRecord(accountID: account.id, provider: .codex,
+                             identity: RemoteIdentity(subject: account.id.uuidString, product: "keychain-lifecycle-smoke"),
+                             kind: .oauth, secret: "synthetic-lifecycle-token")
+    }
+    for account in [first, second] {
+        let attempt = try await login.begin(account.id)
+        lifecycleReferences.append(attempt.credentialReference)
+        _ = try await login.complete(attempt, verified: lifecycleRecord(account))
+    }
+    try await login.removeAccount(first.id)
+    guard try await login.activeCredential(second.id).accountID == second.id else { throw AuthenticationError.invalidCredential }
+    let draft = try await login.begin(second.id)
+    lifecycleReferences.append(draft.credentialReference)
+    try await vault.create(lifecycleRecord(second), reference: draft.credentialReference)
+    let restarted = LoginCoordinator(repository: try AccountRepository(url: url), vault: vault)
+    try await restarted.recoverAbandonedLogins()
+    guard try await restarted.retryCleanup() == 0,
+          try await restarted.activeCredential(second.id).accountID == second.id else { throw AuthenticationError.invalidCredential }
+    try await restarted.removeAccount(second.id)
+    for reference in lifecycleReferences {
+        do { _ = try await vault.read(reference); throw AuthenticationError.invalidCredential }
+        catch AuthenticationError.missingCredential { }
+    }
+    print("Native Keychain lifecycle: account removal, other-account preservation and abandoned-draft recovery verified")
+    print("Retained synthetic database: \(url.path)")
 } catch {
     if created {
         do { try await vault.remove(reference) }
         catch { fputs("Synthetic Keychain item cleanup needs attention\n", stderr) }
+    }
+    for reference in lifecycleReferences {
+        do { try await vault.remove(reference) }
+        catch { fputs("Synthetic lifecycle item cleanup needs attention\n", stderr) }
     }
     fputs("Native Keychain verification failed: \(error)\n", stderr)
     exit(1)

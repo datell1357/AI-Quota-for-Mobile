@@ -31,7 +31,7 @@ identifiers = [str(uuid.uuid4()), str(uuid.uuid4())]
 print(f'Probe artifacts: {output}', flush=True)
 # Each process uses the normal AppKit run loop and termination notification. Only the initial
 # login simulation opens local HTML views. Background renewal must work without reopening them.
-for mode in ['write', 'read', 'renew', 'read-renewed', 'expire', 'read-expired']:
+for mode in ['write', 'read', 'renew', 'read-renewed', 'expire', 'read-expired', 'retire-first', 'read-retired']:
     result = subprocess.run([str(binary), mode, *identifiers], capture_output=True, text=True, timeout=45)
     (output / f'{mode}.log').write_text(result.stdout + result.stderr)
     print(result.stdout, end='', flush=True)

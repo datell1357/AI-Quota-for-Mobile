@@ -54,7 +54,8 @@ import Observation
                 self.attempt = attempt
                 _ = try await GLMAPIKeyLogin(login: login).complete(attempt, apiKey: key, configuration: configuration, expected: existingBinding)
                 self.attempt = nil; apiKey = ""
-                await model.reload(); model.selectedAccountID = accountID; finished = true
+                await model.reload(); await model.retryCredentialCleanup()
+                model.selectedAccountID = accountID; finished = true
                 Task { await model.refresh([accountID]) }
             } catch {
                 if let attempt { await login.cancel(attempt) }
@@ -66,12 +67,13 @@ import Observation
     func cancel() async -> Bool {
         if let attempt, let login = model.login, !(await login.cancel(attempt)) { return false }
         closed = true; apiKey = ""; work?.cancel(); attempt = nil
+        await model.retryCredentialCleanup()
         return true
     }
     private func show(_ error: any Error) {
         switch error {
         case CoreError.identityMismatch:
-            errorMessage = model.text("기존 연결과 API 키 또는 범위가 다릅니다. 같은 키와 범위로 다시 시도해 주세요.", "The API key or scope differs from this connection. Use the same key and scope to reconnect.")
+            errorMessage = model.text("기존 연결과 API 키 또는 범위가 다릅니다. 같은 키로 다시 시도하거나, 계정 상세에서 ‘계정 제거’ 후 새로 추가해 다른 키를 연결하세요.", "The API key or scope differs from this connection. Retry with the same key, or remove this account from its detail page and add it again to connect another key.")
         case GLMAPIError.noSubscription:
             errorMessage = model.text("이 키에서 Coding Plan 구독을 확인하지 못했습니다. 구독과 선택한 지역을 확인해 주세요.", "No Coding Plan subscription was found for this key. Check the subscription and selected region.")
         case CollectorError.authenticationRequired:

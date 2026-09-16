@@ -70,6 +70,12 @@ struct PreferencesView: View {
                 }
             }
             Section(model.text("도움말", "Help")) {
+                if model.credentialCleanupPending {
+                    Text(model.text("연결 해제한 로그인 정보 일부가 이 Mac에 남아 있습니다. 잠금을 해제하고 열려 있는 로그인 화면을 닫은 뒤 다시 정리해 주세요.", "Some retired sign-in data remains on this Mac. Unlock your Mac and close open sign-in windows, then retry cleanup."))
+                        .font(.caption).foregroundStyle(.secondary)
+                    Button(model.text("로그인 정보 정리 다시 시도", "Retry sign-in cleanup")) { Task { await model.retryCredentialCleanup() } }
+                        .disabled(model.cleaningCredentials).accessibilityIdentifier("preferences.retryCredentialCleanup")
+                }
                 Button(model.text("시작 안내 다시 보기", "Show onboarding")) { model.updatePreferences { $0.onboardingComplete = false }; openWindow(id: "dashboard"); NSApp.activate(ignoringOtherApps: true) }
                 Link(model.text("버그 제보", "Report a bug"), destination: URL(string: "https://github.com/datell1357/AI-Quota-for-Mobile/issues/new")!)
                 Button(model.text("오픈 소스 라이선스", "Open-source licenses")) {

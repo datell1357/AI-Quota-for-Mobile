@@ -49,6 +49,11 @@ struct DashboardView: View {
         .toolbar {
             ToolbarItemGroup {
                 if !model.online { Label(model.text("오프라인", "Offline"), systemImage: "wifi.slash").foregroundStyle(.secondary) }
+                if model.credentialCleanupPending {
+                    SettingsLink { Label(model.text("로그인 정보 정리 대기", "Sign-in cleanup pending"), systemImage: "exclamationmark.triangle") }
+                        .foregroundStyle(.orange).labelStyle(.iconOnly)
+                        .help(model.text("설정에서 남은 로그인 정보 정리를 다시 시도할 수 있습니다.", "Open Settings to retry cleanup of retired sign-in data."))
+                }
                 Button { Task { await model.refresh() } } label: { Label(model.text("새로고침", "Refresh"), systemImage: "arrow.clockwise") }
                     .disabled(model.refreshing || model.loading || !model.online).accessibilityIdentifier("dashboard.refresh")
                 SettingsLink { Label(model.text("설정", "Settings"), systemImage: "gearshape") }
@@ -100,6 +105,7 @@ struct AccountDetailView: View {
     @Environment(DesktopModel.self) private var model
     let account: DisplayAccount
     @State private var confirmingDisconnect = false
+    @State private var confirmingRemoval = false
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -135,14 +141,23 @@ struct AccountDetailView: View {
                 if account.state != .disconnected {
                     Button(model.text("연결 해제", "Disconnect"), role: .destructive) { confirmingDisconnect = true }
                 }
+                Button(model.text("계정 제거", "Remove account"), role: .destructive) { confirmingRemoval = true }
+                    .accessibilityIdentifier("account.remove")
                 if account.isHidden {
                     Label(model.text("이 계정은 전체 화면과 메뉴 막대에서 숨겨져 있습니다.", "This account is hidden from the overview and menu bar."), systemImage: "eye.slash")
                         .foregroundStyle(.secondary)
                 }
             }.padding(28).frame(maxWidth: 820, alignment: .leading)
         }
+        .disabled(model.accountOperations.contains(account.id))
+        .overlay { if model.accountOperations.contains(account.id) { ProgressView() } }
         .confirmationDialog(model.text("이 계정의 연결을 해제할까요?", "Disconnect this account?"), isPresented: $confirmingDisconnect) {
             Button(model.text("연결 해제", "Disconnect"), role: .destructive) { Task { await model.disconnect(account.id) } }
         } message: { Text(model.text("계정 이름과 알림 설정은 유지됩니다.", "The account name and notification preferences will be kept.")) }
+        .confirmationDialog(model.text("AI Quota에서 ‘\(account.alias)’ 계정을 제거할까요?", "Remove ‘\(account.alias)’ from AI Quota?"), isPresented: $confirmingRemoval, titleVisibility: .visible) {
+            Button(model.text("계정 제거", "Remove account"), role: .destructive) { Task { await model.removeAccount(account.id) } }
+        } message: {
+            Text(model.text("이 Mac에 저장한 로그인 정보, 사용량과 알림 설정을 지웁니다. 제공자 서비스의 계정은 유지됩니다. 위젯의 기존 선택은 다른 계정으로 바뀌지 않으며, 다시 추가하면 새 계정으로 연결됩니다.", "Removes this Mac's saved sign-in, usage and notification settings. Your account with the provider remains. Existing widget selections will not switch to another account. Adding it again creates a new connection."))
+        }
     }
 }

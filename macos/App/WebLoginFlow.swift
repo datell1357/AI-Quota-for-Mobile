@@ -39,12 +39,17 @@ import WebKit
                 throw CollectorError.unsupported
             }
             self.service = service; currentHost = service.origin.host ?? ""
-            let webView = WKWebView(frame: .zero, configuration: model.webProfiles.configuration(for: attempt.webProfileID))
+            try await login.prepareWebProfile(attempt)
+            let webView = try WKWebView(frame: .zero, configuration: model.webProfiles.configuration(for: attempt.webProfileID))
             webView.navigationDelegate = self; webView.uiDelegate = self
             self.webView = webView
             webView.load(URLRequest(url: service.loginURL))
             phase = .browsing
-        } catch { phase = .browsing; show(error) }
+        } catch {
+            if let attempt, let login = model.login { await login.cancel(attempt) }
+            attempt = nil; phase = .browsing
+            if !cancelled && !Task.isCancelled { show(error) }
+        }
     }
     func reloadPage() { if !busy { errorMessage = nil; webView?.reload() } }
     func checkAccount() {
@@ -85,6 +90,7 @@ import WebKit
                 do { _ = try await login.complete(attempt, verified: record) }
                 catch { self.attempt = nil; throw error }
                 await model.reload()
+                await model.retryCredentialCleanup()
                 model.selectedAccountID = accountID
                 phase = .finished
                 Task { await model.refresh([accountID]) }
@@ -92,12 +98,13 @@ import WebKit
         }
     }
     func cancel() async -> Bool {
+        webView?.stopLoading(); webView?.navigationDelegate = nil; webView?.uiDelegate = nil; webView = nil
         guard phase != .finished else { return true }
         if let attempt, let login = model.login, !(await login.cancel(attempt)) { return false }
         cancelled = true
         work?.cancel(); work = nil
-        webView?.stopLoading(); webView?.navigationDelegate = nil; webView?.uiDelegate = nil; webView = nil
         attempt = nil
+        await model.retryCredentialCleanup()
         return true
     }
     private func cookieSession(_ attempt: LoginAttempt) async throws -> (header: String, transport: WebSessionHTTPTransport) {

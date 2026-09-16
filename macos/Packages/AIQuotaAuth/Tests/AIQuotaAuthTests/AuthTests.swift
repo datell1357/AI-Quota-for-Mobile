@@ -86,7 +86,9 @@ private func connected() async throws -> (AccountRepository, MemoryVault, LoginC
     let stale = try await coordinator.begin(old.id)
     try await repository.disconnect(old.id)
     await #expect(throws: CoreError.staleAttempt) { try await coordinator.complete(stale, verified: credential(old)) }
-    #expect(await vault.values.count == 1)
+    // Disconnect now journals and removes its old credential, not only the failed draft.
+    #expect(await vault.values.isEmpty)
+    #expect(try await repository.credentialsNeedingCleanup().isEmpty)
     #expect(try await repository.account(old.id).state == .disconnected)
 }
 
