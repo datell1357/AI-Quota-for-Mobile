@@ -49,6 +49,30 @@ private func collect(_ repository: AccountRepository, _ account: Account, fracti
     #expect(throws: CoreError.invalidMetric) { try JSONDecoder().decode(UsageMetric.self, from: data) }
 }
 
+@Test func signedCreditBalancesSurviveRepositoryAndDisplayRoundTripWithoutBecomingQuota() async throws {
+    let url = try temporaryURL(); let repository = try AccountRepository(url: url)
+    let account = try await connect(repository)
+    let lease = try await repository.beginCollection(account.id, now: start)
+    let balance = try UsageMetric(id: "zen", label: "Zen balance", period: "balance", unit: "USD", status: .balance, remaining: -1.25)
+    _ = try await repository.accept(UsageReport(identity: lease.identity, fetchedAt: start, metrics: [balance]), for: lease, now: start)
+    let reopened = try AccountRepository(url: url)
+    #expect(try await reopened.usage(account.id)?.metrics.first == balance)
+    let snapshotURL = url.deletingLastPathComponent().appendingPathComponent("balance-snapshot.json")
+    let publisher = SnapshotFileStore(url: snapshotURL, repository: reopened)
+    _ = try await publisher.publish()
+    let consumer = try SnapshotFileStore.read(from: snapshotURL)
+    #expect(consumer.accounts.first?.metrics.first?.remaining == -1.25)
+    #expect(consumer.accounts.first?.metrics.first?.remainingFraction == nil)
+    for amount in [-Double.infinity, Double.nan] {
+        #expect(throws: CoreError.invalidMetric) {
+            try UsageMetric(id: "zen", label: "Zen", period: "balance", status: .balance, remaining: amount)
+        }
+    }
+    #expect(throws: CoreError.invalidMetric) {
+        try UsageMetric(id: "quota", label: "Quota", period: "month", remainingFraction: 0, remaining: -1, limit: 10)
+    }
+}
+
 @Test func staleSequenceSessionAndDisconnectedResponsesAreRejected() async throws {
     let repository = try AccountRepository(url: temporaryURL())
     let account = try await connect(repository)

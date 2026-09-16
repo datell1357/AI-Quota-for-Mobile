@@ -1,0 +1,51 @@
+{
+  "id": "opencodeVisibleDomPayloadNormalizesGoLimitsAndZenCredits",
+  "provider": "opencode",
+  "source": "STRUCTURED_SCRIPT",
+  "provenance": {
+    "file": "android/app/src/test/java/com/aiquota/mobile/providers/ProviderUsageNormalizerTest.kt",
+    "test": "opencodeVisibleDomPayloadNormalizesGoLimitsAndZenCredits",
+    "sha256": "eefc278c1721e55d9216c200856ae3b90321579c125d75de78b9e33bcf130157"
+  },
+  "payload": {
+    "provider": "opencode",
+    "source": "visible-dom",
+    "data": {
+      "plan": "OpenCode Go",
+      "account": "user@example.com",
+      "limits": [
+        {
+          "label": "Go 5 hour limit",
+          "remaining_percent": 75,
+          "used": 3,
+          "limit": 12,
+          "unit": "usd",
+          "reset_text": "Resets in 2h"
+        },
+        {
+          "label": "Go weekly limit",
+          "used": 12,
+          "limit": 30,
+          "unit": "usd"
+        },
+        {
+          "label": "Go monthly limit",
+          "remaining": 54,
+          "limit": 60,
+          "unit": "usd"
+        }
+      ],
+      "credits": {
+        "balance": 4.5
+      }
+    }
+  },
+  "expectedRemainingFractions": [
+    0.75,
+    0.6,
+    0.9,
+    null
+  ],
+  "tolerance": 0.001,
+  "note": "Android regression input and assertions. Synthetic identifiers only. Not live macOS evidence."
+}

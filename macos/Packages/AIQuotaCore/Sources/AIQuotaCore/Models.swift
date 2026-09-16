@@ -135,7 +135,8 @@ public struct UsageMetric: Codable, Equatable, Identifiable, Sendable {
                 resetsAt: Date? = nil, startsAt: Date? = nil,
                 source: MetricSource = .webAPI, accuracy: MetricAccuracy = .measured) throws {
         guard [id, label, period, unit].allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }),
-              [used, remaining, limit].compactMap({ $0 }).allSatisfy({ $0.isFinite && $0 >= 0 }),
+              [used, limit].compactMap({ $0 }).allSatisfy({ $0.isFinite && $0 >= 0 }),
+              remaining.map({ $0.isFinite && (status == .balance || $0 >= 0) }) != false,
               [resetsAt, startsAt].compactMap({ $0 }).allSatisfy({ (-62_135_596_800...253_402_300_799).contains($0.timeIntervalSince1970) })
         else { throw CoreError.invalidMetric }
         if let startsAt, let resetsAt, startsAt >= resetsAt { throw CoreError.invalidMetric }

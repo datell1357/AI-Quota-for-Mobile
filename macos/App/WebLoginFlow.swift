@@ -119,6 +119,8 @@ import WebKit
     private func show(_ error: any Error) {
         if error is CancellationError { return }
         switch error {
+        case OpenCodeSessionError.multipleAccounts:
+            errorMessage = model.text("이 로그인 화면에 OpenCode 계정이 여러 개 연결되어 있습니다. 웹 화면에서 다른 계정을 로그아웃하고 사용할 계정 하나만 남긴 뒤 다시 확인해 주세요.", "This sign-in session contains multiple OpenCode accounts. Sign out of the other accounts in the web page, leaving only the account you want to connect, then check again.")
         case CoreError.identityMismatch:
             errorMessage = model.text("기존 연결과 다른 계정 또는 워크스페이스입니다. 올바른 계정으로 로그인해 주세요.", "This is a different account or workspace. Sign in to the account already linked here.")
         case AuthenticationError.missingCredential, CollectorError.authenticationRequired:

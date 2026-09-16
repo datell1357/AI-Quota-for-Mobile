@@ -22,6 +22,8 @@ struct WebLoginSheet: View {
                  ? model.text("Google 또는 X 등을 통해 로그인을 마친 뒤 ‘계정 확인’을 누르세요. 메시지를 보낼 필요 없이 개인 계정의 사용량을 확인해 연결합니다.", "After signing in with Google, X or another method, choose Check account. Your personal account's usage is verified without sending a message.")
                  : flow.service == .cursor
                  ? model.text("Cursor 웹 로그인을 마친 뒤 ‘계정 확인’을 누르세요. 이 화면의 계정과 사용량을 확인하며, 설치된 Cursor 앱의 계정은 가져오지 않습니다.", "Sign in to Cursor here, then choose Check account. This web account and its usage are verified independently of the installed Cursor app.")
+                 : flow.service == .opencode
+                 ? model.text("OpenCode 로그인을 마친 뒤 ‘계정 확인’을 누르고 워크스페이스를 선택하세요. 해당 계정의 Go 한도와 워크스페이스의 Zen 잔액을 구분해 확인합니다.", "Sign in to OpenCode, choose Check account, then select a workspace. Your Go limits and that workspace's Zen balance are verified separately.")
                  : model.text("로그인을 마친 뒤 ‘계정 확인’을 누르세요. 선택한 워크스페이스의 사용량을 확인해야 연결됩니다.", "After signing in, choose Check account. The selected workspace's usage must be verified before connecting."))
                 .foregroundStyle(.secondary)
             if let error = flow.errorMessage {

@@ -108,11 +108,33 @@ private func check(_ value: @autoclosure () -> Bool, _ message: String) throws {
         }
         try render(WidgetPreviewBoard(items: cases, date: now.addingTimeInterval(900), locale: "ko_KR").environment(\.colorScheme, .dark),
                    to: root.appendingPathComponent("board-stale-dark.png"))
+        // Zen can carry a negative USD balance. Verify it through the real widget consumer,
+        // without changing the six-account configuration and overflow checks above.
+        let openCode = try await repository.add(provider: .opencode, alias: "OpenCode Zen", now: now)
+        let openCodeIdentity = try RemoteIdentity(subject: "synthetic-opencode", workspace: "wrk_FIXTURE", product: "opencode-workspace")
+        try await repository.connect(openCode.id, expectedGeneration: openCode.generation, expectedSessionRevision: 0,
+                                     identity: openCodeIdentity, method: .webSession, owner: .aiQuota, credentialReference: UUID(), now: now)
+        let balance = try UsageMetric(id: "opencode:zen_credits", label: "Zen balance", period: "balance", unit: "USD", status: .balance, remaining: -1.25)
+        let openCodeLease = try await repository.beginCollection(openCode.id, now: now)
+        _ = try await repository.accept(UsageReport(identity: openCodeIdentity, fetchedAt: now, metrics: [balance]), for: openCodeLease, now: now)
+        try await SnapshotFileStore(url: file, repository: repository).publish(now: now)
+        let signedSnapshot = try SnapshotFileStore.read(from: file)
+        let signedEntities = try await WidgetAccountQuery(snapshot: signedSnapshot).entities(for: [openCode.id.uuidString])
+        let balanceIntent = ProviderWidgetIntent(); balanceIntent.account = signedEntities.first
+        let signedCase = makeCase("opencode-negative-balance", balanceIntent, .systemMedium, now, signedSnapshot)
+        let displayed = signedCase.presentation?.slots.first?.account?.metrics.first
+        try check(displayed?.remaining == -1.25 && displayed?.remainingFraction == nil, "Signed balance survives the widget pipeline without becoming a quota")
+        try check(WidgetUsageText(korean: false).value(displayed) == "-1.25 USD", "Widget preserves the balance sign and currency")
+        for locale in ["ko_KR", "en_US"] {
+            try render(WidgetPreviewTile(item: signedCase, date: now, locale: locale),
+                       to: root.appendingPathComponent("opencode-negative-balance-\(locale).png"))
+        }
         let summary: [String: Any] = ["nativeIntentChecks": "passed", "accounts": 6, "widgetKinds": 6,
                                       "layouts": 8, "locales": ["ko_KR", "en_US"], "producer": "SQLite -> SnapshotFileStore -> AccountQuery -> TimelineProvider -> SwiftUI",
+                                      "signedBalance": "OpenCode -1.25 USD preserved", "renderedPNGs": 27,
                                       "runtimeBoundary": "Standalone native render host; not WidgetKit gallery or signed App Group"]
         try JSONSerialization.data(withJSONObject: summary, options: [.prettyPrinted, .sortedKeys]).write(to: root.appendingPathComponent("verification.json"))
-        print("PASS: producer/consumer, six intent kinds, per-instance order, missing IDs, overflow, unsupported resize, and 25 rendered PNGs")
+        print("PASS: producer/consumer, six intent kinds, per-instance order, missing IDs, overflow, unsupported resize, signed OpenCode balance, and 27 rendered PNGs")
         print(root.path)
     }
     private static func makeCase<I: AccountWidgetIntent>(_ name: String, _ intent: I, _ family: WidgetFamily, _ now: Date, _ snapshot: WidgetSnapshot?) -> WidgetRenderCase {
