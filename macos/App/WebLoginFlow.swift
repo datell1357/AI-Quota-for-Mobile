@@ -4,17 +4,17 @@ import AIQuotaCore
 import Observation
 import WebKit
 
-@MainActor @Observable final class ClaudeLoginFlow: NSObject, WKNavigationDelegate, WKUIDelegate {
+@MainActor @Observable final class WebLoginFlow: NSObject, WKNavigationDelegate, WKUIDelegate {
     enum Phase { case starting, browsing, checking, choosing, saving, finished }
     private(set) var phase = Phase.starting
     private(set) var webView: WKWebView?
-    private(set) var discovery: ClaudeAccountDiscovery?
+    private(set) var discovery: WebLoginDiscovery?
+    private(set) var service: WebLoginService?
     private(set) var errorMessage: String?
-    private(set) var currentHost = "claude.ai"
-    var selectedOrganization: String?
+    private(set) var currentHost = ""
+    var selectedWorkspace: String?
     private let accountID: UUID
     private let model: DesktopModel
-    private let client = ClaudeWebClient()
     private var attempt: LoginAttempt?
     private var work: Task<Void, Never>?
     private var cancelled = false
@@ -26,54 +26,59 @@ import WebKit
 
     func start() async {
         guard attempt == nil, !cancelled else { return }
-        phase = .starting; errorMessage = nil; discovery = nil; selectedOrganization = nil
+        phase = .starting; errorMessage = nil; discovery = nil; selectedWorkspace = nil
         do {
             guard let login = model.login else { throw AuthenticationError.missingCredential }
             let attempt = try await login.begin(accountID)
             // The sheet can close while begin is awaiting the repository. Retire that late attempt.
             guard !cancelled, !Task.isCancelled else { await login.cancel(attempt); return }
             self.attempt = attempt
-            guard attempt.provider == .claude else { throw CollectorError.unsupported }
+            guard let service = WebLoginService(provider: attempt.provider) else {
+                await login.cancel(attempt); self.attempt = nil
+                throw CollectorError.unsupported
+            }
+            self.service = service; currentHost = service.origin.host ?? ""
             let webView = WKWebView(frame: .zero, configuration: model.webProfiles.configuration(for: attempt.webProfileID))
             webView.navigationDelegate = self; webView.uiDelegate = self
             self.webView = webView
-            webView.load(URLRequest(url: URL(string: "https://claude.ai/login")!))
+            webView.load(URLRequest(url: service.loginURL))
             phase = .browsing
         } catch { phase = .browsing; show(error) }
     }
     func reloadPage() { if !busy { errorMessage = nil; webView?.reload() } }
     func checkAccount() {
-        guard let attempt, maySubmit else { return }
+        guard let attempt, let service, maySubmit else { return }
         phase = .checking; errorMessage = nil
         work = Task {
             do {
                 let cookies = try await cookieHeader(attempt)
-                let found = try await client.discover(cookieHeader: cookies)
+                let found = try await service.discover(cookieHeader: cookies)
                 try Task.checkCancellation()
                 guard let repository = model.repository else { throw CoreError.accountNotFound }
                 let account = try await repository.account(accountID)
                 if let identity = account.identity {
-                    guard identity.subject == found.subject, found.organizations.contains(where: { $0.id == identity.workspace }) else {
+                    guard identity.subject == found.subject, identity.product == service.product,
+                          found.choices.contains(where: { $0.id == identity.workspace }) else {
                         throw CoreError.identityMismatch
                     }
-                    selectedOrganization = identity.workspace
-                } else { selectedOrganization = found.organizations.count == 1 ? found.organizations[0].id : nil }
+                    selectedWorkspace = identity.workspace
+                } else { selectedWorkspace = found.choices.count == 1 ? found.choices[0].id : nil }
                 discovery = found; phase = .choosing
             } catch { if !Task.isCancelled { phase = .browsing; show(error) } }
         }
     }
     func connect() {
-        guard let attempt, let discovery, let selectedOrganization, maySubmit else { return }
+        guard let attempt, let service, let discovery, let selectedWorkspace, maySubmit else { return }
         phase = .checking; errorMessage = nil
         work = Task {
             do {
-                let identity = try RemoteIdentity(subject: discovery.subject, workspace: selectedOrganization, product: "claude-subscription")
+                let identity = try RemoteIdentity(subject: discovery.subject, workspace: selectedWorkspace, product: service.product)
                 let cookies = try await cookieHeader(attempt)
-                // Recheck the remote subject and chosen organization with the current profile, then its usage.
-                _ = try await client.collect(cookieHeader: cookies, expected: identity)
+                // Recheck the remote subject and chosen scope with the current profile, then its usage.
+                try await service.verify(cookieHeader: cookies, identity: identity)
                 try Task.checkCancellation()
                 guard let login = model.login else { throw AuthenticationError.missingCredential }
-                let record = try CredentialRecord(accountID: accountID, provider: .claude, identity: identity,
+                let record = try CredentialRecord(accountID: accountID, provider: attempt.provider, identity: identity,
                                                   kind: .webSession, webProfileID: attempt.webProfileID)
                 phase = .saving
                 do { _ = try await login.complete(attempt, verified: record) }
@@ -95,14 +100,15 @@ import WebKit
         return true
     }
     private func cookieHeader(_ attempt: LoginAttempt) async throws -> String {
-        // Root-path cookies apply to every account/organization API request; narrower cookies are not forwarded.
-        try await model.webProfiles.cookieHeader(for: URL(string: "https://claude.ai/")!, profileID: attempt.webProfileID)
+        guard let service, service.provider == attempt.provider else { throw CoreError.identityMismatch }
+        // Root-path cookies apply to every account/workspace API request; narrower cookies are not forwarded.
+        return try await model.webProfiles.cookieHeader(for: service.origin, profileID: attempt.webProfileID)
     }
     private func show(_ error: any Error) {
         if error is CancellationError { return }
         switch error {
         case CoreError.identityMismatch:
-            errorMessage = model.text("기존 연결과 다른 계정 또는 조직입니다. 올바른 계정으로 로그인해 주세요.", "This is a different account or organization. Sign in to the account already linked here.")
+            errorMessage = model.text("기존 연결과 다른 계정 또는 워크스페이스입니다. 올바른 계정으로 로그인해 주세요.", "This is a different account or workspace. Sign in to the account already linked here.")
         case AuthenticationError.missingCredential, CollectorError.authenticationRequired:
             errorMessage = model.text("웹 화면에서 로그인을 마친 뒤 다시 확인해 주세요.", "Finish signing in below, then check again.")
         case CollectorError.rateLimited(let until):
@@ -114,7 +120,7 @@ import WebKit
             errorMessage = model.text("계정과 사용량을 확인하지 못했습니다. 기존 연결은 유지됩니다. 로그인 화면의 안내를 확인해 주세요.", "The account and usage could not be verified. Your previous connection is preserved. Check the sign-in page for details.")
         }
     }
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { currentHost = webView.url?.host ?? "claude.ai" }
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { currentHost = webView.url?.host ?? service?.origin.host ?? "" }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: any Error) {
         if (error as NSError).code != NSURLErrorCancelled { show(error) }
     }

@@ -16,7 +16,8 @@ public enum CodexBarBridge {
                                resetsAt: window.resetsAt, source: source, accuracy: usageKnown ? .measured : .unknown)
     }
 
-    public static func codex(_ response: CodexUsageResponse, identity: RemoteIdentity, fetchedAt: Date) throws -> UsageReport {
+    public static func codex(_ response: CodexUsageResponse, identity: RemoteIdentity, fetchedAt: Date,
+                             source: MetricSource = .oauthAPI) throws -> UsageReport {
         guard identity.product == "codex-subscription" else { throw CoreError.identityMismatch }
         if let accountID = response.accountId, accountID != (identity.workspace ?? identity.subject) {
             throw CoreError.identityMismatch
@@ -27,7 +28,7 @@ public enum CodexBarBridge {
             guard window.limitWindowSeconds > 0, window.resetAt > 0 else { throw CollectorError.invalidResponse }
             let rate = RateWindow(usedPercent: Double(window.usedPercent), windowMinutes: nil,
                                   resetsAt: Date(timeIntervalSince1970: Double(window.resetAt)), resetDescription: nil)
-            if let metric = try metric(rate, id: id, label: label, period: "\(window.limitWindowSeconds)s", source: .oauthAPI) {
+            if let metric = try metric(rate, id: id, label: label, period: "\(window.limitWindowSeconds)s", source: source) {
                 metrics.append(metric)
             }
         }
@@ -49,12 +50,12 @@ public enum CodexBarBridge {
             metrics.append(try UsageMetric(id: "codex:monthly_credits", label: "Monthly credits", period: "month",
                                            unit: "credits", status: fraction == nil ? .unknown : .limited,
                                            remainingFraction: fraction, used: spend.used, limit: spend.limit,
-                                           resetsAt: spend.resetsAt.map { Date(timeIntervalSince1970: Double($0)) }, source: .oauthAPI))
+                                           resetsAt: spend.resetsAt.map { Date(timeIntervalSince1970: Double($0)) }, source: source))
         }
         if let credits = response.credits, credits.unlimited || credits.balance != nil {
             metrics.append(try UsageMetric(id: "codex:credits", label: "Codex credits", period: "balance", unit: "credits",
                                            status: credits.unlimited ? .unlimited : .balance,
-                                           remaining: credits.balance, source: .oauthAPI))
+                                           remaining: credits.balance, source: source))
         }
         guard !metrics.isEmpty, Set(metrics.map { [$0.id, $0.period] }).count == metrics.count else {
             throw CollectorError.invalidResponse

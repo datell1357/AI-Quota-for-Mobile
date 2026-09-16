@@ -27,7 +27,7 @@ public struct StoredAccountSessionSource: AccountSessionSource {
                 switch account.provider {
                 case .grok: url = GrokWeeklyDecoder.endpoint
                 case .claude: url = URL(string: "https://claude.ai/")!
-                case .codex: url = CodexSubscriptionCollector.endpoint
+                case .codex: url = URL(string: "https://chatgpt.com/")!
                 default: throw CollectorError.unsupported
                 }
                 do { cookies = try await webProfiles.cookieHeader(for: url, profileID: profile) }

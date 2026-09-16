@@ -32,7 +32,7 @@ public struct GrokWeeklyCollector: UsageCollector {
     }
 }
 
-/// Reads the subscription endpoint with the chosen account's token. It never refreshes CLI-owned tokens.
+/// Reads the subscription endpoint with the chosen token or isolated web profile. It never refreshes CLI-owned tokens.
 public struct CodexSubscriptionCollector: UsageCollector {
     public static let endpoint = URL(string: "https://chatgpt.com/backend-api/wham/usage")!
     private let sessions: any AccountSessionSource
@@ -48,6 +48,9 @@ public struct CodexSubscriptionCollector: UsageCollector {
         else { throw CoreError.identityMismatch }
         let session = try await sessions.session(for: account, lease: lease)
         try session.validate(lease)
+        if session.accessToken == nil, let cookie = session.cookieHeader {
+            return try await CodexWebClient(transport: transport, now: now).collect(cookieHeader: cookie, expected: session.identity)
+        }
         var request = URLRequest(url: Self.endpoint, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 30)
         request.setValue("Bearer \(try AuthenticatedSession.headerValue(session.accessToken))", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")

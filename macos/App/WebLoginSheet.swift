@@ -1,24 +1,24 @@
 import SwiftUI
 import WebKit
 
-struct ClaudeLoginSheet: View {
+struct WebLoginSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var flow: ClaudeLoginFlow
+    @State private var flow: WebLoginFlow
     private let model: DesktopModel
     init(accountID: UUID, model: DesktopModel) {
         self.model = model
-        _flow = State(initialValue: ClaudeLoginFlow(accountID: accountID, model: model))
+        _flow = State(initialValue: WebLoginFlow(accountID: accountID, model: model))
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text(model.text("Claude 계정 연결", "Connect a Claude account")).font(.title2.bold())
+                Text(model.text("\(flow.service?.provider.displayName ?? "") 계정 연결", "Connect \(flow.service?.provider.displayName ?? "") account")).font(.title2.bold())
                 Spacer()
                 Button { flow.reloadPage() } label: { Image(systemName: "arrow.clockwise") }.disabled(flow.busy)
                     .help(model.text("페이지 새로고침", "Reload page"))
                 Text(flow.currentHost).font(.caption.monospaced()).foregroundStyle(.secondary)
             }
-            Text(model.text("로그인을 마친 뒤 ‘계정 확인’을 누르세요. 선택한 조직의 사용량을 확인해야 연결됩니다.", "After signing in, choose Check account. The selected organization's usage must be verified before connecting."))
+            Text(model.text("로그인을 마친 뒤 ‘계정 확인’을 누르세요. 선택한 워크스페이스의 사용량을 확인해야 연결됩니다.", "After signing in, choose Check account. The selected workspace's usage must be verified before connecting."))
                 .foregroundStyle(.secondary)
             if let error = flow.errorMessage {
                 Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
@@ -31,9 +31,9 @@ struct ClaudeLoginSheet: View {
                 HStack {
                     Text(discovery.email ?? model.text("로그인한 계정", "Signed-in account")).lineLimit(2)
                     Spacer()
-                    Picker(model.text("조직", "Organization"), selection: $flow.selectedOrganization) {
-                        Text(model.text("조직을 선택하세요", "Choose an organization")).tag(nil as String?)
-                        ForEach(discovery.organizations) { organization in Text(organization.name).tag(Optional(organization.id)) }
+                    Picker(model.text("워크스페이스", "Workspace"), selection: $flow.selectedWorkspace) {
+                        Text(model.text("워크스페이스를 선택하세요", "Choose a workspace")).tag(nil as String?)
+                        ForEach(discovery.choices) { choice in Text(choice.name).tag(Optional(choice.id)) }
                     }.frame(maxWidth: 380).disabled(flow.busy)
                 }
             }
@@ -49,7 +49,7 @@ struct ClaudeLoginSheet: View {
                 } else {
                     Button(model.text("계정 다시 확인", "Check again")) { flow.checkAccount() }.disabled(!flow.maySubmit)
                     Button(model.text("연결", "Connect")) { flow.connect() }
-                        .disabled(!flow.maySubmit || flow.selectedOrganization == nil).buttonStyle(.borderedProminent)
+                        .disabled(!flow.maySubmit || flow.selectedWorkspace == nil).buttonStyle(.borderedProminent)
                         .accessibilityIdentifier("login.connect")
                 }
             }

@@ -25,26 +25,6 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "7C732E04A3559B1714C5479D";
 		};
-		"06873DF6D457D3A28A5789E6" = {
-			"isa" = "PBXFileReference";
-			"lastKnownFileType" = "sourcecode.swift";
-			"path" = "App/ClaudeLoginFlow.swift";
-			"sourceTree" = "<group>";
-		};
-		"0AA4AA2AAF7EAE58E289CE8C" = {
-			"isa" = "PBXBuildFile";
-			"fileRef" = "06873DF6D457D3A28A5789E6";
-		};
-		"1213CB61C9A78671BC3B99E4" = {
-			"isa" = "PBXFileReference";
-			"lastKnownFileType" = "sourcecode.swift";
-			"path" = "App/ClaudeLoginSheet.swift";
-			"sourceTree" = "<group>";
-		};
-		"6807EBF09EF934657C807D06" = {
-			"isa" = "PBXBuildFile";
-			"fileRef" = "1213CB61C9A78671BC3B99E4";
-		};
 		"9EF90001BBF272B1AD0EEC1B" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -155,6 +135,36 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "7CECD5BBEFD9F6ED598C71D5";
 		};
+		"D52C0FE699526B0B09EEB973" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/WebLoginFlow.swift";
+			"sourceTree" = "<group>";
+		};
+		"AC27BAD55F79BC57299670F7" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "D52C0FE699526B0B09EEB973";
+		};
+		"215C4E2A4E5265000FF6E8E7" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/WebLoginService.swift";
+			"sourceTree" = "<group>";
+		};
+		"DDF35247FBB1516D32E30D21" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "215C4E2A4E5265000FF6E8E7";
+		};
+		"5760F2DF88D181F1A42ADEB1" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/WebLoginSheet.swift";
+			"sourceTree" = "<group>";
+		};
+		"C657D5722E1358F5379305C0" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "5760F2DF88D181F1A42ADEB1";
+		};
 		"A08EE2A6C5180A8E820D3185" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -197,8 +207,6 @@
 			"children" = (
 				"6D4F49142DC0104DD5C68BE3",
 				"7C732E04A3559B1714C5479D",
-				"06873DF6D457D3A28A5789E6",
-				"1213CB61C9A78671BC3B99E4",
 				"9EF90001BBF272B1AD0EEC1B",
 				"A7A19A28B7AC5080C225497B",
 				"83E21B66E3D1FABA55CE2C8E",
@@ -210,6 +218,9 @@
 				"27B5F50E5A07DB1F9E9FA8AB",
 				"F249800845FD5723D091667A",
 				"7CECD5BBEFD9F6ED598C71D5",
+				"D52C0FE699526B0B09EEB973",
+				"215C4E2A4E5265000FF6E8E7",
+				"5760F2DF88D181F1A42ADEB1",
 				"A08EE2A6C5180A8E820D3185",
 				"06271BAF49532C879AA3C58B",
 				"CCB32DA757F8CB91EA8A9F9D",
@@ -263,8 +274,6 @@
 			"files" = (
 				"055F6C90FF6969B20821A0F8",
 				"95520D9F2F3C5C703FBDD664",
-				"0AA4AA2AAF7EAE58E289CE8C",
-				"6807EBF09EF934657C807D06",
 				"4DB7E088DD026CBACA7E5714",
 				"2D73CD8CB158859EBA591D2B",
 				"7DBBD9654EADC546E80A4862",
@@ -276,6 +285,9 @@
 				"0D948ACF23084CA5EFDC1821",
 				"9EB0F4776BE50243CA9D2848",
 				"74B87DB17167FEF00E440AD7",
+				"AC27BAD55F79BC57299670F7",
+				"DDF35247FBB1516D32E30D21",
+				"C657D5722E1358F5379305C0",
 				"C19A54893581C0DA84780E28",
 			);
 			"runOnlyForDeploymentPostprocessing" = "0";

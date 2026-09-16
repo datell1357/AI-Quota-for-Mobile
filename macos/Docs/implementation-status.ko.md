@@ -1,13 +1,13 @@
 # macOS 구현 상태
 
-마지막 갱신: 2026-09-16. 전체 계획을 완료한 상태가 아니다.
+마지막 갱신: 2026-09-17. 전체 계획을 완료한 상태가 아니다.
 
 | 단계 | 현재 상태 | 완료에 필요한 나머지 증거 |
 | --- | --- | --- |
 | 0. 기능 계약 | 55 기준 전체 해시 대조, 10개 제공자 계약 및 12개 Android 회귀 입력 고정 | 추가 경계/실제 전송 형식 fixture, Swift consumer와 비교 |
 | 1. 기술 위험 | worktree·도구 준비, 고정 CodexBarCore 링크 및 GLM 번들 실행 확인 | 서명된 App Group, 두 Claude·두 Codex, Gemini/Grok/Antigravity 실제 로그인 |
-| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체 기반, Claude 웹 수집 연결. 코어 19/인증 10/수집 20개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 실패 정리의 영구 재시도 |
-| 3. 사용자 기능 | 네이티브 앱·대시보드·메뉴 막대·온보딩·계정 편집·설정·Claude 로그인 화면 구현. 실제 UI에서 미로그인 차단·취소·다시 열기 확인 | 나머지 로그인 UI, 실제 인증 성공, 메뉴 막대 팝오버 실제 클릭, 알림 전달/거부·자동 시작 검증 |
+| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체 기반, Claude/Codex 웹 수집 연결. 코어 19/인증 10/수집 27개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 실패 정리의 영구 재시도 |
+| 3. 사용자 기능 | 네이티브 앱·대시보드·메뉴 막대·온보딩·계정 편집·설정·Claude/Codex 로그인 화면 구현. 실제 UI에서 미로그인 차단·취소·다시 열기 확인 | 나머지 로그인 UI, 실제 인증 성공, 메뉴 막대 팝오버 실제 클릭, 알림 전달/거부·자동 시작 검증 |
 | 4. 위젯·패널 | 미구현 | 3종 위젯·독립 구성·딥링크·4/6개 표시·고정 패널 |
 | 5. 장기 수집 | 미검증 | 72시간 이상, 절전·기상·재부팅·토큰 만료·업데이트 |
 | 6. 배포 | 미구현 | Developer ID·공증·DMG·새 사용자·이전 버전 업데이트 |
@@ -47,14 +47,14 @@
 `bash macos/Scripts/test-collectors.sh`
 
 - 고정 커밋 `928166f899471bbdcb72210641cdec91324d0154`를 SPM으로 resolve·링크했고 전이 의존성은 `Package.resolved`에 기록했다.
-- 수집 패키지 Swift Testing 20개 테스트 통과. 코어 19개, 인증 10개와 별도 패키지다. Claude 단계에서 코어와 수집 패키지를 재실행했고 변경 없는 인증 패키지는 앞 단계의 통과 결과다.
+- 수집 패키지 Swift Testing 27개 테스트 통과. 코어 19개, 인증 10개와 별도 패키지다. Codex 단계에서 수집 패키지를 재실행했고 변경 없는 코어/인증 패키지는 앞 단계의 통과 결과다.
 - CodexBar의 실제 `CodexUsageResponse` 파서 → 앱 지표 → SQLite → 위젯 표시 snapshot까지 합성 응답으로 검증했다. workspace 혼선, 합성 빈 창, 미확인 잔여량을 차단한다.
 - Codex 구독 API·Grok 주간 gRPC 수집기와 격리 HTTP 전송을 구현했다. 계정별 인증 헤더, session revision 거부, 429 HTTP-date/초 단위, 401/403/503 구분을 주입 전송으로 검증했다. 실제 계정 네트워크 수집은 미실행이다.
 - Grok은 Android 55의 실제 응답 바이트 두 개와 해시를 보존했다. 32% 사용 및 proto3 기본값 생략(0% 사용)을 확인했고, 각 절단 위치·빈 config·잘못된 트레일러를 거부했다.
 - GLM은 `zai.js`와 prelude 리소스를 포함한 독립 실행 파일에서 실제 JavaScript 엔진을 실행했다. 네트워크는 합성 응답을 반환하며 5시간 25%·주간 0% 사용값을 확인했다.
 - macOS XCTest는 Xcode의 `xctest`가 호스트여서 CodexBarCore의 실행 파일 기준 리소스 검색과 맞지 않는다. 실제 실행 파일 smoke host를 만들어 생성된 번들을 함께 패키징하는 검증으로 해결했다. 앱 번들/위젯에서의 검증은 남아 있다.
 - 의존성 라이선스/NOTICE 원문과 해시를 `Resources/ThirdPartyLicenses`에 보존했다. 최종 앱의 포함·표시 경로는 앱 패키징 단계에서 검증한다.
-- 12개 Android JSON fixture 전체를 Swift consumer로 비교하는 작업과 Claude 이외 제공자의 로그인 화면은 아직 남아 있다.
+- 12개 Android JSON fixture 전체를 Swift consumer로 비교하는 작업과 Claude/Codex 이외 제공자의 로그인 화면은 아직 남아 있다.
 
 ## 인증 저장·교체 기반 검증
 
@@ -69,7 +69,7 @@
 - 앱 소유 OAuth의 동시 갱신 요청은 한 번으로 합친다. 외부 CLI 소유 기록에는 토큰을 복사하지 않고 선택한 경로만 저장하며 앱의 OAuth refresher를 호출하지 않는다.
 - 실제 WebKit에서 두 영구 data store의 식별자와 객체 격리를 확인했다. 도메인·경로·만료 쿠키 선택을 검증했다. 로그인 쿠키의 재시작/업데이트 지속성은 아직 검증하지 않았다.
 - 인증 저장소 → Codex 수집 → SQLite 흐름을 합성 HTTP 응답으로 확인했다. 잠긴 저장소는 별도 credentials 오류로 처리하며 기존 값·fetchedAt·credential reference를 유지한다.
-- Claude의 원격 신원 확인과 로그인 UI를 연결했다. 나머지 제공자의 인증 UI, 등록된 OAuth client 및 실제 refresh 구현, 외부 CLI 파일 해석은 아직 남아 있다. 성공 후 이전 secret 정리 실패는 반환하며, 재시작을 포함한 영구 재시도와 중간 종료 정리 경로는 추가 구현이 필요하다.
+- Claude/Codex의 원격 신원 확인과 로그인 UI를 연결했다. 나머지 제공자의 인증 UI, 등록된 OAuth client 및 실제 refresh 구현, 외부 CLI 파일 해석은 아직 남아 있다. 성공 후 이전 secret 정리 실패는 반환하며, 재시작을 포함한 영구 재시도와 중간 종료 정리 경로는 추가 구현이 필요하다.
 - 원본 Android 55 manifest의 718개 파일을 다시 대조해 변경/누락 0개를 확인했다. 원본 저장소의 로컬 exclude에 내부 worktree만 등록해 오인 staging을 방지했다.
 
 ## 네이티브 호스트 및 사용자 화면 검증
@@ -88,7 +88,7 @@
 - 메뉴 막대 팝오버의 실제 클릭 검증은 시스템 UI 도구가 시간 초과되어 미실행으로 남긴다. 공유 데이터 기반 코드와 빌드는 확인했지만 화면 검증을 대체하지 않는다.
 - 알림 전송과 클릭 시 계정 라우팅, 권한 조회·요청, 로그인 항목 설정 코드를 연결했다. 이번 UI QA에서는 OS 알림 권한이나 자동 시작 설정을 바꾸지 않아 실제 OS 전달·거부 경로는 미검증이다.
 - 알림은 OS enqueue 전에 outbox 소비를 저장하므로 삭제 후 재전송을 방지하지만, 두 작업 사이 종료/OS enqueue 실패 시 전달이 유실될 수 있다. 이 전달 정책의 실패 처리와 실측은 추가 검증 대상이다.
-- Claude 로그인 화면/원격 신원 검증을 연결했다. 연결 해제 후 이전 credential/profile의 영구 정리 재시도, 나머지 제공자 어댑터, 위젯 확장·고정 패널은 계속 남아 있다.
+- Claude/Codex 로그인 화면/원격 신원 검증을 연결했다. 연결 해제 후 이전 credential/profile의 영구 정리 재시도, 나머지 제공자 어댑터, 위젯 확장·고정 패널은 계속 남아 있다.
 
 ## Claude 웹 로그인·수집 검증
 
@@ -103,3 +103,15 @@
 - 창을 닫은 뒤 늦게 반환된 로그인 시도는 즉시 취소해 다음 연결 시도를 막지 않도록 했다. 저장 커밋 중에는 취소를 막고 결과를 기다린다.
 - 실계정 두 개의 인증 성공, 조직 선택 성공, 재시작 후 세션 지속, 만료/챌린지 처리는 아직 실검증 전이다. HTTP 응답의 Set-Cookie를 WebKit에 반영하는 갱신, 취소한 profile 정리, 별도 prepaid/overage endpoint 수집, CLI/OAuth와 외부 브라우저 연결 경로는 미구현이다. 따라서 Claude 전체 기능 완료를 의미하지 않는다.
 - 검증 로그와 Android 55의 718개 파일 변경/누락 0개 대조 결과는 `artifacts/macos-20260916-claude/`에 보관한다.
+
+## Codex 웹 세션·워크스페이스 연결 검증
+
+- 격리 WebKit의 `chatgpt.com` root-path 쿠키로 `/api/auth/session`을 읽고 서버가 제공한 user ID와 access token을 사용한다. 이메일은 표시용이며 identity를 대신하지 않는다. 방문자 쿠키·비어 있는 로그인 세션·만료된 session은 차단한다.
+- 같은 세션에서 발급받은 bearer로 `/backend-api/accounts`의 workspace 목록을 조회한다. `/backend-api/wham/usage`에는 사용자가 선택하고 membership을 확인한 `ChatGPT-Account-Id`를 지정한다. 수집 시 사용자와 workspace를 다시 확인한다.
+- 응답 bearer는 해당 호출의 메모리 안에서만 사용한다. Keychain에는 WebKit profile 참조를 저장하며 외부 CLI의 토큰이나 refresh 절차를 호출하지 않는다. 웹 수집 출처는 `.webAPI`, 기존 OAuth 수집 출처는 `.oauthAPI`로 유지한다.
+- 기존 Claude 화면을 `WebLoginFlow`/`WebLoginSheet`로 이름을 바꾸어 재사용하고 `WebLoginService`에서 제공자별 검증을 분리했다. 대시보드와 온보딩의 Codex 계정에도 연결 버튼을 추가했다.
+- 두 쿠키 세션의 bearer/사용량 분리, 같은 사용자 내 명시적인 team workspace 선택, 사용자 변경·membership 상실·usage 응답 workspace 불일치 거부를 합성 응답으로 검증했다. 실제 coordinator/SQLite 경로에서도 마지막 값 보존과 계정별 재로그인 상태를 확인했다.
+- Codex 테스트 7개를 추가해 수집 패키지 27개와 기존 GLM 리소스 실행 검사가 통과했다. 401/429/403 구분, visitor 쿠키, 누락/만료/잘못된 session과 workspace 목록을 포함한다.
+- 실제 Debug 앱에서 Codex의 ChatGPT 로그인 페이지와 빈 로그인 입력란, 미로그인 차단 안내, 취소·즉시 취소를 확인했다. 공용 화면 전환 뒤 Claude 로그인 페이지·미로그인 안내·취소도 다시 확인했다. 자격 증명을 입력하거나 실계정을 연결하지 않았다.
+- 두 Codex 실계정의 인증 성공·워크스페이스 선택 성공·세션 갱신과 영구 유지, WebKit 밖의 로그인 대안, CLI/OAuth 연결은 남아 있다. 이 단계의 인증 API 검증은 합성 응답이며 실서버 성공 증거가 아니다.
+- 검증 로그와 취소 후 QA 계정 보존 확인은 `artifacts/macos-20260917-codex-web/`에 보관한다. 전체 macOS 계획과 출시 조건은 계속 미완료다.
