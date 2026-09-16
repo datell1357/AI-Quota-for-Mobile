@@ -1,6 +1,11 @@
 import Foundation
 import Security
 
+nonisolated enum DashboardDeepLink {
+    static let url = URL(string: "aiquota://dashboard")!
+    static func matches(_ value: URL) -> Bool { value.absoluteString == url.absoluteString }
+}
+
 nonisolated enum SharedPaths {
     static let groupID = "group.com.aiquota.macos"
     static let snapshotName = "usage-snapshot-v1.json"

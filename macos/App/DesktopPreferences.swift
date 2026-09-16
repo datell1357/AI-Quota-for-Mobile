@@ -15,6 +15,7 @@ struct DesktopPreferences: Codable {
     var representativeAccountID: UUID?
     var panelAlwaysOnTop = false
     var panelStyle = "list"
+    var panel: DesktopPanelPreferences?
 
     var usesKorean: Bool {
         language == .korean || (language == .system && Locale.preferredLanguages.first?.hasPrefix("ko") == true)
@@ -26,6 +27,7 @@ struct DesktopPreferences: Codable {
         guard schemaVersion == 1, pinnedAccountIDs.count <= 6,
               Set(pinnedAccountIDs).count == pinnedAccountIDs.count,
               ["list", "battery"].contains(panelStyle) else { throw CocoaError(.coderReadCorrupt) }
+        try panel?.validate()
     }
     static func load(from url: URL) throws -> Self {
         guard FileManager.default.fileExists(atPath: url.path) else { return Self() }

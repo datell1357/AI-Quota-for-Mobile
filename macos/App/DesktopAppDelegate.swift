@@ -6,6 +6,10 @@ import UserNotifications
         UNUserNotificationCenter.current().delegate = self
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        NotificationCenter.default.post(name: DesktopPanelController.preparingToTerminate, object: nil)
+        return .terminateNow
+    }
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                            willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
         [.banner, .sound]

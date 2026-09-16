@@ -31,8 +31,9 @@ private struct DesktopRoot<Content: View>: View {
             .environment(\.locale, Locale(identifier: model.preferences.usesKorean ? "ko_KR" : "en_US"))
             .task { await model.start() }
             .onOpenURL { url in
-                guard let id = AccountDeepLink.accountID(url) else { return }
-                model.selectedAccountID = id
+                if let id = AccountDeepLink.accountID(url) { model.selectedAccountID = id }
+                else if DashboardDeepLink.matches(url) { model.selectedAccountID = nil }
+                else { return }
                 openWindow(id: "dashboard"); NSApp.activate(ignoringOtherApps: true)
             }
             .onChange(of: scenePhase) { _, phase in

@@ -54,6 +54,9 @@ struct DashboardView: View {
                 SettingsLink { Label(model.text("설정", "Settings"), systemImage: "gearshape") }
                 Button { model.sheet = .widgets } label: { Label(model.text("위젯 추가 안내", "Add widgets"), systemImage: "rectangle.3.group") }
                     .accessibilityIdentifier("dashboard.widgets")
+                Button { model.setPanelVisible(true) } label: {
+                    Label(model.text("고정 패널", "Desktop panel"), systemImage: "pin")
+                }.accessibilityIdentifier("dashboard.panel")
             }
         }
         .frame(minWidth: 820, minHeight: 560)

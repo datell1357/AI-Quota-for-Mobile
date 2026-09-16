@@ -50,6 +50,7 @@ struct MenuBarView: View {
                 .toggleStyle(.switch).controlSize(.small)
             HStack {
                 Button(model.text("대시보드", "Dashboard")) { model.selectedAccountID = nil; showDashboard() }
+                Button(model.text("고정 패널", "Desktop panel")) { model.setPanelVisible(true) }
                 SettingsLink { Image(systemName: "gearshape") }.help(model.text("설정", "Settings"))
                 Spacer()
                 Button(model.text("종료", "Quit")) { NSApp.terminate(nil) }

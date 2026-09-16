@@ -27,6 +27,28 @@ private func expectError(_ action: () throws -> Void) throws {
         try expect(!restored.automaticRefresh && restored.onboardingComplete && restored.pinnedAccountIDs == preferences.pinnedAccountIDs && restored.representativeAccountID == preferences.representativeAccountID,
                    "Collection, onboarding, six ordered pins and representative survive reopening")
         let bytes = try Data(contentsOf: file)
+        try expect(restored.panel == nil, "Existing schema 1 settings load with the panel disabled")
+        var panelSettings = restored
+        panelSettings.panel = DesktopPanelPreferences(visible: true, accountIDs: Array(preferences.pinnedAccountIDs.reversed()),
+                                                     frame: DesktopPanelFrame(CGRect(x: -400, y: 120, width: 480, height: 500)))
+        panelSettings.panelAlwaysOnTop = true; panelSettings.panelStyle = "battery"
+        let panelFile = directory.appendingPathComponent("panel.json")
+        try panelSettings.save(to: panelFile)
+        let panelRestored = try DesktopPreferences.load(from: panelFile)
+        try expect(panelRestored.panel?.visible == true && panelRestored.panel?.accountIDs == Array(preferences.pinnedAccountIDs.reversed()) &&
+                   panelRestored.panelAlwaysOnTop && panelRestored.panelStyle == "battery" && panelRestored.panel?.frame == panelSettings.panel?.frame,
+                   "Panel visibility, order, appearance, size and position survive reopening")
+        panelSettings.panel?.accountIDs = []; try panelSettings.save(to: panelFile)
+        try expect(tryPanelIDs(panelFile) == [], "Explicit empty panel selection does not become the menu fallback")
+        let panelBytes = try Data(contentsOf: panelFile)
+        panelSettings.panel?.accountIDs = (0..<7).map { _ in UUID() }
+        try expectError { try panelSettings.save(to: panelFile) }
+        try expect(tryData(panelFile) == panelBytes, "Panel overflow preserves the stored configuration")
+        panelSettings.panel?.accountIDs = [idForDuplicate, idForDuplicate]
+        try expectError { try panelSettings.save(to: panelFile) }
+        panelSettings.panel?.accountIDs = []; panelSettings.panel?.frame?.width = .nan
+        try expectError { try panelSettings.save(to: panelFile) }
+        try expect(DashboardDeepLink.matches(DashboardDeepLink.url) && !DashboardDeepLink.matches(URL(string: "aiquota://dashboard?replace=true")!), "Dashboard routing accepts only its exact URL")
         var invalid = preferences; invalid.pinnedAccountIDs.append(UUID())
         try expectError { try invalid.save(to: file) }
         try expect(tryData(file) == bytes, "Capacity rejection preserves previous file")
@@ -54,4 +76,6 @@ private func expectError(_ action: () throws -> Void) throws {
         print("Retained fixtures: \(directory.path)")
     }
     private static func tryData(_ url: URL) -> Data? { try? Data(contentsOf: url) }
+    private static let idForDuplicate = UUID()
+    private static func tryPanelIDs(_ url: URL) -> [UUID]? { (try? DesktopPreferences.load(from: url))?.panel?.accountIDs }
 }

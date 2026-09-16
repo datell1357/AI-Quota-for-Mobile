@@ -117,3 +117,15 @@ producer, then renders 25 PNGs in a separate native host. The second validates t
 extension and selection limits extracted by Xcode. These checks do not establish signed App Group
 access, WidgetKit gallery registration or OS-persisted independent configurations. See
 [Docs/widget-contract.ko.md](Docs/widget-contract.ko.md) for the full contract and outstanding gates.
+
+## Desktop panel
+
+Open **Desktop panel** from the dashboard or menu bar, or enable it in Settings. The optional native
+panel shares the existing model and collector, supports list/battery layouts and up to six ordered
+accounts, and remembers its frame and visibility. It uses a normal window level unless **Always on
+top** is selected. Closing the panel disables it; quitting the app keeps it enabled for the next run.
+An explicitly empty selection remains empty. Language, appearance and card style follow the app.
+
+Run `bash macos/Scripts/test-host-state.sh` and `bash macos/Scripts/test-panel.sh` for compatibility,
+selection, native window lifecycle and frame checks. See [Docs/desktop-panel.ko.md](Docs/desktop-panel.ko.md)
+for actual app UI verification and the remaining live collection, display and accessibility checks.

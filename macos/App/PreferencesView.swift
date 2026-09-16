@@ -43,6 +43,13 @@ struct PreferencesView: View {
                 Text(model.text("계정 상세에서 최대 6개를 메뉴 막대에 고정할 수 있습니다.", "Pin up to six accounts from their detail pages."))
                     .font(.caption).foregroundStyle(.secondary)
             }
+            Section(model.text("고정 데스크톱 패널", "Desktop panel")) {
+                Toggle(model.text("패널 표시", "Show panel"), isOn: Binding(get: { model.preferences.panel?.visible == true }, set: { model.setPanelVisible($0) }))
+                    .accessibilityIdentifier("preferences.panel")
+                Toggle(model.text("항상 위", "Always on top"), isOn: binding(\.panelAlwaysOnTop))
+                Text(model.text("앱의 60초 수집 결과를 공유합니다. 패널에서 계정·표시 방식을 선택하고 창 크기와 위치를 조정할 수 있습니다.", "Shares the app’s 60-second collection. Choose accounts and display style in the panel, then resize or move it."))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section(model.text("시스템", "System")) {
                 Toggle(model.text("로그인 시 실행", "Launch at login"), isOn: Binding(
                     get: { model.loginItemStatus == .enabled || model.loginItemStatus == .requiresApproval },

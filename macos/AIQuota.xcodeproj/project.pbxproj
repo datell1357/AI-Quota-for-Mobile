@@ -55,6 +55,36 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "83E21B66E3D1FABA55CE2C8E";
 		};
+		"245F7D5FA8B0E4AB64835EEE" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/DesktopPanelController.swift";
+			"sourceTree" = "<group>";
+		};
+		"0C70F7142F2308CA95C29A41" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "245F7D5FA8B0E4AB64835EEE";
+		};
+		"99CCE3271F478788F349F9F0" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/DesktopPanelState.swift";
+			"sourceTree" = "<group>";
+		};
+		"4C60D36D5F5CB651261A59C8" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "99CCE3271F478788F349F9F0";
+		};
+		"4C66D44041444A51E8BC1AC3" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/DesktopPanelView.swift";
+			"sourceTree" = "<group>";
+		};
+		"7944E59FE06782CD55A0CF45" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "4C66D44041444A51E8BC1AC3";
+		};
 		"BB37325D77217DFCAF99A95F" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -261,6 +291,9 @@
 				"9EF90001BBF272B1AD0EEC1B",
 				"A7A19A28B7AC5080C225497B",
 				"83E21B66E3D1FABA55CE2C8E",
+				"245F7D5FA8B0E4AB64835EEE",
+				"99CCE3271F478788F349F9F0",
+				"4C66D44041444A51E8BC1AC3",
 				"BB37325D77217DFCAF99A95F",
 				"C48DE2FA3EC673796CB1621A",
 				"E421DE4BB0F0B0D403F55EE9",
@@ -338,6 +371,9 @@
 				"4DB7E088DD026CBACA7E5714",
 				"2D73CD8CB158859EBA591D2B",
 				"7DBBD9654EADC546E80A4862",
+				"0C70F7142F2308CA95C29A41",
+				"4C60D36D5F5CB651261A59C8",
+				"7944E59FE06782CD55A0CF45",
 				"C3FB253ECE328D808E47BFF3",
 				"57FE3EA0A2AD4E4A5A012D8B",
 				"011022ADDEE17783E8392387",

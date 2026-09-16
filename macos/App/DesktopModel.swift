@@ -6,6 +6,7 @@ import Foundation
 import Network
 import Observation
 import ServiceManagement
+import SwiftUI
 import UserNotifications
 import WidgetKit
 
@@ -54,6 +55,7 @@ private struct CollectorRegistry: UsageCollector {
     private var started = false
     private var reloadSequence: UInt64 = 0
     private var environmentMonitor: EnvironmentMonitor?
+    @ObservationIgnored private var panelController: DesktopPanelController?
     let notificationDelivery = NotificationDelivery()
 
     func text(_ korean: String, _ english: String) -> String { preferences.usesKorean ? korean : english }
@@ -61,6 +63,9 @@ private struct CollectorRegistry: UsageCollector {
     var pinnedAccounts: [DisplayAccount] {
         let index = Dictionary(uniqueKeysWithValues: snapshot.accounts.map { ($0.id, $0) })
         return preferences.pinnedAccountIDs.compactMap { index[$0] }.filter { !$0.isHidden }
+    }
+    var panelAccountIDs: [UUID] {
+        preferences.panel?.accountIDs ?? (preferences.pinnedAccountIDs.isEmpty ? Array(visibleAccounts.prefix(6)).map(\.id) : preferences.pinnedAccountIDs)
     }
     var representative: DisplayAccount? {
         if let id = preferences.representativeAccountID { return snapshot.accounts.first { $0.id == id && !$0.isHidden } }
@@ -104,6 +109,7 @@ private struct CollectorRegistry: UsageCollector {
             startupError = text("저장된 데이터를 열지 못했습니다. 기존 파일을 보존한 상태입니다.", "Saved data could not be opened. Existing files have been preserved.")
         }
         loading = false
+        synchronizePanel()
     }
     private func dataDirectory() throws -> URL {
         let args = ProcessInfo.processInfo.arguments
@@ -211,8 +217,29 @@ private struct CollectorRegistry: UsageCollector {
     func updatePreferences(_ transform: (inout DesktopPreferences) -> Void) {
         guard let preferencesURL else { return }
         var updated = preferences; transform(&updated)
-        do { try updated.save(to: preferencesURL); preferences = updated }
+        do { try updated.save(to: preferencesURL); preferences = updated; synchronizePanel() }
         catch { show(error) }
+    }
+    func setPanelVisible(_ visible: Bool) {
+        updatePreferences { var panel = $0.panel ?? DesktopPanelPreferences(); panel.visible = visible; $0.panel = panel }
+        if visible, preferences.panel?.visible == true { panelController?.focus() }
+    }
+    func setPanelAccounts(_ ids: [UUID]) {
+        updatePreferences { var panel = $0.panel ?? DesktopPanelPreferences(); panel.accountIDs = ids; $0.panel = panel }
+    }
+    private func synchronizePanel() {
+        guard !loading, startupError == nil else { return }
+        if panelController == nil, preferences.panel?.visible == true {
+            panelController = DesktopPanelController(makeContent: { [weak self] in
+                guard let self else { return NSView() }
+                return NSHostingView(rootView: DesktopPanelView().environment(self))
+            }, didClose: { [weak self] in self?.setPanelVisible(false) }, didChangeFrame: { [weak self] frame in
+                guard let self, self.preferences.panel?.frame != frame else { return }
+                self.updatePreferences { var panel = $0.panel ?? DesktopPanelPreferences(); panel.frame = frame; $0.panel = panel }
+            })
+        }
+        panelController?.apply(visible: preferences.panel?.visible == true, alwaysOnTop: preferences.panelAlwaysOnTop,
+                               title: text("AI Quota 고정 패널", "AI Quota Desktop Panel"), savedFrame: preferences.panel?.frame)
     }
     func setAutomaticRefresh(_ enabled: Bool) async {
         updatePreferences { $0.automaticRefresh = enabled }
