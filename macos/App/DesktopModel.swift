@@ -11,9 +11,9 @@ import WidgetKit
 
 struct AccountSelection: Identifiable { let id: UUID }
 enum DesktopSheet: Identifiable {
-    case providers, edit(AccountSelection), widgets
+    case providers, edit(AccountSelection), connect(AccountSelection), widgets
     var id: String {
-        switch self { case .providers: "providers"; case .edit(let account): "edit-\(account.id)"; case .widgets: "widgets" }
+        switch self { case .providers: "providers"; case .edit(let account): "edit-\(account.id)"; case .connect(let account): "connect-\(account.id)"; case .widgets: "widgets" }
     }
 }
 
@@ -33,6 +33,8 @@ private struct CollectorRegistry: UsageCollector {
     private(set) var online = true
     private(set) var awake = true
     private(set) var widgetSharingAvailable = false
+    private(set) var loginRetryAfter: [UUID: Date] = [:]
+    private var loginRetryTasks: [UUID: Task<Void, Never>] = [:]
     var notificationStatus: UNAuthorizationStatus = .notDetermined
     var loginItemStatus = SMAppService.mainApp.status
     var selectedAccountID: UUID?
@@ -80,7 +82,7 @@ private struct CollectorRegistry: UsageCollector {
             self.repository = repository
             let login = LoginCoordinator(repository: repository, vault: KeychainCredentialVault()); self.login = login
             let source = StoredAccountSessionSource(login: login, webProfiles: webProfiles)
-            let registry = CollectorRegistry(collectors: [.codex: CodexSubscriptionCollector(sessions: source), .grok: GrokWeeklyCollector(sessions: source)])
+            let registry = CollectorRegistry(collectors: [.claude: ClaudeWebCollector(sessions: source), .codex: CodexSubscriptionCollector(sessions: source), .grok: GrokWeeklyCollector(sessions: source)])
             let coordinator = RefreshCoordinator(repository: repository, collector: registry, didUpdate: { [weak self] _ in await self?.reload() })
             self.coordinator = coordinator
             if ProcessInfo.processInfo.arguments.contains("--data-directory") {
@@ -218,6 +220,20 @@ private struct CollectorRegistry: UsageCollector {
         self.online = online; self.awake = awake
         do { try await coordinator?.setEnvironment(online: online, awake: awake) }
         catch { show(error) }
+    }
+    func mayVerifyLogin(_ id: UUID) -> Bool { loginRetryAfter[id].map { $0 <= .now } ?? true }
+    func delayLogin(_ id: UUID, until: Date) {
+        let deadline = max(until, loginRetryAfter[id] ?? .distantPast)
+        loginRetryAfter[id] = deadline
+        loginRetryTasks[id]?.cancel()
+        loginRetryTasks[id] = Task { [weak self] in
+            while deadline > .now {
+                do { try await Task.sleep(for: .seconds(min(deadline.timeIntervalSinceNow, 86_400))) }
+                catch { return }
+            }
+            guard let self, self.loginRetryAfter[id] == deadline else { return }
+            self.loginRetryAfter[id] = nil; self.loginRetryTasks[id] = nil
+        }
     }
     func statusText(_ state: ConnectionState) -> String {
         switch state {

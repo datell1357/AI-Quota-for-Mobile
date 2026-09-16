@@ -112,6 +112,11 @@ struct AccountDetailView: View {
                         set: { model.setPinned(account.id, pinned: $0) }))
                         .disabled(!model.preferences.pinnedAccountIDs.contains(account.id) && model.preferences.pinnedAccountIDs.count >= 6)
                 }
+                if account.provider == .claude {
+                    Button(account.state == .disconnected ? model.text("웹 계정 연결", "Connect web account") : model.text("다시 로그인", "Sign in again")) {
+                        model.sheet = .connect(AccountSelection(id: account.id))
+                    }.buttonStyle(.borderedProminent).accessibilityIdentifier("account.connect")
+                }
                 if account.provider.supportsMultipleAccounts {
                     Button(model.text("\(account.provider.displayName) 계정 추가", "Add another \(account.provider.displayName) account")) {
                         Task { await model.addAccount(account.provider) }

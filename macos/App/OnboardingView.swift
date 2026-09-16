@@ -38,6 +38,9 @@ struct OnboardingView: View {
                                     ProviderMark(provider: account.provider)
                                     VStack(alignment: .leading) { Text(account.alias); Text(model.statusText(account.state)).font(.caption).foregroundStyle(.secondary) }
                                     Spacer()
+                                    if account.provider == .claude {
+                                        Button(model.text("연결", "Connect")) { model.sheet = .connect(AccountSelection(id: account.id)) }
+                                    }
                                     Button(model.text("설정", "Configure")) { model.sheet = .edit(AccountSelection(id: account.id)) }
                                 }.padding(8)
                             }

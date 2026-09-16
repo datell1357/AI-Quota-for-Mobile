@@ -26,11 +26,12 @@ public struct StoredAccountSessionSource: AccountSessionSource {
                 let url: URL
                 switch account.provider {
                 case .grok: url = GrokWeeklyDecoder.endpoint
-                case .claude: url = URL(string: "https://claude.ai/api/")!
+                case .claude: url = URL(string: "https://claude.ai/")!
                 case .codex: url = CodexSubscriptionCollector.endpoint
                 default: throw CollectorError.unsupported
                 }
                 do { cookies = try await webProfiles.cookieHeader(for: url, profileID: profile) }
+                catch AuthenticationError.missingCredential { throw CollectorError.authenticationRequired }
                 catch { throw CollectorError.credentialsUnavailable }
             } else { cookies = record.secret }
         case .externalApplication:

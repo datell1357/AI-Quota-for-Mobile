@@ -25,6 +25,26 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "7C732E04A3559B1714C5479D";
 		};
+		"06873DF6D457D3A28A5789E6" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/ClaudeLoginFlow.swift";
+			"sourceTree" = "<group>";
+		};
+		"0AA4AA2AAF7EAE58E289CE8C" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "06873DF6D457D3A28A5789E6";
+		};
+		"1213CB61C9A78671BC3B99E4" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/ClaudeLoginSheet.swift";
+			"sourceTree" = "<group>";
+		};
+		"6807EBF09EF934657C807D06" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "1213CB61C9A78671BC3B99E4";
+		};
 		"9EF90001BBF272B1AD0EEC1B" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -177,6 +197,8 @@
 			"children" = (
 				"6D4F49142DC0104DD5C68BE3",
 				"7C732E04A3559B1714C5479D",
+				"06873DF6D457D3A28A5789E6",
+				"1213CB61C9A78671BC3B99E4",
 				"9EF90001BBF272B1AD0EEC1B",
 				"A7A19A28B7AC5080C225497B",
 				"83E21B66E3D1FABA55CE2C8E",
@@ -241,6 +263,8 @@
 			"files" = (
 				"055F6C90FF6969B20821A0F8",
 				"95520D9F2F3C5C703FBDD664",
+				"0AA4AA2AAF7EAE58E289CE8C",
+				"6807EBF09EF934657C807D06",
 				"4DB7E088DD026CBACA7E5714",
 				"2D73CD8CB158859EBA591D2B",
 				"7DBBD9654EADC546E80A4862",

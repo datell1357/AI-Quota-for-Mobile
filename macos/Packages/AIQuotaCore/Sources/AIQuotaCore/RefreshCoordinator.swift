@@ -215,7 +215,11 @@ public actor RefreshCoordinator {
                 reason = .rateLimited; problem = .rateLimited
             case CollectorError.invalidResponse: reason = .malformedResponse; problem = .invalidResponse
             case CollectorError.unsupported: reason = .malformedResponse; problem = .unsupported
-            case CoreError.staleAttempt, CoreError.accountNotFound, CoreError.identityMismatch:
+            case CoreError.identityMismatch:
+                // The current session belongs to someone else. Preserve its previous readings,
+                // but require explicit sign-in instead of continuing to call them current.
+                reason = .unauthorized; problem = .authentication
+            case CoreError.staleAttempt, CoreError.accountNotFound:
                 reason = .cancelled; problem = .discarded
             case let core as CoreError where core == .invalidMetric || core == .invalidTimestamp:
                 reason = .malformedResponse; problem = .invalidResponse

@@ -44,6 +44,7 @@ private struct DesktopRoot<Content: View>: View {
                     switch sheet {
                     case .providers: ProviderChooser()
                     case .edit(let account): AccountEditor(selection: account)
+                    case .connect(let account): ClaudeLoginSheet(accountID: account.id, model: model)
                     case .widgets: WidgetHelpView()
                     }
                 }.environment(model).preferredColorScheme(model.preferences.colorScheme)
