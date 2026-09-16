@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | 0. 기능 계약 | 55 기준 전체 해시 대조, 10개 제공자 계약 및 12개 Android 회귀 입력 고정 | 추가 경계/실제 전송 형식 fixture, Swift consumer와 비교 |
 | 1. 기술 위험 | worktree 및 도구 준비 | CodexBarCore 연결, 서명된 App Group, 두 Claude·두 Codex, Gemini/Grok/Antigravity 실제 로그인 |
-| 2. 수집·저장 | 계정·지표 모델, SQLite authority, 알림 정책/outbox, 표시 스냅샷 구현. Swift 테스트 13개 통과 | Keychain/웹 세션, 60초 수집, 10개 어댑터, 추가 경계 검증 |
+| 2. 수집·저장 | 계정·지표 모델, SQLite authority, 알림 정책/outbox, 표시 스냅샷 구현. 단일 60초 scheduler 구현. Swift 테스트 19개 통과 | Keychain/웹 세션, 10개 어댑터, 실제 전송·타이머 계측, 추가 경계 검증 |
 | 3. 사용자 기능 | 미구현 | 메뉴 막대·설정·온보딩·계정·알림·권한 실제 화면 검증 |
 | 4. 위젯·패널 | 미구현 | 3종 위젯·독립 구성·딥링크·4/6개 표시·고정 패널 |
 | 5. 장기 수집 | 미검증 | 72시간 이상, 절전·기상·재부팅·토큰 만료·업데이트 |
@@ -25,10 +25,19 @@
 
 `swift test --package-path macos/Packages/AIQuotaCore --scratch-path macos/.build/core`
 
-- macOS 14 타깃으로 Swift 6.3.3 실제 컴파일 및 Swift Testing 13개 테스트 통과.
+- macOS 14 타깃으로 Swift 6.3.3 실제 컴파일 및 Swift Testing 19개 테스트 통과.
 - 두 계정 데이터 독립, workspace 혼선, sequence/session/generation 거부, 오류 후 fetchedAt 유지.
 - 실제 SQLite 재열기 후 알림 상태 유지, 동일 낮은 사용량 60회 반복 억제, 3% 회복 후 재알림.
 - 초기 과거 리셋·소수초 경계 중복 억제, 이전 값이 0%여도 리셋 경계만으로 복구 표시하지 않음.
 - 실제 JSON 원자 저장→읽기, 인증 필드 부재, 구버전 snapshot 거부, 계정 삭제 후 선택 위치 보존.
 - 미래 DB schema 변경 거부, 기존 unversioned DB의 SQLite backup 후 초기 schema 도입.
 - 이는 앱/위젯 App Group 실측, 알림 OS 전달, 실제 Keychain, 제공자 수집 검증을 대체하지 않는다.
+
+## 수집 스케줄러 검증
+
+- 한 actor에서 최대 2개 동시 수집, 계정별 1개만 허용하며 수동·주기·복구 요청을 합친다.
+- 60초 전 요청 보류 및 누락된 500주기 재생 방지는 주입한 시계로 검증했다. 실제 60초 타이머 장기 실측은 아직 하지 않았다.
+- 계정별 Retry-After는 수동 갱신에도 적용한다. 다른 계정 수집은 계속된다. 현재 이 대기 상태는 프로세스 메모리에만 있다.
+- 취소가 늦게 끝나는 전송은 실행 자리를 유지하고 복구 요청을 1회로 합친다. 취소된 결과는 저장하지 않는다.
+- 자동 수집을 꺼도 이미 대기 중인 수동 요청은 유지한다.
+- 수집 시도 수·응답 바이트·소요 시간의 계정별 집계 기반을 추가했다. 어댑터 내부 HTTP 요청 수, CPU·메모리·배터리 실측은 별도 검증이 필요하다.

@@ -151,6 +151,12 @@ public actor AccountRepository {
         }
     }
 
+    // Return a matching credential reference and lease without an intervening actor suspension.
+    public func collectionContext(_ id: UUID, now: Date = .now) throws -> (Account, CollectionLease) {
+        let lease = try beginCollection(id, now: now)
+        return (try account(id), lease)
+    }
+
     public func usage(_ id: UUID) throws -> UsageReport? {
         guard let json = try database.scalar("SELECT payload FROM usage WHERE account_id=?", [.text(id.uuidString)]) else { return nil }
         return try decode(UsageReport.self, json)
