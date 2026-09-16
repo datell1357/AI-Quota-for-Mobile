@@ -1,0 +1,12 @@
+"Account" = "계정";
+"Account usage" = "계정 사용량";
+"Dashboard · 4" = "대시보드 · 4개";
+"Dashboard · 6" = "대시보드 · 6개";
+"Battery · 2" = "배터리 · 2개";
+"Battery · 4" = "배터리 · 4개";
+"Battery · 6" = "배터리 · 6개";
+"Select up to 2 accounts." = "최대 2개를 선택해주세요.";
+"Select up to 4 accounts." = "최대 4개를 선택해주세요.";
+"Select up to 6 accounts." = "최대 6개를 선택해주세요.";
+"Unavailable account" = "계정 없음";
+"Choose accounts. Shows the last collected usage." = "표시할 계정을 선택하세요. 마지막으로 수집한 사용량을 표시합니다.";

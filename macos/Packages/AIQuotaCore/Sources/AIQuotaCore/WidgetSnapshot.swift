@@ -84,6 +84,9 @@ public actor SnapshotFileStore {
     private var lastPublished: WidgetSnapshot?
     public init(url: URL, repository: AccountRepository) { self.url = url; self.repository = repository }
 
+    /// The exact projection most recently published, without another shared-container file read.
+    public func publishedSnapshot() -> WidgetSnapshot? { lastPublished }
+
     /// Read inside the publisher rather than accepting a potentially queued, obsolete projection.
     /// On startup the current database can replace a cache left by a restored/recreated database.
     @discardableResult

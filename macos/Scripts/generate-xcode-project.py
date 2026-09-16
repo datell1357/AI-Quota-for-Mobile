@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministically generate the native host project without a globally installed generator."""
+"""Deterministically generate the native host and WidgetKit extension project."""
 import hashlib
 import json
 from pathlib import Path
@@ -18,7 +18,8 @@ def obj(object_name, isa, **values):
 def file(name, path, kind):
     return obj(name, 'PBXFileReference', lastKnownFileType=kind, path=path, sourceTree='<group>')
 
-source_files = sorted(root.glob('App/**/*.swift')) + sorted(root.glob('Shared/**/*.swift'))
+source_files = (sorted(root.glob('App/**/*.swift')) + sorted(root.glob('Shared/**/*.swift')) + sorted(root.glob('WidgetSupport/**/*.swift'))
+                + [root/'Widgets/AccountEntity.swift', root/'Widgets/WidgetIntents.swift'])
 source_refs = []
 source_build = []
 for source in source_files:
@@ -65,7 +66,44 @@ for name in ['Debug', 'Release']:
 project_config_list = obj('project-configs', 'XCConfigurationList', buildConfigurations=project_configs, defaultConfigurationIsVisible='0', defaultConfigurationName='Release')
 app_config_list = obj('app-configs', 'XCConfigurationList', buildConfigurations=app_configs, defaultConfigurationIsVisible='0', defaultConfigurationName='Release')
 target = obj('app', 'PBXNativeTarget', buildConfigurationList=app_config_list, buildPhases=[sources_phase, frameworks_phase, resources_phase], buildRules=[], dependencies=[], name='AIQuota', packageProductDependencies=dependencies, productName='AI Quota', productReference=product, productType='com.apple.product-type.application')
-project = obj('project', 'PBXProject', attributes=dict(LastSwiftUpdateCheck='2660', LastUpgradeCheck='2660', TargetAttributes={target: dict(CreatedOnToolsVersion='26.6')}), buildConfigurationList=project_config_list, compatibilityVersion='Xcode 14.0', developmentRegion='ko', hasScannedForEncodings='0', knownRegions=['ko', 'en', 'Base'], mainGroup=group, packageReferences=packages, productRefGroup=products, projectDirPath='', projectRoot='', targets=[target])
+
+# The extension links display models only; no authentication, collector or plugin resources.
+widget_sources = []
+for source in sorted(root.glob('Widgets/**/*.swift')) + sorted(root.glob('WidgetSupport/**/*.swift')) + sorted(root.glob('Shared/**/*.swift')):
+    relative = str(source.relative_to(root))
+    ref = file(relative, relative, 'sourcecode.swift')
+    if ref not in objects[group]['children']:
+        objects[group]['children'].append(ref)
+    widget_sources.append(obj('widget-build:' + relative, 'PBXBuildFile', fileRef=ref))
+widget_product = obj('widget-product', 'PBXFileReference', explicitFileType='wrapper.app-extension', path='AIQuotaWidgets.appex', sourceTree='BUILT_PRODUCTS_DIR', includeInIndex='0')
+objects[products]['children'].append(widget_product)
+for path in ['Configuration/Widget-Info.plist', 'Configuration/Widget.entitlements']:
+    objects[group]['children'].append(file(path, path, 'text.plist.xml'))
+widget_configs = []
+for name in ['Debug', 'Release']:
+    widget_configs.append(obj('widget-config:' + name, 'XCBuildConfiguration', name=name, buildSettings=dict(
+        PRODUCT_NAME='AIQuotaWidgets', PRODUCT_BUNDLE_IDENTIFIER='com.aiquota.macos.widgets',
+        INFOPLIST_FILE='Configuration/Widget-Info.plist', CODE_SIGN_ENTITLEMENTS='Configuration/Widget.entitlements',
+        CODE_SIGN_STYLE='Automatic', DEVELOPMENT_TEAM='', ENABLE_HARDENED_RUNTIME='YES', APPLICATION_EXTENSION_API_ONLY='YES',
+        SKIP_INSTALL='YES', MARKETING_VERSION='0.1.0', CURRENT_PROJECT_VERSION='1', GENERATE_INFOPLIST_FILE='NO',
+        LD_RUNPATH_SEARCH_PATHS=['$(inherited)', '@executable_path/../Frameworks', '@executable_path/../../../../Frameworks'])))
+widget_config_list = obj('widget-configs', 'XCConfigurationList', buildConfigurations=widget_configs, defaultConfigurationIsVisible='0', defaultConfigurationName='Release')
+widget_sources_phase = obj('widget-sources-phase', 'PBXSourcesBuildPhase', buildActionMask='2147483647', files=widget_sources, runOnlyForDeploymentPostprocessing='0')
+widget_frameworks_phase = obj('widget-frameworks-phase', 'PBXFrameworksBuildPhase', buildActionMask='2147483647', files=[obj('widget-core-build', 'PBXBuildFile', productRef=dependencies[0])], runOnlyForDeploymentPostprocessing='0')
+widget_resources_phase = obj('widget-resources-phase', 'PBXResourcesBuildPhase', buildActionMask='2147483647', files=[], runOnlyForDeploymentPostprocessing='0')
+translations = []
+for language in ['ko', 'en']:
+    path = f'Resources/WidgetLocalization/{language}.lproj/Localizable.strings'
+    translations.append(obj('widget-strings:' + language, 'PBXFileReference', lastKnownFileType='text.plist.strings', name=language, path=path, sourceTree='<group>'))
+localized = obj('widget-localization', 'PBXVariantGroup', children=translations, name='Localizable.strings', sourceTree='<group>')
+objects[group]['children'].append(localized)
+objects[widget_resources_phase]['files'].append(obj('widget-localization-build', 'PBXBuildFile', fileRef=localized))
+widget_target = obj('widgets', 'PBXNativeTarget', buildConfigurationList=widget_config_list, buildPhases=[widget_sources_phase, widget_frameworks_phase, widget_resources_phase], buildRules=[], dependencies=[], name='AIQuotaWidgets', packageProductDependencies=[dependencies[0]], productName='AIQuotaWidgets', productReference=widget_product, productType='com.apple.product-type.app-extension')
+proxy = obj('widget-proxy', 'PBXContainerItemProxy', containerPortal=uid('project'), proxyType='1', remoteGlobalIDString=widget_target, remoteInfo='AIQuotaWidgets')
+objects[target]['dependencies'].append(obj('widget-dependency', 'PBXTargetDependency', target=widget_target, targetProxy=proxy))
+embed = obj('embed-widget', 'PBXBuildFile', fileRef=widget_product, settings={'ATTRIBUTES': ['RemoveHeadersOnCopy']})
+objects[target]['buildPhases'].append(obj('embed-widget-phase', 'PBXCopyFilesBuildPhase', buildActionMask='2147483647', dstPath='', dstSubfolderSpec='13', files=[embed], name='Embed App Extensions', runOnlyForDeploymentPostprocessing='0'))
+project = obj('project', 'PBXProject', attributes=dict(LastSwiftUpdateCheck='2660', LastUpgradeCheck='2660', TargetAttributes={t: dict(CreatedOnToolsVersion='26.6') for t in [target, widget_target]}), buildConfigurationList=project_config_list, compatibilityVersion='Xcode 14.0', developmentRegion='ko', hasScannedForEncodings='0', knownRegions=['ko', 'en', 'Base'], mainGroup=group, packageReferences=packages, productRefGroup=products, projectDirPath='', projectRoot='', targets=[target, widget_target])
 
 def encode(value, indent=0):
     pad = '\t' * indent

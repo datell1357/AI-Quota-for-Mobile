@@ -96,5 +96,24 @@ Shared-file writes are coalesced separately from displaying accounts and collect
 
 The dashboard, account editing, provider selection, onboarding, Korean/English, themes and collection
 preferences and Claude/Codex/Grok login screens are wired to the local authority. The other provider
-login screens and WidgetKit extension are still pending; adding an account card does not authenticate it. See the status document for
+login screens and signed WidgetKit runtime verification are still pending; adding an account card does not authenticate it. See the status document for
 actual native UI verification and remaining notification, menu-bar and signing checks.
+
+## System widgets
+
+The generated project embeds `AIQuotaWidgets.appex`. It contains six configurable kinds: account,
+four/six-account dashboard and two/four/six-account battery. Configuration is per WidgetKit instance
+and stores account UUIDs in order. The extension reads only the display snapshot; it does not collect
+usage or access authentication. Missing IDs retain their positions, and invalid capacity/size
+combinations request editing without discarding selections.
+
+```sh
+bash macos/Scripts/test-widgets.sh
+python3 macos/Scripts/verify-widget-bundle.py 'macos/.build/xcode/Build/Products/Debug/AI Quota.app'
+```
+
+The first command runs the real intent/query/timeline and view code against a synthetic SQLite
+producer, then renders 25 PNGs in a separate native host. The second validates the actual embedded
+extension and selection limits extracted by Xcode. These checks do not establish signed App Group
+access, WidgetKit gallery registration or OS-persisted independent configurations. See
+[Docs/widget-contract.ko.md](Docs/widget-contract.ko.md) for the full contract and outstanding gates.

@@ -52,6 +52,8 @@ struct DashboardView: View {
                 Button { Task { await model.refresh() } } label: { Label(model.text("새로고침", "Refresh"), systemImage: "arrow.clockwise") }
                     .disabled(model.refreshing || model.loading || !model.online).accessibilityIdentifier("dashboard.refresh")
                 SettingsLink { Label(model.text("설정", "Settings"), systemImage: "gearshape") }
+                Button { model.sheet = .widgets } label: { Label(model.text("위젯 추가 안내", "Add widgets"), systemImage: "rectangle.3.group") }
+                    .accessibilityIdentifier("dashboard.widgets")
             }
         }
         .frame(minWidth: 820, minHeight: 560)

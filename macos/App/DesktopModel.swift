@@ -46,6 +46,7 @@ private struct CollectorRegistry: UsageCollector {
     let webProfiles = IsolatedWebProfiles()
     private var coordinator: RefreshCoordinator?
     private var snapshotStore: SnapshotFileStore?
+    private let widgetReloader = WidgetTimelineReloader()
     private var publishesToAppGroup = false
     private var publicationRunning = false
     private var publicationPending = false
@@ -141,10 +142,10 @@ private struct CollectorRegistry: UsageCollector {
             while publicationPending {
                 publicationPending = false
                 do {
-                    let changed = try await snapshotStore.publish()
+                    _ = try await snapshotStore.publish()
                     widgetSharingAvailable = publishesToAppGroup
-                    if changed && publishesToAppGroup {
-                        for kind in WidgetKind.allCases { WidgetCenter.shared.reloadTimelines(ofKind: kind.rawValue) }
+                    if publishesToAppGroup, let published = await snapshotStore.publishedSnapshot() {
+                        try await widgetReloader.reloadAffectedWidgets(snapshot: published)
                     }
                 } catch CoreError.staleAttempt { /* A newer publication already won. */ }
                 catch { widgetSharingAvailable = false }

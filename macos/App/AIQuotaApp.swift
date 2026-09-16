@@ -66,6 +66,11 @@ struct WidgetHelpView: View {
             Text(model.text("데스크톱을 Control-클릭하고 ‘위젯 편집’을 선택하세요. AI Quota를 추가한 뒤 위젯을 편집해 표시할 계정을 고릅니다.", "Control-click the desktop and choose Edit Widgets. Add AI Quota, then edit the widget to choose its accounts."))
             Text(model.text("위젯은 마지막 수집값을 표시합니다. 갱신 시점은 macOS가 결정합니다.", "Widgets show the last collected reading. macOS controls their refresh schedule."))
                 .foregroundStyle(.secondary)
+            Text(model.text("계정 위젯은 1개, 대시보드는 4·6개, 배터리는 2·4·6개 계정을 표시합니다. 각 위젯을 편집해 계정과 순서를 따로 정할 수 있습니다.", "Account widgets show one account, dashboards up to four or six, and batteries up to two, four or six. Edit each widget to set its own accounts and order."))
+            if !model.widgetSharingAvailable {
+                Text(model.text("현재 위젯 공유 데이터를 사용할 수 없습니다. 위젯에 계정이 나타나지 않으면 앱의 연결 상태와 설치 버전을 확인해주세요.", "Shared widget data is currently unavailable. If accounts do not appear, check the app's connection status and installed version."))
+                    .font(.caption).foregroundStyle(.orange)
+            }
             Button(model.text("닫기", "Close")) { dismiss() }.keyboardShortcut(.defaultAction)
         }.padding(28).frame(width: 440)
     }

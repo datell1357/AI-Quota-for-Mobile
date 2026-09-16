@@ -165,6 +165,16 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "5760F2DF88D181F1A42ADEB1";
 		};
+		"07B12DBF9C6BA2BEE3419920" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/WidgetTimelineReloader.swift";
+			"sourceTree" = "<group>";
+		};
+		"614BC5E57711717454451399" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "07B12DBF9C6BA2BEE3419920";
+		};
 		"A08EE2A6C5180A8E820D3185" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -174,6 +184,46 @@
 		"C19A54893581C0DA84780E28" = {
 			"isa" = "PBXBuildFile";
 			"fileRef" = "A08EE2A6C5180A8E820D3185";
+		};
+		"5ADC154D1E337D9240200E56" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "WidgetSupport/QuotaWidgetContent.swift";
+			"sourceTree" = "<group>";
+		};
+		"30D3729C1EE2B626D7EC2EAD" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "5ADC154D1E337D9240200E56";
+		};
+		"275BC78A659E33DEAA08DF67" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "WidgetSupport/WidgetPreviews.swift";
+			"sourceTree" = "<group>";
+		};
+		"FEC58AB6FAB7D44E00291E13" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "275BC78A659E33DEAA08DF67";
+		};
+		"0C67919469BDF52192C7A97E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Widgets/AccountEntity.swift";
+			"sourceTree" = "<group>";
+		};
+		"707AD75FACCB8EBC06581CFE" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "0C67919469BDF52192C7A97E";
+		};
+		"C8A1860A5EA35565D91D8850" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Widgets/WidgetIntents.swift";
+			"sourceTree" = "<group>";
+		};
+		"C157F7B4A5B91F93F2D2905E" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "C8A1860A5EA35565D91D8850";
 		};
 		"06271BAF49532C879AA3C58B" = {
 			"isa" = "PBXFileReference";
@@ -198,6 +248,7 @@
 			"isa" = "PBXGroup";
 			"children" = (
 				"A8792157CB4F27FB949C035F",
+				"BE4175710B03A81B1E49027A",
 			);
 			"name" = "Products";
 			"sourceTree" = "<group>";
@@ -221,11 +272,21 @@
 				"D52C0FE699526B0B09EEB973",
 				"215C4E2A4E5265000FF6E8E7",
 				"5760F2DF88D181F1A42ADEB1",
+				"07B12DBF9C6BA2BEE3419920",
 				"A08EE2A6C5180A8E820D3185",
+				"5ADC154D1E337D9240200E56",
+				"275BC78A659E33DEAA08DF67",
+				"0C67919469BDF52192C7A97E",
+				"C8A1860A5EA35565D91D8850",
 				"06271BAF49532C879AA3C58B",
 				"CCB32DA757F8CB91EA8A9F9D",
 				"0A3E27B8CA818264D75C8D81",
 				"46610887A7913B54A6B70E7D",
+				"0960777B81B632FBA8E3FB83",
+				"BE57404AECF9C826D4D1EF96",
+				"5B7A5A2C8E110AF4B3F4727B",
+				"EB962ED50B4D28A204C302F1",
+				"EA6929C1A05FA638D67FCBD7",
 			);
 			"sourceTree" = "<group>";
 		};
@@ -288,7 +349,12 @@
 				"AC27BAD55F79BC57299670F7",
 				"DDF35247FBB1516D32E30D21",
 				"C657D5722E1358F5379305C0",
+				"614BC5E57711717454451399",
 				"C19A54893581C0DA84780E28",
+				"30D3729C1EE2B626D7EC2EAD",
+				"FEC58AB6FAB7D44E00291E13",
+				"707AD75FACCB8EBC06581CFE",
+				"C157F7B4A5B91F93F2D2905E",
 			);
 			"runOnlyForDeploymentPostprocessing" = "0";
 		};
@@ -419,10 +485,12 @@
 				"D626F04DF571B9BB2451CBFE",
 				"951DDECB505D289B8BC956E6",
 				"5C2473E515024614E403B8B9",
+				"D01B6655FA0C346D45AAD2BD",
 			);
 			"buildRules" = (
 			);
 			"dependencies" = (
+				"A4C2D386AB0259F33DCDC427",
 			);
 			"name" = "AIQuota";
 			"packageProductDependencies" = (
@@ -434,6 +502,233 @@
 			"productReference" = "A8792157CB4F27FB949C035F";
 			"productType" = "com.apple.product-type.application";
 		};
+		"0960777B81B632FBA8E3FB83" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Widgets/AIQuotaWidgets.swift";
+			"sourceTree" = "<group>";
+		};
+		"85097CF5EA1C25CF2C43839E" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "0960777B81B632FBA8E3FB83";
+		};
+		"3664F1CCC59625D0CE6195DF" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "0C67919469BDF52192C7A97E";
+		};
+		"711FBAFBCAD8719256F7A00F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "C8A1860A5EA35565D91D8850";
+		};
+		"BE57404AECF9C826D4D1EF96" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Widgets/WidgetTimeline.swift";
+			"sourceTree" = "<group>";
+		};
+		"8B8A0031A3D619FBF9C1D91E" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "BE57404AECF9C826D4D1EF96";
+		};
+		"A374749497CD9C2A680DCC17" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "5ADC154D1E337D9240200E56";
+		};
+		"AD7846BE54A435EC8E5A009F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "275BC78A659E33DEAA08DF67";
+		};
+		"DF4BE431A6830573DE3BE3A3" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "A08EE2A6C5180A8E820D3185";
+		};
+		"BE4175710B03A81B1E49027A" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.app-extension";
+			"path" = "AIQuotaWidgets.appex";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+			"includeInIndex" = "0";
+		};
+		"5B7A5A2C8E110AF4B3F4727B" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.plist.xml";
+			"path" = "Configuration/Widget-Info.plist";
+			"sourceTree" = "<group>";
+		};
+		"EB962ED50B4D28A204C302F1" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.plist.xml";
+			"path" = "Configuration/Widget.entitlements";
+			"sourceTree" = "<group>";
+		};
+		"45D41D5690E77F9A1C19E710" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "AIQuotaWidgets";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.aiquota.macos.widgets";
+				"INFOPLIST_FILE" = "Configuration/Widget-Info.plist";
+				"CODE_SIGN_ENTITLEMENTS" = "Configuration/Widget.entitlements";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"DEVELOPMENT_TEAM" = "";
+				"ENABLE_HARDENED_RUNTIME" = "YES";
+				"APPLICATION_EXTENSION_API_ONLY" = "YES";
+				"SKIP_INSTALL" = "YES";
+				"MARKETING_VERSION" = "0.1.0";
+				"CURRENT_PROJECT_VERSION" = "1";
+				"GENERATE_INFOPLIST_FILE" = "NO";
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+			};
+		};
+		"4EDB65D34F57EE8EDB013DBD" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "AIQuotaWidgets";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.aiquota.macos.widgets";
+				"INFOPLIST_FILE" = "Configuration/Widget-Info.plist";
+				"CODE_SIGN_ENTITLEMENTS" = "Configuration/Widget.entitlements";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"DEVELOPMENT_TEAM" = "";
+				"ENABLE_HARDENED_RUNTIME" = "YES";
+				"APPLICATION_EXTENSION_API_ONLY" = "YES";
+				"SKIP_INSTALL" = "YES";
+				"MARKETING_VERSION" = "0.1.0";
+				"CURRENT_PROJECT_VERSION" = "1";
+				"GENERATE_INFOPLIST_FILE" = "NO";
+				"LD_RUNPATH_SEARCH_PATHS" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+			};
+		};
+		"51BC20E9DD6DE5280A769B0F" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"45D41D5690E77F9A1C19E710",
+				"4EDB65D34F57EE8EDB013DBD",
+			);
+			"defaultConfigurationIsVisible" = "0";
+			"defaultConfigurationName" = "Release";
+		};
+		"F3501EF2B8F6B76ED04ACBDF" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+				"85097CF5EA1C25CF2C43839E",
+				"3664F1CCC59625D0CE6195DF",
+				"711FBAFBCAD8719256F7A00F",
+				"8B8A0031A3D619FBF9C1D91E",
+				"A374749497CD9C2A680DCC17",
+				"AD7846BE54A435EC8E5A009F",
+				"DF4BE431A6830573DE3BE3A3",
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"B6996CC6C5CD029DD82AD0E7" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "2BD83334398626E52CE4A053";
+		};
+		"2C2F69BDF59938644D7F9489" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+				"B6996CC6C5CD029DD82AD0E7",
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"885835D0944734CDDA7ABC41" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+				"859C4CDF2BFE5D8992A40FAA",
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"FF7895F604C13A8ACBB55C92" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.plist.strings";
+			"name" = "ko";
+			"path" = "Resources/WidgetLocalization/ko.lproj/Localizable.strings";
+			"sourceTree" = "<group>";
+		};
+		"ED4F25A8C12572036CEF1AF5" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.plist.strings";
+			"name" = "en";
+			"path" = "Resources/WidgetLocalization/en.lproj/Localizable.strings";
+			"sourceTree" = "<group>";
+		};
+		"EA6929C1A05FA638D67FCBD7" = {
+			"isa" = "PBXVariantGroup";
+			"children" = (
+				"FF7895F604C13A8ACBB55C92",
+				"ED4F25A8C12572036CEF1AF5",
+			);
+			"name" = "Localizable.strings";
+			"sourceTree" = "<group>";
+		};
+		"859C4CDF2BFE5D8992A40FAA" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "EA6929C1A05FA638D67FCBD7";
+		};
+		"08C07051187CA5D47AA75782" = {
+			"isa" = "PBXNativeTarget";
+			"buildConfigurationList" = "51BC20E9DD6DE5280A769B0F";
+			"buildPhases" = (
+				"F3501EF2B8F6B76ED04ACBDF",
+				"2C2F69BDF59938644D7F9489",
+				"885835D0944734CDDA7ABC41",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+			);
+			"name" = "AIQuotaWidgets";
+			"packageProductDependencies" = (
+				"2BD83334398626E52CE4A053",
+			);
+			"productName" = "AIQuotaWidgets";
+			"productReference" = "BE4175710B03A81B1E49027A";
+			"productType" = "com.apple.product-type.app-extension";
+		};
+		"01E77404E10F254C43E64C55" = {
+			"isa" = "PBXContainerItemProxy";
+			"containerPortal" = "244210E48437B6556980A702";
+			"proxyType" = "1";
+			"remoteGlobalIDString" = "08C07051187CA5D47AA75782";
+			"remoteInfo" = "AIQuotaWidgets";
+		};
+		"A4C2D386AB0259F33DCDC427" = {
+			"isa" = "PBXTargetDependency";
+			"target" = "08C07051187CA5D47AA75782";
+			"targetProxy" = "01E77404E10F254C43E64C55";
+		};
+		"310BC1A83962BC738E0B4980" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "BE4175710B03A81B1E49027A";
+			"settings" = {
+				"ATTRIBUTES" = (
+					"RemoveHeadersOnCopy",
+				);
+			};
+		};
+		"D01B6655FA0C346D45AAD2BD" = {
+			"isa" = "PBXCopyFilesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"dstPath" = "";
+			"dstSubfolderSpec" = "13";
+			"files" = (
+				"310BC1A83962BC738E0B4980",
+			);
+			"name" = "Embed App Extensions";
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
 		"244210E48437B6556980A702" = {
 			"isa" = "PBXProject";
 			"attributes" = {
@@ -441,6 +736,9 @@
 				"LastUpgradeCheck" = "2660";
 				"TargetAttributes" = {
 					"A172CEDCAE47474B615C54D5" = {
+						"CreatedOnToolsVersion" = "26.6";
+					};
+					"08C07051187CA5D47AA75782" = {
 						"CreatedOnToolsVersion" = "26.6";
 					};
 				};
@@ -465,6 +763,7 @@
 			"projectRoot" = "";
 			"targets" = (
 				"A172CEDCAE47474B615C54D5",
+				"08C07051187CA5D47AA75782",
 			);
 		};
 	};
