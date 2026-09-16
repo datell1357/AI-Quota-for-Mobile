@@ -18,3 +18,14 @@ and source provenance. Keep source-specific units and product identity when port
 The legacy Grok rate-limit fixture is supplemental: the production route must use the weekly
 credits collector and its protobuf fixtures. Copilot's fixture preserves Android rounding;
 review precision against the live source before changing that presentation contract.
+
+## Core package
+
+```sh
+swift test --package-path macos/Packages/AIQuotaCore --scratch-path macos/.build/core
+```
+
+The core uses system SQLite and CryptoKit. It has no third-party Swift package dependencies.
+`AccountRepository` is the single account authority. Collectors must obtain a lease and return a
+verified `RemoteIdentity`; presentation changes never mutate identity. `SnapshotFileStore` writes
+only the display projection, and WidgetKit must not read the account database or credentials.
