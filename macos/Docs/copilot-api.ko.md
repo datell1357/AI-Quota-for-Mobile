@@ -1,11 +1,11 @@
 # Copilot 사용량 API 수집 기반
 
-2026-09-17 기준. 계정 토큰을 입력받는 API client, 지표 decoder, 계정별 저장소 연결을 구현했다. **로그인 UI·device flow·토큰 갱신·실계정 수집은 아직 구현/검증 대기**다. 앱에서 새 Copilot 연결을 완료할 수 있다고 주장하지 않는다.
+2026-09-17 기준. 계정 토큰을 입력받는 API client, 지표 decoder, 계정별 저장소 연결을 구현했다. **실계정 수집과 등록 OAuth 클라이언트 검증은 대기**다. 후속 [기기 인증·갱신 구현](copilot-device-login.ko.md)에서 UI와 토큰 회전을 추가했지만 기본 빌드의 Client ID는 미설정이다. 앱에서 새 Copilot 연결을 완료할 수 있다고 주장하지 않는다.
 
 ## 인증 경계
 
 - 고정 CodexBar 커밋의 `CopilotDeviceFlow`는 VS Code Client ID를 사용한다. AI Quota가 소유하거나 사용 권한을 확인한 클라이언트가 아니므로 호출하지 않는다. 설치된 VS Code·gh·브라우저 자격 증명을 자동으로 읽지 않는다.
-- [GitHub OAuth 공식 문서](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#device-flow)는 앱의 Client ID와 device flow 활성화를 요구한다. 앱 등록, 필요한 권한, 내부 Copilot API 접근 허용 여부를 확인한 후 인증 UI를 연결해야 한다. 공개 Client ID나 `read:user` scope만으로 내부 API 접근이 보장된다고 가정하지 않는다.
+- [GitHub OAuth 공식 문서](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#device-flow)는 앱의 Client ID와 device flow 활성화를 요구한다. 후속 인증 UI는 등록 Client ID를 빌드 설정으로 받으며 앱 등록, 필요한 권한, 내부 Copilot API 접근 허용 여부를 실서버에서 확인해야 한다. 공개 Client ID나 `read:user` scope만으로 내부 API 접근이 보장된다고 가정하지 않는다.
 - API client는 선택한 토큰으로 `https://api.github.com/user` → `/copilot_internal/user` → `/user`를 읽는다. 양쪽의 양수 정수 GitHub user ID가 저장된 subject와 같아야 채택한다. 로그인 이름 변경은 허용하며 이름만 같은 다른 ID는 거부한다. product는 `copilot-subscription`, workspace는 없다.
 - 요청은 HTTPS·고정 host/path, 명시적인 토큰, 공유 쿠키 저장소가 없는 전송을 사용한다. 응답 URL·별도 토큰 endpoint·조직 목록을 따라가지 않는다. 다른 앱의 User-Agent·Editor-Version을 가장하지 않는다. 이 요청 형식의 실서버 성공 여부는 아직 확인하지 않았다.
 - 401은 인증 필요, 403은 일반 거부로 구분한다. 403의 Retry-After 또는 유효한 GitHub rate-limit reset, 429는 해당 제한 시각을 보존한다. 실패·취소·다른 신원의 응답은 기존 usage/credential reference를 지우지 않는다.
@@ -29,4 +29,4 @@
 - 토큰 형식·정수 계정 ID·HTML 응답·응답 크기·누락값·단위·0/1/100/소수/초과·날짜·rate limit·공용 풀 카운터와 실제 무제한을 검사했다. 실제 GitHub 토큰은 사용하지 않았다.
 - 최종 Debug arm64·Release arm64/x86_64 앱/확장 빌드가 통과했다. 위젯 번들·프로젝트 생성 재현성·Android 원본 718개 파일 보존을 확인했다. UI 소스의 동작 변경은 없으며 이번 단계의 네이티브 UI 검증과 실계정 API 호출은 미실행이다. 인증 27개·코어 46개·위젯 렌더링 33개는 이전 단계 결과다.
 
-최종 빌드·번들·원본 보존 결과와 로그는 Git 제외 `artifacts/macos-20260917-copilot/verification.json`에 기록한다. 이 단계는 API 수집 기반이며 실계정 로그인, 앱 소유 device flow/refresh, 웹 대안, enterprise host, 장기 수집·서명·공증 완료가 아니다.
+최종 빌드·번들·원본 보존 결과와 로그는 Git 제외 `artifacts/macos-20260917-copilot/verification.json`에 기록한다. 이 단계는 API 수집 기반이며 실계정 로그인, 등록 클라이언트의 device flow/refresh 실측, 웹 대안, enterprise host, 장기 수집·서명·공증 완료가 아니다.

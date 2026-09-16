@@ -67,6 +67,33 @@ private actor ImmediateCollector: UsageCollector {
     }
 }
 
+@Test func preparationFailurePreservesPreviousReadingAndDoesNotCallCollectorAgain() async throws {
+    let (repository, accounts) = try await schedulerRepository(count: 1)
+    let clock = TestClock(), collector = ImmediateCollector(clock: TestClock()), id = accounts[0].id
+    let first = RefreshCoordinator(repository: repository, collector: collector, now: { clock.read() })
+    try await first.request(); await first.waitUntilIdle()
+    let previous = try #require(await repository.usage(id))
+    let next = RefreshCoordinator(repository: repository, collector: collector, now: { clock.read() },
+                                  prepare: { _, _ in throw CollectorError.authenticationRequired })
+    try await next.request(); await next.waitUntilIdle()
+    #expect(try await repository.usage(id) == previous)
+    #expect(try await repository.account(id).state == .authenticationRequired)
+    #expect(await collector.calls[id] == 1)
+}
+
+@Test func preparationCannotReviveAnAccountDisconnectedDuringTokenRotation() async throws {
+    let (repository, accounts) = try await schedulerRepository(count: 1)
+    let clock = TestClock(), collector = ImmediateCollector(clock: TestClock()), id = accounts[0].id
+    let coordinator = RefreshCoordinator(repository: repository, collector: collector, now: { clock.read() }, prepare: { account, _ in
+        try await repository.disconnect(account.id)
+        return true
+    })
+    try await coordinator.request(); await coordinator.waitUntilIdle()
+    #expect(try await repository.account(id).state == .disconnected)
+    #expect(await collector.calls.isEmpty)
+    #expect(try await repository.usage(id) == nil)
+}
+
 @Test(.timeLimit(.minutes(1))) func simultaneousSurfaceRequestsCoalesceAndNeverExceedTwoCollectors() async throws {
     let (repository, accounts) = try await schedulerRepository()
     let clock = TestClock(); let collector = ControlledCollector(clock: clock)

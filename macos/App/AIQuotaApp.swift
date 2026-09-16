@@ -50,6 +50,7 @@ private struct DesktopRoot<Content: View>: View {
                     case .edit(let account): AccountEditor(selection: account)
                     case .connect(let account): WebLoginSheet(accountID: account.id, model: model)
                     case .glmAPIKey(let account): GLMAPIKeySheet(accountID: account.id, model: model)
+                    case .copilot(let account): CopilotLoginSheet(accountID: account.id, model: model)
                     case .widgets: WidgetHelpView()
                     }
                 }.environment(model).preferredColorScheme(model.preferences.colorScheme)

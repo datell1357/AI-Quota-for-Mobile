@@ -128,6 +128,11 @@ struct AccountDetailView: View {
                         model.sheet = .connect(AccountSelection(id: account.id))
                     }.buttonStyle(.borderedProminent).accessibilityIdentifier("account.connect")
                 }
+                if account.provider == .copilot {
+                    Button(model.text("GitHub에서 연결", "Connect with GitHub")) {
+                        model.sheet = .copilot(AccountSelection(id: account.id))
+                    }.buttonStyle(.borderedProminent).accessibilityIdentifier("account.connectCopilot")
+                }
                 if account.provider.supportsMultipleAccounts {
                     Button(model.text("\(account.provider.displayName) 계정 추가", "Add another \(account.provider.displayName) account")) {
                         Task { await model.addAccount(account.provider) }

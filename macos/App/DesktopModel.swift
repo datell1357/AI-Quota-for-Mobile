@@ -12,9 +12,9 @@ import WidgetKit
 
 struct AccountSelection: Identifiable { let id: UUID }
 enum DesktopSheet: Identifiable {
-    case providers, edit(AccountSelection), connect(AccountSelection), glmAPIKey(AccountSelection), widgets
+    case providers, edit(AccountSelection), connect(AccountSelection), glmAPIKey(AccountSelection), copilot(AccountSelection), widgets
     var id: String {
-        switch self { case .providers: "providers"; case .edit(let account): "edit-\(account.id)"; case .connect(let account): "connect-\(account.id)"; case .glmAPIKey(let account): "glm-api-key-\(account.id)"; case .widgets: "widgets" }
+        switch self { case .providers: "providers"; case .edit(let account): "edit-\(account.id)"; case .connect(let account): "connect-\(account.id)"; case .glmAPIKey(let account): "glm-api-key-\(account.id)"; case .copilot(let account): "copilot-\(account.id)"; case .widgets: "widgets" }
     }
 }
 
@@ -49,6 +49,10 @@ private struct CollectorRegistry: UsageCollector {
     var startupError: String?
     private(set) var repository: AccountRepository?
     private(set) var login: LoginCoordinator?
+    var copilotConfiguration: CopilotOAuthConfiguration? {
+        guard let value = Bundle.main.object(forInfoDictionaryKey: "AIQuotaGitHubOAuthClientID") as? String else { return nil }
+        return try? CopilotOAuthConfiguration(clientID: value)
+    }
     let webProfiles = IsolatedWebProfiles()
     private var coordinator: RefreshCoordinator?
     private var snapshotStore: SnapshotFileStore?
@@ -96,7 +100,12 @@ private struct CollectorRegistry: UsageCollector {
             self.login = login
             let source = StoredAccountSessionSource(login: login, webProfiles: webProfiles)
             let registry = CollectorRegistry(collectors: [.claude: ClaudeWebCollector(sessions: source), .codex: CodexSubscriptionCollector(sessions: source), .cursor: CursorWebCollector(sessions: source), .grok: GrokWeeklyCollector(sessions: source), .glm: GLMSubscriptionCollector(sessions: source), .opencode: OpenCodeWebCollector(sessions: source), .kiro: KiroWebCollector(sessions: source), .gemini: GeminiWebCollector(sessions: source), .copilot: CopilotSubscriptionCollector(sessions: source), .antigravity: AntigravitySubscriptionCollector(sessions: source)])
-            let coordinator = RefreshCoordinator(repository: repository, collector: registry, didUpdate: { [weak self] _ in await self?.reload() })
+            let copilotPreparation = copilotConfiguration.map {
+                CopilotSessionPreparation(login: login, authorization: CopilotDeviceAuthorization(configuration: $0))
+            }
+            let coordinator = RefreshCoordinator(repository: repository, collector: registry,
+                didUpdate: { [weak self] _ in await self?.reload() },
+                prepare: { account, lease in try await copilotPreparation?.prepare(account, lease) ?? false })
             self.coordinator = coordinator
             if ProcessInfo.processInfo.arguments.contains("--data-directory") {
                 // An isolated QA run must never publish synthetic accounts into the real widget container.

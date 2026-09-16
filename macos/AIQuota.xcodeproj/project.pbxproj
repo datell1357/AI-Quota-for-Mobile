@@ -25,6 +25,26 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "7C732E04A3559B1714C5479D";
 		};
+		"BB6DE00DEED193CDBCAEA4A4" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/CopilotLoginFlow.swift";
+			"sourceTree" = "<group>";
+		};
+		"EF4FCA9E1F64B663A9ACE703" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "BB6DE00DEED193CDBCAEA4A4";
+		};
+		"C32D9506982C9B470216DA3E" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/CopilotLoginSheet.swift";
+			"sourceTree" = "<group>";
+		};
+		"9FDB589A5FC673C5A6946B13" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "C32D9506982C9B470216DA3E";
+		};
 		"9EF90001BBF272B1AD0EEC1B" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -308,6 +328,8 @@
 			"children" = (
 				"6D4F49142DC0104DD5C68BE3",
 				"7C732E04A3559B1714C5479D",
+				"BB6DE00DEED193CDBCAEA4A4",
+				"C32D9506982C9B470216DA3E",
 				"9EF90001BBF272B1AD0EEC1B",
 				"A7A19A28B7AC5080C225497B",
 				"83E21B66E3D1FABA55CE2C8E",
@@ -390,6 +412,8 @@
 			"files" = (
 				"055F6C90FF6969B20821A0F8",
 				"95520D9F2F3C5C703FBDD664",
+				"EF4FCA9E1F64B663A9ACE703",
+				"9FDB589A5FC673C5A6946B13",
 				"4DB7E088DD026CBACA7E5714",
 				"2D73CD8CB158859EBA591D2B",
 				"7DBBD9654EADC546E80A4862",
@@ -480,6 +504,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				"AIQUOTA_GITHUB_OAUTH_CLIENT_ID" = "";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 			};
 		};
@@ -517,6 +542,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				"AIQUOTA_GITHUB_OAUTH_CLIENT_ID" = "";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 			};
 		};

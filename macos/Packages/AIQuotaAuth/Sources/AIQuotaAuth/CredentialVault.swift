@@ -20,6 +20,8 @@ public struct CredentialRecord: Codable, Sendable, CustomStringConvertible, Cust
     public let secret: String?
     public let refreshToken: String?
     public let expiresAt: Date?
+    public let oauthClientID: String?
+    public let refreshExpiresAt: Date?
     public let webProfileID: UUID?
     public let externalLocator: String?
     public var description: String { "CredentialRecord(redacted)" }
@@ -27,10 +29,12 @@ public struct CredentialRecord: Codable, Sendable, CustomStringConvertible, Cust
 
     public init(accountID: UUID, provider: ProviderID, identity: RemoteIdentity, kind: CredentialKind,
                 owner: CredentialOwner = .aiQuota, secret: String? = nil, refreshToken: String? = nil,
-                expiresAt: Date? = nil, webProfileID: UUID? = nil, externalLocator: String? = nil) throws {
+                expiresAt: Date? = nil, webProfileID: UUID? = nil, externalLocator: String? = nil,
+                oauthClientID: String? = nil, refreshExpiresAt: Date? = nil) throws {
         schemaVersion = 1; self.accountID = accountID; self.provider = provider; self.identity = identity
         self.kind = kind; self.owner = owner; self.secret = secret; self.refreshToken = refreshToken
         self.expiresAt = expiresAt; self.webProfileID = webProfileID; self.externalLocator = externalLocator
+        self.oauthClientID = oauthClientID; self.refreshExpiresAt = refreshExpiresAt
         try validate()
     }
     public func validate() throws {
@@ -42,6 +46,14 @@ public struct CredentialRecord: Codable, Sendable, CustomStringConvertible, Cust
         }
         if let expiresAt, !(-62_135_596_800...253_402_300_799).contains(expiresAt.timeIntervalSince1970) {
             throw AuthenticationError.invalidCredential
+        }
+        if let oauthClientID {
+            guard kind == .oauth, !oauthClientID.isEmpty, oauthClientID.utf8.count <= 256,
+                  oauthClientID.unicodeScalars.allSatisfy({ (33...126).contains($0.value) }) else { throw AuthenticationError.invalidCredential }
+        }
+        if let refreshExpiresAt {
+            guard kind == .oauth, refreshToken != nil,
+                  (-62_135_596_800...253_402_300_799).contains(refreshExpiresAt.timeIntervalSince1970) else { throw AuthenticationError.invalidCredential }
         }
         switch kind {
         case .oauth:

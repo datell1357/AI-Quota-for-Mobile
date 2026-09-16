@@ -42,6 +42,28 @@ private func credential(_ account: Account, secret: String = "synthetic-old", wo
                          identity: RemoteIdentity(subject: "user-a", workspace: workspace, product: "codex-subscription"),
                          kind: .oauth, secret: secret, refreshToken: "synthetic-refresh")
 }
+
+@Test func oauthClientMetadataRoundTripsWithoutBreakingExistingCredentialSchema() throws {
+    let account = try Account(provider: .copilot, alias: "Copilot")
+    let old = try credential(account)
+    let restored = try JSONDecoder().decode(CredentialRecord.self, from: JSONEncoder().encode(old))
+    #expect(restored.schemaVersion == 1 && restored.oauthClientID == nil && restored.refreshExpiresAt == nil)
+    let current = try CredentialRecord(accountID: account.id, provider: .copilot, identity: old.identity, kind: .oauth,
+        secret: "synthetic-access", refreshToken: "synthetic-refresh", oauthClientID: "FixtureClient", refreshExpiresAt: Date(timeIntervalSince1970: 2_000_000_000))
+    let decoded = try JSONDecoder().decode(CredentialRecord.self, from: JSONEncoder().encode(current)); try decoded.validate()
+    #expect(decoded.oauthClientID == current.oauthClientID && decoded.refreshExpiresAt == current.refreshExpiresAt)
+    #expect(!String(reflecting: decoded).contains("FixtureClient"))
+}
+
+@Test func oauthMetadataCannotBeAttachedToAPIKeysOrMissingRefreshTokens() throws {
+    let account = try Account(provider: .glm, alias: "GLM"), identity = try RemoteIdentity(subject: "fixture", product: "quota")
+    #expect(throws: AuthenticationError.invalidCredential) {
+        try CredentialRecord(accountID: account.id, provider: .glm, identity: identity, kind: .apiKey, secret: "fixture", oauthClientID: "FixtureClient")
+    }
+    #expect(throws: AuthenticationError.invalidCredential) {
+        try CredentialRecord(accountID: account.id, provider: .glm, identity: identity, kind: .oauth, secret: "fixture", refreshExpiresAt: .now)
+    }
+}
 private func connected() async throws -> (AccountRepository, MemoryVault, LoginCoordinator, Account) {
     let repository = try authRepository(); let vault = MemoryVault()
     let coordinator = LoginCoordinator(repository: repository, vault: vault)

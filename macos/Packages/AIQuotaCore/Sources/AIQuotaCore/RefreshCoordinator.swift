@@ -42,6 +42,7 @@ public actor RefreshCoordinator {
     private let maximumConcurrent: Int
     private let now: @Sendable () -> Date
     private let didUpdate: @Sendable (UUID) async -> Void
+    private let prepare: (@Sendable (Account, CollectionLease) async throws -> Bool)?
     private var automaticEnabled = true
     private var online = true
     private var awake = true
@@ -61,9 +62,11 @@ public actor RefreshCoordinator {
 
     public init(repository: AccountRepository, collector: any UsageCollector, maximumConcurrent: Int = 2,
                 now: @escaping @Sendable () -> Date = { .now },
-                didUpdate: @escaping @Sendable (UUID) async -> Void = { _ in }) {
+                didUpdate: @escaping @Sendable (UUID) async -> Void = { _ in },
+                prepare: (@Sendable (Account, CollectionLease) async throws -> Bool)? = nil) {
         self.repository = repository; self.collector = collector
         self.maximumConcurrent = max(1, maximumConcurrent); self.now = now; self.didUpdate = didUpdate
+        self.prepare = prepare
     }
 
     public func state() -> RefreshCoordinatorState {
@@ -195,10 +198,19 @@ public actor RefreshCoordinator {
     }
 
     private func perform(account: Account, lease: CollectionLease) async {
+        var account = account, lease = lease
         let began = ContinuousClock.now
         var problem: RefreshProblem?
         do {
             try Task.checkCancellation()
+            // An owned token rotation commits a new session revision. Keep the same
+            // reserved task, but obtain a fresh lease before collecting its usage.
+            if let prepare, try await prepare(account, lease) {
+                try Task.checkCancellation()
+                let updated = try await repository.account(account.id)
+                guard updated.generation == account.generation, updated.identity == account.identity else { throw CoreError.staleAttempt }
+                (account, lease) = try await repository.collectionContext(account.id, now: now())
+            }
             let output = try await collector.collect(account: account, lease: lease)
             try Task.checkCancellation()
             measurements[account.id, default: CollectionMeasurements()].responseBytes += output.transferredBytes

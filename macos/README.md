@@ -104,8 +104,11 @@ for the deployed web contract, cache identity boundary and pending authenticated
 
 Copilot has a token-based API collector with stable GitHub user-ID checks, separate legacy request
 and AI-credit metrics, and explicit handling of organization pools and unlimited completions.
-Its owned-client device authorization, refresh and connection UI are still pending; this does not
-yet enable a new Copilot login. See [Docs/copilot-api.ko.md](Docs/copilot-api.ko.md) for that boundary.
+Its device authorization UI and owned-token rotation are implemented with a build-time OAuth Client ID.
+The default build leaves that ID empty and disables authorization until an AI Quota registration is
+available and validated. See [Docs/copilot-device-login.ko.md](Docs/copilot-device-login.ko.md) for
+configuration, polling/refresh tests and outstanding live-account checks, and
+[Docs/copilot-api.ko.md](Docs/copilot-api.ko.md) for quota semantics.
 
 ## Authentication package
 
