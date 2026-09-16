@@ -33,11 +33,15 @@ public struct StoredAccountSessionSource: AccountSessionSource {
                 case .opencode: url = OpenCodeWebClient.origin
                 case .kiro: url = KiroWebClient.origin
                 case .gemini: url = GeminiWebClient.origin
+                case .glm:
+                    guard record.identity.product == GLMWebClient.product else { throw CoreError.identityMismatch }
+                    token = try GLMWebClient.token(record.secret)
+                    url = GLMWebClient.origin
                 default: throw CollectorError.unsupported
                 }
                 let scoped = WebCookieSession(profileID: profile, origin: url, store: webProfiles,
                                               validate: { try await login.validateCollection(lease) })
-                do { cookies = try await scoped.header(for: url); webCookies = scoped }
+                do { cookies = try await scoped.header(for: url, allowingEmpty: account.provider == .glm); webCookies = scoped }
                 catch AuthenticationError.missingCredential { throw CollectorError.authenticationRequired }
                 catch let error as CoreError { throw error }
                 catch is CancellationError { throw CancellationError() }

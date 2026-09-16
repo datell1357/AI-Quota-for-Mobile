@@ -6,8 +6,8 @@
 | --- | --- | --- |
 | 0. 기능 계약 | 55 기준 전체 해시 대조, 10개 제공자 계약 및 12개 Android 회귀 입력 고정 | 추가 경계/실제 전송 형식 fixture, Swift consumer와 비교 |
 | 1. 기술 위험 | worktree·도구 준비, 고정 CodexBarCore 링크 및 GLM 번들 실행 확인 | 서명된 App Group, 두 Claude·두 Codex, Gemini/Grok/Antigravity 실제 로그인 |
-| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체, Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini 웹 수집 및 응답 쿠키 갱신, GLM API 키 수집, Copilot·Antigravity API 수집 기반(로그인 UI 대기), DB 교체 후 표시 파일 복구, 계정 제거·인증정보 정리 기록/재시도. 코어 46/인증 27/수집 144개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 강제 종료·업데이트 실측 |
-| 3. 사용자 기능 | 네이티브 앱·대시보드·메뉴 막대·온보딩·계정 편집·설정·Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini 로그인·GLM API 키 연결 화면 구현. 실제 UI에서 미로그인/잘못된 입력 차단·취소·다시 열기 확인 | 나머지 로그인 UI, GLM 웹 로그인, 실제 인증 성공, 메뉴 막대 팝오버 실제 클릭, 알림 전달/거부·자동 시작 검증 |
+| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체, Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini/GLM 웹 수집 및 응답 쿠키 갱신, GLM API 키 수집, Copilot·Antigravity API 수집 기반(로그인 UI 대기), DB 교체 후 표시 파일 복구, 계정 제거·인증정보 정리 기록/재시도. 코어 46/인증 29/수집 154개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 강제 종료·업데이트 실측 |
+| 3. 사용자 기능 | 네이티브 앱·대시보드·메뉴 막대·온보딩·계정 편집·설정·Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini/GLM 로그인·GLM API 키 연결 화면 구현. 실제 UI에서 미로그인/잘못된 입력 차단·취소·다시 열기 확인 | 나머지 로그인 UI, 실제 인증 성공, 메뉴 막대 팝오버 실제 클릭, 알림 전달/거부·자동 시작 검증 |
 | 4. 위젯·패널 | 3종/6개 WidgetKit kind와 계정별 구성·딥링크, 고정 NSPanel 목록/배터리·계정 선택·창 복원 구현. 실제 앱 UI·네이티브 창 검사 통과 | 서명된 위젯 공유/갤러리·독립 인스턴스 실측, 접근성 환경·위젯 설정 동기화, 패널 장기 계측 |
 | 5. 장기 수집 | 미검증 | 72시간 이상, 절전·기상·재부팅·토큰 만료·업데이트 |
 | 6. 배포 | 미구현 | Developer ID·공증·DMG·새 사용자·이전 버전 업데이트 |
@@ -268,3 +268,15 @@
 - Android 회귀 입력 2개와 Antigravity 14개 테스트 함수를 포함한 수집 테스트 144개 및 기존 GLM 리소스 실행이 통과했다. 합성 vault/HTTP → 실제 로그인·수집 coordinator → SQLite → snapshot consumer에서 정상 수집과 오류 후 기존 값·다른 계정 보존을 확인했다. 최초 테스트 컴파일의 중첩 매크로·누락된 try를 수정한 뒤 최종 전체 테스트가 통과했다.
 - 최종 Debug arm64·Release arm64/x86_64 앱/확장 빌드와 위젯 번들 검증이 통과했다. 프로젝트 생성의 바이트·수정 시각 유지도 확인했다. 서명 없는 빌드 검증이며 Developer ID 서명/공증 증거는 아니다. Android 원본 718개 파일 변경/누락 0개를 확인했다. 결과와 로그는 `artifacts/macos-20260917-antigravity/verification.json`에 보관한다.
 - 인증 27개·코어 46개·위젯 렌더링 33개는 이전 단계 결과이며 관련 소스 변경이 없어 재실행하지 않았다. 이번 단계에서 UI 동작을 변경하지 않아 네이티브 UI QA는 미실행이다. 실계정 OAuth/API 호출·등록된 Desktop client·token refresh·로컬 앱/agy 연결·서명·공증·장기 수집은 남아 있다.
+
+
+## GLM Global 웹 로그인·개인/팀 수집 검증
+
+- [GLM 웹 로그인 계약](glm-web-login.ko.md)에 배포 웹 모듈·Android 출처, 토큰·고객 신원·선택 범위와 남은 실계정 경계를 기록했다. 기존 Global/CN API 키 연결은 유지하고 저장된 인증 방식으로 수집 경로를 선택한다.
+- 계정별 격리 WebKit의 알려진 localStorage 키 하나에서 웹 토큰을 읽고 서버 customerNumber와 조직·프로젝트를 확인한다. 선택한 개인·팀 scope와 고객/멤버십을 quota 조회 전후 검사한다. API 키 지문과 웹 고객 신원을 자동 병합하지 않는다.
+- 같은 profile의 빈 쿠키에서도 토큰 인증을 지원하며 api.z.ai의 .z.ai 응답 쿠키만 갱신한다. 원본 origin·lease·취소 검사는 유지한다. 토큰은 기존 Keychain 로그인 저장 경로를 사용하고 표시 snapshot에서 제외한다.
+- 기존 GLM 수치·기간·리셋 decoder를 재사용한다. 개인 quota의 플랜이 없을 때만 선택적 구독 목록을 확인하고 팀에 개인 플랜을 붙이지 않는다. 정확한 미구독은 빈 usage/unavailable로, 잘못된 응답은 이전 값 보존으로 구분한다. 웹 토큰 자동 refresh는 아직 구현하지 않았다.
+- GLM 웹 10개 테스트 함수를 포함한 수집 154개, 신규 쿠키 회귀 2개를 포함한 인증 29개가 통과했다. 합성 vault/HTTP/쿠키 → 실제 로그인·수집 coordinator → SQLite → 표시 snapshot/DB 재열기를 검증했다. 테스트 대역의 Swift 6 동시성 오류와 미구독 상태 기대값을 수정한 뒤 전체 검사가 통과했다.
+- 실제 Debug 앱에서 한국어·영어 안내, 공개 Google/Email/GitHub 로그인 선택 화면, 미로그인 차단·취소·재진입, 기존 API 키 화면을 확인했다. 실제 자격 증명을 입력하지 않았다. QA 계정 12개는 그대로이며 usage·credential cleanup 기록 0개, DB integrity ok였다.
+- 최종 Debug arm64·Release arm64/x86_64 앱/확장 빌드와 위젯 번들 검증이 통과했다. 프로젝트 생성의 바이트·수정 시각과 원본 Android 718개 파일이 유지됐다. 결과는 `artifacts/macos-20260917-glm-web/verification.json`에 보관한다. 코어 46개·위젯 렌더링 33개는 이전 통과 결과이며 이번에 재실행하지 않았다.
+- 실제 인증 성공·고객 응답·유료 개인/팀 quota, 토큰 캡처/만료·재로그인과 재시작/업데이트 지속성, CN 웹·외부 브라우저 경로, 장기 실측·서명·공증은 남아 있다. 전체 계획은 계속 진행 중이다.

@@ -26,6 +26,8 @@ struct WebLoginSheet: View {
                  ? model.text("OpenCode 로그인을 마친 뒤 ‘계정 확인’을 누르고 워크스페이스를 선택하세요. 해당 계정의 Go 한도와 워크스페이스의 Zen 잔액을 구분해 확인합니다.", "Sign in to OpenCode, choose Check account, then select a workspace. Your Go limits and that workspace's Zen balance are verified separately.")
                  : flow.service == .gemini
                  ? model.text("Google 로그인을 마친 뒤 ‘계정 확인’을 누르세요. Gemini 웹 앱의 5시간·주간 한도를 확인하며 Gemini CLI 쿼터와는 별개입니다. 이 화면에는 Google 계정 하나만 연결해 주세요.", "Sign in with Google, then choose Check account. This checks the Gemini web app’s 5-hour and weekly limits, separately from Gemini CLI quota. Use one Google account in this window.")
+                 : flow.service == .glm
+                 ? model.text("Z.ai 로그인을 마친 뒤 ‘계정 확인’을 누르고 사용할 조직·프로젝트를 선택하세요. Global 웹 계정의 개인·팀 한도를 구분해 연결합니다. China 또는 API 키 연결은 계정 상세의 ‘API 키로 연결’을 이용하세요.", "Sign in to Z.ai, choose Check account, then select an organization and project. Personal and team limits are kept separate for this Global web account. For China or API key access, use Connect with API key on the account detail page.")
                  : flow.service == .kiro
                  ? model.text("GitHub·Google·Builder ID로 Kiro 로그인을 마친 뒤 ‘계정 확인’을 누르세요. 웹 계정의 크레딧을 확인하며 CLI 설치는 필요하지 않습니다.", "Sign in to Kiro with GitHub, Google or Builder ID, then choose Check account. This web account's credits are verified without installing the CLI.")
                  : model.text("로그인을 마친 뒤 ‘계정 확인’을 누르세요. 선택한 워크스페이스의 사용량을 확인해야 연결됩니다.", "After signing in, choose Check account. The selected workspace's usage must be verified before connecting."))

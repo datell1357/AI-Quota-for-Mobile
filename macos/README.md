@@ -67,8 +67,14 @@ the connection is explicitly bound to a credential fingerprint and the selected 
 excluded from display snapshots. Empty/invalid responses preserve the last reading; an explicit
 no-subscription response clears usage without inventing a full quota. See
 [Docs/glm-api-key.ko.md](Docs/glm-api-key.ko.md) for the contract, regression evidence and remaining
-live-account and web-login work. To use a different key or scope, explicitly remove the old local
+live-account checks. To use a different key or scope, explicitly remove the old local
 account and add a new connection; existing widget selections keep the old, now-missing account ID.
+
+GLM also supports Global web sign-in with explicit organization/project selection. The collector
+verifies the server customer ID and membership before and after reading personal or team quotas.
+Its web token and isolated profile are stored through the existing Keychain login coordinator;
+API-key and web identities remain separate. See [Docs/glm-web-login.ko.md](Docs/glm-web-login.ko.md)
+for source provenance, regression and signed-out UI evidence, and pending authenticated-account checks.
 
 Cursor has an isolated web-login sheet and collector for the verified individual account. It checks
 the remote subject before and after reading usage, preserves separate percent/request/known-USD
@@ -115,7 +121,7 @@ coordinator while preserving another account. It never inspects existing credent
 Login replacement keeps the previous session until new
 credentials are saved and the SQLite account revision commits. Persistent WebKit stores are keyed
 by profile UUID. OAuth refresh coordination only accepts credentials owned by AI Quota.
-Claude, Codex, Cursor, Grok, OpenCode, Kiro and Gemini web verification are connected; successful live-account authentication and the
+Claude, Codex, Cursor, Grok, OpenCode, Kiro, Gemini and GLM web verification are connected; successful live-account authentication and the
 remaining providers/registered OAuth clients are still pending.
 
 The third command runs a native AppKit probe in eight separate processes. It verifies two synthetic
@@ -152,7 +158,7 @@ The host checks the running code's signing team and group entitlement before res
 Shared-file writes are coalesced separately from displaying accounts and collecting usage.
 
 The dashboard, account editing, provider selection, onboarding, Korean/English, themes and collection
-preferences and Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini login screens are wired to the local authority. The other provider
+preferences and Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini/GLM login screens are wired to the local authority. The other provider
 login screens and signed WidgetKit runtime verification are still pending; adding an account card does not authenticate it. See the status document for
 actual native UI verification and remaining notification, menu-bar and signing checks.
 

@@ -6,12 +6,16 @@ import Foundation
 public struct WebSessionHTTPTransport: HTTPTransport {
     private let base: any HTTPTransport
     private let cookies: WebCookieSession
-    public init(base: any HTTPTransport, cookies: WebCookieSession) { self.base = base; self.cookies = cookies }
+    private let requiresCookies: Bool
+    public init(base: any HTTPTransport, cookies: WebCookieSession, requiresCookies: Bool = true) {
+        self.base = base; self.cookies = cookies; self.requiresCookies = requiresCookies
+    }
     public func send(_ request: URLRequest) async throws -> HTTPResult {
         do {
             guard let url = request.url else { throw AuthenticationError.invalidCredential }
             var scoped = request
-            scoped.setValue(try await cookies.header(for: url), forHTTPHeaderField: "Cookie")
+            let header = try await cookies.header(for: url, allowingEmpty: !requiresCookies)
+            scoped.setValue(header.isEmpty ? nil : header, forHTTPHeaderField: "Cookie")
             let result = try await base.send(scoped)
             try Task.checkCancellation()
             try await cookies.receive(headers: result.headers, from: url)

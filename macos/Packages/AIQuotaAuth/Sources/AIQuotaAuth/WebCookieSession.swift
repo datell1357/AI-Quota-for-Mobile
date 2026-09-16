@@ -20,7 +20,7 @@ public actor WebCookieSession {
         self.profileID = profileID; self.origin = origin; self.store = store
         self.now = now; self.validate = validate
     }
-    public func header(for url: URL) async throws -> String {
+    public func header(for url: URL, allowingEmpty: Bool = false) async throws -> String {
         try ResponseCookiePolicy.validateOrigin(url, origin: origin)
         try Task.checkCancellation(); try await validate()
         if jar == nil {
@@ -28,14 +28,15 @@ public actor WebCookieSession {
             try Task.checkCancellation(); try await validate()
             jar = loaded
         }
-        return try IsolatedWebProfiles.cookieHeader(jar ?? [], for: url, now: now())
+        do { return try IsolatedWebProfiles.cookieHeader(jar ?? [], for: url, now: now()) }
+        catch AuthenticationError.missingCredential where allowingEmpty { return "" }
     }
     public func receive(headers: [String: String], from url: URL) async throws {
         try ResponseCookiePolicy.validateOrigin(url, origin: origin)
         try Task.checkCancellation(); try await validate()
         let incoming = try ResponseCookiePolicy.cookies(headers: headers, responseURL: url, origin: origin)
         guard !incoming.isEmpty else { return }
-        if jar == nil { _ = try await header(for: url) }
+        if jar == nil { _ = try await header(for: url, allowingEmpty: true) }
         for cookie in incoming {
             try Task.checkCancellation(); try await validate()
             let time = now()
@@ -69,10 +70,11 @@ public enum ResponseCookiePolicy {
             }
             return HTTPCookie.cookies(withResponseHeaderFields: ["Set-Cookie": String(line)], for: responseURL).filter { cookie in
                 let domain = canonicalDomain(cookie.domain)
-                // Google web sessions use parent-domain cookies. Permit this one known
-                // origin/domain pair inside the same isolated profile; request origins
+                // These first-party web sessions share parent-domain cookies. Permit
+                // only the known origin/domain pairs inside the same profile; request origins
                 // remain exact, and unrelated parent/sibling domains are still rejected.
                 let permittedDomain = domain == host || (host == "gemini.google.com" && domain == "google.com")
+                    || (host == "api.z.ai" && domain == "z.ai")
                 guard permittedDomain, !cookie.name.isEmpty,
                       ![cookie.name, cookie.value].contains(where: { $0.contains(";") || $0.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) })
                 else { return false }

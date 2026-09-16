@@ -59,7 +59,7 @@ import WebKit
             do {
                 if service == .gemini { try GeminiWebClient.validateLoginURL(webView?.url) }
                 let session = try await cookieSession(attempt)
-                let found = try await service.discover(cookieHeader: session.header, transport: session.transport)
+                let found = try await service.discover(cookieHeader: session.header, transport: session.transport, accessToken: session.token)
                 try Task.checkCancellation()
                 guard let repository = model.repository else { throw CoreError.accountNotFound }
                 let account = try await repository.account(accountID)
@@ -83,11 +83,11 @@ import WebKit
                 if service == .gemini { try GeminiWebClient.validateLoginURL(webView?.url) }
                 let session = try await cookieSession(attempt)
                 // Recheck the remote subject and chosen scope with the current profile, then its usage.
-                try await service.verify(cookieHeader: session.header, identity: identity, transport: session.transport)
+                try await service.verify(cookieHeader: session.header, identity: identity, transport: session.transport, accessToken: session.token)
                 try Task.checkCancellation()
                 guard let login = model.login else { throw AuthenticationError.missingCredential }
                 let record = try CredentialRecord(accountID: accountID, provider: attempt.provider, identity: identity,
-                                                  kind: .webSession, webProfileID: attempt.webProfileID)
+                                                  kind: .webSession, secret: session.token, webProfileID: attempt.webProfileID)
                 phase = .saving
                 do { _ = try await login.complete(attempt, verified: record) }
                 catch { self.attempt = nil; throw error }
@@ -110,13 +110,32 @@ import WebKit
         await model.retryCredentialCleanup()
         return true
     }
-    private func cookieSession(_ attempt: LoginAttempt) async throws -> (header: String, transport: WebSessionHTTPTransport) {
+    private func cookieSession(_ attempt: LoginAttempt) async throws -> (header: String, transport: WebSessionHTTPTransport, token: String?) {
         guard let service, service.provider == attempt.provider, let login = model.login else { throw CoreError.identityMismatch }
+        let token = service == .glm ? try await glmWebToken() : nil
         let cookies = WebCookieSession(profileID: attempt.webProfileID, origin: service.origin, store: model.webProfiles,
                                        validate: { try await login.validateLogin(attempt) })
-        let header = try await cookies.header(for: service.origin)
-        let transport = WebSessionHTTPTransport(base: NativeHTTPTransport(allowedHosts: [service.origin.host!]), cookies: cookies)
-        return (header, transport)
+        let header = try await cookies.header(for: service.origin, allowingEmpty: service == .glm)
+        let transport = WebSessionHTTPTransport(base: NativeHTTPTransport(allowedHosts: [service.origin.host!]), cookies: cookies, requiresCookies: service != .glm)
+        return (header, transport, token)
+    }
+    private func glmWebToken() async throws -> String {
+        guard let webView else { throw CollectorError.authenticationRequired }
+        func authorizedPage(_ url: URL?) -> Bool {
+            guard let url else { return false }
+            return url.scheme == "https" && url.host == "z.ai" && (url.port ?? 443) == 443
+                && url.user == nil && url.password == nil && url.path.hasPrefix("/manage-apikey/")
+        }
+        guard authorizedPage(webView.url) else { throw CollectorError.authenticationRequired }
+        // Read one published key in this app's isolated profile and content world.
+        // Local storage is only a token source; getCustomerInfo verifies its identity.
+        let value = try await webView.callAsyncJavaScript("""
+            if (location.origin !== 'https://z.ai' || !location.pathname.startsWith('/manage-apikey/')) return null;
+            return localStorage.getItem('z-ai-open-platform-token-production');
+            """, arguments: [:], in: nil, contentWorld: .defaultClient)
+        try Task.checkCancellation()
+        guard authorizedPage(webView.url) else { throw CollectorError.authenticationRequired }
+        return try GLMWebClient.token(value as? String)
     }
     private func show(_ error: any Error) {
         if error is CancellationError { return }
@@ -132,7 +151,9 @@ import WebKit
         case OpenCodeSessionError.multipleAccounts:
             errorMessage = model.text("이 로그인 화면에 OpenCode 계정이 여러 개 연결되어 있습니다. 웹 화면에서 다른 계정을 로그아웃하고 사용할 계정 하나만 남긴 뒤 다시 확인해 주세요.", "This sign-in session contains multiple OpenCode accounts. Sign out of the other accounts in the web page, leaving only the account you want to connect, then check again.")
         case CoreError.identityMismatch:
-            errorMessage = model.text("기존 연결과 다른 계정 또는 워크스페이스입니다. 올바른 계정으로 로그인해 주세요.", "This is a different account or workspace. Sign in to the account already linked here.")
+            errorMessage = service == .glm
+                ? model.text("기존 GLM 연결과 계정·범위 또는 연결 방식이 다릅니다. API 키에서 웹 로그인으로 바꾸려면 계정 상세에서 ‘계정 제거’ 후 GLM을 새로 추가하세요.", "The GLM account, scope or connection method differs. To switch from an API key to web sign-in, remove this account from its detail page and add GLM again.")
+                : model.text("기존 연결과 다른 계정 또는 워크스페이스입니다. 올바른 계정으로 로그인해 주세요.", "This is a different account or workspace. Sign in to the account already linked here.")
         case AuthenticationError.missingCredential, CollectorError.authenticationRequired:
             errorMessage = model.text("웹 화면에서 로그인을 마친 뒤 다시 확인해 주세요.", "Finish signing in below, then check again.")
         case CollectorError.rateLimited(let until):

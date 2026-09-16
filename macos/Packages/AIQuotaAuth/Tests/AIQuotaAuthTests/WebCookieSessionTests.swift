@@ -75,6 +75,31 @@ private actor CookieLease {
     func check() throws { guard valid else { throw CoreError.staleAttempt } }
 }
 
+@Test func optionalCookiesAllowTokenAuthenticationWithoutSkippingOriginOrLeaseChecks() async throws {
+    let store = CookieMemoryStore(), id = UUID(), lease = CookieLease(), api = URL(string: "https://api.z.ai/")!
+    let session = WebCookieSession(profileID: id, origin: api, store: store, validate: { try await lease.check() })
+    await #expect(throws: AuthenticationError.missingCredential) { try await session.header(for: api) }
+    #expect(try await session.header(for: api, allowingEmpty: true).isEmpty)
+    try await session.receive(headers: ["Set-Cookie":"session=rotated; Domain=.z.ai; Path=/; Secure; HttpOnly"], from: api)
+    #expect(try await session.header(for: api) == "session=rotated")
+    await #expect(throws: AuthenticationError.invalidCredential) { try await session.header(for: URL(string: "https://z.ai/")!, allowingEmpty: true) }
+    await lease.invalidate()
+    await #expect(throws: CoreError.staleAttempt) { try await session.header(for: api, allowingEmpty: true) }
+}
+
+@Test func zaiParentCookieIsAcceptedOnlyByItsExplicitAPIOrigin() throws {
+    let api = URL(string: "https://api.z.ai/")!
+    let header = "session=fixture; Domain=.z.ai; Path=/; Secure; HttpOnly"
+    #expect(try ResponseCookiePolicy.cookies(headers: ["Set-Cookie":header], responseURL: api, origin: api).count == 1)
+    for domain in ["ai", "evilz.ai", "chat.z.ai", "z.ai.evil.invalid", "..z.ai"] {
+        #expect(try ResponseCookiePolicy.cookies(headers: ["Set-Cookie":"session=x; Domain=\(domain); Path=/; Secure"], responseURL: api, origin: api).isEmpty)
+    }
+    #expect(try ResponseCookiePolicy.cookies(headers: ["Set-Cookie":header], responseURL: origin, origin: origin).isEmpty)
+    #expect(throws: AuthenticationError.invalidCredential) {
+        try ResponseCookiePolicy.cookies(headers: ["Set-Cookie":header], responseURL: URL(string: "https://chat.z.ai/")!, origin: api)
+    }
+}
+
 @Test func googleParentCookieRotationStaysInsideItsProfileAndSurvivesSessionRecreation() async throws {
     let google = URL(string: "https://gemini.google.com/")!, store = CookieMemoryStore(), a = UUID(), b = UUID()
     let cookie = try #require(HTTPCookie(properties: [.name:"SID",.value:"synthetic-before",.domain:".google.com",.path:"/",.secure:"TRUE"]))
