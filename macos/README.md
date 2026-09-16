@@ -11,6 +11,11 @@ not the older Android files checked out on this branch, when comparing behavior.
 See [Docs/implementation-status.ko.md](Docs/implementation-status.ko.md) for actual implementation,
 test evidence and outstanding release gates. Fixture tests do not prove live provider access.
 
+Antigravity's remote collector verifies the Google subject and project before and after collection,
+keeps model quotas separate, and never treats full model availability as a measured allowance.
+The app-owned OAuth client, connection/refresh UI and local app/CLI routes remain pending. See
+[Docs/antigravity-api.ko.md](Docs/antigravity-api.ko.md) for the wire contract and validation boundaries.
+
 ## Regression data
 
 `Tests/Fixtures` contains synthetic Android regression payloads with expected remaining fractions

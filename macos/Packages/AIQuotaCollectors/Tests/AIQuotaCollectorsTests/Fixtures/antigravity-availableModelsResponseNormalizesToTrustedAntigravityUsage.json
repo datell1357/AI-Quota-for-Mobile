@@ -1,0 +1,26 @@
+{
+  "provenance": {
+    "file": "android/app/src/test/java/com/aiquota/mobile/providers/AntigravityOAuthRepositoryTest.kt",
+    "test": "availableModelsResponseNormalizesToTrustedAntigravityUsage",
+    "sha256": "c054adba182221e56491ef7bcac07944f38dd75c297cf2829d21eb221e1aa0d1",
+    "synthetic": true
+  },
+  "payload": {
+    "models": {
+      "gemini-3-pro-high": {
+        "displayName": "Gemini 3 Pro",
+        "quotaInfo": {
+          "remainingFraction": 0.83,
+          "resetTime": "2026-06-01T00:00:00Z"
+        }
+      },
+      "claude-opus-4-5-thinking": {
+        "displayName": "Claude Opus 4.5",
+        "quotaInfo": {
+          "remainingFraction": 0.74,
+          "resetTime": "2026-06-01T01:00:00Z"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "provenance": {
+    "file": "android/app/src/test/java/com/aiquota/mobile/providers/ProviderUsageNormalizerTest.kt",
+    "test": "antigravityAvailableModelsAreSortedByProductPriority",
+    "sha256": "eefc278c1721e55d9216c200856ae3b90321579c125d75de78b9e33bcf130157",
+    "synthetic": true
+  },
+  "payload": {
+    "models": {
+      "claude-opus-4-6-thinking": {
+        "displayName": "Claude Opus 4.6 (Thinking)",
+        "quotaInfo": {
+          "remainingFraction": 1.0,
+          "resetTime": "2026-06-01T05:00:00Z"
+        }
+      },
+      "gemini-3-flash": {
+        "displayName": "Gemini 3 Flash",
+        "quotaInfo": {
+          "remainingFraction": 1.0,
+          "resetTime": "2026-06-01T05:00:00Z"
+        }
+      },
+      "gemini-3-5-flash-high": {
+        "displayName": "Gemini 3.5 Flash (High)",
+        "quotaInfo": {
+          "remainingFraction": 1.0,
+          "resetTime": "2026-06-01T05:00:00Z"
+        }
+      },
+      "gemini-3-1-flash-lite": {
+        "displayName": "Gemini 3.1 Flash Lite",
+        "quotaInfo": {
+          "remainingFraction": 1.0,
+          "resetTime": "2026-06-01T05:00:00Z"
+        }
+      },
+      "gemini-3-1-pro-low": {
+        "displayName": "Gemini 3.1 Pro (Low)",
+        "quotaInfo": {
+          "remainingFraction": 0.8,
+          "resetTime": "2026-06-03T12:00:00Z"
+        }
+      },
+      "gpt-oss-120b-medium": {
+        "displayName": "GPT-OSS 120B (Medium)",
+        "quotaInfo": {
+          "remainingFraction": 1.0,
+          "resetTime": "2026-06-01T05:00:00Z"
+        }
+      },
+      "gemini-3-1-flash-image": {
+        "displayName": "Gemini 3.1 Flash Image",
+        "quotaInfo": {
+          "remainingFraction": 1.0,
+          "resetTime": "2026-06-01T05:00:00Z"
+        }
+      },
+      "gemini-3-1-pro-high": {
+        "displayName": "Gemini 3.1 Pro (High)",
+        "quotaInfo": {
+          "remainingFraction": 1.0,
+          "resetTime": "2026-06-01T05:00:00Z"
+        }
+      },
+      "claude-sonnet-4-6-thinking": {
+        "displayName": "Claude Sonnet 4.6 (Thinking)",
+        "quotaInfo": {
+          "remainingFraction": 1.0,
+          "resetTime": "2026-06-01T05:00:00Z"
+        }
+      },
+      "gemini-3-5-flash-medium": {
+        "displayName": "Gemini 3.5 Flash (Medium)",
+        "quotaInfo": {
+          "remainingFraction": 1.0,
+          "resetTime": "2026-06-01T05:00:00Z"
+        }
+      }
+    }
+  }
+}

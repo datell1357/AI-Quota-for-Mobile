@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | 0. 기능 계약 | 55 기준 전체 해시 대조, 10개 제공자 계약 및 12개 Android 회귀 입력 고정 | 추가 경계/실제 전송 형식 fixture, Swift consumer와 비교 |
 | 1. 기술 위험 | worktree·도구 준비, 고정 CodexBarCore 링크 및 GLM 번들 실행 확인 | 서명된 App Group, 두 Claude·두 Codex, Gemini/Grok/Antigravity 실제 로그인 |
-| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체, Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini 웹 수집 및 응답 쿠키 갱신, GLM API 키 수집, Copilot API 수집 기반(로그인 UI 대기), DB 교체 후 표시 파일 복구, 계정 제거·인증정보 정리 기록/재시도. 코어 46/인증 27/수집 130개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 강제 종료·업데이트 실측 |
+| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체, Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini 웹 수집 및 응답 쿠키 갱신, GLM API 키 수집, Copilot·Antigravity API 수집 기반(로그인 UI 대기), DB 교체 후 표시 파일 복구, 계정 제거·인증정보 정리 기록/재시도. 코어 46/인증 27/수집 144개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 강제 종료·업데이트 실측 |
 | 3. 사용자 기능 | 네이티브 앱·대시보드·메뉴 막대·온보딩·계정 편집·설정·Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini 로그인·GLM API 키 연결 화면 구현. 실제 UI에서 미로그인/잘못된 입력 차단·취소·다시 열기 확인 | 나머지 로그인 UI, GLM 웹 로그인, 실제 인증 성공, 메뉴 막대 팝오버 실제 클릭, 알림 전달/거부·자동 시작 검증 |
 | 4. 위젯·패널 | 3종/6개 WidgetKit kind와 계정별 구성·딥링크, 고정 NSPanel 목록/배터리·계정 선택·창 복원 구현. 실제 앱 UI·네이티브 창 검사 통과 | 서명된 위젯 공유/갤러리·독립 인스턴스 실측, 접근성 환경·위젯 설정 동기화, 패널 장기 계측 |
 | 5. 장기 수집 | 미검증 | 72시간 이상, 절전·기상·재부팅·토큰 만료·업데이트 |
@@ -259,3 +259,12 @@
 - Copilot 14개를 포함한 수집 테스트 130개와 GLM 리소스 실행이 통과했다. 실제 로그인/수집 coordinator·SQLite·snapshot consumer에서 합성 토큰의 수집 및 오류 후 이전 값/다른 계정 보존을 검증했다. 인증 27개·코어 46개·위젯 렌더링 33개는 앞 단계 결과이며 이번 소스 변경이 없어 재실행하지 않았다.
 - 최종 Debug arm64·Release arm64/x86_64 앱/확장 빌드, 위젯 번들 메타데이터, 프로젝트 생성의 바이트·수정 시각 유지, Android 원본 718개 파일 변경/누락 0개를 확인했다. 단계 결과는 `artifacts/macos-20260917-copilot/verification.json`에 기록한다. UI 동작 변경이 없어 이번 단계의 네이티브 UI 검증은 미실행이며 서명·공증도 검증하지 않았다.
 - 로그인 UI, 소유/허용된 OAuth 앱 등록과 내부 API 권한, device flow·회전 토큰 저장, 웹 대안·enterprise host, 실계정·장기 수집은 남아 있다. 수집기 구현만으로 Copilot 연결 가능 상태를 선언하지 않는다.
+
+## Antigravity 원격 API 수집 기반 검증
+
+- [Antigravity API 계약](antigravity-api.ko.md)에 등록 클라이언트·scope·remote/local 경계와 실계정 대기 상태를 기록했다. Android App Check와 서버는 수정하지 않았고, 외부 앱의 OAuth client/refresh token을 가져오거나 자동 onboarding하지 않는다.
+- Google 서버의 user ID와 Antigravity 프로젝트를 수집 전후 확인하는 collector를 앱 registry에 연결했다. OAuth 토큰은 선택한 계정 저장소에서만 받으며 다른 상품·계정·generation/session revision과 늦은 취소 응답은 거부한다.
+- 모델별 소수 잔여율·리셋 시각과 Android의 알려진 모델 순서를 보존한다. 모델 가용성의 100%는 실제 잔여량으로 채택하지 않고 별도 quota bucket으로 확인한다. 누락된 값은 미확인으로 남기고, 측정 가능한 행이 없거나 bucket이 모호하면 이전 usage/fetchedAt을 보존한다.
+- Android 회귀 입력 2개와 Antigravity 14개 테스트 함수를 포함한 수집 테스트 144개 및 기존 GLM 리소스 실행이 통과했다. 합성 vault/HTTP → 실제 로그인·수집 coordinator → SQLite → snapshot consumer에서 정상 수집과 오류 후 기존 값·다른 계정 보존을 확인했다. 최초 테스트 컴파일의 중첩 매크로·누락된 try를 수정한 뒤 최종 전체 테스트가 통과했다.
+- 최종 Debug arm64·Release arm64/x86_64 앱/확장 빌드와 위젯 번들 검증이 통과했다. 프로젝트 생성의 바이트·수정 시각 유지도 확인했다. 서명 없는 빌드 검증이며 Developer ID 서명/공증 증거는 아니다. Android 원본 718개 파일 변경/누락 0개를 확인했다. 결과와 로그는 `artifacts/macos-20260917-antigravity/verification.json`에 보관한다.
+- 인증 27개·코어 46개·위젯 렌더링 33개는 이전 단계 결과이며 관련 소스 변경이 없어 재실행하지 않았다. 이번 단계에서 UI 동작을 변경하지 않아 네이티브 UI QA는 미실행이다. 실계정 OAuth/API 호출·등록된 Desktop client·token refresh·로컬 앱/agy 연결·서명·공증·장기 수집은 남아 있다.
