@@ -6,8 +6,8 @@
 | --- | --- | --- |
 | 0. 기능 계약 | 55 기준 전체 해시 대조, 10개 제공자 계약 및 12개 Android 회귀 입력 고정 | 추가 경계/실제 전송 형식 fixture, Swift consumer와 비교 |
 | 1. 기술 위험 | worktree·도구 준비, 고정 CodexBarCore 링크 및 GLM 번들 실행 확인 | 서명된 App Group, 두 Claude·두 Codex, Gemini/Grok/Antigravity 실제 로그인 |
-| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체, Claude/Codex 웹 수집 및 응답 쿠키 갱신 연결. 코어 19/인증 16/수집 30개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 실패 정리의 영구 재시도 |
-| 3. 사용자 기능 | 네이티브 앱·대시보드·메뉴 막대·온보딩·계정 편집·설정·Claude/Codex 로그인 화면 구현. 실제 UI에서 미로그인 차단·취소·다시 열기 확인 | 나머지 로그인 UI, 실제 인증 성공, 메뉴 막대 팝오버 실제 클릭, 알림 전달/거부·자동 시작 검증 |
+| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체, Claude/Codex/Grok 웹 수집 및 응답 쿠키 갱신 연결. 코어 19/인증 16/수집 39개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 실패 정리의 영구 재시도 |
+| 3. 사용자 기능 | 네이티브 앱·대시보드·메뉴 막대·온보딩·계정 편집·설정·Claude/Codex/Grok 로그인 화면 구현. 실제 UI에서 미로그인 차단·취소·다시 열기 확인 | 나머지 로그인 UI, 실제 인증 성공, 메뉴 막대 팝오버 실제 클릭, 알림 전달/거부·자동 시작 검증 |
 | 4. 위젯·패널 | 미구현 | 3종 위젯·독립 구성·딥링크·4/6개 표시·고정 패널 |
 | 5. 장기 수집 | 미검증 | 72시간 이상, 절전·기상·재부팅·토큰 만료·업데이트 |
 | 6. 배포 | 미구현 | Developer ID·공증·DMG·새 사용자·이전 버전 업데이트 |
@@ -47,14 +47,14 @@
 `bash macos/Scripts/test-collectors.sh`
 
 - 고정 커밋 `928166f899471bbdcb72210641cdec91324d0154`를 SPM으로 resolve·링크했고 전이 의존성은 `Package.resolved`에 기록했다.
-- 수집 패키지 Swift Testing 30개 테스트 통과. 코어 19개, 인증 16개와 별도 패키지다. 응답 쿠키 갱신 단계에서 세 패키지를 모두 재실행했다.
+- 수집 패키지 Swift Testing 39개 테스트 통과. 코어 19개, 인증 16개와 별도 패키지다. Grok 단계에서 수집·코어를 재실행했고, 변경 없는 인증 16개는 직전 쿠키 갱신 단계의 결과다.
 - CodexBar의 실제 `CodexUsageResponse` 파서 → 앱 지표 → SQLite → 위젯 표시 snapshot까지 합성 응답으로 검증했다. workspace 혼선, 합성 빈 창, 미확인 잔여량을 차단한다.
 - Codex 구독 API·Grok 주간 gRPC 수집기와 격리 HTTP 전송을 구현했다. 계정별 인증 헤더, session revision 거부, 429 HTTP-date/초 단위, 401/403/503 구분을 주입 전송으로 검증했다. 실제 계정 네트워크 수집은 미실행이다.
 - Grok은 Android 55의 실제 응답 바이트 두 개와 해시를 보존했다. 32% 사용 및 proto3 기본값 생략(0% 사용)을 확인했고, 각 절단 위치·빈 config·잘못된 트레일러를 거부했다.
 - GLM은 `zai.js`와 prelude 리소스를 포함한 독립 실행 파일에서 실제 JavaScript 엔진을 실행했다. 네트워크는 합성 응답을 반환하며 5시간 25%·주간 0% 사용값을 확인했다.
 - macOS XCTest는 Xcode의 `xctest`가 호스트여서 CodexBarCore의 실행 파일 기준 리소스 검색과 맞지 않는다. 실제 실행 파일 smoke host를 만들어 생성된 번들을 함께 패키징하는 검증으로 해결했다. 앱 번들/위젯에서의 검증은 남아 있다.
 - 의존성 라이선스/NOTICE 원문과 해시를 `Resources/ThirdPartyLicenses`에 보존했다. 최종 앱의 포함·표시 경로는 앱 패키징 단계에서 검증한다.
-- 12개 Android JSON fixture 전체를 Swift consumer로 비교하는 작업과 Claude/Codex 이외 제공자의 로그인 화면은 아직 남아 있다.
+- 12개 Android JSON fixture 전체를 Swift consumer로 비교하는 작업과 Claude/Codex/Grok 이외 제공자의 로그인 화면은 아직 남아 있다.
 
 ## 인증 저장·교체 기반 검증
 
@@ -69,7 +69,7 @@
 - 앱 소유 OAuth의 동시 갱신 요청은 한 번으로 합친다. 외부 CLI 소유 기록에는 토큰을 복사하지 않고 선택한 경로만 저장하며 앱의 OAuth refresher를 호출하지 않는다.
 - 실제 WebKit에서 두 영구 data store의 식별자와 객체 격리를 확인했다. 도메인·경로·만료 쿠키 선택과 합성 영구 쿠키의 앱 프로세스 재시작 복원을 검증했다. 실계정 로그인 쿠키와 앱 업데이트 후 지속성은 아직 검증하지 않았다.
 - 인증 저장소 → Codex 수집 → SQLite 흐름을 합성 HTTP 응답으로 확인했다. 잠긴 저장소는 별도 credentials 오류로 처리하며 기존 값·fetchedAt·credential reference를 유지한다.
-- Claude/Codex의 원격 신원 확인과 로그인 UI를 연결했다. 나머지 제공자의 인증 UI, 등록된 OAuth client 및 실제 refresh 구현, 외부 CLI 파일 해석은 아직 남아 있다. 성공 후 이전 secret 정리 실패는 반환하며, 재시작을 포함한 영구 재시도와 중간 종료 정리 경로는 추가 구현이 필요하다.
+- Claude/Codex/Grok의 원격 신원 확인과 로그인 UI를 연결했다. 나머지 제공자의 인증 UI, 등록된 OAuth client 및 실제 refresh 구현, 외부 CLI 파일 해석은 아직 남아 있다. 성공 후 이전 secret 정리 실패는 반환하며, 재시작을 포함한 영구 재시도와 중간 종료 정리 경로는 추가 구현이 필요하다.
 - 원본 Android 55 manifest의 718개 파일을 다시 대조해 변경/누락 0개를 확인했다. 원본 저장소의 로컬 exclude에 내부 worktree만 등록해 오인 staging을 방지했다.
 
 ## 네이티브 호스트 및 사용자 화면 검증
@@ -88,7 +88,7 @@
 - 메뉴 막대 팝오버의 실제 클릭 검증은 시스템 UI 도구가 시간 초과되어 미실행으로 남긴다. 공유 데이터 기반 코드와 빌드는 확인했지만 화면 검증을 대체하지 않는다.
 - 알림 전송과 클릭 시 계정 라우팅, 권한 조회·요청, 로그인 항목 설정 코드를 연결했다. 이번 UI QA에서는 OS 알림 권한이나 자동 시작 설정을 바꾸지 않아 실제 OS 전달·거부 경로는 미검증이다.
 - 알림은 OS enqueue 전에 outbox 소비를 저장하므로 삭제 후 재전송을 방지하지만, 두 작업 사이 종료/OS enqueue 실패 시 전달이 유실될 수 있다. 이 전달 정책의 실패 처리와 실측은 추가 검증 대상이다.
-- Claude/Codex 로그인 화면/원격 신원 검증을 연결했다. 연결 해제 후 이전 credential/profile의 영구 정리 재시도, 나머지 제공자 어댑터, 위젯 확장·고정 패널은 계속 남아 있다.
+- Claude/Codex/Grok 로그인 화면/원격 신원 검증을 연결했다. 연결 해제 후 이전 credential/profile의 영구 정리 재시도, 나머지 제공자 어댑터, 위젯 확장·고정 패널은 계속 남아 있다.
 
 ## Claude 웹 로그인·수집 검증
 
@@ -130,3 +130,16 @@
 - 최신 Debug 앱에서 Codex 로그인 페이지, 로그인 전 Check account 거부, 취소 후 미연결 상태를 실제 UI로 확인했다. 실계정 자격 증명을 입력하지 않았다.
 - 이 단계의 최종 코드로 Debug arm64와 Release arm64/x86_64 빌드가 통과했다. 둘 다 `CODE_SIGNING_ALLOWED=NO`이며 서명·공증 검증은 아니다. UI 취소 후 QA의 12개 계정은 모두 미연결·session revision 0·신원/credential reference 없음·사용량 0행을 유지했다. 원본 Android 55의 718개 파일도 변경/누락 0개를 확인했다.
 - 단계 로그는 `artifacts/macos-20260917-web-session/`, 재현 스크립트의 독립 실행 로그는 `artifacts/macos-web-session-probes/`에 보관한다. 프로브는 새 임의 UUID 두 개만 사용하고 기존 프로필을 열거하거나 읽지 않는다. QA 산출물과 프로필은 자동 삭제하지 않는다.
+
+## Grok 웹 로그인·크레딧 수집 검증
+
+- 공식 공개 웹 클라이언트에서 계정 조회 URL, userId, 현재 크레딧 기간의 protobuf 필드를 확인했다. 공개 자산의 URL·해시와 무쿠키 GET의 실제 401 결과를 `grok-web-provenance.json`에 기록했다. 계약과 인증 경계는 [grok-web-contract.ko.md](grok-web-contract.ko.md)에 정리했다.
+- Grok을 공용 웹 로그인 화면과 대시보드/온보딩에 연결했다. 워크스페이스 선택이 없는 개인 계정도 지원하며, 기존 Claude/Codex의 명시적 조직 선택 조건은 유지한다. 채팅 메시지를 보내거나 대화 요청을 기다리지 않는다.
+- 쿠키의 원격 userId를 크레딧 수집 전후에 확인한다. 다른 계정·팀 scope·다른 상품, visitor 쿠키, 빈/잘못된 userId는 거부한다. 성공한 사용량 확인 뒤에만 Keychain 참조와 SQLite 연결을 교체한다.
+- gRPC trailer만 있는 인증 실패와 HTTP 헤더의 status를 처리한다. 인증 실패는 재로그인 상태로, rate limit은 계정별 대기로 전달하고 서버 실패·권한 거부를 구분한다. 신원 불일치와 인증 실패 후 기존 값·수집 시각·credential reference 유지 및 자동 재수집 중단을 실제 coordinator/SQLite 경로로 검증했다.
+- 최신 current_period의 주간/월간, 시작·종료를 보존한다. 기존 내부 product 키는 유지하고 월간 metric ID를 별도로 쓴다. 과거/미래/알 수 없는/불완전 기간의 사용률 생략을 100% 잔여로 채택하지 않는다. current_period가 현재 시각을 포함하지 않으면 명시적 사용률도 거부한다.
+- Android 55의 두 원시 응답 fixture는 그 응답이 기록한 8월 기간 안으로 시계를 주입해 다시 검증했다. 원문·해시·기대 사용률은 바꾸지 않았다. 전체 절단 위치 검사는 유효 기간 안에서 수행해 날짜 오류가 protobuf 오류 검증을 가리지 않게 했다.
+- Grok 테스트 9개(여러 입력 사례 포함)를 추가해 수집 39개와 GLM 실행 검사가 통과했다. 코어 19개도 통과했다. 인증 패키지에는 변경이 없으며 직전 단계의 16개 통과 결과를 유지한다.
+- 실제 Debug QA 앱에서 Grok 연결 버튼, 미로그인 Check account 거부, accounts.x.ai의 Google/X/Apple/이메일 로그인 선택 화면과 취소를 확인했다. 실제 자격 증명을 입력하거나 약관 동의·인증 완료를 수행하지 않았다.
+- 최종 Debug arm64와 Release arm64/x86_64 빌드가 통과했다. `CODE_SIGNING_ALLOWED=NO`이므로 배포 서명·공증 증거는 아니다. 취소 후 QA 12개 계정의 미연결 상태·session revision 0·신원/credential reference 없음·사용량 0행과 원본 Android 55의 718개 파일 변경/누락 0개를 확인했다.
+- 실계정의 성공 응답, Google/X 인증 복귀, 추가 인증 증명 요구 여부와 장기 세션 유지는 미검증이다. 개인 계정의 웹 크레딧 대신 CLI/팀 사용량으로 대체하지 않는다. 단계 증거는 `artifacts/macos-20260917-grok/`에 보관한다.

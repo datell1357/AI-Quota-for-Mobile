@@ -18,7 +18,9 @@ struct WebLoginSheet: View {
                     .help(model.text("페이지 새로고침", "Reload page"))
                 Text(flow.currentHost).font(.caption.monospaced()).foregroundStyle(.secondary)
             }
-            Text(model.text("로그인을 마친 뒤 ‘계정 확인’을 누르세요. 선택한 워크스페이스의 사용량을 확인해야 연결됩니다.", "After signing in, choose Check account. The selected workspace's usage must be verified before connecting."))
+            Text(flow.service == .grok
+                 ? model.text("Google 또는 X 등을 통해 로그인을 마친 뒤 ‘계정 확인’을 누르세요. 메시지를 보낼 필요 없이 개인 계정의 사용량을 확인해 연결합니다.", "After signing in with Google, X or another method, choose Check account. Your personal account's usage is verified without sending a message.")
+                 : model.text("로그인을 마친 뒤 ‘계정 확인’을 누르세요. 선택한 워크스페이스의 사용량을 확인해야 연결됩니다.", "After signing in, choose Check account. The selected workspace's usage must be verified before connecting."))
                 .foregroundStyle(.secondary)
             if let error = flow.errorMessage {
                 Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
@@ -31,10 +33,12 @@ struct WebLoginSheet: View {
                 HStack {
                     Text(discovery.email ?? model.text("로그인한 계정", "Signed-in account")).lineLimit(2)
                     Spacer()
-                    Picker(model.text("워크스페이스", "Workspace"), selection: $flow.selectedWorkspace) {
-                        Text(model.text("워크스페이스를 선택하세요", "Choose a workspace")).tag(nil as String?)
-                        ForEach(discovery.choices) { choice in Text(choice.name).tag(Optional(choice.id)) }
-                    }.frame(maxWidth: 380).disabled(flow.busy)
+                    if flow.service?.requiresWorkspace == true {
+                        Picker(model.text("워크스페이스", "Workspace"), selection: $flow.selectedWorkspace) {
+                            Text(model.text("워크스페이스를 선택하세요", "Choose a workspace")).tag(nil as String?)
+                            ForEach(discovery.choices) { choice in Text(choice.name).tag(Optional(choice.id)) }
+                        }.frame(maxWidth: 380).disabled(flow.busy)
+                    }
                 }
             }
             HStack {
@@ -49,7 +53,7 @@ struct WebLoginSheet: View {
                 } else {
                     Button(model.text("계정 다시 확인", "Check again")) { flow.checkAccount() }.disabled(!flow.maySubmit)
                     Button(model.text("연결", "Connect")) { flow.connect() }
-                        .disabled(!flow.maySubmit || flow.selectedWorkspace == nil).buttonStyle(.borderedProminent)
+                        .disabled(!flow.maySubmit || !flow.hasRequiredScope).buttonStyle(.borderedProminent)
                         .accessibilityIdentifier("login.connect")
                 }
             }

@@ -1,0 +1,42 @@
+{
+  "checkedAt": "2026-09-17",
+  "source": "Grok official public web assets, no session cookies",
+  "assets": [
+    {
+      "url": "https://cdn.grok.com/_next/static/chunks/3ezlkvn7-td91.js",
+      "sha256": "39f707417258763b6c3cb49bb31a61131a2705f6d4f16ce5be8fb1b4009652bc",
+      "bytes": 33230,
+      "contract": "Grok credits config and current period descriptor"
+    },
+    {
+      "url": "https://cdn.grok.com/_next/static/chunks/2qo65ihqm05l3.js",
+      "sha256": "db2b5640a59473dce622e10c22eafa242d443ff059b248aded50ac1af6de22e1",
+      "bytes": 38815,
+      "contract": "prod_auth.User descriptor"
+    },
+    {
+      "url": "https://cdn.grok.com/_next/static/chunks/2bwxsznwkurx7.js",
+      "sha256": "09d0e0f3f0cacaff75d930138059ed3596d57a6056a72cdfa43c71112f340fbf",
+      "bytes": 55784,
+      "contract": "Well-known error tags and gRPC error codes"
+    },
+    {
+      "url": "https://cdn.grok.com/_next/static/chunks/14jajcrws-kh1.js",
+      "sha256": "137e8a14d0a002790deffab549bdeb085cfe8a21ae259f28c945f0c538dc6774",
+      "bytes": 535611,
+      "contract": "Account endpoint path and session userId field"
+    },
+    {
+      "url": "https://cdn.grok.com/_next/static/chunks/36y5-uwn2xv2r.js",
+      "sha256": "2f53aa6c41b044858b5f78222f396e2c6c718ef6f7d5a5d433c33b1a188a9024",
+      "bytes": 282368,
+      "contract": "AuthManagement.GetUser returns prod_auth.User"
+    }
+  ],
+  "anonymousProfileProbe": {
+    "url": "https://grok.com/rest/auth/get-user",
+    "status": 401,
+    "bytes": 99
+  },
+  "authenticatedProbe": "not performed"
+}

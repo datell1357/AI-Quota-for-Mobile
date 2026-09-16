@@ -7,15 +7,20 @@ import Testing
 private actor RecordingTransport: HTTPTransport {
     private(set) var requests: [URLRequest] = []
     let result: HTTPResult
-    init(_ result: HTTPResult) { self.result = result }
-    func send(_ request: URLRequest) async throws -> HTTPResult { requests.append(request); return result }
+    let profileBody: Data?
+    init(_ result: HTTPResult, profileBody: Data? = nil) { self.result = result; self.profileBody = profileBody }
+    func send(_ request: URLRequest) async throws -> HTTPResult {
+        requests.append(request)
+        if request.url == GrokWebClient.accountURL, let profileBody { return HTTPResult(status: 200, body: profileBody) }
+        return result
+    }
 }
 private struct SyntheticSessions: AccountSessionSource {
     var stale = false
     func session(for account: Account, lease: CollectionLease) async throws -> AuthenticatedSession {
         AuthenticatedSession(accountID: account.id, provider: account.provider, generation: account.generation,
                              sessionRevision: stale ? 0 : account.sessionRevision, identity: lease.identity,
-                             cookieHeader: "test_session=fixture-\(account.id)", accessToken: "fixture-\(account.id)")
+                             cookieHeader: "\(account.provider == .grok ? "sso" : "test_session")=fixture-\(account.id)", accessToken: "fixture-\(account.id)")
     }
 }
 private func collectionAccount(provider: ProviderID, workspace: String? = nil) async throws -> (Account, CollectionLease) {
@@ -60,17 +65,21 @@ private func collectionAccount(provider: ProviderID, workspace: String? = nil) a
     let fixture = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: fixtureURL)) as? [String: Any])
     let hex = Array(try #require(fixture["hex"] as? String))
     let bytes = Data(stride(from: 0, to: hex.count, by: 2).map { UInt8(String(hex[$0...($0 + 1)]), radix: 16)! })
-    let transport = RecordingTransport(HTTPResult(status: 200, body: bytes))
-    let collector = GrokWeeklyCollector(sessions: SyntheticSessions(), transport: transport)
     let (account, lease) = try await collectionAccount(provider: .grok)
+    let profile = try JSONSerialization.data(withJSONObject: ["userId": lease.identity.subject])
+    let transport = RecordingTransport(HTTPResult(status: 200, body: bytes), profileBody: profile)
+    let capturedAt = try #require(ISO8601DateFormatter().date(from: "2026-08-07T09:40:25Z"))
+    let collector = GrokWeeklyCollector(sessions: SyntheticSessions(), transport: transport, now: { capturedAt })
     let output = try await collector.collect(account: account, lease: lease)
     #expect(abs((output.report.metrics.first?.remainingFraction ?? 0) - 0.68) < 0.001)
-    let request = try #require(await transport.requests.first)
+    #expect(await transport.requests.count == 3)
+    let request = try #require(await transport.requests.first { $0.url == GrokWeeklyDecoder.endpoint })
     #expect(request.url == GrokWeeklyDecoder.endpoint)
     #expect(request.httpMethod == "POST")
     #expect(request.httpBody == Data(repeating: 0, count: 5))
     #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/grpc-web+proto")
-    #expect(request.value(forHTTPHeaderField: "Cookie") == "test_session=fixture-\(account.id)")
+    #expect(request.value(forHTTPHeaderField: "Cookie") == "sso=fixture-\(account.id)")
+    #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
 }
 
 @Test func httpStatusPolicyPreservesRetryAfterAndSeparatesAuthenticationFromOtherFailures() throws {

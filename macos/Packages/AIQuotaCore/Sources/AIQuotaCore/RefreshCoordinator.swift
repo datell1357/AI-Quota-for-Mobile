@@ -12,7 +12,7 @@ public protocol UsageCollector: Sendable {
     func collect(account: Account, lease: CollectionLease) async throws -> CollectionOutput
 }
 
-public enum CollectorError: Error, Sendable {
+public enum CollectorError: Error, Equatable, Sendable {
     case authenticationRequired, credentialsUnavailable, rateLimited(until: Date), invalidResponse, network, unsupported
 }
 public enum RefreshReason: Sendable { case manual, automatic, recovery }

@@ -16,19 +16,8 @@ public struct GrokWeeklyCollector: UsageCollector {
         else { throw CoreError.identityMismatch }
         let session = try await sessions.session(for: account, lease: lease)
         try session.validate(lease)
-        var request = URLRequest(url: GrokWeeklyDecoder.endpoint, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 30)
-        request.httpMethod = "POST"; request.httpBody = Data(repeating: 0, count: 5)
-        request.setValue("application/grpc-web+proto", forHTTPHeaderField: "Content-Type")
-        request.setValue("1", forHTTPHeaderField: "x-grpc-web")
-        request.setValue("https://grok.com", forHTTPHeaderField: "Origin")
-        request.setValue("https://grok.com/", forHTTPHeaderField: "Referer")
-        request.setValue(try AuthenticatedSession.headerValue(session.cookieHeader), forHTTPHeaderField: "Cookie")
-        let response = try await profileTransport(transport, cookies: session.webCookies).send(request)
-        try Task.checkCancellation()
-        let fetchedAt = now()
-        let data = try HTTPResponsePolicy.body(response, now: fetchedAt)
-        let report = try GrokWeeklyDecoder.decode(data, identity: session.identity, fetchedAt: fetchedAt)
-        return CollectionOutput(report: report, transferredBytes: data.count)
+        return try await GrokWebClient(transport: profileTransport(transport, cookies: session.webCookies), now: now)
+            .collect(cookieHeader: AuthenticatedSession.headerValue(session.cookieHeader), expected: session.identity)
     }
 }
 

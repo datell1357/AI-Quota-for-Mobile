@@ -60,7 +60,7 @@ The second command creates, reads and removes one synthetic item under a unique 
 It never inspects existing credentials. Login replacement keeps the previous session until new
 credentials are saved and the SQLite account revision commits. Persistent WebKit stores are keyed
 by profile UUID. OAuth refresh coordination only accepts credentials owned by AI Quota.
-Claude and Codex web verification are connected; successful live-account authentication and the
+Claude, Codex and Grok web verification are connected; successful live-account authentication and the
 remaining providers/registered OAuth clients are still pending.
 
 The third command runs a native AppKit probe in six separate processes. It verifies two synthetic
@@ -88,6 +88,6 @@ The host checks the running code's signing team and group entitlement before res
 Shared-file writes are coalesced separately from displaying accounts and collecting usage.
 
 The dashboard, account editing, provider selection, onboarding, Korean/English, themes and collection
-preferences and Claude/Codex login screens are wired to the local authority. The other provider
+preferences and Claude/Codex/Grok login screens are wired to the local authority. The other provider
 login screens and WidgetKit extension are still pending; adding an account card does not authenticate it. See the status document for
 actual native UI verification and remaining notification, menu-bar and signing checks.

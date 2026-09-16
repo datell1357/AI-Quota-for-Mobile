@@ -22,6 +22,7 @@ import WebKit
     var maySubmit: Bool { !busy && model.mayVerifyLogin(accountID) }
     var canCancel: Bool { phase != .saving }
     var canRestart: Bool { attempt == nil && phase != .starting && phase != .finished }
+    var hasRequiredScope: Bool { service.map { !$0.requiresWorkspace || selectedWorkspace != nil } ?? false }
     init(accountID: UUID, model: DesktopModel) { self.accountID = accountID; self.model = model; super.init() }
 
     func start() async {
@@ -58,7 +59,7 @@ import WebKit
                 let account = try await repository.account(accountID)
                 if let identity = account.identity {
                     guard identity.subject == found.subject, identity.product == service.product,
-                          found.choices.contains(where: { $0.id == identity.workspace }) else {
+                          (service.requiresWorkspace ? found.choices.contains(where: { $0.id == identity.workspace }) : identity.workspace == nil) else {
                         throw CoreError.identityMismatch
                     }
                     selectedWorkspace = identity.workspace
@@ -68,11 +69,11 @@ import WebKit
         }
     }
     func connect() {
-        guard let attempt, let service, let discovery, let selectedWorkspace, maySubmit else { return }
+        guard let attempt, let service, let discovery, hasRequiredScope, maySubmit else { return }
         phase = .checking; errorMessage = nil
         work = Task {
             do {
-                let identity = try RemoteIdentity(subject: discovery.subject, workspace: selectedWorkspace, product: service.product)
+                let identity = try RemoteIdentity(subject: discovery.subject, workspace: service.requiresWorkspace ? selectedWorkspace : nil, product: service.product)
                 let session = try await cookieSession(attempt)
                 // Recheck the remote subject and chosen scope with the current profile, then its usage.
                 try await service.verify(cookieHeader: session.header, identity: identity, transport: session.transport)
