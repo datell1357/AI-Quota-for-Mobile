@@ -53,13 +53,23 @@ and `Resources/ThirdPartyLicenses`.
 ```sh
 swift test --package-path macos/Packages/AIQuotaAuth --scratch-path macos/.build/auth
 swift run --package-path macos/Packages/AIQuotaAuth --scratch-path macos/.build/auth AIQuotaCredentialProbe
+bash macos/Scripts/test-web-sessions.sh
 ```
 
 The second command creates, reads and removes one synthetic item under a unique Keychain service.
 It never inspects existing credentials. Login replacement keeps the previous session until new
 credentials are saved and the SQLite account revision commits. Persistent WebKit stores are keyed
 by profile UUID. OAuth refresh coordination only accepts credentials owned by AI Quota.
-Provider-specific verification and registered OAuth clients must be connected before real login.
+Claude and Codex web verification are connected; successful live-account authentication and the
+remaining providers/registered OAuth clients are still pending.
+
+The third command runs a native AppKit probe in six separate processes. It verifies two synthetic
+WebKit profiles, response-cookie rotation, background renewal without a web view, expiration and
+restoration after normal application termination. It creates fresh profile UUIDs and retains its
+QA artifacts under `artifacts/macos-web-session-probes`; it never enumerates existing profiles.
+`IsolatedWebProfiles` opens cookie data records before the first background cookie access so a
+new process does not mistake an uninitialized persistent store for an empty session. This probe
+does not establish live-login persistence, crash recovery or application-update behavior.
 
 ## Native host application
 
@@ -78,6 +88,6 @@ The host checks the running code's signing team and group entitlement before res
 Shared-file writes are coalesced separately from displaying accounts and collecting usage.
 
 The dashboard, account editing, provider selection, onboarding, Korean/English, themes and collection
-preferences are wired to the local authority. Provider login screens and the WidgetKit extension
-are still pending; adding an account card does not authenticate it. See the status document for
+preferences and Claude/Codex login screens are wired to the local authority. The other provider
+login screens and WidgetKit extension are still pending; adding an account card does not authenticate it. See the status document for
 actual native UI verification and remaining notification, menu-bar and signing checks.

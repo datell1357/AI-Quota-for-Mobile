@@ -4,8 +4,8 @@ import Foundation
 
 public struct StoredAccountSessionSource: AccountSessionSource {
     private let login: LoginCoordinator
-    private let webProfiles: IsolatedWebProfiles
-    public init(login: LoginCoordinator, webProfiles: IsolatedWebProfiles) {
+    private let webProfiles: any WebCookieStore
+    public init(login: LoginCoordinator, webProfiles: any WebCookieStore) {
         self.login = login; self.webProfiles = webProfiles
     }
     public func session(for account: Account, lease: CollectionLease) async throws -> AuthenticatedSession {
@@ -19,19 +19,24 @@ public struct StoredAccountSessionSource: AccountSessionSource {
         if let expiry = record.expiresAt, expiry <= .now { throw CollectorError.authenticationRequired }
         var cookies: String?
         var token: String?
+        var webCookies: WebCookieSession?
         switch record.kind {
         case .oauth, .apiKey: token = record.secret
         case .webSession:
             if let profile = record.webProfileID {
                 let url: URL
                 switch account.provider {
-                case .grok: url = GrokWeeklyDecoder.endpoint
+                case .grok: url = URL(string: "https://grok.com/")!
                 case .claude: url = URL(string: "https://claude.ai/")!
                 case .codex: url = URL(string: "https://chatgpt.com/")!
                 default: throw CollectorError.unsupported
                 }
-                do { cookies = try await webProfiles.cookieHeader(for: url, profileID: profile) }
+                let scoped = WebCookieSession(profileID: profile, origin: url, store: webProfiles,
+                                              validate: { try await login.validateCollection(lease) })
+                do { cookies = try await scoped.header(for: url); webCookies = scoped }
                 catch AuthenticationError.missingCredential { throw CollectorError.authenticationRequired }
+                catch let error as CoreError { throw error }
+                catch is CancellationError { throw CancellationError() }
                 catch { throw CollectorError.credentialsUnavailable }
             } else { cookies = record.secret }
         case .externalApplication:
@@ -41,6 +46,6 @@ public struct StoredAccountSessionSource: AccountSessionSource {
         }
         return AuthenticatedSession(accountID: account.id, provider: account.provider, generation: lease.generation,
                                     sessionRevision: lease.sessionRevision, identity: record.identity,
-                                    cookieHeader: cookies, accessToken: token)
+                                    cookieHeader: cookies, accessToken: token, webCookies: webCookies)
     }
 }

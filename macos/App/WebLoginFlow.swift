@@ -51,8 +51,8 @@ import WebKit
         phase = .checking; errorMessage = nil
         work = Task {
             do {
-                let cookies = try await cookieHeader(attempt)
-                let found = try await service.discover(cookieHeader: cookies)
+                let session = try await cookieSession(attempt)
+                let found = try await service.discover(cookieHeader: session.header, transport: session.transport)
                 try Task.checkCancellation()
                 guard let repository = model.repository else { throw CoreError.accountNotFound }
                 let account = try await repository.account(accountID)
@@ -73,9 +73,9 @@ import WebKit
         work = Task {
             do {
                 let identity = try RemoteIdentity(subject: discovery.subject, workspace: selectedWorkspace, product: service.product)
-                let cookies = try await cookieHeader(attempt)
+                let session = try await cookieSession(attempt)
                 // Recheck the remote subject and chosen scope with the current profile, then its usage.
-                try await service.verify(cookieHeader: cookies, identity: identity)
+                try await service.verify(cookieHeader: session.header, identity: identity, transport: session.transport)
                 try Task.checkCancellation()
                 guard let login = model.login else { throw AuthenticationError.missingCredential }
                 let record = try CredentialRecord(accountID: accountID, provider: attempt.provider, identity: identity,
@@ -99,10 +99,13 @@ import WebKit
         attempt = nil
         return true
     }
-    private func cookieHeader(_ attempt: LoginAttempt) async throws -> String {
-        guard let service, service.provider == attempt.provider else { throw CoreError.identityMismatch }
-        // Root-path cookies apply to every account/workspace API request; narrower cookies are not forwarded.
-        return try await model.webProfiles.cookieHeader(for: service.origin, profileID: attempt.webProfileID)
+    private func cookieSession(_ attempt: LoginAttempt) async throws -> (header: String, transport: WebSessionHTTPTransport) {
+        guard let service, service.provider == attempt.provider, let login = model.login else { throw CoreError.identityMismatch }
+        let cookies = WebCookieSession(profileID: attempt.webProfileID, origin: service.origin, store: model.webProfiles,
+                                       validate: { try await login.validateLogin(attempt) })
+        let header = try await cookies.header(for: service.origin)
+        let transport = WebSessionHTTPTransport(base: NativeHTTPTransport(allowedHosts: [service.origin.host!]), cookies: cookies)
+        return (header, transport)
     }
     private func show(_ error: any Error) {
         if error is CancellationError { return }

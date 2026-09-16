@@ -13,7 +13,7 @@ public struct ClaudeAccountDiscovery: Sendable {
     public let organizations: [ClaudeOrganization]
 }
 
-/// Authentication and usage requests use the same immutable, account-scoped cookie header.
+/// Authentication and usage requests share one account-scoped session snapshot and its server rotations.
 /// No browser-global cookie import or "first organization" fallback is performed here.
 public struct ClaudeWebClient: Sendable {
     public static let accountURL = URL(string: "https://claude.ai/api/account")!
@@ -26,6 +26,9 @@ public struct ClaudeWebClient: Sendable {
     }
     public func discover(cookieHeader: String) async throws -> ClaudeAccountDiscovery {
         try await discovery(cookieHeader: cookieHeader).0
+    }
+    func scoped(to cookies: WebCookieSession?) -> ClaudeWebClient {
+        ClaudeWebClient(transport: profileTransport(transport, cookies: cookies), now: now)
     }
     public func collect(cookieHeader: String, expected identity: RemoteIdentity) async throws -> CollectionOutput {
         guard identity.product == "claude-subscription", let workspace = identity.workspace else { throw CoreError.identityMismatch }
@@ -97,6 +100,6 @@ public struct ClaudeWebCollector: UsageCollector {
         guard account.provider == .claude, lease.provider == .claude else { throw CoreError.identityMismatch }
         let session = try await sessions.session(for: account, lease: lease)
         try session.validate(lease)
-        return try await client.collect(cookieHeader: AuthenticatedSession.headerValue(session.cookieHeader), expected: session.identity)
+        return try await client.scoped(to: session.webCookies).collect(cookieHeader: AuthenticatedSession.headerValue(session.cookieHeader), expected: session.identity)
     }
 }

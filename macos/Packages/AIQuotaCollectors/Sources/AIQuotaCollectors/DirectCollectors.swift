@@ -23,7 +23,7 @@ public struct GrokWeeklyCollector: UsageCollector {
         request.setValue("https://grok.com", forHTTPHeaderField: "Origin")
         request.setValue("https://grok.com/", forHTTPHeaderField: "Referer")
         request.setValue(try AuthenticatedSession.headerValue(session.cookieHeader), forHTTPHeaderField: "Cookie")
-        let response = try await transport.send(request)
+        let response = try await profileTransport(transport, cookies: session.webCookies).send(request)
         try Task.checkCancellation()
         let fetchedAt = now()
         let data = try HTTPResponsePolicy.body(response, now: fetchedAt)
@@ -48,6 +48,7 @@ public struct CodexSubscriptionCollector: UsageCollector {
         else { throw CoreError.identityMismatch }
         let session = try await sessions.session(for: account, lease: lease)
         try session.validate(lease)
+        let transport = profileTransport(self.transport, cookies: session.webCookies)
         if session.accessToken == nil, let cookie = session.cookieHeader {
             return try await CodexWebClient(transport: transport, now: now).collect(cookieHeader: cookie, expected: session.identity)
         }

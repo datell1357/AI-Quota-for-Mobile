@@ -229,6 +229,9 @@ public actor AccountRepository {
         }
     }
 
+    /// Allows session side effects only while this exact collection is current and unfinished.
+    public func validateCollectionLease(_ lease: CollectionLease) throws { _ = try validate(lease) }
+
     private func validate(_ lease: CollectionLease) throws -> Account {
         let account = try account(lease.accountID)
         let rows = try database.query("SELECT sequence,completed FROM accounts WHERE id=?", [.text(account.id.uuidString)])

@@ -41,6 +41,15 @@ public actor LoginCoordinator {
         pending[attempt.accountID] = nil
         return true
     }
+    public func validateLogin(_ attempt: LoginAttempt) async throws {
+        let account = try await repository.account(attempt.accountID)
+        guard let current = pending[attempt.accountID], current.attempt == attempt, current.phase == .authenticating,
+              account.generation == attempt.generation, account.sessionRevision == attempt.sessionRevision
+        else { throw CoreError.staleAttempt }
+    }
+    public func validateCollection(_ lease: CollectionLease) async throws {
+        try await repository.validateCollectionLease(lease)
+    }
     /// The provider verifier must supply the identity obtained using this attempt's credentials/profile.
     public func complete(_ attempt: LoginAttempt, verified record: CredentialRecord, now: Date = .now) async throws -> LoginOutcome {
         guard let current = pending[attempt.accountID], current.attempt == attempt else { throw AuthenticationError.cancelled }
