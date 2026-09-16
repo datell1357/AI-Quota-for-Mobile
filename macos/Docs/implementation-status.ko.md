@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | 0. 기능 계약 | 55 기준 전체 해시 대조, 10개 제공자 계약 및 12개 Android 회귀 입력 고정 | 추가 경계/실제 전송 형식 fixture, Swift consumer와 비교 |
 | 1. 기술 위험 | worktree·도구 준비, 고정 CodexBarCore 링크 및 GLM 번들 실행 확인 | 서명된 App Group, 두 Claude·두 Codex, Gemini/Grok/Antigravity 실제 로그인 |
-| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체, Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini 웹 수집 및 응답 쿠키 갱신, GLM API 키 수집, DB 교체 후 표시 파일 복구, 계정 제거·인증정보 정리 기록/재시도. 코어 46/인증 27/수집 116개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 강제 종료·업데이트 실측 |
+| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체, Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini 웹 수집 및 응답 쿠키 갱신, GLM API 키 수집, Copilot API 수집 기반(로그인 UI 대기), DB 교체 후 표시 파일 복구, 계정 제거·인증정보 정리 기록/재시도. 코어 46/인증 27/수집 130개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 강제 종료·업데이트 실측 |
 | 3. 사용자 기능 | 네이티브 앱·대시보드·메뉴 막대·온보딩·계정 편집·설정·Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini 로그인·GLM API 키 연결 화면 구현. 실제 UI에서 미로그인/잘못된 입력 차단·취소·다시 열기 확인 | 나머지 로그인 UI, GLM 웹 로그인, 실제 인증 성공, 메뉴 막대 팝오버 실제 클릭, 알림 전달/거부·자동 시작 검증 |
 | 4. 위젯·패널 | 3종/6개 WidgetKit kind와 계정별 구성·딥링크, 고정 NSPanel 목록/배터리·계정 선택·창 복원 구현. 실제 앱 UI·네이티브 창 검사 통과 | 서명된 위젯 공유/갤러리·독립 인스턴스 실측, 접근성 환경·위젯 설정 동기화, 패널 장기 계측 |
 | 5. 장기 수집 | 미검증 | 72시간 이상, 절전·기상·재부팅·토큰 만료·업데이트 |
@@ -250,3 +250,12 @@
 - 실제 Debug 앱에서 한·영 안내, 공개 Gemini 화면과 Google 이메일 입력 화면, 미로그인 차단·취소·재열기를 확인했다. 자격 증명이나 프롬프트를 입력하지 않았다. 12개 QA 계정의 payload/sequence/completed와 미연결 상태를 보존했고 취소 후 정리 기록은 같은 실행에서 0개였다.
 - 최종 Debug arm64·Release arm64/x86_64 앱/확장 빌드, 위젯 번들 메타데이터, 프로젝트 생성의 바이트·수정 시각 유지, Android 원본 718개 파일 변경/누락 0개를 확인했다. 결과는 `artifacts/macos-20260917-gemini/verification.json`에 기록한다. 코어 46개·위젯 렌더링 33개는 앞 단계 통과 결과이며 이번에는 재실행하지 않았다.
 - 실계정 인증/사용량·장기 캐시 정확성, MFA/passkey·Google embedded 로그인 정책·외부 브라우저 경로, 추가 row type, 60초/72시간·절전/재부팅/업데이트·서명/공증은 남아 있다.
+
+## Copilot API 수집 기반 검증
+
+- [Copilot API 계약](copilot-api.ko.md)에 앱 소유 OAuth 클라이언트·로그인 UI·실서버 검증 대기 상태를 명시했다. VS Code Client ID를 그대로 사용하거나 기존 앱의 토큰을 자동으로 읽지 않는다.
+- 같은 토큰의 GitHub 정수 user ID를 사용량 요청 전후로 확인하는 수집기를 앱 registry에 연결했다. 이름 변경은 계정 교체로 보지 않으며 다른 ID·세션·늦은 응답은 채택하지 않는다.
+- 현행 Microsoft 타입·화면과 Android 회귀 입력을 대조했다. Premium/chat/inline 요청 횟수, AI Credits, 분모 없는 조직 사용 카운터, 추가 사용량의 단위와 ID를 분리한다. 빈/0 한도·공용 풀·알 수 없는 응답을 잔여 100%로 만들지 않는다.
+- Copilot 14개를 포함한 수집 테스트 130개와 GLM 리소스 실행이 통과했다. 실제 로그인/수집 coordinator·SQLite·snapshot consumer에서 합성 토큰의 수집 및 오류 후 이전 값/다른 계정 보존을 검증했다. 인증 27개·코어 46개·위젯 렌더링 33개는 앞 단계 결과이며 이번 소스 변경이 없어 재실행하지 않았다.
+- 최종 Debug arm64·Release arm64/x86_64 앱/확장 빌드, 위젯 번들 메타데이터, 프로젝트 생성의 바이트·수정 시각 유지, Android 원본 718개 파일 변경/누락 0개를 확인했다. 단계 결과는 `artifacts/macos-20260917-copilot/verification.json`에 기록한다. UI 동작 변경이 없어 이번 단계의 네이티브 UI 검증은 미실행이며 서명·공증도 검증하지 않았다.
+- 로그인 UI, 소유/허용된 OAuth 앱 등록과 내부 API 권한, device flow·회전 토큰 저장, 웹 대안·enterprise host, 실계정·장기 수집은 남아 있다. 수집기 구현만으로 Copilot 연결 가능 상태를 선언하지 않는다.

@@ -91,6 +91,11 @@ bootstrap cache to the account, session revision and cookie snapshot. Google par
 renewal stays within that profile. See [Docs/gemini-web-login.ko.md](Docs/gemini-web-login.ko.md)
 for the deployed web contract, cache identity boundary and pending authenticated-account checks.
 
+Copilot has a token-based API collector with stable GitHub user-ID checks, separate legacy request
+and AI-credit metrics, and explicit handling of organization pools and unlimited completions.
+Its owned-client device authorization, refresh and connection UI are still pending; this does not
+yet enable a new Copilot login. See [Docs/copilot-api.ko.md](Docs/copilot-api.ko.md) for that boundary.
+
 ## Authentication package
 
 ```sh

@@ -1,0 +1,26 @@
+{
+  "provenance": {
+    "file": "android/app/src/test/java/com/aiquota/mobile/providers/ProviderUsageNormalizerTest.kt",
+    "test": "copilotQuotaSnapshotsNormalizePremiumInteractions",
+    "sha256": "eefc278c1721e55d9216c200856ae3b90321579c125d75de78b9e33bcf130157",
+    "synthetic": true
+  },
+  "payload": {
+    "sku": "copilot_pro",
+    "quota_reset_date": "2026-06-01T00:00:00Z",
+    "quota_snapshots": {
+      "chat": {
+        "entitlement": 100,
+        "remaining": 88,
+        "percent_remaining": 88,
+        "reset_date": "2026-06-15"
+      },
+      "premium_interactions": {
+        "entitlement": 300,
+        "remaining": 221,
+        "percent_remaining": 73.5,
+        "reset_date": "2026-06-01T00:00:00Z"
+      }
+    }
+  }
+}

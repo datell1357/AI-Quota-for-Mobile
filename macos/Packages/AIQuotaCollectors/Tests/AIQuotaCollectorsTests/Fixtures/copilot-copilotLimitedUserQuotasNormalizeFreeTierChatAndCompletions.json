@@ -1,0 +1,21 @@
+{
+  "provenance": {
+    "file": "android/app/src/test/java/com/aiquota/mobile/providers/ProviderUsageNormalizerTest.kt",
+    "test": "copilotLimitedUserQuotasNormalizeFreeTierChatAndCompletions",
+    "sha256": "eefc278c1721e55d9216c200856ae3b90321579c125d75de78b9e33bcf130157",
+    "synthetic": true
+  },
+  "payload": {
+    "copilot_plan": "individual",
+    "access_type_sku": "free_limited_copilot",
+    "limited_user_quotas": {
+      "chat": 410,
+      "completions": 3000
+    },
+    "monthly_quotas": {
+      "chat": 500,
+      "completions": 4000
+    },
+    "limited_user_reset_date": "2026-06-15"
+  }
+}
