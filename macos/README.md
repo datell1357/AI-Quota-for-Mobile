@@ -60,3 +60,24 @@ It never inspects existing credentials. Login replacement keeps the previous ses
 credentials are saved and the SQLite account revision commits. Persistent WebKit stores are keyed
 by profile UUID. OAuth refresh coordination only accepts credentials owned by AI Quota.
 Provider-specific verification and registered OAuth clients must be connected before real login.
+
+## Native host application
+
+```sh
+python3 macos/Scripts/generate-xcode-project.py
+xcodebuild -project macos/AIQuota.xcodeproj -scheme AIQuota -configuration Debug \
+  -destination 'platform=macOS,arch=arm64' -derivedDataPath macos/.build/xcode \
+  -clonedSourcePackagesDirPath macos/.build/xcode-packages CODE_SIGNING_ALLOWED=NO build
+bash macos/Scripts/test-host-state.sh
+```
+
+Use an absolute `--data-directory` argument for a separate QA store. That override also isolates the
+display snapshot and never publishes synthetic accounts to the real App Group or reloads widgets.
+Without the override, an unsigned/ad-hoc build can use the dashboard but cannot access an App Group.
+The host checks the running code's signing team and group entitlement before resolving that path.
+Shared-file writes are coalesced separately from displaying accounts and collecting usage.
+
+The dashboard, account editing, provider selection, onboarding, Korean/English, themes and collection
+preferences are wired to the local authority. Provider login screens and the WidgetKit extension
+are still pending; adding an account card does not authenticate it. See the status document for
+actual native UI verification and remaining notification, menu-bar and signing checks.
