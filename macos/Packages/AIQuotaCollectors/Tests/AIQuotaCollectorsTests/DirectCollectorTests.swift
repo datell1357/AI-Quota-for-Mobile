@@ -1,4 +1,5 @@
 import AIQuotaCore
+import AIQuotaAuth
 import Foundation
 import Testing
 @testable import AIQuotaCollectors
@@ -104,4 +105,43 @@ private func collectionAccount(provider: ProviderID, workspace: String? = nil) a
         await #expect(throws: (any Error).self) { try await transport.send(request) }
     }
     #expect(throws: (any Error).self) { try AuthenticatedSession.headerValue("test\r\nInjected: secret") }
+}
+
+private actor SessionVault: CredentialVault {
+    var values: [UUID: CredentialRecord] = [:]
+    var locked = false
+    func lock() { locked = true }
+    func create(_ record: CredentialRecord, reference: UUID) { values[reference] = record }
+    func read(_ reference: UUID) throws -> CredentialRecord {
+        if locked { throw AuthenticationError.interactionRequired }
+        guard let record = values[reference] else { throw AuthenticationError.missingCredential }
+        return record
+    }
+    func remove(_ reference: UUID) { values[reference] = nil }
+}
+
+@MainActor @Test func storedCredentialFeedsCollectorAndLockedVaultPreservesTheLastUsage() async throws {
+    let repository = try AccountRepository(url: FileManager.default.temporaryDirectory.appendingPathComponent("AIQuotaStoredSession-\(UUID())/accounts.sqlite"))
+    let vault = SessionVault(); let login = LoginCoordinator(repository: repository, vault: vault)
+    let account = try await repository.add(provider: .codex, alias: "Stored")
+    let attempt = try await login.begin(account.id)
+    let identity = try RemoteIdentity(subject: "synthetic-user", workspace: "synthetic-workspace", product: "codex-subscription")
+    let credential = try CredentialRecord(accountID: account.id, provider: .codex, identity: identity,
+                                          kind: .oauth, secret: "synthetic-stored-token")
+    _ = try await login.complete(attempt, verified: credential)
+    let source = StoredAccountSessionSource(login: login, webProfiles: IsolatedWebProfiles())
+    let body = Data(#"{"plan_type":"plus","rate_limit":{"primary_window":{"used_percent":20,"reset_at":1900000000,"limit_window_seconds":604800}}}"#.utf8)
+    let transport = RecordingTransport(HTTPResult(status: 200, body: body))
+    let collector = CodexSubscriptionCollector(sessions: source, transport: transport)
+    let coordinator = RefreshCoordinator(repository: repository, collector: collector)
+    try await coordinator.request(); await coordinator.waitUntilIdle()
+    let original = try #require(await repository.usage(account.id))
+    #expect(await transport.requests.first?.value(forHTTPHeaderField: "Authorization") == "Bearer synthetic-stored-token")
+    await vault.lock()
+    try await coordinator.request(); await coordinator.waitUntilIdle()
+    #expect(await transport.requests.count == 1)
+    #expect(try await repository.account(account.id).state == .stale)
+    #expect(try await repository.usage(account.id)?.fetchedAt == original.fetchedAt)
+    #expect(await coordinator.state().measurements[account.id]?.lastProblem == .credentials)
+    #expect(try await repository.account(account.id).credentialReference == attempt.credentialReference)
 }

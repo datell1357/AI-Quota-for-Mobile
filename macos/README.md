@@ -43,6 +43,20 @@ outside the product directory; the resource test therefore launches our actual e
 
 `CodexSubscriptionCollector` and `GrokWeeklyCollector` require an account-scoped
 `AccountSessionSource`. They do not read global browser cookies or rotate CLI refresh tokens.
-Authenticated live-provider access, Keychain integration, and the other adapters remain pending.
+The stored-session source connects these collectors to the authentication package. Live-provider
+login/identity verification and the other adapters remain pending.
 Dependency pins and preserved license texts are under `Packages/AIQuotaCollectors/Package.resolved`
 and `Resources/ThirdPartyLicenses`.
+
+## Authentication package
+
+```sh
+swift test --package-path macos/Packages/AIQuotaAuth --scratch-path macos/.build/auth
+swift run --package-path macos/Packages/AIQuotaAuth --scratch-path macos/.build/auth AIQuotaCredentialProbe
+```
+
+The second command creates, reads and removes one synthetic item under a unique Keychain service.
+It never inspects existing credentials. Login replacement keeps the previous session until new
+credentials are saved and the SQLite account revision commits. Persistent WebKit stores are keyed
+by profile UUID. OAuth refresh coordination only accepts credentials owned by AI Quota.
+Provider-specific verification and registered OAuth clients must be connected before real login.

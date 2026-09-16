@@ -10,11 +10,12 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../AIQuotaCore"),
+        .package(path: "../AIQuotaAuth"),
         .package(url: "https://github.com/datell1357/CodexBar", revision: "928166f899471bbdcb72210641cdec91324d0154"),
     ],
     targets: [
         .target(name: "AIQuotaCollectors", dependencies: [
-            "AIQuotaCore", .product(name: "CodexBarCore", package: "CodexBar"),
+            "AIQuotaCore", "AIQuotaAuth", .product(name: "CodexBarCore", package: "CodexBar"),
         ]),
         .executableTarget(name: "AIQuotaResourceProbe", dependencies: [.product(name: "CodexBarCore", package: "CodexBar")]),
         .testTarget(name: "AIQuotaCollectorsTests", dependencies: ["AIQuotaCollectors", "AIQuotaResourceProbe"], resources: [.copy("Fixtures")]),

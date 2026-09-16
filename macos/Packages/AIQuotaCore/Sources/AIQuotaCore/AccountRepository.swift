@@ -1,6 +1,6 @@
 import Foundation
 
-public enum CollectionFailure: Sendable { case network, rateLimited, unauthorized, malformedResponse, cancelled }
+public enum CollectionFailure: Sendable { case network, rateLimited, unauthorized, malformedResponse, credentialUnavailable, cancelled }
 
 public actor AccountRepository {
     private let database: SQLiteConnection

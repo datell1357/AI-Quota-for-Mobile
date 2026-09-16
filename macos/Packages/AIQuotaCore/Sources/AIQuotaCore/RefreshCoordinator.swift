@@ -13,10 +13,10 @@ public protocol UsageCollector: Sendable {
 }
 
 public enum CollectorError: Error, Sendable {
-    case authenticationRequired, rateLimited(until: Date), invalidResponse, network, unsupported
+    case authenticationRequired, credentialsUnavailable, rateLimited(until: Date), invalidResponse, network, unsupported
 }
 public enum RefreshReason: Sendable { case manual, automatic, recovery }
-public enum RefreshProblem: String, Sendable { case storage, authentication, rateLimited, invalidResponse, network, unsupported, discarded }
+public enum RefreshProblem: String, Sendable { case storage, authentication, credentials, rateLimited, invalidResponse, network, unsupported, discarded }
 public struct CollectionMeasurements: Sendable {
     public internal(set) var attempts = 0
     public internal(set) var successfulAttempts = 0
@@ -209,6 +209,7 @@ public actor RefreshCoordinator {
             switch error {
             case is CancellationError: reason = .cancelled
             case CollectorError.authenticationRequired: reason = .unauthorized; problem = .authentication
+            case CollectorError.credentialsUnavailable: reason = .credentialUnavailable; problem = .credentials
             case CollectorError.rateLimited(let until):
                 retryAfter[account.id] = max(until, now().addingTimeInterval(1))
                 reason = .rateLimited; problem = .rateLimited
