@@ -29,6 +29,13 @@ The core uses system SQLite and CryptoKit. It has no third-party Swift package d
 `AccountRepository` is the single account authority. Collectors must obtain a lease and return a
 verified `RemoteIdentity`; presentation changes never mutate identity. `SnapshotFileStore` writes
 only the display projection, and WidgetKit must not read the account database or credentials.
+The host binds the publisher to its current repository and calls `publish()`; queued UI snapshots
+cannot be submitted as authoritative data. On startup, a restored or recreated database can rebuild
+an older installation's cache even when that file has a higher revision. Conflicting or damaged
+files are preserved beside the snapshot as `*.before-rebuild-<UUID>.json` before atomic replacement.
+Unknown snapshot schema versions and filesystem access errors stop publication without overwriting
+the existing file. This assumes one running host writer; restore the account database with the app
+closed. The JSON schema and SQLite schema remain unchanged.
 
 ## Collectors and dependency resources
 

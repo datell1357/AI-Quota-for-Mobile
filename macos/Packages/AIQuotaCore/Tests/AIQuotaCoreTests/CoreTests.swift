@@ -193,24 +193,25 @@ private func collect(_ repository: AccountRepository, _ account: Account, fracti
     #expect(throws: CoreError.duplicateSelection) { try WidgetSelection(kind: .batteryFour, accountIDs: [one.id, one.id]) }
 }
 
-@Test func actualSnapshotFileRoundTripOmitsCredentialsAndRejectsOldRevisions() async throws {
+@Test func actualSnapshotPublicationOmitsCredentialsAndReadsCurrentAuthority() async throws {
     let repository = try AccountRepository(url: temporaryURL())
     let account = try await connect(repository)
     _ = try await collect(repository, account, fraction: 0.7)
     let old = try await repository.displaySnapshot(now: start)
     let url = try temporaryURL("widget.json")
-    let writer = SnapshotFileStore(url: url)
-    #expect(try await writer.write(old))
+    let writer = SnapshotFileStore(url: url, repository: repository)
+    #expect(try await writer.publish(now: start))
     #expect(try SnapshotFileStore.read(from: url) == old)
     let contents = try String(contentsOf: url, encoding: .utf8)
     for forbidden in ["credentialReference", "sessionRevision", "test-subject", "workspace-one", "authenticationMethod"] {
         #expect(!contents.contains(forbidden))
     }
-    #expect(try await writer.write(old) == false)
+    #expect(try await writer.publish(now: start) == false)
     try await repository.updatePresentation(account.id, alias: "한국어 계정", isHidden: false)
     let next = try await repository.displaySnapshot(now: start)
-    #expect(try await writer.write(next))
-    await #expect(throws: CoreError.staleAttempt) { try await writer.write(old) }
+    #expect(try await writer.publish(now: start))
+    #expect(try SnapshotFileStore.read(from: url) == next)
+    #expect(try await writer.publish(now: start) == false)
     #expect(try SnapshotFileStore.read(from: url).accounts.first?.alias == "한국어 계정")
 }
 

@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | 0. 기능 계약 | 55 기준 전체 해시 대조, 10개 제공자 계약 및 12개 Android 회귀 입력 고정 | 추가 경계/실제 전송 형식 fixture, Swift consumer와 비교 |
 | 1. 기술 위험 | worktree·도구 준비, 고정 CodexBarCore 링크 및 GLM 번들 실행 확인 | 서명된 App Group, 두 Claude·두 Codex, Gemini/Grok/Antigravity 실제 로그인 |
-| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체, Claude/Codex/Grok 웹 수집 및 응답 쿠키 갱신 연결. 코어 19/인증 16/수집 39개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 실패 정리의 영구 재시도 |
+| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체, Claude/Codex/Grok 웹 수집 및 응답 쿠키 갱신, DB 교체 후 표시 파일 복구. 코어 27/인증 16/수집 39개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 실패 정리의 영구 재시도 |
 | 3. 사용자 기능 | 네이티브 앱·대시보드·메뉴 막대·온보딩·계정 편집·설정·Claude/Codex/Grok 로그인 화면 구현. 실제 UI에서 미로그인 차단·취소·다시 열기 확인 | 나머지 로그인 UI, 실제 인증 성공, 메뉴 막대 팝오버 실제 클릭, 알림 전달/거부·자동 시작 검증 |
 | 4. 위젯·패널 | 미구현 | 3종 위젯·독립 구성·딥링크·4/6개 표시·고정 패널 |
 | 5. 장기 수집 | 미검증 | 72시간 이상, 절전·기상·재부팅·토큰 만료·업데이트 |
@@ -25,11 +25,11 @@
 
 `swift test --package-path macos/Packages/AIQuotaCore --scratch-path macos/.build/core`
 
-- macOS 14 타깃으로 Swift 6.3.3 실제 컴파일 및 Swift Testing 19개 테스트 통과.
+- macOS 14 타깃으로 Swift 6.3.3 실제 컴파일 및 Swift Testing 27개 테스트 통과.
 - 두 계정 데이터 독립, workspace 혼선, sequence/session/generation 거부, 오류 후 fetchedAt 유지.
 - 실제 SQLite 재열기 후 알림 상태 유지, 동일 낮은 사용량 60회 반복 억제, 3% 회복 후 재알림.
 - 초기 과거 리셋·소수초 경계 중복 억제, 이전 값이 0%여도 리셋 경계만으로 복구 표시하지 않음.
-- 실제 JSON 원자 저장→읽기, 인증 필드 부재, 구버전 snapshot 거부, 계정 삭제 후 선택 위치 보존.
+- 실제 JSON 원자 저장→읽기, 인증 필드 부재, 현재 DB에서 발행·동시 발행의 순서 보호, 계정 삭제 후 선택 위치 보존. DB 교체 후 이전 파일과 revision이 충돌하는 문제는 아래 복구 단계에서 수정했다.
 - 미래 DB schema 변경 거부, 기존 unversioned DB의 SQLite backup 후 초기 schema 도입.
 - 이는 앱/위젯 App Group 실측, 알림 OS 전달, 실제 Keychain, 제공자 수집 검증을 대체하지 않는다.
 
@@ -47,7 +47,7 @@
 `bash macos/Scripts/test-collectors.sh`
 
 - 고정 커밋 `928166f899471bbdcb72210641cdec91324d0154`를 SPM으로 resolve·링크했고 전이 의존성은 `Package.resolved`에 기록했다.
-- 수집 패키지 Swift Testing 39개 테스트 통과. 코어 19개, 인증 16개와 별도 패키지다. Grok 단계에서 수집·코어를 재실행했고, 변경 없는 인증 16개는 직전 쿠키 갱신 단계의 결과다.
+- 수집 패키지 Swift Testing 39개 테스트 통과. 코어 27개, 인증 16개와 별도 패키지다. 표시 파일 복구 단계에서 세 패키지를 모두 재실행했다.
 - CodexBar의 실제 `CodexUsageResponse` 파서 → 앱 지표 → SQLite → 위젯 표시 snapshot까지 합성 응답으로 검증했다. workspace 혼선, 합성 빈 창, 미확인 잔여량을 차단한다.
 - Codex 구독 API·Grok 주간 gRPC 수집기와 격리 HTTP 전송을 구현했다. 계정별 인증 헤더, session revision 거부, 429 HTTP-date/초 단위, 401/403/503 구분을 주입 전송으로 검증했다. 실제 계정 네트워크 수집은 미실행이다.
 - Grok은 Android 55의 실제 응답 바이트 두 개와 해시를 보존했다. 32% 사용 및 proto3 기본값 생략(0% 사용)을 확인했고, 각 절단 위치·빈 config·잘못된 트레일러를 거부했다.
@@ -143,3 +143,14 @@
 - 실제 Debug QA 앱에서 Grok 연결 버튼, 미로그인 Check account 거부, accounts.x.ai의 Google/X/Apple/이메일 로그인 선택 화면과 취소를 확인했다. 실제 자격 증명을 입력하거나 약관 동의·인증 완료를 수행하지 않았다.
 - 최종 Debug arm64와 Release arm64/x86_64 빌드가 통과했다. `CODE_SIGNING_ALLOWED=NO`이므로 배포 서명·공증 증거는 아니다. 취소 후 QA 12개 계정의 미연결 상태·session revision 0·신원/credential reference 없음·사용량 0행과 원본 Android 55의 718개 파일 변경/누락 0개를 확인했다.
 - 실계정의 성공 응답, Google/X 인증 복귀, 추가 인증 증명 요구 여부와 장기 세션 유지는 미검증이다. 개인 계정의 웹 크레딧 대신 CLI/팀 사용량으로 대체하지 않는다. 단계 증거는 `artifacts/macos-20260917-grok/`에 보관한다.
+
+## DB 교체 후 표시 파일 복구 검증
+
+- 이전 DB의 표시 파일이 남은 상태에서 새 DB의 revision이 작으면 `staleAttempt`, 같아도 계정이 다르면 `invalidSnapshot`으로 발행이 계속 거부되는 오류를 두 회귀 테스트로 먼저 재현했다.
+- `SnapshotFileStore`를 현재 `AccountRepository`에 묶고 `publish()` 안에서 직접 표시 데이터를 읽도록 수정했다. 호스트는 발행 요청만 합치며, 오래된 UI snapshot을 저장 API에 전달하지 않는다. revision은 해당 DB 안의 순서이며, 시작 시 기존 표시 파일이 현재 DB를 대신하지 않는다.
+- 충돌하거나 손상된 표시 파일은 같은 디렉터리에 `before-rebuild-<UUID>.json` 백업을 만든 뒤 원자 교체한다. 백업을 자동 삭제하지 않는다. 알 수 없는 schema는 필드 구조가 달라졌어도 먼저 감지해 보존하고, 파일 읽기/백업/쓰기 권한 오류는 숨기지 않는다. SQLite와 표시 JSON schema 변경은 없다.
+- 새 DB의 낮은/같은 revision, 실제 SQLite `VACUUM INTO` 백업 복원, 손상 JSON 4개 입력, 미래 schema, 변경 없는 재시작, 50개 동시 발행 요청, 취소를 8개 테스트로 추가했다. 백업 원문, 계정/사용량/fetchedAt 보존, 누락된 계정의 위젯 위치 유지, 공유 JSON의 인증정보 부재를 확인했다.
+- 코어 27개, 인증 16개, 수집 39개와 GLM 실제 번들 실행 검사가 통과했다. 복원 테스트의 최초 비교는 수집 전 account 상태를 저장한 fixture 오류였으며 백업 직전 상태와 비교하도록 바로잡았다. production의 시간·신원 검증 조건은 바꾸지 않았다.
+- 실제 최신 Debug 앱의 별도 QA 저장소에서 revision `999999`의 오래된 표시 파일을 현재 SQLite revision `15`로 복구했다. 원래 JSON의 SHA-256과 백업이 일치하며, 12개 계정의 ID·별명·순서가 DB와 같다. 다시 종료/실행한 뒤에는 JSON 바이트·수정 시각·백업 개수가 그대로였다. 실제 대시보드도 두 실행에서 확인했다.
+- 최종 Debug arm64와 Release arm64/x86_64 빌드가 통과했다. 두 빌드는 `CODE_SIGNING_ALLOWED=NO`이며 배포 서명 증거가 아니다. 원본 Android 55 manifest의 718개 파일 변경/누락 0개도 다시 확인했다.
+- 이 검증은 단일 호스트 writer와 앱 종료 후 DB 복원을 전제로 한다. 실행 중인 DB 파일의 외부 교체, 서명된 App Group, 실제 WidgetKit 확장 등록/표시는 아직 검증하지 않았다. QA 산출물은 `artifacts/macos-20260917-snapshot-recovery/`에 보존한다.

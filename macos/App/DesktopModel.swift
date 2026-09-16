@@ -48,7 +48,7 @@ private struct CollectorRegistry: UsageCollector {
     private var snapshotStore: SnapshotFileStore?
     private var publishesToAppGroup = false
     private var publicationRunning = false
-    private var pendingPublication: WidgetSnapshot?
+    private var publicationPending = false
     private var preferencesURL: URL?
     private var started = false
     private var reloadSequence: UInt64 = 0
@@ -87,9 +87,9 @@ private struct CollectorRegistry: UsageCollector {
             self.coordinator = coordinator
             if ProcessInfo.processInfo.arguments.contains("--data-directory") {
                 // An isolated QA run must never publish synthetic accounts into the real widget container.
-                snapshotStore = SnapshotFileStore(url: root.appendingPathComponent(SharedPaths.snapshotName))
+                snapshotStore = SnapshotFileStore(url: root.appendingPathComponent(SharedPaths.snapshotName), repository: repository)
             } else if let shared = SharedPaths.snapshotURL {
-                snapshotStore = SnapshotFileStore(url: shared); publishesToAppGroup = true
+                snapshotStore = SnapshotFileStore(url: shared, repository: repository); publishesToAppGroup = true
             }
             await coordinator.setAutomaticEnabled(preferences.automaticRefresh)
             await reload()
@@ -122,25 +122,26 @@ private struct CollectorRegistry: UsageCollector {
             let updated = try await repository.displaySnapshot()
             guard sequence == reloadSequence else { return }
             snapshot = updated
-            schedulePublication(updated)
+            schedulePublication()
             Task {
                 do { try await notificationDelivery.deliver(repository: repository, snapshot: updated, korean: preferences.usesKorean) }
                 catch { show(error) }
             }
         } catch { show(error) }
     }
-    /// Keep only the latest pending projection. Shared-container IO cannot hold up the UI or collector.
-    private func schedulePublication(_ updated: WidgetSnapshot) {
+    /// Coalesce requests; the publisher reads the latest database projection when it is ready.
+    /// Shared-container IO cannot hold up the UI or collector.
+    private func schedulePublication() {
         guard let snapshotStore else { return }
-        pendingPublication = updated
+        publicationPending = true
         guard !publicationRunning else { return }
         publicationRunning = true
         Task {
             defer { publicationRunning = false }
-            while let next = pendingPublication {
-                pendingPublication = nil
+            while publicationPending {
+                publicationPending = false
                 do {
-                    let changed = try await snapshotStore.write(next)
+                    let changed = try await snapshotStore.publish()
                     widgetSharingAvailable = publishesToAppGroup
                     if changed && publishesToAppGroup {
                         for kind in WidgetKind.allCases { WidgetCenter.shared.reloadTimelines(ofKind: kind.rawValue) }

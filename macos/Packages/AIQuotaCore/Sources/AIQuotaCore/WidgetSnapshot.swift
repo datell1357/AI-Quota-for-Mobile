@@ -75,31 +75,69 @@ public struct WidgetSelection: Codable, Equatable, Sendable {
     }
 }
 
-/// Single host writer. Widget extensions only use read(from:).
+/// Single host writer, bound to the current account authority. Revisions are local to that
+/// database; a previous installation's file is a rebuildable projection, not an authority.
+/// Widget extensions only use read(from:), without opening the account database.
 public actor SnapshotFileStore {
     private let url: URL
-    public init(url: URL) { self.url = url }
+    private let repository: AccountRepository
+    private var lastPublished: WidgetSnapshot?
+    public init(url: URL, repository: AccountRepository) { self.url = url; self.repository = repository }
 
+    /// Read inside the publisher rather than accepting a potentially queued, obsolete projection.
+    /// On startup the current database can replace a cache left by a restored/recreated database.
     @discardableResult
-    public func write(_ snapshot: WidgetSnapshot) throws -> Bool {
+    public func publish(now: Date = .now) async throws -> Bool {
+        try Task.checkCancellation()
+        let snapshot = try await repository.displaySnapshot(now: now)
+        try Task.checkCancellation()
         try snapshot.validate()
+        if let lastPublished {
+            // Actor reentrancy may resume an earlier repository read after a later publication.
+            guard snapshot.revision >= lastPublished.revision else { throw CoreError.staleAttempt }
+            if snapshot.revision == lastPublished.revision, snapshot.accounts != lastPublished.accounts {
+                throw CoreError.invalidSnapshot
+            }
+        }
+        var needsBackup = false
         if FileManager.default.fileExists(atPath: url.path) {
-            let previous = try Self.read(from: url)
-            guard snapshot.revision >= previous.revision else { throw CoreError.staleAttempt }
-            if snapshot.revision == previous.revision {
-                guard snapshot.accounts == previous.accounts else { throw CoreError.invalidSnapshot }
-                return false
+            do {
+                let previous = try Self.read(from: url)
+                if snapshot.revision == previous.revision, snapshot.accounts == previous.accounts {
+                    lastPublished = snapshot
+                    return false
+                }
+                needsBackup = previous.revision >= snapshot.revision
+            } catch let error as CoreError {
+                if case .unsupportedSnapshot = error { throw error }
+                needsBackup = true
+            } catch is DecodingError {
+                needsBackup = true
             }
         }
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        if needsBackup {
+            let backup = url.appendingPathExtension("before-rebuild-\(UUID().uuidString).json")
+            try FileManager.default.copyItem(at: url, to: backup)
+        }
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
         try encoder.encode(snapshot).write(to: url, options: .atomic)
+        lastPublished = snapshot
         return true
     }
 
     public nonisolated static func read(from url: URL) throws -> WidgetSnapshot {
-        let snapshot = try JSONDecoder().decode(WidgetSnapshot.self, from: Data(contentsOf: url))
+        let data = try Data(contentsOf: url)
+        let decoder = JSONDecoder()
+        // Recognize a newer schema before decoding fields that a later version may have changed.
+        let header = try decoder.decode(SchemaHeader.self, from: data)
+        guard header.schemaVersion == WidgetSnapshot.currentSchema else {
+            throw CoreError.unsupportedSnapshot(header.schemaVersion)
+        }
+        let snapshot = try decoder.decode(WidgetSnapshot.self, from: data)
         try snapshot.validate()
         return snapshot
     }
+
+    private struct SchemaHeader: Decodable { let schemaVersion: Int }
 }
