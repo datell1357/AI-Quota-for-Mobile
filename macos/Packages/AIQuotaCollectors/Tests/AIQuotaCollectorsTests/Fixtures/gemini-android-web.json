@@ -1,0 +1,14 @@
+{
+  "provenance": {
+    "file": "android/app/src/test/java/com/aiquota/mobile/providers/GeminiUsagePageNativeFetcherTest.kt",
+    "sha256": "949c043dc558cd2d0a3c26f7fde2a4a6c6d9bc8aec5e6b1d032cb0bd9b0677bf",
+    "test": "batchExecuteResponseInCurrentFormatParsesUsageLines",
+    "capturedAt": "2026-07-24",
+    "note": "Reconstructed literal from the Android test; no account identifiers or credentials."
+  },
+  "wire": ")]}'\n\n234\n[[\"wrb.fr\",\"jSf9Qc\",\"[1,[[12096,0,2,[[1785401913,33483000]]],[0,0,4,null,null,[[1784874204,16436000],4]],[600,0,1,[[1784872713,33384000]]]]]\",null,null,null,\"generic\"]]",
+  "expectedRemainingFractions": [
+    1,
+    1
+  ]
+}

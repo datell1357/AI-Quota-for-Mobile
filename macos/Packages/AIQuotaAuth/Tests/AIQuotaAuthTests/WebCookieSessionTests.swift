@@ -45,6 +45,19 @@ private func seedCookie(_ value: String, name: String = "sessionKey", path: Stri
     #expect(ResponseCookiePolicy.isExpired(past, now: .now))
 }
 
+@Test func googleParentCookieAcceptanceKeepsTheExactOriginAndDomainBoundary() throws {
+    let google = URL(string: "https://gemini.google.com/")!
+    let good = "__Secure-1PSID=synthetic; Domain=.google.com; Path=/; Secure; HttpOnly"
+    #expect(try ResponseCookiePolicy.cookies(headers: ["Set-Cookie":good], responseURL: google, origin: google).count == 1)
+    for domain in ["com","evilgoogle.com","accounts.google.com","google.com.evil.invalid","..google.com"] {
+        #expect(try ResponseCookiePolicy.cookies(headers: ["Set-Cookie":"SID=x; Domain=\(domain); Path=/; Secure"], responseURL: google, origin: google).isEmpty)
+    }
+    #expect(try responseCookies(good).isEmpty)
+    #expect(throws: AuthenticationError.invalidCredential) {
+        try ResponseCookiePolicy.cookies(headers: ["Set-Cookie":good], responseURL: URL(string: "https://accounts.google.com/")!, origin: google)
+    }
+}
+
 private actor CookieMemoryStore: WebCookieStore {
     var profiles: [UUID: [HTTPCookie]] = [:]
     private(set) var writes = 0
@@ -60,6 +73,19 @@ private actor CookieLease {
     var valid = true
     func invalidate() { valid = false }
     func check() throws { guard valid else { throw CoreError.staleAttempt } }
+}
+
+@Test func googleParentCookieRotationStaysInsideItsProfileAndSurvivesSessionRecreation() async throws {
+    let google = URL(string: "https://gemini.google.com/")!, store = CookieMemoryStore(), a = UUID(), b = UUID()
+    let cookie = try #require(HTTPCookie(properties: [.name:"SID",.value:"synthetic-before",.domain:".google.com",.path:"/",.secure:"TRUE"]))
+    await store.seed([cookie], id: a); await store.seed([cookie], id: b)
+    let session = WebCookieSession(profileID: a, origin: google, store: store, validate: {})
+    #expect(try await session.header(for: google) == "SID=synthetic-before")
+    try await session.receive(headers: ["Set-Cookie":"SID=synthetic-after; Domain=.google.com; Path=/; Secure; HttpOnly"], from: google)
+    let reopened = WebCookieSession(profileID: a, origin: google, store: store, validate: {})
+    #expect(try await reopened.header(for: google) == "SID=synthetic-after")
+    #expect(await store.cookies(profileID: b).first?.value == "synthetic-before")
+    await #expect(throws: AuthenticationError.invalidCredential) { try await reopened.header(for: URL(string: "https://accounts.google.com/")!) }
 }
 
 @Test func responseRotationPersistsOnlyToItsProfileAndFeedsTheNextRequest() async throws {

@@ -1,0 +1,36 @@
+{
+  "id": "geminiUsagePageLimitPayloadNormalizesDomRows",
+  "provider": "gemini",
+  "source": "STRUCTURED_SCRIPT",
+  "provenance": {
+    "file": "android/app/src/test/java/com/aiquota/mobile/providers/ProviderUsageNormalizerTest.kt",
+    "test": "geminiUsagePageLimitPayloadNormalizesDomRows",
+    "sha256": "eefc278c1721e55d9216c200856ae3b90321579c125d75de78b9e33bcf130157"
+  },
+  "payload": {
+    "account": {
+      "p": "GEMINI_PRO",
+      "e": "user@example.com"
+    },
+    "usage": {
+      "x": [
+        {
+          "l": "5-hour limit",
+          "u": 0.04,
+          "t": "오후 5:56에 초기화"
+        },
+        {
+          "l": "Weekly limit",
+          "u": 0,
+          "t": "6월 4일 오후 12:56에 초기화"
+        }
+      ]
+    }
+  },
+  "expectedRemainingFractions": [
+    0.96,
+    1.0
+  ],
+  "tolerance": 0.001,
+  "note": "Android regression input and assertions. Synthetic identifiers only. Not live macOS evidence."
+}

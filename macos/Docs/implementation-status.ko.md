@@ -6,8 +6,8 @@
 | --- | --- | --- |
 | 0. 기능 계약 | 55 기준 전체 해시 대조, 10개 제공자 계약 및 12개 Android 회귀 입력 고정 | 추가 경계/실제 전송 형식 fixture, Swift consumer와 비교 |
 | 1. 기술 위험 | worktree·도구 준비, 고정 CodexBarCore 링크 및 GLM 번들 실행 확인 | 서명된 App Group, 두 Claude·두 Codex, Gemini/Grok/Antigravity 실제 로그인 |
-| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체, Claude/Codex/Cursor/Grok/OpenCode/Kiro 웹 수집 및 응답 쿠키 갱신, GLM API 키 수집, DB 교체 후 표시 파일 복구, 계정 제거·인증정보 정리 기록/재시도. 코어 46/인증 25/수집 103개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 강제 종료·업데이트 실측 |
-| 3. 사용자 기능 | 네이티브 앱·대시보드·메뉴 막대·온보딩·계정 편집·설정·Claude/Codex/Cursor/Grok/OpenCode/Kiro 로그인·GLM API 키 연결 화면 구현. 실제 UI에서 미로그인/잘못된 입력 차단·취소·다시 열기 확인 | 나머지 로그인 UI, GLM 웹 로그인, 실제 인증 성공, 메뉴 막대 팝오버 실제 클릭, 알림 전달/거부·자동 시작 검증 |
+| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체, Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini 웹 수집 및 응답 쿠키 갱신, GLM API 키 수집, DB 교체 후 표시 파일 복구, 계정 제거·인증정보 정리 기록/재시도. 코어 46/인증 27/수집 116개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 강제 종료·업데이트 실측 |
+| 3. 사용자 기능 | 네이티브 앱·대시보드·메뉴 막대·온보딩·계정 편집·설정·Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini 로그인·GLM API 키 연결 화면 구현. 실제 UI에서 미로그인/잘못된 입력 차단·취소·다시 열기 확인 | 나머지 로그인 UI, GLM 웹 로그인, 실제 인증 성공, 메뉴 막대 팝오버 실제 클릭, 알림 전달/거부·자동 시작 검증 |
 | 4. 위젯·패널 | 3종/6개 WidgetKit kind와 계정별 구성·딥링크, 고정 NSPanel 목록/배터리·계정 선택·창 복원 구현. 실제 앱 UI·네이티브 창 검사 통과 | 서명된 위젯 공유/갤러리·독립 인스턴스 실측, 접근성 환경·위젯 설정 동기화, 패널 장기 계측 |
 | 5. 장기 수집 | 미검증 | 72시간 이상, 절전·기상·재부팅·토큰 만료·업데이트 |
 | 6. 배포 | 미구현 | Developer ID·공증·DMG·새 사용자·이전 버전 업데이트 |
@@ -238,3 +238,15 @@
 - 실제 격리 QA 앱에서 한·영 안내, 공개 Google·GitHub·Builder ID·조직 로그인 선택 화면, 미로그인 연결 차단·취소를 확인했다. 자격 증명은 입력하지 않았다. QA 12개 계정의 payload/sequence/completed와 미연결 상태를 보존했고 취소 후 정리 기록은 0개였다.
 - 최종 Debug arm64·Release arm64/x86_64 앱/확장 빌드와 위젯 메타데이터, 프로젝트 생성의 바이트·수정 시각 유지, Android 원본 718개 파일 변경/누락 0개를 확인했다. 단계 결과는 `artifacts/macos-20260917-kiro/verification.json`에 기록한다. 인증 25개는 앞 단계 통과 결과이며 이번에는 재실행하지 않았다.
 - 실제 로그인·사용량·세션 지속·Kiro token refresh, 조직 계정, 외부 브라우저/CLI, 서명 App Group·공증·장기 실측은 남아 있다. 비인증 공개 API의 401 CBOR 응답과 로그인 화면은 실제 인증 성공을 증명하지 않는다.
+
+## Gemini 웹 로그인·5시간/주간 수집 검증
+
+- [Gemini 웹 연결 계약](gemini-web-login.ko.md)에 현재 배포 웹 모듈과 Android 원본 출처, 비율·계정·캐시 및 남은 경계를 기록했다. 소비자 웹 앱의 `jSf9Qc` 읽기 RPC를 연결했으며 Gemini CLI/Code Assist로 대체하지 않는다.
+- 배포 화면은 row type 1/2의 두 번째 값을 사용 비율로 읽는다. 첫 번째 원시 수치를 요청 횟수로 합산하지 않고 소수 비율과 reset seconds/nanos를 보존한다. 두 창 누락·부분 응답·잘못된 비율·다른 RPC는 실패로 처리해 이전 값을 유지한다.
+- 격리 profile의 첫 Google 계정과 `S06Grb` XSRF 계정 결합을 확인한다. 로그인 화면에서 다른 계정 슬롯을 선택하면 기본 계정으로 조용히 바꾸지 않는다. `FdrFJe`를 신원으로 쓰지 않는다. HTML 확인 전후 신원 검사와 계정/generation/revision/쿠키에 묶인 최대 15분 메모리 캐시를 구현했다.
+- cache hit는 매번 신원 HTML을 조회하지 않으며, 사용자 ID가 없는 RPC 응답은 같은 쿠키와 계정 결합 XSRF에 대한 서버 검증에 의존한다. 이 경계와 실제 계정 전환/재로그인 후 신원 안정성의 미검증 상태를 문서에 명시했다. 400은 새 HTML로 한 번만 재시도하며 Set-Cookie가 있으면 HTML 신원을 다시 확인한다.
+- Google parent-domain 쿠키 갱신을 Gemini의 동일 profile에만 허용했다. 요청 origin은 그대로 제한하며 sibling/공개 suffix/다른 제공자 경계는 유지한다. 신규 인증 회귀 두 개를 포함한 27개와 Gemini 13개를 포함한 수집 116개, 기존 GLM 리소스 실행이 통과했다.
+- 합성 저장소/쿠키/HTTP → 실제 로그인·수집 coordinator → SQLite → snapshot consumer에서 정상 수집, 캐시 TTL/계정/쿠키/세션 revision·늦은 sequence, 오류·신원 변경 후 이전 값/다른 계정 보존을 검증했다. 실제 Google 쿠키의 재시작·만료 실측은 아니다.
+- 실제 Debug 앱에서 한·영 안내, 공개 Gemini 화면과 Google 이메일 입력 화면, 미로그인 차단·취소·재열기를 확인했다. 자격 증명이나 프롬프트를 입력하지 않았다. 12개 QA 계정의 payload/sequence/completed와 미연결 상태를 보존했고 취소 후 정리 기록은 같은 실행에서 0개였다.
+- 최종 Debug arm64·Release arm64/x86_64 앱/확장 빌드, 위젯 번들 메타데이터, 프로젝트 생성의 바이트·수정 시각 유지, Android 원본 718개 파일 변경/누락 0개를 확인했다. 결과는 `artifacts/macos-20260917-gemini/verification.json`에 기록한다. 코어 46개·위젯 렌더링 33개는 앞 단계 통과 결과이며 이번에는 재실행하지 않았다.
+- 실계정 인증/사용량·장기 캐시 정확성, MFA/passkey·Google embedded 로그인 정책·외부 브라우저 경로, 추가 row type, 60초/72시간·절전/재부팅/업데이트·서명/공증은 남아 있다.

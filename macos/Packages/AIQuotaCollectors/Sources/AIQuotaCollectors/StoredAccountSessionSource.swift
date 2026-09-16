@@ -32,6 +32,7 @@ public struct StoredAccountSessionSource: AccountSessionSource {
                 case .cursor: url = CursorWebClient.origin
                 case .opencode: url = OpenCodeWebClient.origin
                 case .kiro: url = KiroWebClient.origin
+                case .gemini: url = GeminiWebClient.origin
                 default: throw CollectorError.unsupported
                 }
                 let scoped = WebCookieSession(profileID: profile, origin: url, store: webProfiles,

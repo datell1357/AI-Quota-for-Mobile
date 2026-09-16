@@ -57,6 +57,7 @@ import WebKit
         phase = .checking; errorMessage = nil
         work = Task {
             do {
+                if service == .gemini { try GeminiWebClient.validateLoginURL(webView?.url) }
                 let session = try await cookieSession(attempt)
                 let found = try await service.discover(cookieHeader: session.header, transport: session.transport)
                 try Task.checkCancellation()
@@ -79,6 +80,7 @@ import WebKit
         work = Task {
             do {
                 let identity = try RemoteIdentity(subject: discovery.subject, workspace: service.requiresWorkspace ? selectedWorkspace : nil, product: service.product)
+                if service == .gemini { try GeminiWebClient.validateLoginURL(webView?.url) }
                 let session = try await cookieSession(attempt)
                 // Recheck the remote subject and chosen scope with the current profile, then its usage.
                 try await service.verify(cookieHeader: session.header, identity: identity, transport: session.transport)
@@ -119,6 +121,8 @@ import WebKit
     private func show(_ error: any Error) {
         if error is CancellationError { return }
         switch error {
+        case GeminiSessionError.primaryAccountRequired:
+            errorMessage = model.text("이 연결 화면에서는 Google 계정 하나만 사용해 주세요. 웹 화면의 다른 계정을 로그아웃한 뒤 첫 번째 계정으로 다시 확인해 주세요.", "Use one Google account in this connection window. Sign out of the other accounts here, then check the first account again.")
         case KiroSessionError.profileSelectionRequired:
             errorMessage = model.text("Kiro 웹 화면에서 사용할 프로필을 선택한 뒤 다시 확인해 주세요.", "Select your profile in the Kiro web page, then check again.")
         case KiroSessionError.unsupportedIdentityProvider:

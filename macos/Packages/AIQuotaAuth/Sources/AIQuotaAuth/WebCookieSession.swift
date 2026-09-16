@@ -69,7 +69,11 @@ public enum ResponseCookiePolicy {
             }
             return HTTPCookie.cookies(withResponseHeaderFields: ["Set-Cookie": String(line)], for: responseURL).filter { cookie in
                 let domain = canonicalDomain(cookie.domain)
-                guard domain == host, !cookie.name.isEmpty,
+                // Google web sessions use parent-domain cookies. Permit this one known
+                // origin/domain pair inside the same isolated profile; request origins
+                // remain exact, and unrelated parent/sibling domains are still rejected.
+                let permittedDomain = domain == host || (host == "gemini.google.com" && domain == "google.com")
+                guard permittedDomain, !cookie.name.isEmpty,
                       ![cookie.name, cookie.value].contains(where: { $0.contains(";") || $0.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) })
                 else { return false }
                 if cookie.name.hasPrefix("__Secure-") && !cookie.isSecure { return false }

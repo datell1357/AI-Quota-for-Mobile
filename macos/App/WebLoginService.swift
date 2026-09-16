@@ -11,19 +11,19 @@ struct WebLoginDiscovery: Sendable {
 
 /// Shared sheet behavior with explicit provider-specific identity and usage verification.
 enum WebLoginService: Sendable {
-    case claude, codex, grok, cursor, opencode, kiro
+    case claude, codex, grok, cursor, opencode, kiro, gemini
     init?(provider: ProviderID) {
-        switch provider { case .claude: self = .claude; case .codex: self = .codex; case .grok: self = .grok; case .cursor: self = .cursor; case .opencode: self = .opencode; case .kiro: self = .kiro; default: return nil }
+        switch provider { case .claude: self = .claude; case .codex: self = .codex; case .grok: self = .grok; case .cursor: self = .cursor; case .opencode: self = .opencode; case .kiro: self = .kiro; case .gemini: self = .gemini; default: return nil }
     }
-    var provider: ProviderID { switch self { case .claude: .claude; case .codex: .codex; case .grok: .grok; case .cursor: .cursor; case .opencode: .opencode; case .kiro: .kiro } }
-    var product: String { switch self { case .claude: "claude-subscription"; case .codex: "codex-subscription"; case .grok: "grok-weekly"; case .cursor: "cursor-subscription"; case .opencode: "opencode-workspace"; case .kiro: "kiro-web-subscription" } }
+    var provider: ProviderID { switch self { case .claude: .claude; case .codex: .codex; case .grok: .grok; case .cursor: .cursor; case .opencode: .opencode; case .kiro: .kiro; case .gemini: .gemini } }
+    var product: String { switch self { case .claude: "claude-subscription"; case .codex: "codex-subscription"; case .grok: "grok-weekly"; case .cursor: "cursor-subscription"; case .opencode: "opencode-workspace"; case .kiro: "kiro-web-subscription"; case .gemini: "gemini-web-subscription" } }
     var requiresWorkspace: Bool { self == .claude || self == .codex || self == .opencode }
     var origin: URL {
-        let value = switch self { case .claude: "https://claude.ai/"; case .codex: "https://chatgpt.com/"; case .grok: "https://grok.com/"; case .cursor: "https://cursor.com/"; case .opencode: "https://opencode.ai/"; case .kiro: "https://app.kiro.dev/" }
+        let value = switch self { case .claude: "https://claude.ai/"; case .codex: "https://chatgpt.com/"; case .grok: "https://grok.com/"; case .cursor: "https://cursor.com/"; case .opencode: "https://opencode.ai/"; case .kiro: "https://app.kiro.dev/"; case .gemini: "https://gemini.google.com/" }
         return URL(string: value)!
     }
     var loginURL: URL {
-        let value = switch self { case .claude: "https://claude.ai/login"; case .codex: "https://chatgpt.com/auth/login"; case .grok: "https://grok.com/sign-in?return_to=%2F"; case .cursor: "https://cursor.com/dashboard"; case .opencode: "https://opencode.ai/auth"; case .kiro: "https://app.kiro.dev/settings/account" }
+        let value = switch self { case .claude: "https://claude.ai/login"; case .codex: "https://chatgpt.com/auth/login"; case .grok: "https://grok.com/sign-in?return_to=%2F"; case .cursor: "https://cursor.com/dashboard"; case .opencode: "https://opencode.ai/auth"; case .kiro: "https://app.kiro.dev/settings/account"; case .gemini: "https://gemini.google.com/usage" }
         return URL(string: value)!
     }
     func discover(cookieHeader: String, transport: any HTTPTransport) async throws -> WebLoginDiscovery {
@@ -45,6 +45,9 @@ enum WebLoginService: Sendable {
         case .kiro:
             let found = try await KiroWebClient(transport: transport).discover(cookieHeader: cookieHeader)
             return WebLoginDiscovery(subject: found.subject, email: found.email, choices: [])
+        case .gemini:
+            let found = try await GeminiWebClient(transport: transport).discover(cookieHeader: cookieHeader)
+            return WebLoginDiscovery(subject: found.subject, email: nil, choices: [])
         case .opencode:
             let found = try await OpenCodeWebClient(transport: transport).discover(cookieHeader: cookieHeader)
             return WebLoginDiscovery(subject: found.subject, email: found.email, choices: found.workspaces.map { .init(id: $0.id, name: $0.name) })
@@ -57,6 +60,7 @@ enum WebLoginService: Sendable {
         case .grok: _ = try await GrokWebClient(transport: transport).collect(cookieHeader: cookieHeader, expected: identity)
         case .cursor: _ = try await CursorWebClient(transport: transport).collect(cookieHeader: cookieHeader, expected: identity)
         case .kiro: _ = try await KiroWebClient(transport: transport).collect(cookieHeader: cookieHeader, expected: identity)
+        case .gemini: _ = try await GeminiWebClient(transport: transport).collect(cookieHeader: cookieHeader, expected: identity)
         case .opencode: _ = try await OpenCodeWebClient(transport: transport).collect(cookieHeader: cookieHeader, expected: identity)
         }
     }

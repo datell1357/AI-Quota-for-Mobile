@@ -85,6 +85,12 @@ expiry is distinct from quota reset in storage, app views and widgets. See
 [Docs/kiro-web-login.ko.md](Docs/kiro-web-login.ko.md) for wire provenance, regression and native UI
 evidence, and the outstanding live-account, enterprise and token-expiry checks.
 
+Gemini collects the consumer web app's 5-hour and weekly limits through its read-only usage RPC.
+It preserves fractional percentages, checks the isolated Google account, and binds its temporary
+bootstrap cache to the account, session revision and cookie snapshot. Google parent-domain cookie
+renewal stays within that profile. See [Docs/gemini-web-login.ko.md](Docs/gemini-web-login.ko.md)
+for the deployed web contract, cache identity boundary and pending authenticated-account checks.
+
 ## Authentication package
 
 ```sh
@@ -99,7 +105,7 @@ coordinator while preserving another account. It never inspects existing credent
 Login replacement keeps the previous session until new
 credentials are saved and the SQLite account revision commits. Persistent WebKit stores are keyed
 by profile UUID. OAuth refresh coordination only accepts credentials owned by AI Quota.
-Claude, Codex, Cursor, Grok, OpenCode and Kiro web verification are connected; successful live-account authentication and the
+Claude, Codex, Cursor, Grok, OpenCode, Kiro and Gemini web verification are connected; successful live-account authentication and the
 remaining providers/registered OAuth clients are still pending.
 
 The third command runs a native AppKit probe in eight separate processes. It verifies two synthetic
@@ -136,7 +142,7 @@ The host checks the running code's signing team and group entitlement before res
 Shared-file writes are coalesced separately from displaying accounts and collecting usage.
 
 The dashboard, account editing, provider selection, onboarding, Korean/English, themes and collection
-preferences and Claude/Codex/Cursor/Grok/OpenCode/Kiro login screens are wired to the local authority. The other provider
+preferences and Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini login screens are wired to the local authority. The other provider
 login screens and signed WidgetKit runtime verification are still pending; adding an account card does not authenticate it. See the status document for
 actual native UI verification and remaining notification, menu-bar and signing checks.
 
