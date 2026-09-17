@@ -86,7 +86,9 @@ public struct CursorWebCollector: UsageCollector {
         guard account.provider == .cursor, lease.provider == .cursor else { throw CoreError.identityMismatch }
         let session = try await sessions.session(for: account, lease: lease)
         try session.validate(lease)
-        return try await CursorWebClient(transport: profileTransport(transport, cookies: session.webCookies), now: now)
+        let output = try await CursorWebClient(transport: profileTransport(transport, cookies: session.webCookies), now: now)
             .collect(cookieHeader: AuthenticatedSession.headerValue(session.cookieHeader), expected: session.identity)
+        try await session.validateCurrentSource?()
+        return output
     }
 }

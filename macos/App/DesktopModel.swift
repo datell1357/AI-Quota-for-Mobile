@@ -12,9 +12,9 @@ import WidgetKit
 
 struct AccountSelection: Identifiable { let id: UUID }
 enum DesktopSheet: Identifiable {
-    case providers, edit(AccountSelection), connect(AccountSelection), glmAPIKey(AccountSelection), copilot(AccountSelection), antigravity(AccountSelection), codexCLI(AccountSelection), claudeCode(AccountSelection), widgets
+    case providers, edit(AccountSelection), connect(AccountSelection), glmAPIKey(AccountSelection), copilot(AccountSelection), antigravity(AccountSelection), codexCLI(AccountSelection), claudeCode(AccountSelection), cursorApp(AccountSelection), widgets
     var id: String {
-        switch self { case .providers: "providers"; case .edit(let account): "edit-\(account.id)"; case .connect(let account): "connect-\(account.id)"; case .glmAPIKey(let account): "glm-api-key-\(account.id)"; case .copilot(let account): "copilot-\(account.id)"; case .antigravity(let account): "antigravity-\(account.id)"; case .codexCLI(let account): "codex-cli-\(account.id)"; case .claudeCode(let account): "claude-code-\(account.id)"; case .widgets: "widgets" }
+        switch self { case .providers: "providers"; case .edit(let account): "edit-\(account.id)"; case .connect(let account): "connect-\(account.id)"; case .glmAPIKey(let account): "glm-api-key-\(account.id)"; case .copilot(let account): "copilot-\(account.id)"; case .antigravity(let account): "antigravity-\(account.id)"; case .codexCLI(let account): "codex-cli-\(account.id)"; case .claudeCode(let account): "claude-code-\(account.id)"; case .cursorApp(let account): "cursor-app-\(account.id)"; case .widgets: "widgets" }
     }
 }
 

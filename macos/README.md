@@ -98,7 +98,12 @@ Cursor has an isolated web-login sheet and collector for the verified individual
 the remote subject before and after reading usage, preserves separate percent/request/known-USD
 metrics and keeps the last reading on malformed or failed responses. Nine Android regression inputs
 are included in the collector tests. See [Docs/cursor-web-login.ko.md](Docs/cursor-web-login.ko.md)
-for request policy, native UI evidence and the outstanding live-account, team and local-app routes.
+for request policy, native UI evidence and the outstanding live-account and team routes.
+Cursor can also read one explicitly selected app `state.vscdb`, including its active WAL. It derives
+the session cookie only in memory, verifies the remote identity and rereads the source after each
+collection. Cursor retains ownership of refresh; no token copy is persisted. See
+[Docs/cursor-app-connection.ko.md](Docs/cursor-app-connection.ko.md) for SQLite, ownership, regression
+and UI evidence. Live app credentials and service acceptance remain unverified.
 
 OpenCode has an isolated web-login sheet with explicit workspace selection and Go/Zen collection.
 It binds both queries to one remote account, checks membership before and after collection, and

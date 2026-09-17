@@ -41,6 +41,9 @@ struct OnboardingView: View {
                                     if WebLoginService(provider: account.provider) != nil {
                                         Button(model.text("연결", "Connect")) { model.sheet = .connect(AccountSelection(id: account.id)) }
                                     }
+                                    if account.provider == .cursor {
+                                        Button(model.text("Cursor 앱", "Cursor app")) { model.sheet = .cursorApp(AccountSelection(id: account.id)) }
+                                    }
                                     if account.provider == .claude {
                                         Button("Claude Code") { model.sheet = .claudeCode(AccountSelection(id: account.id)) }
                                     }

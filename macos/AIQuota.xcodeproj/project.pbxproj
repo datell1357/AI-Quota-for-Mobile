@@ -105,6 +105,26 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "C32D9506982C9B470216DA3E";
 		};
+		"DD01E31B8C259013C003B66A" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/CursorAppLoginFlow.swift";
+			"sourceTree" = "<group>";
+		};
+		"763E7A5129B70393782823F7" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "DD01E31B8C259013C003B66A";
+		};
+		"15C60CC9A1D73B3DDCFBB4E0" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/CursorAppLoginSheet.swift";
+			"sourceTree" = "<group>";
+		};
+		"E7D3AD70BB69870151E8BF98" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "15C60CC9A1D73B3DDCFBB4E0";
+		};
 		"9EF90001BBF272B1AD0EEC1B" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -396,6 +416,8 @@
 				"41578D6B835D32676EF575F4",
 				"BB6DE00DEED193CDBCAEA4A4",
 				"C32D9506982C9B470216DA3E",
+				"DD01E31B8C259013C003B66A",
+				"15C60CC9A1D73B3DDCFBB4E0",
 				"9EF90001BBF272B1AD0EEC1B",
 				"A7A19A28B7AC5080C225497B",
 				"83E21B66E3D1FABA55CE2C8E",
@@ -486,6 +508,8 @@
 				"AE668074044B2797CAD1E754",
 				"EF4FCA9E1F64B663A9ACE703",
 				"9FDB589A5FC673C5A6946B13",
+				"763E7A5129B70393782823F7",
+				"E7D3AD70BB69870151E8BF98",
 				"4DB7E088DD026CBACA7E5714",
 				"2D73CD8CB158859EBA591D2B",
 				"7DBBD9654EADC546E80A4862",

@@ -54,6 +54,7 @@ private struct DesktopRoot<Content: View>: View {
                     case .antigravity(let account): AntigravityLoginSheet(accountID: account.id, model: model)
                     case .codexCLI(let account): CodexCLILoginSheet(accountID: account.id, model: model)
                     case .claudeCode(let account): ClaudeCodeLoginSheet(accountID: account.id, model: model)
+                    case .cursorApp(let account): CursorAppLoginSheet(accountID: account.id, model: model)
                     case .widgets: WidgetHelpView()
                     }
                 }.environment(model).preferredColorScheme(model.preferences.colorScheme)

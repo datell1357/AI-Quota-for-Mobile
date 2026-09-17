@@ -7,9 +7,11 @@ public struct StoredAccountSessionSource: AccountSessionSource {
     private let webProfiles: any WebCookieStore
     private let externalFiles: any CredentialFileReading
     private let externalKeychain: any ExternalKeychainReading
+    private let cursorState: any CursorStateReading
     public init(login: LoginCoordinator, webProfiles: any WebCookieStore, externalFiles: any CredentialFileReading = ReadOnlyCredentialFile(),
-                externalKeychain: any ExternalKeychainReading = ReadOnlyKeychainCredential()) {
-        self.login = login; self.webProfiles = webProfiles; self.externalFiles = externalFiles; self.externalKeychain = externalKeychain
+                externalKeychain: any ExternalKeychainReading = ReadOnlyKeychainCredential(),
+                cursorState: any CursorStateReading = ReadOnlyCursorState()) {
+        self.login = login; self.webProfiles = webProfiles; self.externalFiles = externalFiles; self.externalKeychain = externalKeychain; self.cursorState = cursorState
     }
     public func session(for account: Account, lease: CollectionLease) async throws -> AuthenticatedSession {
         guard account.id == lease.accountID, account.provider == lease.provider else { throw CoreError.identityMismatch }
@@ -52,6 +54,16 @@ public struct StoredAccountSessionSource: AccountSessionSource {
                 catch { throw CollectorError.credentialsUnavailable }
             } else { cookies = record.secret }
         case .externalApplication:
+            if account.provider == .cursor, record.owner == .cursorApplication, let path = record.externalLocator {
+                let connection = CursorAppConnection(state: cursorState)
+                let selected = try await connection.read(path: path)
+                cookies = selected.cookieHeader
+                validateSource = {
+                    try await connection.validate(path: path, snapshot: selected)
+                    try await login.validateCollection(lease)
+                }
+                break
+            }
             if account.provider == .claude, record.owner == .claudeCode {
                 let source = try ClaudeCodeSource(record: record)
                 let connection = ClaudeCodeConnection(files: externalFiles, keychain: externalKeychain)
