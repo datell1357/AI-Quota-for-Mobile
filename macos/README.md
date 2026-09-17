@@ -13,8 +13,11 @@ test evidence and outstanding release gates. Fixture tests do not prove live pro
 
 Antigravity's remote collector verifies the Google subject and project before and after collection,
 keeps model quotas separate, and never treats full model availability as a measured allowance.
-The app-owned OAuth client, connection/refresh UI and local app/CLI routes remain pending. See
-[Docs/antigravity-api.ko.md](Docs/antigravity-api.ko.md) for the wire contract and validation boundaries.
+The native system-browser OAuth flow uses PKCE and a loopback callback, with account-bound token
+refresh. Its default login button stays disabled until an authorized Desktop client is configured.
+Live authorization/API access and local app/CLI routes remain pending. See
+[Docs/antigravity-oauth.ko.md](Docs/antigravity-oauth.ko.md) for setup and verification boundaries, and
+[Docs/antigravity-api.ko.md](Docs/antigravity-api.ko.md) for the quota contract.
 
 ## Regression data
 

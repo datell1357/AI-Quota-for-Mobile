@@ -6,8 +6,8 @@
 | --- | --- | --- |
 | 0. 기능 계약 | 55 기준 전체 해시 대조, 10개 제공자 계약 및 12개 Android 회귀 입력 고정 | 추가 경계/실제 전송 형식 fixture, Swift consumer와 비교 |
 | 1. 기술 위험 | worktree·도구 준비, 고정 CodexBarCore 링크 및 GLM 번들 실행 확인 | 서명된 App Group, 두 Claude·두 Codex, Gemini/Grok/Antigravity 실제 로그인 |
-| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체, Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini/GLM 웹 수집 및 응답 쿠키 갱신, GLM API 키 수집, Copilot API·기기 인증/토큰 갱신(등록 Client ID 대기), Antigravity API 수집 기반(로그인 UI 대기), DB 교체 후 표시 파일 복구, 계정 제거·인증정보 정리 기록/재시도. 코어 48/인증 31/수집 166개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 강제 종료·업데이트 실측 |
-| 3. 사용자 기능 | 네이티브 앱·대시보드·메뉴 막대·온보딩·계정 편집·설정·Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini/GLM 로그인·GLM API 키·Copilot 기기 인증 연결 화면 구현(등록 ID 미설정 시 비활성). 실제 UI에서 미로그인/잘못된 입력 차단·취소·다시 열기 확인 | 나머지 로그인 UI, 실제 인증 성공, 메뉴 막대 팝오버 실제 클릭, 알림 전달/거부·자동 시작 검증 |
+| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체, Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini/GLM 웹 수집 및 응답 쿠키 갱신, GLM API 키 수집, Copilot API·기기 인증/토큰 갱신(등록 Client ID 대기), Antigravity API·브라우저 OAuth/토큰 갱신(등록 Desktop client 대기), DB 교체 후 표시 파일 복구, 계정 제거·인증정보 정리 기록/재시도. 코어 48/인증 37/수집 175개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 강제 종료·업데이트 실측 |
+| 3. 사용자 기능 | 네이티브 앱·대시보드·메뉴 막대·온보딩·계정 편집·설정·Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini/GLM 로그인·GLM API 키·Copilot 기기 인증·Antigravity 브라우저 인증 연결 화면 구현(등록 ID 미설정 시 비활성). 실제 UI에서 미로그인/잘못된 입력 차단·취소·다시 열기 확인 | 나머지 로그인 UI, 실제 인증 성공, 메뉴 막대 팝오버 실제 클릭, 알림 전달/거부·자동 시작 검증 |
 | 4. 위젯·패널 | 3종/6개 WidgetKit kind와 계정별 구성·딥링크, 고정 NSPanel 목록/배터리·계정 선택·창 복원 구현. 실제 앱 UI·네이티브 창 검사 통과 | 서명된 위젯 공유/갤러리·독립 인스턴스 실측, 접근성 환경·위젯 설정 동기화, 패널 장기 계측 |
 | 5. 장기 수집 | 미검증 | 72시간 이상, 절전·기상·재부팅·토큰 만료·업데이트 |
 | 6. 배포 | 미구현 | Developer ID·공증·DMG·새 사용자·이전 버전 업데이트 |
@@ -291,3 +291,14 @@
 - 신규 인증 12개를 포함한 수집 166개, 인증 31개, 코어 48개 테스트가 통과했다. 기기 인증 producer/회전 결과를 실제 로그인·수집 coordinator → SQLite → 표시 consumer/DB 재열기로 검증했다. 실제 서버 인증은 미실행이다.
 - 실제 Debug 앱에서 한·영 Client ID 미설정 안내, 비활성 인증 버튼, 취소/재열기를 확인했다. 12개 QA 계정과 미연결 상태를 보존했으며 usage·credential 정리 기록 0개였다. 등록된 client의 코드 표시·브라우저 승인 UI는 미검증이다.
 - 최종 Debug arm64·Release arm64/x86_64 앱/확장 빌드와 위젯 번들 검증이 통과했다. 원본 Android 718개 파일 변경/누락 0개와 프로젝트 재생성의 바이트·수정 시각 유지를 확인했다. 결과와 로그는 `artifacts/macos-20260917-copilot-oauth/verification.json`에 보관한다. 기존 위젯 렌더링 33개는 이번에 재실행하지 않았다. 등록 Client ID·Copilot API 권한, 실계정/MFA·만료·회전·강제 종료·업데이트, 장기 수집·서명·공증은 남아 있다.
+
+
+## Antigravity 브라우저 OAuth·토큰 갱신 검증
+
+- [Antigravity OAuth 계약](antigravity-oauth.ko.md)에 시스템 브라우저, Desktop client 설정, PKCE/state·loopback 수신기·scope·저장·갱신과 남은 경계를 기록했다. 등록 Client ID가 없으면 한영 연결 안내와 비활성 로그인 버튼을 표시한다. 실제 client 값은 설정하지 않았다.
+- 수신기는 127.0.0.1의 임시 포트에만 바인딩한다. state·Host·경로·메서드·중복/본문/요청 크기를 확인하고, 전체 5분·개별 연결 5초 제한과 완료/취소 시 종료를 구현했다. 잘못된 콜백이 정상 시도를 소비하지 않으며 코드는 한 번만 전달된다.
+- Google 숫자 ID·Antigravity 프로젝트·쿼터를 검증한 초기 토큰만 저장한다. 수집 전 앱 소유 만료 토큰을 같은 client로 갱신하고, 새 identity/프로젝트 확인 후 새 lease로 수집한다. 갱신 응답에서 생략된 refresh token·기존 절대 만료는 보존한다. 서버 회전과 로컬 저장의 원격 원자성은 보장하지 않는다.
+- 인증 37개(신규 6개), 수집 175개(신규 9개 함수와 매개변수 사례) 테스트가 통과했다. 실제 NWListener↔URLSession 콜백 → 합성 Google 전송 → 실제 로그인·수집 coordinator → SQLite → 표시 consumer와 DB 재열기를 확인했다. 원래 계정·프로젝트와 다른 응답, 잘못된 token/scope/HTTP, 만료 refresh, 취소/시간 초과와 실패 후 이전 사용량/다른 계정 보존을 검사했다.
+- 실제 Debug 앱에서 한영 미설정 안내, 비활성 시작 버튼, 취소·재열기를 확인했다. QA 계정 12개의 DB 행 전체가 동일하고 usage·credential 정리 기록 0개, SQLite integrity ok였다. Google 승인이나 실제 발급 토큰을 사용한 검증은 아니다.
+- Debug arm64·Release arm64/x86_64 앱/확장 빌드, 위젯 6종·한영·최소 macOS 14 번들 검증이 통과했다. 프로젝트 재생성의 바이트·수정 시각 유지, 원본 Android 718개 파일 변경/누락 0개를 확인했다. 로그와 SHA-256은 `artifacts/macos-20260917-antigravity-oauth/verification.json`에 보관한다. 코어 48개·위젯 렌더링 33개는 앞 단계 결과이며 이번에는 재실행하지 않았다.
+- 등록 Desktop client·내부 API 권한, Google 동의/MFA/passkey·실제 만료/회전·강제 종료·업데이트, 로컬 앱/agy, 60초/72시간 실측과 서명/공증은 남아 있다. 실제 설치/승인 화면이나 실계정 연결 성공을 합성 테스트로 대신 증명하지 않는다.

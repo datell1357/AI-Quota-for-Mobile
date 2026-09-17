@@ -62,7 +62,7 @@ for name in ['Debug', 'Release']:
         CODE_SIGN_ENTITLEMENTS='Configuration/App.entitlements', CODE_SIGN_STYLE='Automatic', DEVELOPMENT_TEAM='',
         ENABLE_HARDENED_RUNTIME='YES', COMBINE_HIDPI_IMAGES='YES', MARKETING_VERSION='0.1.0', CURRENT_PROJECT_VERSION='1',
         LD_RUNPATH_SEARCH_PATHS=['$(inherited)', '@executable_path/../Frameworks'],
-        AIQUOTA_GITHUB_OAUTH_CLIENT_ID='', GENERATE_INFOPLIST_FILE='NO')))
+        AIQUOTA_GITHUB_OAUTH_CLIENT_ID='', AIQUOTA_GOOGLE_OAUTH_CLIENT_ID='', AIQUOTA_GOOGLE_OAUTH_CLIENT_SECRET='', GENERATE_INFOPLIST_FILE='NO')))
 project_config_list = obj('project-configs', 'XCConfigurationList', buildConfigurations=project_configs, defaultConfigurationIsVisible='0', defaultConfigurationName='Release')
 app_config_list = obj('app-configs', 'XCConfigurationList', buildConfigurations=app_configs, defaultConfigurationIsVisible='0', defaultConfigurationName='Release')
 target = obj('app', 'PBXNativeTarget', buildConfigurationList=app_config_list, buildPhases=[sources_phase, frameworks_phase, resources_phase], buildRules=[], dependencies=[], name='AIQuota', packageProductDependencies=dependencies, productName='AI Quota', productReference=product, productType='com.apple.product-type.application')

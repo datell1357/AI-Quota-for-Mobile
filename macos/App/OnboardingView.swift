@@ -44,6 +44,9 @@ struct OnboardingView: View {
                                     if account.provider == .copilot {
                                         Button(model.text("연결", "Connect")) { model.sheet = .copilot(AccountSelection(id: account.id)) }
                                     }
+                                    if account.provider == .antigravity {
+                                        Button(model.text("연결", "Connect")) { model.sheet = .antigravity(AccountSelection(id: account.id)) }
+                                    }
                                     Button(model.text("설정", "Configure")) { model.sheet = .edit(AccountSelection(id: account.id)) }
                                 }.padding(8)
                             }

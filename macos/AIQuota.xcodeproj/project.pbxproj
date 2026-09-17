@@ -25,6 +25,26 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "7C732E04A3559B1714C5479D";
 		};
+		"A64EA89D30BB4C9E78B379A0" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/AntigravityLoginFlow.swift";
+			"sourceTree" = "<group>";
+		};
+		"9EA6AC7E1C83B0D3ED4709E0" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "A64EA89D30BB4C9E78B379A0";
+		};
+		"734BC00198BA78053CF157F6" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "App/AntigravityLoginSheet.swift";
+			"sourceTree" = "<group>";
+		};
+		"6E7A69FDBC2A2CB3D7C0F236" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "734BC00198BA78053CF157F6";
+		};
 		"BB6DE00DEED193CDBCAEA4A4" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -328,6 +348,8 @@
 			"children" = (
 				"6D4F49142DC0104DD5C68BE3",
 				"7C732E04A3559B1714C5479D",
+				"A64EA89D30BB4C9E78B379A0",
+				"734BC00198BA78053CF157F6",
 				"BB6DE00DEED193CDBCAEA4A4",
 				"C32D9506982C9B470216DA3E",
 				"9EF90001BBF272B1AD0EEC1B",
@@ -412,6 +434,8 @@
 			"files" = (
 				"055F6C90FF6969B20821A0F8",
 				"95520D9F2F3C5C703FBDD664",
+				"9EA6AC7E1C83B0D3ED4709E0",
+				"6E7A69FDBC2A2CB3D7C0F236",
 				"EF4FCA9E1F64B663A9ACE703",
 				"9FDB589A5FC673C5A6946B13",
 				"4DB7E088DD026CBACA7E5714",
@@ -505,6 +529,8 @@
 					"@executable_path/../Frameworks",
 				);
 				"AIQUOTA_GITHUB_OAUTH_CLIENT_ID" = "";
+				"AIQUOTA_GOOGLE_OAUTH_CLIENT_ID" = "";
+				"AIQUOTA_GOOGLE_OAUTH_CLIENT_SECRET" = "";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 			};
 		};
@@ -543,6 +569,8 @@
 					"@executable_path/../Frameworks",
 				);
 				"AIQUOTA_GITHUB_OAUTH_CLIENT_ID" = "";
+				"AIQUOTA_GOOGLE_OAUTH_CLIENT_ID" = "";
+				"AIQUOTA_GOOGLE_OAUTH_CLIENT_SECRET" = "";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 			};
 		};

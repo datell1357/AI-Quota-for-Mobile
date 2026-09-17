@@ -133,6 +133,11 @@ struct AccountDetailView: View {
                         model.sheet = .copilot(AccountSelection(id: account.id))
                     }.buttonStyle(.borderedProminent).accessibilityIdentifier("account.connectCopilot")
                 }
+                if account.provider == .antigravity {
+                    Button(model.text("Google에서 연결", "Connect with Google")) {
+                        model.sheet = .antigravity(AccountSelection(id: account.id))
+                    }.buttonStyle(.borderedProminent).accessibilityIdentifier("account.connectAntigravity")
+                }
                 if account.provider.supportsMultipleAccounts {
                     Button(model.text("\(account.provider.displayName) 계정 추가", "Add another \(account.provider.displayName) account")) {
                         Task { await model.addAccount(account.provider) }

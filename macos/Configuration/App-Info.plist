@@ -4,6 +4,10 @@
 <dict>
 	<key>AIQuotaGitHubOAuthClientID</key>
 	<string>$(AIQUOTA_GITHUB_OAUTH_CLIENT_ID)</string>
+	<key>AIQuotaGoogleOAuthClientID</key>
+	<string>$(AIQUOTA_GOOGLE_OAUTH_CLIENT_ID)</string>
+	<key>AIQuotaGoogleOAuthClientSecret</key>
+	<string>$(AIQUOTA_GOOGLE_OAUTH_CLIENT_SECRET)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>ko</string>
 	<key>CFBundleExecutable</key>

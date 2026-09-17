@@ -12,9 +12,9 @@ import WidgetKit
 
 struct AccountSelection: Identifiable { let id: UUID }
 enum DesktopSheet: Identifiable {
-    case providers, edit(AccountSelection), connect(AccountSelection), glmAPIKey(AccountSelection), copilot(AccountSelection), widgets
+    case providers, edit(AccountSelection), connect(AccountSelection), glmAPIKey(AccountSelection), copilot(AccountSelection), antigravity(AccountSelection), widgets
     var id: String {
-        switch self { case .providers: "providers"; case .edit(let account): "edit-\(account.id)"; case .connect(let account): "connect-\(account.id)"; case .glmAPIKey(let account): "glm-api-key-\(account.id)"; case .copilot(let account): "copilot-\(account.id)"; case .widgets: "widgets" }
+        switch self { case .providers: "providers"; case .edit(let account): "edit-\(account.id)"; case .connect(let account): "connect-\(account.id)"; case .glmAPIKey(let account): "glm-api-key-\(account.id)"; case .copilot(let account): "copilot-\(account.id)"; case .antigravity(let account): "antigravity-\(account.id)"; case .widgets: "widgets" }
     }
 }
 
@@ -52,6 +52,11 @@ private struct CollectorRegistry: UsageCollector {
     var copilotConfiguration: CopilotOAuthConfiguration? {
         guard let value = Bundle.main.object(forInfoDictionaryKey: "AIQuotaGitHubOAuthClientID") as? String else { return nil }
         return try? CopilotOAuthConfiguration(clientID: value)
+    }
+    var antigravityConfiguration: AntigravityOAuthConfiguration? {
+        guard let id = Bundle.main.object(forInfoDictionaryKey: "AIQuotaGoogleOAuthClientID") as? String else { return nil }
+        let secret = Bundle.main.object(forInfoDictionaryKey: "AIQuotaGoogleOAuthClientSecret") as? String
+        return try? AntigravityOAuthConfiguration(clientID: id, clientSecret: secret?.isEmpty == false ? secret : nil)
     }
     let webProfiles = IsolatedWebProfiles()
     private var coordinator: RefreshCoordinator?
@@ -103,9 +108,16 @@ private struct CollectorRegistry: UsageCollector {
             let copilotPreparation = copilotConfiguration.map {
                 CopilotSessionPreparation(login: login, authorization: CopilotDeviceAuthorization(configuration: $0))
             }
+            let antigravityPreparation = antigravityConfiguration.map {
+                AntigravitySessionPreparation(login: login, authorization: AntigravityOAuthClient(configuration: $0))
+            }
             let coordinator = RefreshCoordinator(repository: repository, collector: registry,
                 didUpdate: { [weak self] _ in await self?.reload() },
-                prepare: { account, lease in try await copilotPreparation?.prepare(account, lease) ?? false })
+                prepare: { account, lease in
+                    if account.provider == .copilot { return try await copilotPreparation?.prepare(account, lease) ?? false }
+                    if account.provider == .antigravity { return try await antigravityPreparation?.prepare(account, lease) ?? false }
+                    return false
+                })
             self.coordinator = coordinator
             if ProcessInfo.processInfo.arguments.contains("--data-directory") {
                 // An isolated QA run must never publish synthetic accounts into the real widget container.
