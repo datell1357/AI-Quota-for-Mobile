@@ -41,21 +41,9 @@ public struct CodexSubscriptionCollector: UsageCollector {
         if session.accessToken == nil, let cookie = session.cookieHeader {
             return try await CodexWebClient(transport: transport, now: now).collect(cookieHeader: cookie, expected: session.identity)
         }
-        var request = URLRequest(url: Self.endpoint, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 30)
-        request.setValue("Bearer \(try AuthenticatedSession.headerValue(session.accessToken))", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("AIQuota-macOS", forHTTPHeaderField: "User-Agent")
-        if let workspace = session.identity.workspace {
-            request.setValue(try AuthenticatedSession.headerValue(workspace), forHTTPHeaderField: "ChatGPT-Account-Id")
-        }
-        let response = try await transport.send(request)
-        try Task.checkCancellation()
-        let fetchedAt = now()
-        let data = try HTTPResponsePolicy.body(response, now: fetchedAt)
-        let decoded: CodexUsageResponse
-        do { decoded = try JSONDecoder().decode(CodexUsageResponse.self, from: data) }
-        catch { throw CollectorError.invalidResponse }
-        let report = try CodexBarBridge.codex(decoded, identity: session.identity, fetchedAt: fetchedAt)
-        return CollectionOutput(report: report, transferredBytes: data.count)
+        let output = try await CodexTokenUsageClient(transport: transport, now: now)
+            .collect(accessToken: AuthenticatedSession.headerValue(session.accessToken), expected: session.identity)
+        try await session.validateCurrentSource?()
+        return output
     }
 }

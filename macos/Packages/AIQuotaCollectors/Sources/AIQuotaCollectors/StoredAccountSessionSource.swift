@@ -5,8 +5,9 @@ import Foundation
 public struct StoredAccountSessionSource: AccountSessionSource {
     private let login: LoginCoordinator
     private let webProfiles: any WebCookieStore
-    public init(login: LoginCoordinator, webProfiles: any WebCookieStore) {
-        self.login = login; self.webProfiles = webProfiles
+    private let externalFiles: any CredentialFileReading
+    public init(login: LoginCoordinator, webProfiles: any WebCookieStore, externalFiles: any CredentialFileReading = ReadOnlyCredentialFile()) {
+        self.login = login; self.webProfiles = webProfiles; self.externalFiles = externalFiles
     }
     public func session(for account: Account, lease: CollectionLease) async throws -> AuthenticatedSession {
         guard account.id == lease.accountID, account.provider == lease.provider else { throw CoreError.identityMismatch }
@@ -20,6 +21,7 @@ public struct StoredAccountSessionSource: AccountSessionSource {
         var cookies: String?
         var token: String?
         var webCookies: WebCookieSession?
+        var validateSource: (@Sendable () async throws -> Void)?
         switch record.kind {
         case .oauth, .apiKey: token = record.secret
         case .webSession:
@@ -48,12 +50,18 @@ public struct StoredAccountSessionSource: AccountSessionSource {
                 catch { throw CollectorError.credentialsUnavailable }
             } else { cookies = record.secret }
         case .externalApplication:
-            // Local CLI/app adapters must verify the selected external source on every read.
-            // Do not silently substitute an active global CLI account.
-            throw CollectorError.unsupported
+            guard account.provider == .codex, record.owner == .codexCLI, let path = record.externalLocator else { throw CollectorError.unsupported }
+            let connection = CodexCLIConnection(files: externalFiles)
+            let selected = try await connection.read(path: path)
+            guard selected.identity == record.identity else { throw CoreError.identityMismatch }
+            token = selected.accessToken
+            validateSource = {
+                try await connection.validate(path: path, snapshot: selected)
+                try await login.validateCollection(lease)
+            }
         }
         return AuthenticatedSession(accountID: account.id, provider: account.provider, generation: lease.generation,
                                     sessionRevision: lease.sessionRevision, identity: record.identity,
-                                    cookieHeader: cookies, accessToken: token, webCookies: webCookies)
+                                    cookieHeader: cookies, accessToken: token, webCookies: webCookies, validateCurrentSource: validateSource)
     }
 }

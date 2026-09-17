@@ -41,6 +41,9 @@ struct OnboardingView: View {
                                     if WebLoginService(provider: account.provider) != nil {
                                         Button(model.text("연결", "Connect")) { model.sheet = .connect(AccountSelection(id: account.id)) }
                                     }
+                                    if account.provider == .codex {
+                                        Button("Codex CLI") { model.sheet = .codexCLI(AccountSelection(id: account.id)) }
+                                    }
                                     if account.provider == .copilot {
                                         Button(model.text("연결", "Connect")) { model.sheet = .copilot(AccountSelection(id: account.id)) }
                                     }

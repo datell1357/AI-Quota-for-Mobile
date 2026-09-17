@@ -19,6 +19,13 @@ Live authorization/API access and local app/CLI routes remain pending. See
 [Docs/antigravity-oauth.ko.md](Docs/antigravity-oauth.ko.md) for setup and verification boundaries, and
 [Docs/antigravity-api.ko.md](Docs/antigravity-api.ko.md) for the quota contract.
 
+Codex can also connect one explicitly selected CLI `auth.json` per account. It reads the file again
+for each collection, preserves CLI ownership of refresh, and discards results if the selected file
+or identity changes during a request. No CLI token copy is persisted. File-based ChatGPT sign-in is
+implemented; Keychain/secrets backends, memory-only modes and authenticated-account QA remain
+pending. See [Docs/codex-cli-connection.ko.md](Docs/codex-cli-connection.ko.md) for the service-authenticated
+identity boundary, regression evidence and remaining CLI routes.
+
 ## Regression data
 
 `Tests/Fixtures` contains synthetic Android regression payloads with expected remaining fractions

@@ -128,6 +128,11 @@ struct AccountDetailView: View {
                         model.sheet = .connect(AccountSelection(id: account.id))
                     }.buttonStyle(.borderedProminent).accessibilityIdentifier("account.connect")
                 }
+                if account.provider == .codex {
+                    Button(model.text("Codex CLI에서 연결", "Connect from Codex CLI")) {
+                        model.sheet = .codexCLI(AccountSelection(id: account.id))
+                    }.accessibilityIdentifier("account.connectCodexCLI")
+                }
                 if account.provider == .copilot {
                     Button(model.text("GitHub에서 연결", "Connect with GitHub")) {
                         model.sheet = .copilot(AccountSelection(id: account.id))

@@ -105,14 +105,16 @@ public struct AuthenticatedSession: Sendable, CustomStringConvertible, CustomDeb
     public let cookieHeader: String?
     public let accessToken: String?
     public let webCookies: WebCookieSession?
+    let validateCurrentSource: (@Sendable () async throws -> Void)?
     public var description: String { "AuthenticatedSession(redacted)" }
     public var debugDescription: String { description }
     public init(accountID: UUID, provider: ProviderID, generation: UUID, sessionRevision: UInt64,
-                identity: RemoteIdentity, cookieHeader: String? = nil, accessToken: String? = nil, webCookies: WebCookieSession? = nil) {
+                identity: RemoteIdentity, cookieHeader: String? = nil, accessToken: String? = nil, webCookies: WebCookieSession? = nil,
+                validateCurrentSource: (@Sendable () async throws -> Void)? = nil) {
         self.accountID = accountID; self.provider = provider; self.generation = generation
         self.sessionRevision = sessionRevision; self.identity = identity
         self.cookieHeader = cookieHeader; self.accessToken = accessToken
-        self.webCookies = webCookies
+        self.webCookies = webCookies; self.validateCurrentSource = validateCurrentSource
     }
     func validate(_ lease: CollectionLease) throws {
         guard accountID == lease.accountID, provider == lease.provider, generation == lease.generation,

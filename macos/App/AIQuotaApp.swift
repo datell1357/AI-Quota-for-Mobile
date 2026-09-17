@@ -52,6 +52,7 @@ private struct DesktopRoot<Content: View>: View {
                     case .glmAPIKey(let account): GLMAPIKeySheet(accountID: account.id, model: model)
                     case .copilot(let account): CopilotLoginSheet(accountID: account.id, model: model)
                     case .antigravity(let account): AntigravityLoginSheet(accountID: account.id, model: model)
+                    case .codexCLI(let account): CodexCLILoginSheet(accountID: account.id, model: model)
                     case .widgets: WidgetHelpView()
                     }
                 }.environment(model).preferredColorScheme(model.preferences.colorScheme)
