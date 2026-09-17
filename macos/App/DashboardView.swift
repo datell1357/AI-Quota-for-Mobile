@@ -128,6 +128,11 @@ struct AccountDetailView: View {
                         model.sheet = .connect(AccountSelection(id: account.id))
                     }.buttonStyle(.borderedProminent).accessibilityIdentifier("account.connect")
                 }
+                if account.provider == .claude {
+                    Button(model.text("Claude Code에서 연결", "Connect from Claude Code")) {
+                        model.sheet = .claudeCode(AccountSelection(id: account.id))
+                    }.accessibilityIdentifier("account.connectClaudeCode")
+                }
                 if account.provider == .codex {
                     Button(model.text("Codex CLI에서 연결", "Connect from Codex CLI")) {
                         model.sheet = .codexCLI(AccountSelection(id: account.id))

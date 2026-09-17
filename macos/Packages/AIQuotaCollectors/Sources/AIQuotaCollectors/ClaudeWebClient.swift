@@ -93,13 +93,19 @@ public struct ClaudeWebClient: Sendable {
 public struct ClaudeWebCollector: UsageCollector {
     private let sessions: any AccountSessionSource
     private let client: ClaudeWebClient
-    public init(sessions: any AccountSessionSource, client: ClaudeWebClient = ClaudeWebClient()) {
-        self.sessions = sessions; self.client = client
+    private let oauth: ClaudeOAuthClient
+    public init(sessions: any AccountSessionSource, client: ClaudeWebClient = ClaudeWebClient(), oauth: ClaudeOAuthClient = ClaudeOAuthClient()) {
+        self.sessions = sessions; self.client = client; self.oauth = oauth
     }
     public func collect(account: Account, lease: CollectionLease) async throws -> CollectionOutput {
         guard account.provider == .claude, lease.provider == .claude else { throw CoreError.identityMismatch }
         let session = try await sessions.session(for: account, lease: lease)
         try session.validate(lease)
+        if let token = session.accessToken {
+            let output = try await oauth.collect(accessToken: token, expected: session.identity)
+            try await session.validateCurrentSource?()
+            return output
+        }
         return try await client.scoped(to: session.webCookies).collect(cookieHeader: AuthenticatedSession.headerValue(session.cookieHeader), expected: session.identity)
     }
 }

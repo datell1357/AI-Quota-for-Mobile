@@ -26,6 +26,14 @@ implemented; Keychain/secrets backends, memory-only modes and authenticated-acco
 pending. See [Docs/codex-cli-connection.ko.md](Docs/codex-cli-connection.ko.md) for the service-authenticated
 identity boundary, regression evidence and remaining CLI routes.
 
+Claude Code can connect an explicitly chosen macOS Keychain service/account or `.credentials.json`.
+It keeps the CLI as credential owner, verifies the server account and organization before and after
+quota collection, and rereads the selected source without saving or refreshing token copies.
+Background Keychain reads never display authorization prompts. Native synthetic Keychain and UI
+checks passed; live Claude Code access and provider authentication remain unverified. See
+[Docs/claude-code-connection.ko.md](Docs/claude-code-connection.ko.md) for selection, ownership and
+verification boundaries.
+
 ## Regression data
 
 `Tests/Fixtures` contains synthetic Android regression payloads with expected remaining fractions

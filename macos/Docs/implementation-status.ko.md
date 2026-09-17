@@ -6,8 +6,8 @@
 | --- | --- | --- |
 | 0. 기능 계약 | 55 기준 전체 해시 대조, 10개 제공자 계약 및 12개 Android 회귀 입력 고정 | 추가 경계/실제 전송 형식 fixture, Swift consumer와 비교 |
 | 1. 기술 위험 | worktree·도구 준비, 고정 CodexBarCore 링크 및 GLM 번들 실행 확인 | 서명된 App Group, 두 Claude·두 Codex, Gemini/Grok/Antigravity 실제 로그인 |
-| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체, Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini/GLM 웹 수집 및 응답 쿠키 갱신, GLM API 키 수집, Copilot API·기기 인증/토큰 갱신(등록 Client ID 대기), Antigravity API·브라우저 OAuth/토큰 갱신(등록 Desktop client 대기), DB 교체 후 표시 파일 복구, 계정 제거·인증정보 정리 기록/재시도. Codex CLI 선택 파일 연결. 코어 48/인증 40/수집 181개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 강제 종료·업데이트 실측 |
-| 3. 사용자 기능 | 네이티브 앱·대시보드·메뉴 막대·온보딩·계정 편집·설정·Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini/GLM 로그인·GLM API 키·Copilot 기기 인증·Antigravity 브라우저 인증 연결 화면 구현(등록 ID 미설정 시 비활성), Codex CLI 파일 선택 연결. 실제 UI에서 미로그인/잘못된 입력 차단·취소·다시 열기 확인 | 나머지 로그인 UI, 실제 인증 성공, 메뉴 막대 팝오버 실제 클릭, 알림 전달/거부·자동 시작 검증 |
+| 2. 수집·저장 | 계정·SQLite·알림·표시 스냅샷·60초 scheduler, Keychain·격리 WebKit·로그인 교체, Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini/GLM 웹 수집 및 응답 쿠키 갱신, GLM API 키 수집, Copilot API·기기 인증/토큰 갱신(등록 Client ID 대기), Antigravity API·브라우저 OAuth/토큰 갱신(등록 Desktop client 대기), DB 교체 후 표시 파일 복구, 계정 제거·인증정보 정리 기록/재시도. Codex CLI 선택 파일·Claude Code Keychain/파일 연결. 코어 48/인증 42/수집 189개 테스트 통과 | 나머지 어댑터, 제공자별 인증/실계정 연동, 실제 전송·타이머 계측, 강제 종료·업데이트 실측 |
+| 3. 사용자 기능 | 네이티브 앱·대시보드·메뉴 막대·온보딩·계정 편집·설정·Claude/Codex/Cursor/Grok/OpenCode/Kiro/Gemini/GLM 로그인·GLM API 키·Copilot 기기 인증·Antigravity 브라우저 인증 연결 화면 구현(등록 ID 미설정 시 비활성), Codex CLI 파일·Claude Code Keychain/파일 선택 연결. 실제 UI에서 미로그인/잘못된 입력 차단·취소·다시 열기 확인 | 나머지 로그인 UI, 실제 인증 성공, 메뉴 막대 팝오버 실제 클릭, 알림 전달/거부·자동 시작 검증 |
 | 4. 위젯·패널 | 3종/6개 WidgetKit kind와 계정별 구성·딥링크, 고정 NSPanel 목록/배터리·계정 선택·창 복원 구현. 실제 앱 UI·네이티브 창 검사 통과 | 서명된 위젯 공유/갤러리·독립 인스턴스 실측, 접근성 환경·위젯 설정 동기화, 패널 장기 계측 |
 | 5. 장기 수집 | 미검증 | 72시간 이상, 절전·기상·재부팅·토큰 만료·업데이트 |
 | 6. 배포 | 미구현 | Developer ID·공증·DMG·새 사용자·이전 버전 업데이트 |
@@ -313,3 +313,15 @@
 - 실제 Debug 앱에서 한영 안내·미선택 차단·잘못된 파일명·손상된 합성 JSON 실패·취소/재진입·파일 선택 취소를 확인했다. 종료 후 QA 계정 12개의 DB 행 전체가 동일하고 usage·credential 정리 기록 0개, integrity ok였다. 두 합성 입력 파일의 해시·권한도 유지됐다.
 - Debug arm64·Release arm64/x86_64 앱/확장 빌드, 위젯 번들·프로젝트 재생성 바이트/수정 시각 유지, Android 원본 718개 파일 변경/누락 0개를 확인했다. 결과와 SHA-256은 `artifacts/macos-20260917-codex-cli/verification.json`에 보관한다. 코어 48개·위젯 렌더링 33개는 이전 결과이며 이번에 재실행하지 않았다.
 - 실계정 access token 형식과 서비스 인증·두 Codex 계정 동시 연결, 저장 방식별 호환·CLI 재로그인·강제 종료/업데이트, 나머지 로컬 앱 연결·60초/72시간 실측·서명/공증은 남아 있다.
+
+
+## Claude Code Keychain·파일 연결 검증
+
+- [Claude Code 연결 계약](claude-code-connection.ko.md)에 공식 문서·고정 소스·선택 범위와 검증 경계를 기록했다. 지정한 Keychain service/account 또는 `.credentials.json`만 읽으며 저장 경로 간 자동 대체나 원본 토큰 갱신은 하지 않는다.
+- 같은 Bearer로 서버 profile → usage → profile을 읽어 UUID 사용자/조직과 구독 상품을 확인한다. 로컬 이메일·플랜을 신원 근거로 사용하지 않는다. 기존 쿼터 decoder의 소수 값·단위는 유지하고 OAuth 지표 출처를 구분했다.
+- Keychain 조회는 정확히 일치한 항목 하나의 persistent reference를 사용한다. 실제 probe의 `errSecParam(-50)`을 재현해 여러 비밀 데이터를 한 번에 요청하던 조합을 수정했고, 합성 항목의 읽기·원본 보존·다른 계정 대체 없음이 통과했다. 배경 작업은 접근 창을 띄우지 않는다.
+- schema 1에 선택적 외부 Keychain 참조를 추가하고 기존 파일 연결 기록 호환성을 검증했다. 신원과 선택 위치만 저장하며 access/refresh token은 복사 저장하지 않는다. 수집 도중 원본 변경·계정 전환·만료·잠금·유실·취소·HTTP 오류에서 이전 값과 다른 계정을 보존한다.
+- 인증 42개·수집 189개 및 기존 GLM 리소스 실행이 통과했다. 두 합성 파일/Keychain 계정 → 로그인/수집 coordinator → SQLite → 표시 consumer/재열기를 확인했다. 신규 테스트의 Swift 동시성 매크로 오류를 수정한 뒤 최종 전체 회귀를 통과했다.
+- 실제 Debug 앱에서 한영 안내·잘못된 서비스/파일명·합성 미존재 Keychain 항목·손상된 JSON 실패·취소/재진입/파일 선택 취소를 확인했다. 정상 종료 후 12개 QA 계정 행 전체가 동일하고 usage·credential 정리 기록 0개, integrity ok, 입력 바이트/권한 유지였다. 실제 사용자 인증 정보는 읽지 않았다.
+- Debug arm64·Release arm64/x86_64 앱/확장 빌드, 위젯 번들·프로젝트 재생성 바이트/수정 시각·Android 718개 파일 변경/누락 0개를 확인했다. 결과는 `artifacts/macos-20260917-claude-code/verification.json`에 보관한다. 코어 48개·위젯 렌더링 33개는 이전 결과이며 이번에는 재실행하지 않았다.
+- 실계정 API·두 Claude 계정, 실제 Keychain 승인과 CLI의 ACL/토큰 교체·재로그인, 서명/업데이트 후 접근·장기 수집·배포 검증은 남아 있다. 나머지 로컬 앱·브라우저 연결을 포함한 전체 목표는 진행 중이다.

@@ -6,8 +6,10 @@ public struct StoredAccountSessionSource: AccountSessionSource {
     private let login: LoginCoordinator
     private let webProfiles: any WebCookieStore
     private let externalFiles: any CredentialFileReading
-    public init(login: LoginCoordinator, webProfiles: any WebCookieStore, externalFiles: any CredentialFileReading = ReadOnlyCredentialFile()) {
-        self.login = login; self.webProfiles = webProfiles; self.externalFiles = externalFiles
+    private let externalKeychain: any ExternalKeychainReading
+    public init(login: LoginCoordinator, webProfiles: any WebCookieStore, externalFiles: any CredentialFileReading = ReadOnlyCredentialFile(),
+                externalKeychain: any ExternalKeychainReading = ReadOnlyKeychainCredential()) {
+        self.login = login; self.webProfiles = webProfiles; self.externalFiles = externalFiles; self.externalKeychain = externalKeychain
     }
     public func session(for account: Account, lease: CollectionLease) async throws -> AuthenticatedSession {
         guard account.id == lease.accountID, account.provider == lease.provider else { throw CoreError.identityMismatch }
@@ -50,6 +52,17 @@ public struct StoredAccountSessionSource: AccountSessionSource {
                 catch { throw CollectorError.credentialsUnavailable }
             } else { cookies = record.secret }
         case .externalApplication:
+            if account.provider == .claude, record.owner == .claudeCode {
+                let source = try ClaudeCodeSource(record: record)
+                let connection = ClaudeCodeConnection(files: externalFiles, keychain: externalKeychain)
+                let selected = try await connection.read(source)
+                token = selected.accessToken
+                validateSource = {
+                    try await connection.validate(source, snapshot: selected)
+                    try await login.validateCollection(lease)
+                }
+                break
+            }
             guard account.provider == .codex, record.owner == .codexCLI, let path = record.externalLocator else { throw CollectorError.unsupported }
             let connection = CodexCLIConnection(files: externalFiles)
             let selected = try await connection.read(path: path)

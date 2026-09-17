@@ -3,7 +3,8 @@ import AIQuotaCore
 import Foundation
 
 // A dedicated, random service ensures the probe never touches existing user credentials.
-let vault = KeychainCredentialVault(service: "com.aiquota.macos.validation.\(UUID().uuidString)")
+let probeService = "com.aiquota.macos.validation.\(UUID().uuidString)"
+let vault = KeychainCredentialVault(service: probeService)
 let reference = UUID()
 var created = false
 var lifecycleReferences: [UUID] = []
@@ -15,6 +16,16 @@ do {
     guard read.accountID == record.accountID, read.secret == record.secret else {
         throw AuthenticationError.invalidCredential
     }
+    let externalReader = ReadOnlyKeychainCredential()
+    let selected = try ExternalKeychainReference(service: probeService, account: reference.uuidString)
+    let externalData = try await externalReader.read(selected, allowInteraction: false)
+    let externalRecord = try JSONDecoder().decode(CredentialRecord.self, from: externalData)
+    guard externalRecord.accountID == record.accountID, externalRecord.secret == record.secret,
+          try await vault.read(reference).secret == record.secret else { throw AuthenticationError.invalidCredential }
+    let missing = try ExternalKeychainReference(service: probeService, account: UUID().uuidString)
+    do { _ = try await externalReader.read(missing, allowInteraction: false); throw AuthenticationError.invalidCredential }
+    catch AuthenticationError.missingCredential { }
+    print("Read-only exact Keychain service/account query verified; source preserved and unrelated account not substituted")
     try await vault.remove(reference); created = false
     do { _ = try await vault.read(reference); throw AuthenticationError.invalidCredential }
     catch AuthenticationError.missingCredential { }

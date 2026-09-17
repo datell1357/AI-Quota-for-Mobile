@@ -23,7 +23,7 @@ public enum ClaudeUsageDecoder {
         let monthly_credit_limit: Double?
         let utilization: Double?
     }
-    public static func decode(_ data: Data, identity: RemoteIdentity, fetchedAt: Date, plan: String? = nil) throws -> UsageReport {
+    public static func decode(_ data: Data, identity: RemoteIdentity, fetchedAt: Date, plan: String? = nil, source: MetricSource = .webAPI) throws -> UsageReport {
         guard identity.product == "claude-subscription", identity.workspace != nil else { throw CoreError.identityMismatch }
         do {
             guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw CollectorError.invalidResponse }
@@ -39,10 +39,10 @@ public enum ClaudeUsageDecoder {
                     guard used.isFinite, used >= 0 else { throw CollectorError.invalidResponse }
                     metrics.append(try UsageMetric(id: definition.id, label: definition.label, period: key == "five_hour" ? "5h" : "7d",
                                                    remainingFraction: max(0, 1 - used / 100), used: used, limit: 100,
-                                                   resetsAt: reset, source: .webAPI))
+                                                   resetsAt: reset, source: source))
                 } else {
                     metrics.append(try UsageMetric(id: definition.id, label: definition.label, period: key == "five_hour" ? "5h" : "7d",
-                                                   status: .unknown, resetsAt: reset, source: .webAPI, accuracy: .unknown))
+                                                   status: .unknown, resetsAt: reset, source: source, accuracy: .unknown))
                 }
             }
             if let raw = json["limits"], !(raw is NSNull) {
@@ -58,10 +58,10 @@ public enum ClaudeUsageDecoder {
                     if let used = item.percent {
                         guard used.isFinite, used >= 0 else { throw CollectorError.invalidResponse }
                         metrics.append(try UsageMetric(id: id, label: name, period: "7d", remainingFraction: max(0, 1 - used / 100),
-                                                       used: used, limit: 100, resetsAt: reset, source: .webAPI))
+                                                       used: used, limit: 100, resetsAt: reset, source: source))
                     } else {
                         metrics.append(try UsageMetric(id: id, label: name, period: "7d", status: .unknown,
-                                                       resetsAt: reset, source: .webAPI, accuracy: .unknown))
+                                                       resetsAt: reset, source: source, accuracy: .unknown))
                     }
                 }
             }
@@ -71,14 +71,14 @@ public enum ClaudeUsageDecoder {
                     if let limit = extra.monthly_limit ?? extra.monthly_credit_limit, let used = extra.used_credits, limit > 0 {
                         guard limit.isFinite, used.isFinite, used >= 0 else { throw CollectorError.invalidResponse }
                         metrics.append(try UsageMetric(id: "claude:extra_usage", label: "Claude Extra usage", period: "month", unit: "credits",
-                                                       remainingFraction: max(0, 1 - used / limit), used: used, limit: limit, source: .webAPI))
+                                                       remainingFraction: max(0, 1 - used / limit), used: used, limit: limit, source: source))
                     } else if let used = extra.utilization {
                         guard used.isFinite, used >= 0 else { throw CollectorError.invalidResponse }
                         metrics.append(try UsageMetric(id: "claude:extra_usage", label: "Claude Extra usage", period: "month",
-                                                       remainingFraction: max(0, 1 - used / 100), used: used, limit: 100, source: .webAPI))
+                                                       remainingFraction: max(0, 1 - used / 100), used: used, limit: 100, source: source))
                     } else {
                         metrics.append(try UsageMetric(id: "claude:extra_usage", label: "Claude Extra usage", period: "month",
-                                                       status: .unknown, source: .webAPI, accuracy: .unknown))
+                                                       status: .unknown, source: source, accuracy: .unknown))
                     }
                 }
             }

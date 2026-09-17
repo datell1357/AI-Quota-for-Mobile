@@ -24,17 +24,19 @@ public struct CredentialRecord: Codable, Sendable, CustomStringConvertible, Cust
     public let refreshExpiresAt: Date?
     public let webProfileID: UUID?
     public let externalLocator: String?
+    public let externalKeychain: ExternalKeychainReference?
     public var description: String { "CredentialRecord(redacted)" }
     public var debugDescription: String { description }
 
     public init(accountID: UUID, provider: ProviderID, identity: RemoteIdentity, kind: CredentialKind,
                 owner: CredentialOwner = .aiQuota, secret: String? = nil, refreshToken: String? = nil,
                 expiresAt: Date? = nil, webProfileID: UUID? = nil, externalLocator: String? = nil,
-                oauthClientID: String? = nil, refreshExpiresAt: Date? = nil) throws {
+                oauthClientID: String? = nil, refreshExpiresAt: Date? = nil,
+                externalKeychain: ExternalKeychainReference? = nil) throws {
         schemaVersion = 1; self.accountID = accountID; self.provider = provider; self.identity = identity
         self.kind = kind; self.owner = owner; self.secret = secret; self.refreshToken = refreshToken
         self.expiresAt = expiresAt; self.webProfileID = webProfileID; self.externalLocator = externalLocator
-        self.oauthClientID = oauthClientID; self.refreshExpiresAt = refreshExpiresAt
+        self.oauthClientID = oauthClientID; self.refreshExpiresAt = refreshExpiresAt; self.externalKeychain = externalKeychain
         try validate()
     }
     public func validate() throws {
@@ -55,6 +57,11 @@ public struct CredentialRecord: Codable, Sendable, CustomStringConvertible, Cust
             guard kind == .oauth, refreshToken != nil,
                   (-62_135_596_800...253_402_300_799).contains(refreshExpiresAt.timeIntervalSince1970) else { throw AuthenticationError.invalidCredential }
         }
+        if let externalKeychain {
+            try externalKeychain.validate()
+            guard kind == .externalApplication, provider == .claude, owner == .claudeCode,
+                  externalLocator == nil else { throw AuthenticationError.invalidCredential }
+        }
         switch kind {
         case .oauth:
             guard owner == .aiQuota, secret != nil, webProfileID == nil, externalLocator == nil else { throw AuthenticationError.invalidCredential }
@@ -64,7 +71,7 @@ public struct CredentialRecord: Codable, Sendable, CustomStringConvertible, Cust
             guard owner == .aiQuota, secret != nil || webProfileID != nil, refreshToken == nil, externalLocator == nil else { throw AuthenticationError.invalidCredential }
         case .externalApplication:
             guard owner != .aiQuota, secret == nil, refreshToken == nil, webProfileID == nil,
-                  externalLocator?.hasPrefix("/") == true else { throw AuthenticationError.invalidCredential }
+                  (externalLocator?.hasPrefix("/") == true || externalKeychain != nil) else { throw AuthenticationError.invalidCredential }
         }
     }
     public var authenticationMethod: AuthenticationMethod {
