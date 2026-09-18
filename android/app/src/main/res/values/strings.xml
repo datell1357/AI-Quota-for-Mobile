@@ -21,8 +21,8 @@
     <string name="settings_status_bar_gauges">Status bar notification</string>
     <string name="settings_status_bar_gauges_description">Remaining AI usage is available from the notification shade.</string>
     <string name="settings_claude_auto_reset_prime_title">Auto wake-up</string>
-    <string name="settings_claude_auto_reset_prime_description">Sends a message to start the timer.</string>
-    <string name="settings_claude_auto_reset_prime_unavailable">Auto wake-up is not yet supported in multi-account mode. Usage auto-refresh is separate: enable Status bar notification in app settings.</string>
+    <string name="settings_claude_auto_reset_prime_description">After the 5-hour reset, sends a short message from this account to start the timer.</string>
+    <string name="settings_claude_auto_reset_prime_hint">Uses a small amount of quota. Background refresh must be enabled.</string>
     <string name="settings_notifications_permission_required">Android notifications are off for AI Quota. Turn them on to show the status bar notification.</string>
     <string name="settings_open_notification_settings">Open notification settings</string>
     <string name="settings_battery_optimization_title">Battery optimization</string>
@@ -156,9 +156,9 @@
     <string name="provider_rename_error_inactive">This card is no longer active.</string>
     <string name="provider_usage_color_button">Change color</string>
     <string name="provider_reset_notification_setting_title">Reset alerts</string>
-    <string name="provider_reset_notification_setting_description">Get notified when usage resets.</string>
     <string name="provider_usage_threshold_setting_title">Usage alerts</string>
-    <string name="provider_usage_threshold_setting_description">Get notified when remaining usage\ndrops below a threshold.</string>
+    <string name="provider_usage_threshold_setting_description">Get notified when remaining usage drops below the threshold.</string>
+    <string name="provider_usage_threshold_input_label">Threshold</string>
     <string name="provider_usage_threshold_percent_label">%</string>
     <string name="provider_usage_color_title">Gauge color</string>
     <string name="provider_usage_color_input_label">Hex or RGB code</string>
@@ -179,7 +179,7 @@
     <string name="provider_status_connecting">Connecting</string>
     <string name="provider_status_collecting">Collecting usage</string>
     <string name="provider_status_connected">Connected</string>
-    <string name="provider_status_stale">Connected</string>
+    <string name="provider_status_stale">Refresh delayed</string>
     <string name="provider_status_coming_soon">Coming soon</string>
     <string name="provider_status_auth_required">Connection needs attention</string>
     <string name="provider_status_error">Error</string>
@@ -245,4 +245,14 @@
     <string name="dashboard_view_mode_card">Card view</string>
     <string name="dashboard_view_mode_switch_to_card">Switch to card view</string>
     <string name="dashboard_view_mode_switch_to_list">Switch to list view</string>
+    <string name="widget_configure_accounts_title">Accounts</string>
+    <string name="widget_select_max_six">Please select up to 6 accounts.</string>
+    <string name="provider_select_all">Select all</string>
+    <string name="provider_clear_all">Deselect all</string>
+    <string name="onboarding_title">Welcome to AI Quota</string>
+    <string name="onboarding_intro">Check your AI usage in one place.</string>
+    <string name="onboarding_connect">1. Choose your providers, then sign in to each account. Selecting a provider does not sign you in.</string>
+    <string name="onboarding_widgets">2. Check remaining usage in the app or add widgets to your home screen.</string>
+    <string name="onboarding_refresh">3. Enable Live Refresh for background updates. We will guide you through notification and battery settings when needed.</string>
+    <string name="onboarding_choose">Choose providers</string>
 </resources>
