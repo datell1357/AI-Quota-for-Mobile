@@ -17,14 +17,23 @@ class ProviderUsageFreshnessTest {
     }
 
     @Test
-    fun staleWithLinesIsDisplayedAsFreshLastKnownUsage() {
+    fun staleWithLinesKeepsLastKnownUsageAndShowsDelay() {
         val snapshot = snapshot(ProviderConnectionState.STALE, updatedAt = "2026-05-21T00:00:00Z")
 
         assertEquals(
-            ProviderUsageFreshness.FRESH,
+            ProviderUsageFreshness.STALE,
             snapshot.usageFreshness(now = Instant.parse("2026-05-21T00:01:00Z"))
         )
-        assertEquals(false, snapshot.hasLastKnownUsage(now = Instant.parse("2026-05-21T00:01:00Z")))
+        assertTrue(snapshot.hasLastKnownUsage(now = Instant.parse("2026-05-21T00:01:00Z")))
+    }
+
+    @Test
+    fun oldConnectedUsageIsDelayedWithoutChangingTheStoredSessionOrValues() {
+        val snapshot = snapshot(ProviderConnectionState.CONNECTED)
+        assertEquals(ProviderUsageFreshness.FRESH, snapshot.usageFreshness(Instant.parse("2026-05-21T00:09:59Z")))
+        assertEquals(ProviderUsageFreshness.STALE, snapshot.usageFreshness(Instant.parse("2026-05-21T00:10:00Z")))
+        assertEquals(ProviderConnectionState.CONNECTED, snapshot.connectionState)
+        assertEquals(0.5f, snapshot.lines.single().remainingPercent)
     }
 
     @Test

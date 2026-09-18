@@ -1,6 +1,7 @@
 package com.aiquota.mobile.notification
 
 import android.content.Context
+import android.app.NotificationManager
 import com.aiquota.mobile.accounts.AccountGeneration
 import com.aiquota.mobile.accounts.DisplayVersion
 import com.aiquota.mobile.accounts.ProviderAccountId
@@ -152,41 +153,50 @@ internal class ProviderPostedNotificationRepository(context: Context) {
 }
 
 object ProviderNotificationAliasUpdater {
-    fun update(context: Context, card: ProviderCardNotificationSnapshot): Int =
-        ProviderPostedNotificationRepository(context).readExact(card.accountId).count { posted ->
-            when (posted) {
-                is PostedProviderNotification.Reset -> {
-                    val event = posted.event
-                    if (event.alias == card.alias && event.generation == card.generation &&
-                        event.sessionRevision == card.sessionRevision && event.version == card.version
-                    ) return@count false
-                    ProviderResetNotificationController.notifyReset(
-                        context,
-                        event.copy(
-                            alias = card.alias,
-                            generation = card.generation,
-                            sessionRevision = card.sessionRevision,
-                            version = card.version,
-                        ),
-                        true,
-                    ) != null
-                }
-                is PostedProviderNotification.Threshold -> {
-                    val event = posted.event
-                    if (event.alias == card.alias && event.generation == card.generation &&
-                        event.sessionRevision == card.sessionRevision && event.version == card.version
-                    ) return@count false
-                    ProviderUsageThresholdNotificationController.notifyLowUsage(
-                        context,
-                        event.copy(
-                            alias = card.alias,
-                            generation = card.generation,
-                            sessionRevision = card.sessionRevision,
-                            version = card.version,
-                        ),
-                        true,
-                    ) != null
-                }
-            }
+    fun update(context: Context, card: ProviderCardNotificationSnapshot): Int = update(context, card) { posted ->
+        when (posted) {
+            is PostedProviderNotification.Reset -> ProviderResetNotificationController.notifyReset(context, posted.event, true) != null
+            is PostedProviderNotification.Threshold -> ProviderUsageThresholdNotificationController.notifyLowUsage(context, posted.event, true) != null
         }
+    }
+
+    internal fun update(
+        context: Context,
+        card: ProviderCardNotificationSnapshot,
+        post: (PostedProviderNotification) -> Boolean,
+    ): Int {
+        // Stored metadata outlives an Android dismissal. Never recreate a dismissed alert just
+        // because a newer usage snapshot changed its version or the account was renamed.
+        val active = context.getSystemService(NotificationManager::class.java).activeNotifications
+            .map { it.tag to it.id }.toSet()
+        if (active.isEmpty()) return 0
+        val identities = ProviderNotificationIdentityRepository(context).identitiesExact(card.accountId)
+            .associateBy { it.kind to it.accountLineKey }
+        return ProviderPostedNotificationRepository(context).readExact(card.accountId).count { posted ->
+            val kindAndKey = when (posted) {
+                is PostedProviderNotification.Reset -> ProviderNotificationKind.RESET to posted.event.accountLineKey
+                is PostedProviderNotification.Threshold -> ProviderNotificationKind.THRESHOLD to posted.event.accountLineKey
+            }
+            val identity = identities[kindAndKey] ?: return@count false
+            if ((identity.tag to identity.notificationId) !in active) return@count false
+            val updated = when (posted) {
+                is PostedProviderNotification.Reset -> PostedProviderNotification.Reset(posted.event.copy(
+                    alias = card.alias, generation = card.generation, sessionRevision = card.sessionRevision, version = card.version))
+                is PostedProviderNotification.Threshold -> PostedProviderNotification.Threshold(posted.event.copy(
+                    alias = card.alias, generation = card.generation, sessionRevision = card.sessionRevision, version = card.version))
+            }
+            if (updated == posted) return@count false
+            if (updated.alias == posted.alias) {
+                // Update the action without reposting and changing the alert timestamp/order.
+                if (updated is PostedProviderNotification.Reset) {
+                    val event = updated.event
+                    ProviderNotificationResetActionIntent.pendingIntent(context, identity,
+                        ProviderNotificationResetAction(event.accountLineKey, event.version,
+                            event.generation, event.sessionRevision))
+                }
+                ProviderPostedNotificationRepository(context).save(updated)
+                false
+            } else post(updated)
+        }
+    }
 }

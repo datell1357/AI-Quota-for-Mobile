@@ -13,6 +13,7 @@ data class ThresholdNotificationEvaluation(
 
 /** Exact-card low-usage transition policy. */
 object ProviderUsageThresholdNotificationPolicy {
+    private const val REARM_MARGIN_PERCENT = 3
     data class Result(
         val notifications: List<ProviderUsageThresholdNotification>,
         val armed: Map<ProviderAccountLineKey, Boolean>,
@@ -36,7 +37,10 @@ object ProviderUsageThresholdNotificationPolicy {
                 val remaining = line.remainingPercent ?: return@forEachIndexed
                 val key = runCatching { ProviderAccountLineKey(card.accountId, line.key) }.getOrNull()
                     ?: return@forEachIndexed
-                val isLow = remaining.coerceIn(0f, 1f) * 100f <= threshold.toFloat()
+                if (!remaining.isFinite()) return@forEachIndexed
+                val ratio = remaining.coerceIn(0f, 1f)
+                val isLow = ratio <= threshold / 100f
+                val recovered = ratio >= (threshold + REARM_MARGIN_PERCENT).coerceAtMost(100) / 100f
                 if (key !in armed) {
                     armed[key] = !isLow
                     return@forEachIndexed
@@ -54,7 +58,7 @@ object ProviderUsageThresholdNotificationPolicy {
                         disambiguateAccount = card.accountId in accountsNeedingAlias,
                     )
                     armed[key] = false
-                } else if (!isLow) {
+                } else if (recovered) {
                     armed[key] = true
                 }
             }

@@ -1,4 +1,4 @@
-﻿package com.aiquota.mobile.notification
+package com.aiquota.mobile.notification
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -11,6 +11,12 @@ import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.os.Build
 import android.view.View
+import android.util.Log
+import com.aiquota.mobile.BuildConfig
+import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
+import com.aiquota.mobile.local.ProviderCardPreferencesRepository
+import com.aiquota.mobile.widget.ProviderWidgetCardCatalog
+import org.json.JSONObject
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -23,7 +29,7 @@ import com.aiquota.mobile.ui.provider.providerIconRes as sharedProviderIconRes
 import com.aiquota.mobile.widget.WidgetSnapshotCache
 
 object UsageLimitNotificationController {
-    private const val CHANNEL_ID = "usage_limits"
+    internal const val CHANNEL_ID = "usage_limits"
     private const val LIVE_REFRESH_ISSUE_CHANNEL_ID = "live_refresh_health"
     const val NOTIFICATION_ID = 1001
     const val LIVE_REFRESH_ISSUE_NOTIFICATION_ID = 1002
@@ -47,8 +53,23 @@ object UsageLimitNotificationController {
     }
 
     fun canPostNotifications(context: Context): Boolean {
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        return NotificationManagerCompat.from(context).areNotificationsEnabled() &&
+            (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED)
+    }
+
+    internal fun canShowStatusNotification(context: Context): Boolean =
+        canPostNotifications(context) && isChannelEnabled(context, CHANNEL_ID)
+
+    internal fun isChannelEnabled(context: Context, channelId: String): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return true
+        val manager = context.getSystemService(NotificationManager::class.java)
+        val channel = manager.getNotificationChannel(channelId) ?: return true
+        if (channel.importance == NotificationManager.IMPORTANCE_NONE) return false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && channel.group != null) {
+            if (manager.getNotificationChannelGroup(channel.group)?.isBlocked == true) return false
+        }
+        return true
     }
 
     fun shouldRequestNotificationPermissionOnLaunch(context: Context): Boolean {
@@ -87,7 +108,7 @@ object UsageLimitNotificationController {
 
         runCatching {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
-        }
+        }.onFailure { error -> Log.w("AIQuotaUsageNotification", "Usage notification update failed", error) }
     }
 
     fun cancel(context: Context) {
@@ -184,7 +205,10 @@ object UsageLimitNotificationController {
     private fun remoteViews(context: Context, content: UsageNotificationContent): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.notification_usage_gauges)
         views.setOnClickPendingIntent(R.id.notification_settings_button, settingsIntent(context))
-        val rows = rowIds()
+        val allRows = rowIds()
+        // The layout stores two vertical columns; fill each visual row left to right.
+        val rows = allRows.take(6).zip(allRows.drop(6)).flatMap { (left, right) -> listOf(left, right) }
+        allRows.forEach { views.setViewVisibility(it.containerId, View.GONE) }
         content.gaugeRows.forEachIndexed { index, gauge ->
             val row = rows[index]
             views.setViewVisibility(row.containerId, View.VISIBLE)
@@ -193,9 +217,6 @@ object UsageLimitNotificationController {
             views.setProgressBar(row.progressId, 100, (gauge.remainingRatio * 100).toInt().coerceIn(0, 100), false)
             views.setTextViewText(row.remainingTextId, gauge.remainingText)
             views.setTextViewText(row.resetTextId, gauge.resetText)
-        }
-        for (index in content.gaugeRows.size until rows.size) {
-            views.setViewVisibility(rows[index].containerId, View.GONE)
         }
         if (content.updateMessage == null) {
             views.setViewVisibility(R.id.notification_update_status, View.GONE)
@@ -249,17 +270,29 @@ object UsageLimitNotificationController {
         }
     }
 
-    private fun buildUsageNotificationContentForContext(
+    internal fun buildUsageNotificationContentForContext(
         context: Context,
         snapshotJson: String
     ): UsageNotificationContent {
+        val notificationSnapshot = if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
+            val raw = ProviderWidgetCardCatalog.authoritativeSnapshotJson(context)
+            val root = runCatching { JSONObject(raw) }.getOrElse { JSONObject() }
+            val providers = root.optJSONArray("providers")
+            val preferences = ProviderCardPreferencesRepository(context)
+            for (index in 0 until (providers?.length() ?: 0)) {
+                val provider = providers?.optJSONObject(index) ?: continue
+                val accountId = ProviderAccountIdStorageCodec.decodeOrNull(provider.optString("accountId")) ?: continue
+                preferences.providerGaugeColor(accountId)?.let { provider.put("gaugeColor", it) }
+            }
+            root.toString()
+        } else snapshotJson
         val updateMessage = if (AppUpdateStateStore.isUpdateAvailable(context)) {
             context.getString(R.string.app_update_status_bar_text)
         } else {
             null
         }
         return buildUsageNotificationContent(
-            snapshotJson = snapshotJson,
+            snapshotJson = notificationSnapshot,
             updateMessage = updateMessage
         )
     }
@@ -273,7 +306,11 @@ object UsageLimitNotificationController {
             NotificationGaugeRow(R.id.notification_row_4, R.id.notification_icon_4, R.id.notification_progress_4, R.id.notification_remaining_4, R.id.notification_reset_4),
             NotificationGaugeRow(R.id.notification_row_5, R.id.notification_icon_5, R.id.notification_progress_5, R.id.notification_remaining_5, R.id.notification_reset_5),
             NotificationGaugeRow(R.id.notification_row_6, R.id.notification_icon_6, R.id.notification_progress_6, R.id.notification_remaining_6, R.id.notification_reset_6),
-            NotificationGaugeRow(R.id.notification_row_7, R.id.notification_icon_7, R.id.notification_progress_7, R.id.notification_remaining_7, R.id.notification_reset_7)
+            NotificationGaugeRow(R.id.notification_row_7, R.id.notification_icon_7, R.id.notification_progress_7, R.id.notification_remaining_7, R.id.notification_reset_7),
+            NotificationGaugeRow(R.id.notification_row_8, R.id.notification_icon_8, R.id.notification_progress_8, R.id.notification_remaining_8, R.id.notification_reset_8),
+            NotificationGaugeRow(R.id.notification_row_9, R.id.notification_icon_9, R.id.notification_progress_9, R.id.notification_remaining_9, R.id.notification_reset_9),
+            NotificationGaugeRow(R.id.notification_row_10, R.id.notification_icon_10, R.id.notification_progress_10, R.id.notification_remaining_10, R.id.notification_reset_10),
+            NotificationGaugeRow(R.id.notification_row_11, R.id.notification_icon_11, R.id.notification_progress_11, R.id.notification_remaining_11, R.id.notification_reset_11)
         )
     }
 

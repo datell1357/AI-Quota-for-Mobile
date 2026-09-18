@@ -9,9 +9,12 @@ import com.aiquota.mobile.accounts.ProviderCardDisplayRecord
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderCardPreferencesRepository
 import com.aiquota.mobile.local.ProviderPreferencesRepository
+import com.aiquota.mobile.local.ProviderUsageFreshness
+import com.aiquota.mobile.local.usageFreshness
 import com.aiquota.mobile.notification.ProviderNotificationAliasUpdater
 import com.aiquota.mobile.notification.ProviderResetNotificationController
 import com.aiquota.mobile.notification.ProviderUsageThresholdNotificationController
+import java.time.Instant
 
 internal data class ProviderCardNotificationRuntimeResult(
     val resetCount: Int,
@@ -42,6 +45,17 @@ internal object ProviderCardNotificationRuntime {
                 record.snapshot,
             )
         }
+        evaluateCards(appContext, cards, multiAccountEnabled)
+    }
+
+    internal fun evaluateCards(
+        appContext: Context,
+        cards: List<ProviderCardNotificationSnapshot>,
+        multiAccountEnabled: Boolean,
+        now: Instant = Instant.now(),
+        postReset: (ProviderResetNotification) -> Boolean = { ProviderResetNotificationController.notifyReset(appContext, it) != null },
+        postThreshold: (ProviderUsageThresholdNotification) -> Boolean = { ProviderUsageThresholdNotificationController.notifyLowUsage(appContext, it) != null },
+    ): ProviderCardNotificationRuntimeResult = synchronized(LOCK) {
         if (cards.isEmpty()) return@synchronized ProviderCardNotificationRuntimeResult(0, 0)
         cards.forEach { card -> ProviderNotificationAliasUpdater.update(appContext, card) }
 
@@ -64,40 +78,64 @@ internal object ProviderCardNotificationRuntime {
         }
 
         val resetState = ProviderResetNotificationStateRepository(appContext)
+        val oldPending = resetState.readExactPending()
+        val oldNotified = resetState.readExactNotified()
         val reset = ProviderResetNotificationPolicy.evaluate(
             ResetNotificationEvaluation(
                 cards,
                 resetEnabled,
-                resetState.readExactPending(),
-                resetState.readExactNotified(),
+                oldPending,
+                oldNotified,
+                now,
             )
         )
-        val postedReset = if (resetState.writeExact(reset.pending, reset.notified)) {
-            reset.notifications.count { ProviderResetNotificationController.notifyReset(appContext, it) != null }
-        } else {
-            0
+        val pending = reset.pending.toMutableMap()
+        val notified = reset.notified.toMutableMap()
+        var postedReset = 0
+        reset.notifications.forEach { event ->
+            val key = event.accountLineKey
+            val boundary = reset.notified.getValue(key)
+            // Expire old missed resets; permission restoration must not replay an old backlog.
+            if (now.toEpochMilli() - boundary > MAX_RESET_DELIVERY_AGE_MILLIS) return@forEach
+            if (runCatching { postReset(event) }.getOrDefault(false)) {
+                postedReset++
+            } else {
+                // Keep watching the undelivered boundary even when the provider reports its next one.
+                oldPending[key]?.let { pending[key] = it }
+                oldNotified[key]?.let { notified[key] = it } ?: notified.remove(key)
+            }
+        }
+        if (!resetState.writeExact(pending, notified)) {
+            android.util.Log.w("AIQuotaNotification", "Reset delivery state persistence failed")
         }
 
         val thresholdState = ProviderUsageThresholdNotificationStateRepository(appContext)
         val threshold = ProviderUsageThresholdNotificationPolicy.evaluate(
             ThresholdNotificationEvaluation(
-                cards,
+                cards.filter { it.snapshot.usageFreshness(now) == ProviderUsageFreshness.FRESH },
                 thresholdEnabled,
                 thresholdPercents,
                 thresholdState.readExactArmed(),
             )
         )
-        val postedThreshold = if (thresholdState.writeExactArmed(threshold.armed)) {
-            threshold.notifications.count {
-                ProviderUsageThresholdNotificationController.notifyLowUsage(appContext, it) != null
+        val armed = threshold.armed.toMutableMap()
+        var postedThreshold = 0
+        threshold.notifications.forEach { event ->
+            if (runCatching { postThreshold(event) }.getOrDefault(false)) {
+                postedThreshold++
+            } else {
+                // Retry against the latest quota. A blocked/failed post is not a delivered alert.
+                armed[event.accountLineKey] = true
             }
-        } else {
-            0
+        }
+        if (!thresholdState.writeExactArmed(armed)) {
+            android.util.Log.w("AIQuotaNotification", "Threshold delivery state persistence failed")
         }
         ProviderCardNotificationRuntimeResult(postedReset, postedThreshold)
     }
 
     private val LOCK = Any()
+    private const val MAX_RESET_DELIVERY_AGE_MILLIS = 10 * 60_000L
 }
 
 internal fun selectProviderNotificationCards(

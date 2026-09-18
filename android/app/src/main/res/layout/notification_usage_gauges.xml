@@ -282,19 +282,12 @@
             android:textSize="8sp" />
         </LinearLayout>
       </LinearLayout>
-    </LinearLayout>
-
-    <LinearLayout
-      android:layout_width="0dp"
-      android:layout_height="wrap_content"
-      android:layout_marginStart="8dp"
-      android:layout_weight="1"
-      android:orientation="vertical">
 
       <LinearLayout
         android:id="@+id/notification_row_4"
         android:layout_width="match_parent"
         android:layout_height="34dp"
+        android:layout_marginTop="1dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -401,12 +394,19 @@
             android:textSize="8sp" />
         </LinearLayout>
       </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="8dp"
+      android:layout_weight="1"
+      android:orientation="vertical">
 
       <LinearLayout
         android:id="@+id/notification_row_6"
         android:layout_width="match_parent"
         android:layout_height="34dp"
-        android:layout_marginTop="1dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -503,6 +503,230 @@
 
           <TextView
             android:id="@+id/notification_reset_7"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:gravity="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="#6B7280"
+            android:textSize="8sp" />
+        </LinearLayout>
+      </LinearLayout>
+
+      <LinearLayout
+        android:id="@+id/notification_row_8"
+        android:layout_width="match_parent"
+        android:layout_height="34dp"
+        android:layout_marginTop="1dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+          android:id="@+id/notification_icon_8"
+          android:layout_width="17dp"
+          android:layout_height="17dp"
+          android:contentDescription="@null" />
+
+        <LinearLayout
+          android:layout_width="0dp"
+          android:layout_height="match_parent"
+          android:layout_marginStart="6dp"
+          android:layout_weight="1"
+          android:gravity="center_vertical"
+          android:orientation="vertical">
+
+          <TextView
+            android:id="@+id/notification_remaining_8"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:gravity="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="#374151"
+            android:textSize="9sp" />
+
+          <ProgressBar
+            android:id="@+id/notification_progress_8"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:layout_marginTop="1dp"
+            android:indeterminate="false"
+            android:max="100"
+            android:progressDrawable="@drawable/widget_provider_progress" />
+
+          <TextView
+            android:id="@+id/notification_reset_8"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:gravity="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="#6B7280"
+            android:textSize="8sp" />
+        </LinearLayout>
+      </LinearLayout>
+
+      <LinearLayout
+        android:id="@+id/notification_row_9"
+        android:layout_width="match_parent"
+        android:layout_height="34dp"
+        android:layout_marginTop="1dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+          android:id="@+id/notification_icon_9"
+          android:layout_width="17dp"
+          android:layout_height="17dp"
+          android:contentDescription="@null" />
+
+        <LinearLayout
+          android:layout_width="0dp"
+          android:layout_height="match_parent"
+          android:layout_marginStart="6dp"
+          android:layout_weight="1"
+          android:gravity="center_vertical"
+          android:orientation="vertical">
+
+          <TextView
+            android:id="@+id/notification_remaining_9"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:gravity="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="#374151"
+            android:textSize="9sp" />
+
+          <ProgressBar
+            android:id="@+id/notification_progress_9"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:layout_marginTop="1dp"
+            android:indeterminate="false"
+            android:max="100"
+            android:progressDrawable="@drawable/widget_provider_progress" />
+
+          <TextView
+            android:id="@+id/notification_reset_9"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:gravity="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="#6B7280"
+            android:textSize="8sp" />
+        </LinearLayout>
+      </LinearLayout>
+
+      <LinearLayout
+        android:id="@+id/notification_row_10"
+        android:layout_width="match_parent"
+        android:layout_height="34dp"
+        android:layout_marginTop="1dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+          android:id="@+id/notification_icon_10"
+          android:layout_width="17dp"
+          android:layout_height="17dp"
+          android:contentDescription="@null" />
+
+        <LinearLayout
+          android:layout_width="0dp"
+          android:layout_height="match_parent"
+          android:layout_marginStart="6dp"
+          android:layout_weight="1"
+          android:gravity="center_vertical"
+          android:orientation="vertical">
+
+          <TextView
+            android:id="@+id/notification_remaining_10"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:gravity="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="#374151"
+            android:textSize="9sp" />
+
+          <ProgressBar
+            android:id="@+id/notification_progress_10"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:layout_marginTop="1dp"
+            android:indeterminate="false"
+            android:max="100"
+            android:progressDrawable="@drawable/widget_provider_progress" />
+
+          <TextView
+            android:id="@+id/notification_reset_10"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:gravity="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="#6B7280"
+            android:textSize="8sp" />
+        </LinearLayout>
+      </LinearLayout>
+
+      <LinearLayout
+        android:id="@+id/notification_row_11"
+        android:layout_width="match_parent"
+        android:layout_height="34dp"
+        android:layout_marginTop="1dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+          android:id="@+id/notification_icon_11"
+          android:layout_width="17dp"
+          android:layout_height="17dp"
+          android:contentDescription="@null" />
+
+        <LinearLayout
+          android:layout_width="0dp"
+          android:layout_height="match_parent"
+          android:layout_marginStart="6dp"
+          android:layout_weight="1"
+          android:gravity="center_vertical"
+          android:orientation="vertical">
+
+          <TextView
+            android:id="@+id/notification_remaining_11"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:gravity="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="#374151"
+            android:textSize="9sp" />
+
+          <ProgressBar
+            android:id="@+id/notification_progress_11"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:layout_marginTop="1dp"
+            android:indeterminate="false"
+            android:max="100"
+            android:progressDrawable="@drawable/widget_provider_progress" />
+
+          <TextView
+            android:id="@+id/notification_reset_11"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"

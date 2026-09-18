@@ -22,8 +22,8 @@ object ProviderResetNotificationPolicy {
     )
 
     fun evaluate(input: ResetNotificationEvaluation): Result {
-        val pending = input.storedPending.toMutableMap()
-        val notified = input.lastNotified.toMutableMap()
+        val pending = input.storedPending.mapValues { (_, value) -> (value / 1_000L) * 1_000L }.toMutableMap()
+        val notified = input.lastNotified.mapValues { (_, value) -> (value / 1_000L) * 1_000L }.toMutableMap()
         val notifications = mutableListOf<ProviderResetNotification>()
         val nowMillis = input.now.toEpochMilli()
         val accountsNeedingAlias = accountsNeedingAliasIn(input.cards)
@@ -45,12 +45,12 @@ object ProviderResetNotificationPolicy {
                 if (key !in pending) {
                     if (observedReset != null) {
                         pending[key] = observedReset
-                        if (observedReset <= nowMillis) notified[key] = observedReset
+                        if (observedReset <= nowMillis) notified[key] = maxOf(notified[key] ?: 0L, observedReset)
                     }
                     return@forEachIndexed
                 }
                 val watchedReset = pending.getValue(key)
-                if (nowMillis >= watchedReset && notified[key] != watchedReset) {
+                if (nowMillis >= watchedReset && watchedReset > (notified[key] ?: 0L)) {
                     notifications += ProviderResetNotification(
                         key,
                         card.alias,
@@ -63,7 +63,11 @@ object ProviderResetNotificationPolicy {
                     )
                     notified[key] = watchedReset
                 }
-                pending[key] = observedReset ?: watchedReset
+                // A newly observed past timestamp is not evidence of another completed window.
+                // Only a future boundary may arm the next alert; keep the last notified watermark.
+                if (observedReset != null && observedReset > nowMillis && observedReset > (notified[key] ?: 0L)) {
+                    pending[key] = observedReset
+                }
             }
         }
         return Result(notifications, pending, notified)

@@ -1,6 +1,7 @@
-﻿package com.aiquota.mobile.notification
+package com.aiquota.mobile.notification
 
 import com.aiquota.mobile.widget.WidgetProviderGauge
+import com.aiquota.mobile.widget.delayedUsageText
 import com.aiquota.mobile.widget.parseUnifiedWidgetPayload
 import org.json.JSONArray
 import org.json.JSONObject
@@ -15,11 +16,12 @@ data class UsageNotificationContent(
     val gauges: List<WidgetProviderGauge>
 ) {
     val gaugeRows: List<UsageNotificationGaugeRow> = gauges.map { gauge ->
+        val alias = gauge.accountLabel?.takeIf { gauges.count { other -> other.providerId == gauge.providerId } > 1 }
         UsageNotificationGaugeRow(
             providerId = gauge.providerId,
             remainingRatio = gauge.remainingRatio,
-            compactRemainingText = gauge.remainingText.compactGaugeRemainingText(),
-            remainingText = gauge.remainingText,
+            compactRemainingText = delayedUsageText(alias?.let { "$it ${gauge.remainingText.compactRemainingText()}" } ?: gauge.remainingText.compactGaugeRemainingText(), gauge.isStale),
+            remainingText = delayedUsageText(alias?.let { "$it · ${gauge.remainingText}" } ?: gauge.remainingText, gauge.isStale),
             resetText = gauge.resetText.orEmpty(),
             gaugeColorHex = gauge.gaugeColorHex
         )
@@ -40,11 +42,9 @@ fun buildUsageNotificationContent(
     now: Instant = Instant.now(),
     updateMessage: String? = null
 ): UsageNotificationContent {
-    val connectedProviderKeys = connectedNotificationProviderKeys(snapshotJson)
-    val gauges = parseUnifiedWidgetPayload(snapshotJson, now).gauges
-        .filter { gauge -> connectedProviderKeys.isEmpty() || gauge.providerId.notificationKey() in connectedProviderKeys }
-        .take(MAX_NOTIFICATION_GAUGES)
-    val summary = notificationSummary(gauges, snapshotJson)
+    val activeSnapshot = activeNotificationSnapshot(snapshotJson)
+    val gauges = parseUnifiedWidgetPayload(activeSnapshot, now).gauges.take(MAX_NOTIFICATION_GAUGES)
+    val summary = notificationSummary(gauges, activeSnapshot)
         .withUpdateMessage(updateMessage)
     val compactLines = compactNotificationLines(summary)
     return UsageNotificationContent(
@@ -69,29 +69,27 @@ private fun notificationSummary(gauges: List<WidgetProviderGauge>, snapshotJson:
         .map { gauge ->
             val label = compactNotificationLabel(
                 providerId = gauge.providerId,
-                label = displayLabels.nextLabel(gauge.providerId)
+                label = gauge.accountLabel ?: displayLabels.nextLabel(gauge.providerId)
             )
-            "$label ${gauge.remainingText.compactRemainingText()}"
+            delayedUsageText("$label ${gauge.remainingText.compactRemainingText()}", gauge.isStale)
         }
     if (items.size <= NOTIFICATION_SINGLE_LINE_MAX_ITEMS) return items.joinToString(" | ")
     return items.chunked(NOTIFICATION_SUMMARY_ITEMS_PER_LINE)
         .joinToString("\n") { line -> line.joinToString(" | ") }
 }
 
-private fun connectedNotificationProviderKeys(snapshotJson: String): Set<String> {
-    if (snapshotJson.isBlank()) return emptySet()
+private fun activeNotificationSnapshot(snapshotJson: String): String {
+    if (snapshotJson.isBlank()) return "{}"
     return runCatching {
-        val providers = JSONObject(snapshotJson).optJSONArray(KEY_PROVIDERS) ?: JSONArray()
-        buildSet {
-            for (index in 0 until providers.length()) {
-                val provider = providers.optJSONObject(index) ?: continue
-                if (!provider.isVisibleNotificationProvider()) continue
-                if (!provider.hasActiveNotificationConnection()) continue
-                val providerId = provider.optionalString(KEY_PROVIDER_ID).orEmpty().ifBlank { UNKNOWN_PROVIDER_ID }
-                add(providerId.notificationKey())
-            }
+        val root = JSONObject(snapshotJson)
+        val providers = root.optJSONArray(KEY_PROVIDERS) ?: JSONArray()
+        val active = JSONArray()
+        for (index in 0 until providers.length()) {
+            val provider = providers.optJSONObject(index) ?: continue
+            if (provider.isVisibleNotificationProvider() && provider.hasActiveNotificationConnection()) active.put(provider)
         }
-    }.getOrDefault(emptySet())
+        root.put(KEY_PROVIDERS, active).toString()
+    }.getOrDefault("{}")
 }
 
 private fun notificationDisplayLabels(snapshotJson: String): NotificationDisplayLabels {
@@ -206,7 +204,7 @@ private fun compactNotificationLabel(providerId: String, label: String?): String
     }
 }
 
-private const val MAX_NOTIFICATION_GAUGES = 8
+private const val MAX_NOTIFICATION_GAUGES = 12
 private const val NOTIFICATION_SINGLE_LINE_MAX_ITEMS = 3
 private const val NOTIFICATION_SUMMARY_ITEMS_PER_LINE = 3
 private const val KEY_PROVIDERS = "providers"

@@ -1,4 +1,4 @@
-﻿package com.aiquota.mobile.notification
+package com.aiquota.mobile.notification
 
 import java.io.File
 import org.junit.Assert.assertEquals
@@ -60,11 +60,11 @@ class NotificationSixProvidersTest {
     }
 
     @Test
-    fun expandedNotificationLayoutDefinesEightRows() {
+    fun expandedNotificationLayoutDefinesTwelveRows() {
         val layout = File("src/main/res/layout/notification_usage_gauges.xml").readText()
         val controller = File("src/main/java/com/aiquota/mobile/notification/UsageLimitNotificationController.kt").readText()
 
-        (0..7).forEach { index ->
+        (0..11).forEach { index ->
             assertTrue(layout.contains("@+id/notification_row_$index"))
             assertTrue(controller.contains("R.id.notification_row_$index"))
         }
@@ -83,7 +83,7 @@ class NotificationSixProvidersTest {
 
         assertTrue(!layout.contains("@+id/notification_title"))
         assertTrue(!controller.contains("R.id.notification_title"))
-        (0..7).forEach { index ->
+        (0..11).forEach { index ->
             assertTrue(layout.contains("@+id/notification_remaining_$index"))
             assertTrue(layout.contains("@+id/notification_reset_$index"))
             assertTrue(controller.contains("R.id.notification_remaining_$index"))

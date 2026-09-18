@@ -106,6 +106,45 @@ class ProviderResetNotificationPolicyTest {
         assertEquals(setOf(key.lineKey, weekly.lineKey), result.notifications.map { it.lineKey }.toSet())
     }
 
+    @Test
+    fun olderResetMustNotReplayAfterANewerBoundaryWasAlreadyNotified() {
+        val result = evaluate(mapOf(key to resetAt.minusSeconds(60).toEpochMilli()),
+            mapOf(key to resetAt.toEpochMilli()), resetAt.plusSeconds(30))
+        assertTrue(result.notifications.isEmpty())
+        assertEquals(resetAt.toEpochMilli(), result.notified[key])
+    }
+
+    @Test
+    fun changingPastResetTimestampsDoesNotProduceANewAlertEveryRefresh() {
+        var pending = mapOf(key to resetAt.toEpochMilli())
+        var notified = pending
+        repeat(5) { index ->
+            val result = ProviderResetNotificationPolicy.evaluate(input(pending, notified, resetAt.plusSeconds(60)).copy(
+                cards = listOf(card(resetsAt = resetAt.plusSeconds(index.toLong() + 1).toString()))))
+            assertTrue("Past timestamp drift produced another reset alert", result.notifications.isEmpty())
+            pending = result.pending
+            notified = result.notified
+        }
+    }
+
+    @Test
+    fun migratedSubsecondStateDoesNotReplayAnAlreadyNotifiedBoundary() {
+        val result = evaluate(mapOf(key to resetAt.toEpochMilli() + 800),
+            mapOf(key to resetAt.toEpochMilli() + 100), resetAt.plusSeconds(30))
+        assertTrue(result.notifications.isEmpty())
+    }
+
+    @Test
+    fun genuinelyNewFutureWindowStillNotifiesAfterPreviousWindowCompleted() {
+        val next = resetAt.plusSeconds(18000)
+        val armed = ProviderResetNotificationPolicy.evaluate(input(mapOf(key to resetAt.toEpochMilli()),
+            mapOf(key to resetAt.toEpochMilli()), resetAt.plusSeconds(60)).copy(cards = listOf(card(resetsAt = next.toString()))))
+        val result = ProviderResetNotificationPolicy.evaluate(input(armed.pending, armed.notified, next.plusSeconds(1))
+            .copy(cards = listOf(card(resetsAt = next.toString()))))
+        assertEquals(1, result.notifications.size)
+        assertEquals(next.toEpochMilli(), result.notified[key])
+    }
+
     private fun evaluate(
         pending: Map<ProviderAccountLineKey, Long>,
         notified: Map<ProviderAccountLineKey, Long>,

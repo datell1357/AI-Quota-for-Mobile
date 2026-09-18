@@ -1,5 +1,6 @@
 package com.aiquota.mobile.notification
 
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -17,7 +18,7 @@ import com.aiquota.mobile.ui.provider.providerIconRes
 
 /** Posts an exact-card reset-complete notification. */
 object ProviderResetNotificationController {
-    private const val CHANNEL_ID = "provider_resets_alerts"
+    internal const val CHANNEL_ID = "provider_resets_alerts"
     private const val LEGACY_CHANNEL_ID = "provider_resets"
     private const val SUMMARY_NOTIFICATION_ID = 2002
     private const val LARGE_ICON_LOGO_INSET_RATIO = 0.24f
@@ -29,12 +30,14 @@ object ProviderResetNotificationController {
         event: ProviderResetNotification,
     ): ProviderNotificationIdentity? = notifyReset(context, event, false)
 
+    @SuppressLint("MissingPermission")
     internal fun notifyReset(
         context: Context,
         event: ProviderResetNotification,
         onlyAlertOnce: Boolean,
     ): ProviderNotificationIdentity? {
         if (!UsageLimitNotificationController.canPostNotifications(context)) return null
+        if (!UsageLimitNotificationController.isChannelEnabled(context, CHANNEL_ID)) return null
         createChannel(context)
         val identity = ProviderNotificationIdentityRepository(context).identity(
             ProviderNotificationKind.RESET,
@@ -67,16 +70,25 @@ object ProviderResetNotificationController {
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setGroup(GROUP_KEY)
             .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
+        if (onlyAlertOnce) {
+            context.getSystemService(NotificationManager::class.java).activeNotifications
+                .firstOrNull { it.tag == identity.tag && it.id == identity.notificationId }
+                ?.notification?.`when`?.let(builder::setWhen)
+        }
         providerLargeIcon(context, event.providerId)?.let(builder::setLargeIcon)
         val posted = runCatching {
             val manager = NotificationManagerCompat.from(context)
             manager.notify(identity.tag, identity.notificationId, builder.build())
-            manager.notify(GROUP_SUMMARY_TAG, SUMMARY_NOTIFICATION_ID, buildGroupSummary(context))
         }.isSuccess
-        if (!posted || !ProviderPostedNotificationRepository(context).save(
-                PostedProviderNotification.Reset(event),
-            )
-        ) return null
+        if (!posted) return null
+        // The child was accepted. Optional summary/metadata failures must not replay its sound.
+        runCatching { NotificationManagerCompat.from(context).notify(GROUP_SUMMARY_TAG, SUMMARY_NOTIFICATION_ID, buildGroupSummary(context)) }
+        val metadataSaved = runCatching {
+            ProviderPostedNotificationRepository(context).save(PostedProviderNotification.Reset(event))
+        }.getOrDefault(false)
+        if (!metadataSaved) {
+            android.util.Log.w("AIQuotaNotification", "Reset alert posted; metadata persistence failed")
+        }
         return identity
     }
 

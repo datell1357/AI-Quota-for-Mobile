@@ -41,6 +41,23 @@ class ProviderUsageThresholdNotificationPolicyTest {
     }
 
     @Test
+    fun smallOscillationDoesNotRearmButSufficientRecoveryDoes() {
+        var armed = emptyMap<ProviderAccountLineKey, Boolean>()
+        val counts = listOf(6, 5, 6, 5, 7, 5, 8, 5).map { percent ->
+            val result = evaluate(percent / 100f, armed)
+            armed = result.armed
+            result.notifications.size
+        }
+        assertEquals(listOf(0, 1, 0, 0, 0, 0, 0, 1), counts)
+    }
+
+    @Test
+    fun recoveryMarginStillAllowsFullRecoveryAtHighThreshold() {
+        val input = evaluation(card(1f), mapOf(key to false)).copy(thresholdPercents = mapOf(accountId to 99))
+        assertEquals(true, ProviderUsageThresholdNotificationPolicy.evaluate(input).armed[key])
+    }
+
+    @Test
     fun recoveringAboveThresholdReArms() {
         val result = evaluate(1f, mapOf(key to false))
         assertTrue(result.notifications.isEmpty())

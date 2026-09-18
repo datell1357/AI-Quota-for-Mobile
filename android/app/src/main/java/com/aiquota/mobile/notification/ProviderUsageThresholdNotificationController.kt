@@ -1,5 +1,6 @@
 package com.aiquota.mobile.notification
 
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -17,7 +18,7 @@ import com.aiquota.mobile.ui.provider.providerIconRes
 
 /** Posts an exact-card low-usage notification. */
 object ProviderUsageThresholdNotificationController {
-    private const val CHANNEL_ID = "provider_usage_thresholds"
+    internal const val CHANNEL_ID = "provider_usage_thresholds"
     private const val SUMMARY_NOTIFICATION_ID = 2102
     private const val LARGE_ICON_LOGO_INSET_RATIO = 0.24f
     private const val GROUP_KEY = "provider_usage_threshold_alerts"
@@ -28,12 +29,14 @@ object ProviderUsageThresholdNotificationController {
         event: ProviderUsageThresholdNotification,
     ): ProviderNotificationIdentity? = notifyLowUsage(context, event, false)
 
+    @SuppressLint("MissingPermission")
     internal fun notifyLowUsage(
         context: Context,
         event: ProviderUsageThresholdNotification,
         onlyAlertOnce: Boolean,
     ): ProviderNotificationIdentity? {
         if (!UsageLimitNotificationController.canPostNotifications(context)) return null
+        if (!UsageLimitNotificationController.isChannelEnabled(context, CHANNEL_ID)) return null
         createChannel(context)
         val identity = ProviderNotificationIdentityRepository(context).identity(
             ProviderNotificationKind.THRESHOLD,
@@ -56,16 +59,24 @@ object ProviderUsageThresholdNotificationController {
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setGroup(GROUP_KEY)
             .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
+        if (onlyAlertOnce) {
+            context.getSystemService(NotificationManager::class.java).activeNotifications
+                .firstOrNull { it.tag == identity.tag && it.id == identity.notificationId }
+                ?.notification?.`when`?.let(builder::setWhen)
+        }
         providerLargeIcon(context, event.providerId)?.let(builder::setLargeIcon)
         val posted = runCatching {
             val manager = NotificationManagerCompat.from(context)
             manager.notify(identity.tag, identity.notificationId, builder.build())
-            manager.notify(GROUP_SUMMARY_TAG, SUMMARY_NOTIFICATION_ID, buildGroupSummary(context))
         }.isSuccess
-        if (!posted || !ProviderPostedNotificationRepository(context).save(
-                PostedProviderNotification.Threshold(event),
-            )
-        ) return null
+        if (!posted) return null
+        runCatching { NotificationManagerCompat.from(context).notify(GROUP_SUMMARY_TAG, SUMMARY_NOTIFICATION_ID, buildGroupSummary(context)) }
+        val metadataSaved = runCatching {
+            ProviderPostedNotificationRepository(context).save(PostedProviderNotification.Threshold(event))
+        }.getOrDefault(false)
+        if (!metadataSaved) {
+            android.util.Log.w("AIQuotaNotification", "Threshold alert posted; metadata persistence failed")
+        }
         return identity
     }
 
