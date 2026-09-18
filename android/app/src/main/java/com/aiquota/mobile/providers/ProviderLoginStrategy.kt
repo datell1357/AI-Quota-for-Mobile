@@ -77,6 +77,17 @@ object ProviderLoginStrategy {
         return path == "/new" || path.startsWith("/chat/")
     }
 
+    fun shouldStartGrokNativeCollection(url: String, cookies: Map<String, String>): Boolean {
+        val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        if (!uri.scheme.equals("https", ignoreCase = true)) return false
+        val host = uri.host.orEmpty().lowercase(Locale.US)
+        if (host != "grok.com" && host != "www.grok.com") return false
+        if (cookies["sso"].isNullOrBlank() && cookies["sso-rw"].isNullOrBlank()) return false
+        val path = uri.path.orEmpty().lowercase(Locale.US)
+        return path.isEmpty() || path == "/" || path == "/chat" ||
+            path.startsWith("/chat/") || path.startsWith("/c/")
+    }
+
     fun shouldStartClaudeNativeCollectionFromResource(url: String): Boolean {
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
         if (!uri.scheme.equals("https", ignoreCase = true)) return false

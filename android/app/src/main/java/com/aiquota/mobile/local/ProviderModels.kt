@@ -20,8 +20,8 @@ enum class ProviderId(val storageId: String, val displayName: String) {
         /**
          * 화면·설정·위젯에 노출되는 provider 목록이자 표시 순서다.
          *
-         * GROK·KIMI는 구현은 들어와 있지만 실계정 검증을 마치지 못해 38버전 노출 대상에서
-         * 빼둔다. 검증이 끝나면 CURSOR 다음에 GROK, KIMI를 다시 넣으면 그대로 살아난다.
+         * KIMI는 구현은 들어와 있지만 실계정 검증을 마치지 못해 노출 대상에서 빼둔다.
+         * 검증이 끝나면 GROK 다음에 KIMI를 넣으면 그대로 살아난다.
          */
         fun defaultOrder(): List<ProviderId> =
             listOf(CLAUDE, CODEX, CURSOR, GROK, KIRO, OPENCODE, GLM, ANTIGRAVITY, GEMINI, COPILOT)

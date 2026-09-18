@@ -17,7 +17,7 @@ class ProviderDefinitionRegistryTest {
         assertEquals(ProviderId.entries.size, definitions.size)
         assertEquals("https://claude.ai/login", definitionsByProvider[ProviderId.CLAUDE]?.loginStartUrl)
         assertEquals(
-            "https://chatgpt.com/codex/cloud/settings/analytics#usage",
+            "https://chatgpt.com/auth/login",
             definitionsByProvider[ProviderId.CODEX]?.loginStartUrl
         )
         assertEquals("aiquota://provider/glm-api-key", definitionsByProvider[ProviderId.GLM]?.loginStartUrl)

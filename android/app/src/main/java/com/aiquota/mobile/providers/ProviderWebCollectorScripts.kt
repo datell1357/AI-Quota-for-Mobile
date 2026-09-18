@@ -399,7 +399,8 @@ object ProviderWebCollectorScripts {
                         path == "/api/dashboard/get-credit-grants-balance")
             ProviderId.GROK ->
                 (host == "grok.com" || host == "www.grok.com") &&
-                    path == "/rest/rate-limits"
+                    (path == "/rest/rate-limits" ||
+                        path == URI(GrokWeeklyCreditsFetcher.URL_PATH).path.lowercase(Locale.US))
             ProviderId.KIMI ->
                 (host == "kimi.com" || host == "www.kimi.com") &&
                     // path는 위에서 lowercase돼 있으므로 대문자를 포함한 오퍼레이션 경로는

@@ -584,9 +584,19 @@ open class WebLoginActivity : Activity() {
                 noteBridgePageUrl("about:blank")
                 return
             }
+            if (providerId == ProviderId.GROK && maybeStartAboutBlankNativeCollection(view, url, "page_visible")) return
             if (providerId != ProviderId.GLM) return
             glmMainFramePainted = true
             Log.i("AIQuotaLogin", "provider=glm pageCommitVisible host=${hostOf(url)}${pathOf(url)}")
+        }
+
+        override fun doUpdateVisitedHistory(view: WebView, url: String, isReload: Boolean) {
+            super.doUpdateVisitedHistory(view, url, isReload)
+            if (providerId != ProviderId.GROK) return
+            // SPA sign-in can reach chat without another onPageFinished or rate-limits request.
+            view.post {
+                if (view.url == url) maybeStartAboutBlankNativeCollection(view, url, "history")
+            }
         }
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -734,6 +744,7 @@ open class WebLoginActivity : Activity() {
             if (handleLoginCompleteNavigation(view, effectiveUrl)) return
             if (maybeRedirectGeminiToUsage(view, effectiveUrl)) return
             if (maybeRedirectOpenCodeToGo(view, effectiveUrl)) return
+            if (providerId == ProviderId.GROK && maybeStartAboutBlankNativeCollection(view, effectiveUrl, "page_finished")) return
             if (maybeStartClaudeNativeCollection(view, effectiveUrl, "page_finished")) return
             if (maybeStartCopilotNativeCollection(view, effectiveUrl, "page_finished")) return
             if (providerId == ProviderId.CODEX && ProviderWebCollectorScripts.shouldAcceptCollectorPayload(providerId, effectiveUrl)) {
@@ -1559,14 +1570,16 @@ open class WebLoginActivity : Activity() {
     }
 
     /**
-     * Grok·Kimi·Kiro는 provider 페이지가 사용량 엔드포인트를 부르는 순간 about:blank로
-     * 옮겨가 네이티브 수집으로 전환한다. Cursor와 같은 흐름이지만 provider별 전용 코드를
-     * 늘리지 않도록 한 곳에서 처리한다.
+     * Grok·Kimi·Kiro의 사용량 요청을 감지하면 네이티브 수집으로 전환한다.
+     * Grok은 주간 한도 요청이 없는 채팅 화면에서도 세션 쿠키를 확인해 시작한다.
      */
     private fun maybeStartAboutBlankNativeCollection(view: WebView, url: String, reason: String): Boolean {
         if (finished || aboutBlankNativeCollectionStarted || url == "about:blank") return false
         if (!ABOUT_BLANK_NATIVE_LOGIN_PROVIDERS.contains(providerId)) return false
-        if (!ProviderWebCollectorScripts.shouldRunCollectorOnResource(providerId, url)) return false
+        val usageResource = ProviderWebCollectorScripts.shouldRunCollectorOnResource(providerId, url)
+        val grokChatSession = providerId == ProviderId.GROK &&
+            ProviderLoginStrategy.shouldStartGrokNativeCollection(url, cookiesFor(url))
+        if (!usageResource && !grokChatSession) return false
         aboutBlankNativeCollectionStarted = true
         loginCookieManager().flush()
         collectorInjectionKeys.clear()
