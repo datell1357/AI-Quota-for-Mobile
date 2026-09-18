@@ -74,6 +74,16 @@ internal fun ProviderPickerStep(
                 color = AIQuotaTheme.colors.textMuted,
             )
         }
+        val available = ProviderId.defaultOrder().filter { providerAvailable(it, existingAccountIds) }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            TextButton(onClick = { state.selectAll(available) },
+                enabled = available.any { it !in state.selectedProviders }) {
+                Text(androidx.compose.ui.res.stringResource(R.string.provider_select_all))
+            }
+            TextButton(onClick = state::clearSelection, enabled = state.selectedProviders.isNotEmpty()) {
+                Text(androidx.compose.ui.res.stringResource(R.string.provider_clear_all))
+            }
+        }
         LazyColumn(
             modifier = Modifier.fillMaxWidth().weight(1f).clipToBounds().selectableGroup(),
             state = pickerListState,

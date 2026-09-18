@@ -12,6 +12,32 @@ import org.junit.Test
 
 class ProviderEnrollmentStateTest {
     @Test
+    fun welcomeIsFirstRunOnlyAndSurvivesRecreation() {
+        val first = ProviderEnrollmentState.firstRun()
+        assertTrue(first.showWelcome)
+        assertTrue(ProviderEnrollmentState.restore(first.savedState()).showWelcome)
+        first.finishWelcome()
+        assertFalse(ProviderEnrollmentState.restore(first.savedState()).showWelcome)
+        assertFalse(ProviderEnrollmentState.explicitAdd().showWelcome)
+        assertFalse(ProviderEnrollmentState.hidden().showWelcome)
+    }
+
+    @Test
+    fun bulkSelectionRespectsAvailableProvidersAndClearDoesNotSubmit() {
+        val state = ProviderEnrollmentState.firstRun()
+        val available = listOf(ProviderId.CLAUDE, ProviderId.CODEX)
+        state.selectAll(available)
+        assertEquals(available.toSet(), state.selectedProviders)
+        state.selectAll(available)
+        assertEquals(2, state.bulkSubmissions().size)
+        state.clearSelection()
+        assertTrue(state.bulkSubmissions().isEmpty())
+        assertTrue(state.visible)
+        state.selectAll(emptyList())
+        assertTrue(state.selectedProviders.isEmpty())
+    }
+
+    @Test
     fun selectedProviderAndNameRestoreWhenActivityIsRecreated() {
         // Given
         val state = ProviderEnrollmentState.explicitAdd()

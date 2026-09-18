@@ -42,6 +42,13 @@ fun ProviderEnrollmentDialog(
     onAdded: () -> Unit,
 ) {
     if (!state.visible) return
+    if (state.showWelcome) {
+        ProviderWelcomeDialog(onContinue = state::finishWelcome, onSkip = {
+            onLater()
+            state.close()
+        })
+        return
+    }
     when (state.step) {
         ProviderEnrollmentStep.PICKER -> ProviderPickerSheet(
             state = state,
@@ -88,7 +95,10 @@ private fun ProviderPickerSheet(
     val shape = providerEnrollmentSheetShape(colors.theme)
     val sheetHeight = (LocalConfiguration.current.screenHeightDp - 48).coerceAtLeast(320).dp
     ModalBottomSheet(
-        onDismissRequest = state::close,
+        onDismissRequest = {
+            if (state.origin == ProviderEnrollmentOrigin.FIRST_RUN) onLater()
+            state.close()
+        },
         modifier = Modifier.border(
             width = if (colors.theme == AppTheme.MACOS) 1.dp else 2.dp,
             color = colors.border,

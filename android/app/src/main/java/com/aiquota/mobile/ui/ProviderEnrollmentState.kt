@@ -32,7 +32,20 @@ class ProviderEnrollmentState private constructor(
     selectedProviders: Set<ProviderId>,
     alias: String,
     errorResource: Int?,
+    showWelcome: Boolean = false,
 ) {
+    var showWelcome by mutableStateOf(showWelcome)
+        private set
+
+    fun finishWelcome() { showWelcome = false }
+
+    fun selectAll(available: Collection<ProviderId>) {
+        selectedProviders = ProviderId.defaultOrder().filter { it in available }.toSet()
+        errorResource = null
+    }
+
+    fun clearSelection() { selectedProviders = emptySet(); errorResource = null }
+
     var visible by mutableStateOf(visible)
         private set
     var origin by mutableStateOf(origin)
@@ -58,6 +71,7 @@ class ProviderEnrollmentState private constructor(
         get() = origin == ProviderEnrollmentOrigin.FIRST_RUN || selectedProviders.size > 1
 
     fun openExplicitAdd() {
+        showWelcome = false
         visible = true
         origin = ProviderEnrollmentOrigin.EXPLICIT_ADD
         step = ProviderEnrollmentStep.PICKER
@@ -82,6 +96,7 @@ class ProviderEnrollmentState private constructor(
     fun back() = close()
 
     fun close() {
+        showWelcome = false
         visible = false
         step = ProviderEnrollmentStep.PICKER
         selectedProviders = emptySet()
@@ -110,12 +125,14 @@ class ProviderEnrollmentState private constructor(
         selectedProviders.joinToString(",") { it.storageId },
         alias,
         errorResource?.toString().orEmpty(),
+        showWelcome.toString(),
     )
 
     companion object {
         fun firstRun(): ProviderEnrollmentState = ProviderEnrollmentState(
             visible = true,
             origin = ProviderEnrollmentOrigin.FIRST_RUN,
+            showWelcome = true,
             step = ProviderEnrollmentStep.PICKER,
             selectedProviders = emptySet(),
             alias = "",
@@ -145,6 +162,7 @@ class ProviderEnrollmentState private constructor(
                 .toSet(),
             alias = values[4],
             errorResource = values[5].toIntOrNull(),
+            showWelcome = values.getOrNull(6)?.toBooleanStrictOrNull() ?: false,
         )
 
         val Saver: Saver<ProviderEnrollmentState, List<String>> = Saver(
