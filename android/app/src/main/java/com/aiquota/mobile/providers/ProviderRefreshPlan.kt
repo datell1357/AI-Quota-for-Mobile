@@ -76,6 +76,16 @@ object ProviderRefreshPlan {
         return jobFor(accountId, NORMAL_REFRESH_QOS)
     }
 
+    /** Apply the existing provider policy independently to each account, including reset QoS. */
+    fun automaticJobFor(
+        accountId: ProviderAccountId,
+        snapshot: ProviderUsageSnapshot,
+        now: Instant = Instant.now(),
+    ): ProviderRefreshJob? {
+        require(accountId.providerId == snapshot.providerId)
+        return automaticJobsFor(listOf(snapshot), now).singleOrNull()?.copy(accountId = accountId)
+    }
+
     fun resetJobFor(providerId: ProviderId): ProviderRefreshJob {
         return resetJobFor(ProviderAccountId(providerId, AccountKey.reservedDefault()))
     }

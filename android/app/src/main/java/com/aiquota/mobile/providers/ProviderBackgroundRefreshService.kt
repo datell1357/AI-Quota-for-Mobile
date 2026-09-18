@@ -1,5 +1,7 @@
 ﻿package com.aiquota.mobile.providers
 
+import com.aiquota.mobile.accounts.NamedProfileLease
+import com.aiquota.mobile.local.ProviderCardPreferencesRepository
 import android.annotation.SuppressLint
 import android.app.Service
 import android.appwidget.AppWidgetManager
@@ -27,7 +29,6 @@ import android.webkit.WebViewClient
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.aiquota.mobile.BuildConfig
-import com.aiquota.mobile.accounts.NamedProfileLease
 import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
 import com.aiquota.mobile.accounts.requireAndroidCookieManager
@@ -47,6 +48,7 @@ import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -198,6 +200,12 @@ class ProviderBackgroundRefreshService : Service() {
             ACTION_STOP -> {
                 com.aiquota.mobile.sync.ForegroundRefreshController(applicationContext)
                     .recordServiceStopped()
+                stopRefreshLoop()
+                stopSelf(startId)
+                return START_NOT_STICKY
+            }
+            ACTION_PAUSE -> {
+                // Transient ineligibility (for example logging in) is not an opt-out.
                 stopRefreshLoop()
                 stopSelf(startId)
                 return START_NOT_STICKY
@@ -523,6 +531,10 @@ class ProviderBackgroundRefreshService : Service() {
         val trigger = withContext(Dispatchers.IO) {
             coordinator.trigger(automatic = manualAccountId == null, exactTarget = manualAccountId)
         }
+        stopIdleExactRefresh(trigger, ::hasPendingManualRefresh) {
+            running = false
+            stopSelf()
+        }
         var attempt = (trigger as? ProviderRefreshTriggerResult.Launched)?.attempt ?: return
         while (true) {
             var exactDispatch: ExactServiceCollectionDispatch<ServiceRefreshOutcome>? = null
@@ -538,12 +550,18 @@ class ProviderBackgroundRefreshService : Service() {
                     if (exactHiddenCollectionNeedsNamedProfile(attempt.accountId.providerId)) {
                         try {
                             coordinator.withExactCollectorOperation(attempt) { operation ->
-                                collectWebProviderUsage(
+                                val primeRevision = ProviderCardPreferencesRepository(applicationContext)
+                                    .claudeAutoResetPrimeRevision(operation.binding.accountId)
+                                val collected = collectWebProviderUsage(
                                     attempt.job,
                                     automaticRefresh = manualAccountId == null,
                                     onTimeout = onTimeout,
                                     exactOperation = operation,
                                 )
+                                if (manualAccountId == null && attempt.accountId.providerId == ProviderId.CLAUDE) {
+                                    maybePrimeExactClaudeSession(coordinator, operation, collected, primeRevision)
+                                }
+                                collected
                             }
                         } catch (error: ExactProviderCollectorUnavailable) {
                             ServiceRefreshOutcome.Failure(
@@ -586,13 +604,14 @@ class ProviderBackgroundRefreshService : Service() {
                     }
                 }
                 is ServiceRefreshOutcome.Failure -> {
-                    val requiresLogin = ProviderRefreshFailureClassifier.requiresInteractiveAuth(
-                        attempt.accountId.providerId,
-                        outcome.failure.kind,
-                    )
                     withContext(Dispatchers.IO) {
-                        if (requiresLogin) coordinator.requireReauthentication(attempt.accountId)
-                        else coordinator.fail(attempt, requeue = true)
+                        finishExactRefreshFailure(
+                            providerId = attempt.accountId.providerId,
+                            failure = outcome.failure,
+                            automaticRefresh = manualAccountId == null,
+                            retryNextCycle = { coordinator.fail(attempt, requeue = true) },
+                            requireReauthentication = { coordinator.requireReauthentication(attempt.accountId) },
+                        )
                     }
                 }
                 ServiceRefreshOutcome.Cancelled -> withContext(Dispatchers.IO) {
@@ -604,6 +623,48 @@ class ProviderBackgroundRefreshService : Service() {
         withContext(Dispatchers.IO) {
             UsageSurfaceRefresher.refresh(applicationContext, repository)
             ProviderCardNotificationRuntime.evaluate(applicationContext, BuildConfig.MULTI_ACCOUNT_ENABLED)
+        }
+    }
+
+    private suspend fun maybePrimeExactClaudeSession(
+        coordinator: AndroidProviderAccountRefreshCoordinator,
+        operation: ExactProviderCollectorOperation<WebView, NamedProfileLease>,
+        collected: ServiceRefreshOutcome,
+        primeRevision: Long?,
+    ) {
+        if (primeRevision == null) return
+        try {
+            withContext(Dispatchers.IO) {
+                val binding = operation.binding
+                val preferences = ProviderCardPreferencesRepository(applicationContext)
+                val context = kotlin.coroutines.coroutineContext
+                val authorized = {
+                    context.ensureActive()
+                    coordinator.isCurrentBinding(binding) &&
+                        preferences.claudeAutoResetPrimeRevision(binding.accountId) == primeRevision
+                }
+                if (!authorized()) return@withContext
+                val snapshot = when (collected) {
+                    is ServiceRefreshOutcome.Snapshot -> collected.snapshot
+                    is ServiceRefreshOutcome.Payload -> ProviderUsageNormalizer.normalize(
+                        ProviderId.CLAUDE, collected.rawPayload, ProviderPayloadSource.STRUCTURED_SCRIPT)
+                    else -> null
+                } ?: return@withContext
+                val cookie = operation.profileLease.cookieSource.cookieHeader("https://claude.ai", "https://claude.ai")
+                    ?.takeIf { it.isNotBlank() } ?: return@withContext
+                val headers = ClaudeNativeRequestContextStore(applicationContext).restoreExact(binding)
+                val result = ExactClaudeSessionPrimeRuntime(ClaudeSessionPrimeStateRepository(applicationContext).exactState(primeRevision))
+                    .run(binding, snapshot, ClaudeSessionPrimer.Credentials(
+                        cookie,
+                        ClaudeNativeHeaderStore.headersFor(headers, "https://claude.ai/api/organizations", "*"),
+                        ProviderWebViewUserAgent.hiddenCollectorUserAgent(applicationContext, ProviderId.CLAUDE),
+                    ), authorized)
+                if (result != null) Log.i(TAG, "exactClaudePrime ok=${result.ok} detail=${result.detail}")
+            }
+        } catch (error: kotlinx.coroutines.CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            Log.w(TAG, "exactClaudePrime failed=${error.javaClass.simpleName}")
         }
     }
 
@@ -2385,6 +2446,7 @@ class ProviderBackgroundRefreshService : Service() {
 
     companion object {
         const val ACTION_START = "com.aiquota.mobile.action.START_BACKGROUND_REFRESH"
+        const val ACTION_PAUSE = "com.aiquota.mobile.action.PAUSE_BACKGROUND_REFRESH"
         const val ACTION_STOP = "com.aiquota.mobile.action.STOP_BACKGROUND_REFRESH"
         const val ACTION_REFRESH = "com.aiquota.mobile.action.REFRESH"
         const val ACTION_PROVIDER_SESSION_RESET = "com.aiquota.mobile.action.PROVIDER_SESSION_RESET"

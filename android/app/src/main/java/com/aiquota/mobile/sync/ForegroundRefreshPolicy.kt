@@ -1,10 +1,19 @@
 ﻿package com.aiquota.mobile.sync
 
+import com.aiquota.mobile.accounts.AccountAuthState
+import com.aiquota.mobile.accounts.ProviderCardDisplayRecord
 import com.aiquota.mobile.local.ProviderConnectionState
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderUsageSnapshot
 
 object ForegroundRefreshPolicy {
+    fun shouldRunForAccounts(
+        cards: List<ProviderCardDisplayRecord>,
+        liveMonitoringEnabled: Boolean,
+        canPostNotifications: Boolean,
+    ): Boolean = liveMonitoringEnabled && canPostNotifications &&
+        cards.any { it.authState == AccountAuthState.AUTHENTICATED }
+
     fun shouldRunForegroundLoop(
         snapshots: List<ProviderUsageSnapshot>,
         liveMonitoringEnabled: Boolean,

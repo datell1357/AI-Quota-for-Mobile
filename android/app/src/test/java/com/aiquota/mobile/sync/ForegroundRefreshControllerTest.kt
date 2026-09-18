@@ -62,7 +62,7 @@ class ForegroundRefreshControllerTest {
         assertEquals(
             listOf(
                 ProviderBackgroundRefreshService.ACTION_START,
-                ProviderBackgroundRefreshService.ACTION_STOP
+                ProviderBackgroundRefreshService.ACTION_PAUSE
             ),
             starter.actions
         )
@@ -82,7 +82,7 @@ class ForegroundRefreshControllerTest {
         assertEquals(
             listOf(
                 ProviderBackgroundRefreshService.ACTION_START,
-                ProviderBackgroundRefreshService.ACTION_STOP
+                ProviderBackgroundRefreshService.ACTION_PAUSE
             ),
             starter.actions
         )
@@ -116,6 +116,27 @@ class ForegroundRefreshControllerTest {
         assertTrue(source.contains("KEY_LIVE_MONITORING_ENABLED"))
         assertTrue(source.contains("fun liveMonitoringEnabled()"))
         assertTrue(source.contains("fun setLiveMonitoringEnabled(enabled: Boolean)"))
+    }
+
+    @Test
+    fun temporaryLossOfRefreshableSnapshotsMustNotTurnOffUserPreference() {
+        val preferences = RecordingPreferences()
+        val actions = mutableListOf<String>()
+        val starter = object : ForegroundRefreshController.ServiceStarter {
+            override fun start(action: String) {
+                actions += action
+                // The production service persists off when it receives the explicit stop action.
+                if (action == ProviderBackgroundRefreshService.ACTION_STOP) preferences.setLiveMonitoringEnabled(false)
+            }
+        }
+        val controller = ForegroundRefreshController(starter, preferences)
+        controller.setLiveMonitoringEnabled(true)
+        controller.stopPreciseRefresh()
+        assertTrue("A transient pause cleared the saved Live Refresh setting", preferences.liveMonitoringEnabled())
+        controller.startPreciseRefresh()
+        controller.setLiveMonitoringEnabled(false)
+        assertTrue(!preferences.liveMonitoringEnabled())
+        assertEquals(ProviderBackgroundRefreshService.ACTION_STOP, actions.last())
     }
 
     private class RecordingStarter : ForegroundRefreshController.ServiceStarter {

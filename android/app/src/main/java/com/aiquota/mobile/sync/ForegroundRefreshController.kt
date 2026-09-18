@@ -74,7 +74,8 @@ class ForegroundRefreshController {
     private fun stopPreciseRefresh(force: Boolean) {
         healthScheduler.cancel()
         if (!force && !preciseRefreshRequested) return
-        serviceStarter.start(ProviderBackgroundRefreshService.ACTION_STOP)
+        serviceStarter.start(if (force) ProviderBackgroundRefreshService.ACTION_STOP
+            else ProviderBackgroundRefreshService.ACTION_PAUSE)
         preciseRefreshRequested = false
     }
 

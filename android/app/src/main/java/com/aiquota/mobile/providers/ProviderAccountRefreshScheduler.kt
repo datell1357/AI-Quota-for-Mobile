@@ -13,6 +13,7 @@ import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.StaleAttemptReason
 import com.aiquota.mobile.local.ProviderConnectionState
 import com.aiquota.mobile.local.ProviderUsageSnapshot
+import java.time.Instant
 
 fun interface ProviderRefreshClock {
     fun nowMillis(): Long
@@ -74,6 +75,8 @@ data class ProviderRefreshAttempt(
 
 sealed interface ProviderRefreshTriggerResult {
     data object Idle : ProviderRefreshTriggerResult
+    /** A connected account is temporarily waiting; keep the next regular tick. */
+    data object Deferred : ProviderRefreshTriggerResult
     data class Launched(val attempt: ProviderRefreshAttempt) : ProviderRefreshTriggerResult
     data class Coalesced(val active: ProviderRefreshAttempt) : ProviderRefreshTriggerResult
 }
@@ -95,10 +98,15 @@ class ProviderAccountRefreshScheduler(
     private val timeoutMillis: (ProviderRefreshJob) -> Long = { ProviderRefreshPlan.timeoutMillisFor(it.providerId) },
     private val clearExactResources: (AccountLoginSessionBinding) -> Unit = {},
 ) {
-    private val queued = ArrayDeque<ProviderRefreshCard>()
+    private data class PlannedCard(val card: ProviderRefreshCard, val job: ProviderRefreshJob) {
+        val accountId: ProviderAccountId get() = card.accountId
+    }
+
+    private val queued = ArrayDeque<PlannedCard>()
     private var active: ProviderRefreshAttempt? = null
     private val pendingCards = linkedMapOf<ProviderAccountId, ProviderRefreshCard>()
     private var pendingExactTarget: ProviderAccountId? = null
+    private var pendingAutomatic = false
     private var attemptsInBatch = 0
 
     fun activeAttempt(): ProviderRefreshAttempt? = active
@@ -106,25 +114,27 @@ class ProviderAccountRefreshScheduler(
     fun trigger(
         cards: List<ProviderRefreshCard>,
         exactTarget: ProviderAccountId? = null,
+        automatic: Boolean = false,
     ): ProviderRefreshTriggerResult {
         active?.let {
             cards.forEach { card -> pendingCards[card.accountId] = card }
             pendingExactTarget = exactTarget
+            pendingAutomatic = automatic
             return ProviderRefreshTriggerResult.Coalesced(it)
         }
         queued.clear()
         attemptsInBatch = 0
-        val eligible = cards
-            .asSequence()
-            .filter(ProviderRefreshCard::isEligible)
-            .filter { exactTarget == null || it.accountId == exactTarget }
-            .distinctBy(ProviderRefreshCard::accountId)
-            .sortedBy(ProviderRefreshCard::activeRank)
-            .toList()
-        if (eligible.isEmpty()) return ProviderRefreshTriggerResult.Idle
+        val eligible = planCards(cards, exactTarget, automatic)
+        if (eligible.isEmpty()) {
+            val now = Instant.ofEpochMilli(clock.nowMillis())
+            val waiting = cards.any { card -> card.isEligible() && (
+                (exactTarget != null && card.accountId != exactTarget) ||
+                    (automatic && (GoogleUsagePendingRetryPolicy.retryDelayMillis(card.snapshot, now) ?: 0L) > 0L)
+                ) }
+            return if (waiting) ProviderRefreshTriggerResult.Deferred else ProviderRefreshTriggerResult.Idle
+        }
         val selected = if (exactTarget == null) fairBatch(eligible) else eligible.take(1)
         queued.addAll(selected)
-        if (exactTarget == null && selected.isNotEmpty()) cursorStore.write(selected.last().accountId)
         val launched = launchNext() ?: return ProviderRefreshTriggerResult.Idle
         return ProviderRefreshTriggerResult.Launched(launched)
     }
@@ -184,42 +194,62 @@ class ProviderAccountRefreshScheduler(
             attemptsInBatch = 0
             pendingCards.clear()
             pendingExactTarget = null
+            pendingAutomatic = false
         }
     }
 
-    private fun fairBatch(cards: List<ProviderRefreshCard>): List<ProviderRefreshCard> {
+    private fun planCards(
+        cards: List<ProviderRefreshCard>,
+        exactTarget: ProviderAccountId?,
+        automatic: Boolean,
+    ): List<PlannedCard> {
+        val now = Instant.ofEpochMilli(clock.nowMillis())
+        return cards.asSequence()
+            .filter(ProviderRefreshCard::isEligible)
+            .filter { exactTarget == null || it.accountId == exactTarget }
+            .distinctBy(ProviderRefreshCard::accountId)
+            .sortedBy(ProviderRefreshCard::activeRank)
+            .mapNotNull { card ->
+                val job = if (automatic) {
+                    ProviderRefreshPlan.automaticJobFor(card.accountId, card.snapshot, now)
+                } else {
+                    ProviderRefreshPlan.manualJobFor(card.accountId)
+                }
+                job?.let { PlannedCard(card, it.copy(binding = card.binding)) }
+            }.toList()
+    }
+
+    private fun fairBatch(cards: List<PlannedCard>): List<PlannedCard> {
         val last = cursorStore.read()
         val lastIndex = cards.indexOfFirst { it.accountId == last }
         val start = if (lastIndex < 0) 0 else (lastIndex + 1) % cards.size
-        return List(minOf(cards.size, ProviderRefreshQueuePolicy.MAX_ATTEMPTS_PER_BATCH)) { offset ->
+        val selected = List(minOf(cards.size, ProviderRefreshQueuePolicy.MAX_ATTEMPTS_PER_BATCH)) { offset ->
             cards[(start + offset) % cards.size]
         }
+        // Rotate before ordering reset work so an expired reset cannot starve other accounts.
+        selected.lastOrNull()?.let { cursorStore.write(it.accountId) }
+        return selected.sortedBy { it.job.qos }
     }
 
     private fun launchNext(): ProviderRefreshAttempt? {
         if (active != null) return active
         while (queued.isNotEmpty() && attemptsInBatch < ProviderRefreshQueuePolicy.MAX_ATTEMPTS_PER_BATCH) {
-            val card = queued.removeFirst()
+            val planned = queued.removeFirst()
             attemptsInBatch++
-            val job = ProviderRefreshPlan.manualJobFor(card.accountId).copy(binding = card.binding)
-            val lease = authority.begin(card, nonces.next()) ?: continue
+            val job = planned.job
+            val lease = authority.begin(planned.card, nonces.next()) ?: continue
             val now = clock.nowMillis()
             return ProviderRefreshAttempt(job, lease, now, now + timeoutMillis(job)).also { active = it }
         }
         if (pendingCards.isNotEmpty()) {
             val target = pendingExactTarget
-            val eligible = pendingCards.values
-                .asSequence()
-                .filter(ProviderRefreshCard::isEligible)
-                .filter { target == null || it.accountId == target }
-                .sortedBy(ProviderRefreshCard::activeRank)
-                .toList()
+            val eligible = planCards(pendingCards.values.toList(), target, pendingAutomatic)
             pendingCards.clear()
             pendingExactTarget = null
+            pendingAutomatic = false
             attemptsInBatch = 0
             val selected = if (target == null) fairBatch(eligible) else eligible.take(1)
             queued.addAll(selected)
-            if (target == null && selected.isNotEmpty()) cursorStore.write(selected.last().accountId)
             if (queued.isNotEmpty()) return launchNext()
         }
         return null

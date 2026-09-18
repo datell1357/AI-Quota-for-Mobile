@@ -172,6 +172,29 @@ internal fun persistReauthenticationThenCancel(
     return cancel()
 }
 
+internal fun stopIdleExactRefresh(
+    result: ProviderRefreshTriggerResult,
+    hasPendingManualRefresh: () -> Boolean,
+    stop: () -> Unit,
+) {
+    if (result == ProviderRefreshTriggerResult.Idle && !hasPendingManualRefresh()) stop()
+}
+
+/** Match v43: automatic auth failures keep the session eligible for the next ordinary cycle. */
+internal suspend fun finishExactRefreshFailure(
+    providerId: ProviderId,
+    failure: ProviderRefreshFailure,
+    automaticRefresh: Boolean,
+    retryNextCycle: () -> ProviderRefreshAttempt?,
+    requireReauthentication: suspend () -> ProviderRefreshAttempt?,
+): ProviderRefreshAttempt? = if (!automaticRefresh &&
+    ProviderRefreshFailureClassifier.requiresInteractiveAuth(providerId, failure.kind)
+) {
+    requireReauthentication()
+} else {
+    retryNextCycle()
+}
+
 class ExactProviderCollectorResourceStore<W : Any, L : Any> {
     private val resources = mutableMapOf<ProviderAccountId, ExactProviderCollectorResources<W, L>>()
 

@@ -50,7 +50,7 @@ internal class AndroidProviderAccountRefreshCoordinator(
     fun trigger(
         automatic: Boolean,
         exactTarget: ProviderAccountId?,
-    ): ProviderRefreshTriggerResult = scheduler.trigger(cards(automatic, exactTarget), exactTarget)
+    ): ProviderRefreshTriggerResult = scheduler.trigger(cards(automatic, exactTarget), exactTarget, automatic)
 
     fun publish(
         attempt: ProviderRefreshAttempt,
@@ -61,6 +61,7 @@ internal class AndroidProviderAccountRefreshCoordinator(
         if (commit is AttemptCommitResult.Committed) {
             AccountUsageRepository.open(appContext).use(AccountUsageRepository::reconcileLegacyProjection)
             ProviderCardCompatibilityProjection(appContext, authority).reconcile()
+            UsageSurfaceRefresher.refreshAccountNotification(appContext)
         }
         return result
     }
@@ -107,6 +108,9 @@ internal class AndroidProviderAccountRefreshCoordinator(
             }
         }
     }
+
+    internal fun isCurrentBinding(binding: AccountLoginSessionBinding): Boolean =
+        authority.currentBinding(binding.accountId) == binding && authority.isAuthenticated(binding.accountId)
 
     fun reset() = scheduler.resetCycle()
 
@@ -183,7 +187,7 @@ internal class AndroidProviderAccountRefreshCoordinator(
         private val authority: MainProcessAccountAuthority,
     ) : ProviderRefreshAttemptAuthority {
         override fun begin(card: ProviderRefreshCard, nonce: AttemptNonce): AttemptLease? =
-            runCatching { authority.beginAttempt(card.accountId, card.demand, nonce) }.getOrNull()
+            runCatching { authority.beginRefreshAttempt(card.accountId, card.demand, nonce) }.getOrNull()
 
         override fun publish(lease: AttemptLease, snapshot: ProviderUsageSnapshot) =
             authority.commitAttempt(lease, snapshot)

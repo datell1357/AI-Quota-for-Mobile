@@ -39,7 +39,7 @@ class UsageSurfaceRefresherTest {
     @Test
     fun appShellRoutesSnapshotDrivenWidgetUpdatesThroughSurfaceRefresher() {
         val source = sourceFile("src/main/java/com/aiquota/mobile/ui/AIQuotaAppShell.kt")
-        val snapshotEffect = source.substringAfter("LaunchedEffect(providerOrder, hiddenProviders, snapshots, currentTheme)")
+        val snapshotEffect = source.substringAfter("LaunchedEffect(cardRuntime.state.catalog, providerOrder, hiddenProviders, snapshots, currentTheme)")
             .substringBefore("LaunchedEffect(queuedRefreshJobs.firstOrNull()?.requestId)")
 
         assertTrue(snapshotEffect.contains("UsageSurfaceRefresher.refresh"))

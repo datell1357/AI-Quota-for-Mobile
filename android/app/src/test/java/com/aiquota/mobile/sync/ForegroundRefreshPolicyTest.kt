@@ -158,6 +158,8 @@ class ForegroundRefreshPolicyTest {
             "!BuildConfig\\.MULTI_ACCOUNT_ENABLED\\s*&&\\s*ForegroundRefreshPolicy\\.shouldRunForegroundLoop"
         )
         assertFalse("Exact-account service supports the same opt-in foreground loop", legacyOnlyGate.containsMatchIn(source))
-        assertEquals(2, Regex("ForegroundRefreshPolicy\\.shouldRunForegroundLoop\\(").findAll(source).count())
+        assertTrue(source.contains("ForegroundRefreshPolicy.shouldRunForAccounts("))
+        assertTrue(source.contains("LaunchedEffect(cardRuntime.state.catalog, snapshots, liveMonitoringEnabled, canPostNotifications)"))
+        assertEquals(1, Regex("ForegroundRefreshPolicy\\.shouldRunForegroundLoop\\(").findAll(source).count())
     }
 }

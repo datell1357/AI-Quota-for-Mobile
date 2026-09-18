@@ -1,6 +1,10 @@
 package com.aiquota.mobile.sync
 
 import android.content.Context
+import com.aiquota.mobile.BuildConfig
+import com.aiquota.mobile.accounts.AccountUsageRepository
+import com.aiquota.mobile.accounts.ProviderCardCatalogLoader
+import com.aiquota.mobile.accounts.ProviderCardCatalogLoadResult
 import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -28,11 +32,16 @@ class ForegroundRefreshHealthWorker(
         val canPostNotifications = UsageLimitNotificationController.canPostNotifications(context)
         val snapshots = LocalUsageRepository(context).readSnapshots()
         val liveMonitoringEnabled = ForegroundRefreshController(context).liveMonitoringEnabled()
-        val shouldRunForegroundLoop = ForegroundRefreshPolicy.shouldRunForegroundLoop(
-            snapshots = snapshots,
-            liveMonitoringEnabled = liveMonitoringEnabled,
-            canPostNotifications = canPostNotifications
-        )
+        val shouldRunForegroundLoop = if (BuildConfig.MULTI_ACCOUNT_ENABLED) {
+            AccountUsageRepository.open(context).use { repository ->
+                val loaded = ProviderCardCatalogLoader(repository).load()
+                val cards = (loaded as? ProviderCardCatalogLoadResult.Loaded)?.snapshot?.cards
+                    ?: return
+                ForegroundRefreshPolicy.shouldRunForAccounts(cards, liveMonitoringEnabled, canPostNotifications)
+            }
+        } else {
+            ForegroundRefreshPolicy.shouldRunForegroundLoop(snapshots, liveMonitoringEnabled, canPostNotifications)
+        }
 
         if (!shouldRunForegroundLoop) {
             UsageLimitNotificationController.cancelLiveRefreshIssue(context)

@@ -356,6 +356,85 @@ class ProviderAccountRefreshSchedulerTest {
         assertEquals(second.accountId, next.attempt.accountId)
     }
 
+    @Test
+    fun automaticCycleSkipsGlmWithoutSubscriptionButManualStillCollectsIt() {
+        val glm = card(id(ProviderId.GLM, 1), 0).let {
+            it.copy(snapshot = it.snapshot.copy(lines = emptyList(), planLabel = GlmNoSubscriptionPolicy.PLAN_LABEL))
+        }
+        val codex = card(id(ProviderId.CODEX, 2), 1)
+        val scheduler = scheduler(FakeAttemptAuthority(listOf(glm, codex)), MemoryCursor())
+        val first = (scheduler.trigger(listOf(glm, codex), automatic = true) as ProviderRefreshTriggerResult.Launched).attempt
+        assertEquals(codex.accountId, first.accountId)
+        assertNull((scheduler.publish(first, usage(first.accountId)) as ProviderRefreshCallbackResult.Accepted).next)
+        val manual = (scheduler.trigger(listOf(glm, codex), glm.accountId) as ProviderRefreshTriggerResult.Launched).attempt
+        assertEquals(glm.accountId, manual.accountId)
+    }
+
+    @Test
+    fun googlePendingWaitsWithoutStoppingAndBecomesDueAtTheExistingDeadline() {
+        val clock = MutableClock(10_000)
+        val gemini = card(id(ProviderId.GEMINI, 1), 0).let {
+            it.copy(snapshot = it.snapshot.copy(lines = emptyList(),
+                connectionState = ProviderConnectionState.STALE,
+                message = GoogleUsagePendingRetryPolicy.PENDING_MESSAGE,
+                statusUpdatedAt = java.time.Instant.ofEpochMilli(clock.value).toString()))
+        }
+        val scheduler = scheduler(FakeAttemptAuthority(listOf(gemini)), MemoryCursor(), clock)
+        assertEquals(ProviderRefreshTriggerResult.Deferred, scheduler.trigger(listOf(gemini), automatic = true))
+        clock.value += GoogleUsagePendingRetryPolicy.RETRY_DELAY_MILLIS
+        val due = (scheduler.trigger(listOf(gemini), automatic = true) as ProviderRefreshTriggerResult.Launched).attempt
+        assertEquals(gemini.accountId, due.accountId)
+    }
+
+    @Test
+    fun resetPriorityIsExactPerAccountAndDoesNotStarveAccountsOutsideTheBatch() {
+        val clock = MutableClock(100_000)
+        val cards = (0 until 7).map { index ->
+            card(id(ProviderId.CODEX, index + 1), index).let { card ->
+                if (index == 3) card.copy(snapshot = card.snapshot.copy(lines = card.snapshot.lines.map {
+                    it.copy(resetsAt = java.time.Instant.ofEpochMilli(90_000).toString())
+                })) else card
+            }
+        }
+        val scheduler = scheduler(FakeAttemptAuthority(cards), MemoryCursor(), clock)
+        val seen = mutableListOf<ProviderAccountId>()
+        repeat(2) { cycle ->
+            var attempt = (scheduler.trigger(cards, automatic = true) as ProviderRefreshTriggerResult.Launched).attempt
+            if (cycle == 0) {
+                assertEquals(cards[3].accountId, attempt.accountId)
+                assertEquals(ProviderRefreshPlan.RESET_REFRESH_QOS, attempt.job.qos)
+            }
+            while (true) {
+                seen += attempt.accountId
+                if (attempt.accountId != cards[3].accountId) assertEquals(ProviderRefreshPlan.NORMAL_REFRESH_QOS, attempt.job.qos)
+                attempt = (scheduler.publish(attempt, usage(attempt.accountId)) as ProviderRefreshCallbackResult.Accepted).next ?: break
+            }
+        }
+        assertEquals(8, seen.size)
+        assertTrue(cards.all { it.accountId in seen })
+    }
+
+    @Test
+    fun coalescedAutomaticRequestStillUsesSubscriptionPolicy() {
+        val codex = card(id(ProviderId.CODEX, 1), 0)
+        val glm = card(id(ProviderId.GLM, 2), 1).let {
+            it.copy(snapshot = it.snapshot.copy(lines = emptyList(), planLabel = GlmNoSubscriptionPolicy.PLAN_LABEL))
+        }
+        val scheduler = scheduler(FakeAttemptAuthority(listOf(codex, glm)), MemoryCursor())
+        val active = (scheduler.trigger(listOf(codex)) as ProviderRefreshTriggerResult.Launched).attempt
+        assertTrue(scheduler.trigger(listOf(glm), automatic = true) is ProviderRefreshTriggerResult.Coalesced)
+        assertNull((scheduler.publish(active, usage(codex.accountId)) as ProviderRefreshCallbackResult.Accepted).next)
+    }
+
+    @Test
+    fun ineligibleManualTargetDoesNotStopAnotherAuthenticatedAccount() {
+        val active = card(id(ProviderId.CODEX, 1), 0)
+        val loggedOut = card(id(ProviderId.CODEX, 2), 1, auth = AccountAuthState.REAUTH_REQUIRED)
+        val scheduler = scheduler(FakeAttemptAuthority(listOf(active, loggedOut)), MemoryCursor())
+        assertEquals(ProviderRefreshTriggerResult.Deferred, scheduler.trigger(listOf(active, loggedOut), loggedOut.accountId))
+        assertEquals(ProviderRefreshTriggerResult.Idle, scheduler.trigger(listOf(loggedOut), automatic = true))
+    }
+
     private fun scheduler(
         authority: FakeAttemptAuthority,
         cursor: MemoryCursor,

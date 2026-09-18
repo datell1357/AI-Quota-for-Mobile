@@ -34,8 +34,8 @@ class LiveRefreshPromptPolicyTest {
     }
 
     @Test
-    fun appEntryPromptShowsWhenBatteryOptimizationIsStillEnabled() {
-        assertTrue(
+    fun configuredLiveRefreshDoesNotReopenForBatteryAdviceAlone() {
+        assertFalse(
             LiveRefreshPromptPolicy.shouldShowOnAppEntry(
                 snapshots = listOf(snapshot(ProviderId.GEMINI, ProviderConnectionState.CONNECTED)),
                 liveMonitoringEnabled = true,

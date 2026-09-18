@@ -59,6 +59,13 @@ object UsageSurfaceRefresher {
         scheduleWidgetSurfaceUpdate(appContext)
     }
 
+    fun refreshAccountNotification(context: Context) {
+        val appContext = context.applicationContext
+        if (ForegroundRefreshController(appContext).liveMonitoringEnabled()) {
+            schedulePinnedNotificationUpdate(appContext, WidgetSnapshotCache(appContext).readState().snapshotJson)
+        }
+    }
+
     fun refreshWidgetSurfaces(context: Context) {
         scheduleWidgetSurfaceUpdate(context.applicationContext)
     }
