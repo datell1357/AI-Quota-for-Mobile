@@ -393,7 +393,7 @@ test("Android multi-account WebKit and release gate are source-verified", () => 
   };
 
   assert.equal(parseFlag(debug, "debug"), "true");
-  assert.equal(parseFlag(release, "release"), "false");
+  assert.equal(parseFlag(release, "release"), "true");
 
   const webkitPins = gradle.match(/implementation\(\s*[\"']androidx\.webkit:webkit:[^\"']+[\"']\s*\)/g) ?? [];
   assert.deepEqual(webkitPins, ['implementation("androidx.webkit:webkit:1.17.0")']);

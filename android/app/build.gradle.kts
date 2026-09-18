@@ -92,8 +92,8 @@ android {
         applicationId = "com.aiquota.mobile"
         minSdk = 26
         targetSdk = 36
-        versionCode = 52
-        versionName = "1.2.5"
+        versionCode = 55
+        versionName = "1.2.2"
         testInstrumentationRunner = project.findProperty("aiquota.testInstrumentationRunner")?.toString()
             ?: "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GOOGLE_ANDROID_OAUTH_CLIENT_ID", "\"$googleAndroidOAuthClientId\"")
@@ -131,7 +131,7 @@ android {
             }
         }
         release {
-            buildConfigField("boolean", "MULTI_ACCOUNT_ENABLED", "false")
+            buildConfigField("boolean", "MULTI_ACCOUNT_ENABLED", "true")
             if (hasReleaseKeystore) {
                 signingConfig = signingConfigs.getByName("release")
             }
