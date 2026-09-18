@@ -379,7 +379,7 @@ private fun IconGauge(gauge: WidgetProviderGauge, layoutSpec: WidgetGaugeLayoutS
                 modifier = GlanceModifier.width(layoutSpec.gaugeWidthDp.dp)
             ) {
                 Text(
-                    text = gauge.remainingText,
+                    text = delayedUsageText(gauge.remainingText, gauge.isStale),
                     modifier = GlanceModifier.width(EXPANDED_CAPTION_REMAINING_WIDTH_DP.dp),
                     style = widgetTextStyle(themeColors = themeColors)
                 )

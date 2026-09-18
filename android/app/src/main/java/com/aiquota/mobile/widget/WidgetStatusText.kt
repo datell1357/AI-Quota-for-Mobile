@@ -8,7 +8,7 @@ internal fun providerWidgetStatusLabel(status: String): String {
         "CONNECTING" -> "연결 중"
         "DISCONNECTED", "NOT_CONNECTED" -> "연결 안 됨"
         "COLLECTING", "REFRESHING" -> "데이터 수집 중"
-        "STALE" -> "연결됨"
+        "STALE" -> "갱신 지연"
         "INTERACTIVE_AUTH_REQUIRED" -> "연결 확인 필요"
         "UNAVAILABLE" -> "사용할 수 없음"
         "ERROR", "DANGER" -> "오류"
@@ -17,3 +17,7 @@ internal fun providerWidgetStatusLabel(status: String): String {
         else -> status.ifBlank { "상태 없음" }
     }
 }
+
+internal fun delayedUsageText(text: String, delayed: Boolean): String = if (delayed) {
+    "$text · ${if (Locale.getDefault().language == "ko") "지연" else "delayed"}"
+} else text

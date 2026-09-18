@@ -59,7 +59,7 @@ class DashboardWidgetImmediateRendererTest {
     }
 
     @Test
-    fun dashboardImmediateRendererReadsCacheOnlyAndDoesNotStartProviderWork() {
+    fun dashboardImmediateRendererReadsAccountCatalogAndDoesNotStartProviderWork() {
         val source = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetImmediateRenderer.kt")
         val text = if (source.exists()) source.readText() else ""
 
@@ -67,7 +67,7 @@ class DashboardWidgetImmediateRendererTest {
             "Dashboard immediate renderer source should exist so widget-only guardrails can be enforced.",
             source.exists()
         )
-        assertTrue(text.contains("WidgetSnapshotCache(context).read()"))
+        assertTrue(text.contains("ProviderWidgetCardCatalog.authoritativeSnapshotJson(context)"))
         listOf(
             "ProviderBackgroundRefreshService",
             "LocalUsageRepository",

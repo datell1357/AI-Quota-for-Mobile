@@ -10,7 +10,7 @@ class WidgetStatusTextTest {
         assertEquals("연결 중", providerWidgetStatusLabel("CONNECTING"))
         assertEquals("연결 안 됨", providerWidgetStatusLabel("DISCONNECTED"))
         assertEquals("데이터 수집 중", providerWidgetStatusLabel("COLLECTING"))
-        assertEquals("연결됨", providerWidgetStatusLabel("STALE"))
+        assertEquals("갱신 지연", providerWidgetStatusLabel("STALE"))
         assertEquals("연결 확인 필요", providerWidgetStatusLabel("INTERACTIVE_AUTH_REQUIRED"))
         assertEquals("사용할 수 없음", providerWidgetStatusLabel("UNAVAILABLE"))
         assertEquals("오류", providerWidgetStatusLabel("ERROR"))

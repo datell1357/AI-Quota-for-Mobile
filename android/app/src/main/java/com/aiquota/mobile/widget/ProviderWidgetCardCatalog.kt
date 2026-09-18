@@ -1,6 +1,8 @@
 package com.aiquota.mobile.widget
 
 import android.content.Context
+import com.aiquota.mobile.accounts.displaySnapshot
+import org.json.JSONObject
 import com.aiquota.mobile.accounts.AccountDeletionState
 import com.aiquota.mobile.accounts.AccountState
 import com.aiquota.mobile.accounts.AccountUsageRepository
@@ -43,6 +45,32 @@ internal data class ProviderWidgetRenderInput(
 )
 
 object ProviderWidgetCardCatalog {
+    fun authoritativeSnapshotJson(context: Context): String {
+        val appContext = context.applicationContext
+        val records = runCatching {
+            AccountUsageRepository.open(appContext).use { repository ->
+                when (val loaded = ProviderCardCatalogLoader(repository).load()) {
+                    is ProviderCardCatalogLoadResult.Loaded -> loaded.snapshot.cards.map {
+                        it to it.displaySnapshot().copy(displayName = it.alias)
+                    }
+                    is ProviderCardCatalogLoadResult.Rejected -> null
+                }
+            }
+        }.getOrNull() ?: return WidgetSnapshotCache(appContext).readState().snapshotJson
+        val json = JSONObject(ProviderSnapshotCodec.encode(records.map { it.second }))
+        val providers = json.optJSONArray("providers")
+        val ids = records.groupBy { "${it.second.providerId.storageId}|${it.second.displayName}" }
+            .mapValues { (_, rows) -> rows.map { it.first.accountId }.toMutableList() }
+        for (index in 0 until (providers?.length() ?: 0)) {
+            val provider = providers?.optJSONObject(index) ?: continue
+            ids["${provider.optString("providerId")}|${provider.optString("displayName")}"]
+                ?.takeIf { it.isNotEmpty() }?.removeAt(0)?.let {
+                    provider.put("accountId", ProviderAccountIdStorageCodec.encode(it))
+                }
+        }
+        return json.toString()
+    }
+
     fun activeSelections(context: Context): List<ProviderWidgetCardSelection> =
         AccountUsageRepository.open(context.applicationContext).use { repository ->
             selectionsFrom(ProviderCardCatalogLoader(repository).load())
@@ -83,13 +111,15 @@ internal fun isActiveProviderWidgetRecord(record: VersionedDisplayRecord): Boole
         record.account.deletionState == AccountDeletionState.NONE &&
         !record.account.alias.isNullOrBlank()
 
+@Suppress("UNUSED_PARAMETER") // Keep callers compatible; migration caches have no display version.
 internal fun providerWidgetSnapshotJson(
     context: Context,
     accountId: ProviderAccountId,
     record: VersionedDisplayRecord,
-): String = WidgetSnapshotCache(context).readExactCardState(accountId)?.snapshotJson
-    ?.takeIf(String::isNotBlank)
-    ?: ProviderSnapshotCodec.encode(listOf(record.snapshot))
+): String {
+    require(record.account.id == accountId)
+    return ProviderSnapshotCodec.encode(listOf(record.snapshot))
+}
 
 internal fun providerWidgetPresentation(
     record: VersionedDisplayRecord,

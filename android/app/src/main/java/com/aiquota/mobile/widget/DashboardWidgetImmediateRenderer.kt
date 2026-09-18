@@ -1,5 +1,7 @@
 package com.aiquota.mobile.widget
 
+import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
+import com.aiquota.mobile.local.ProviderCardPreferencesRepository
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
@@ -85,16 +87,13 @@ object DashboardWidgetImmediateRenderer {
     ): RemoteViews {
         val preferences = ProviderPreferencesRepository(context.applicationContext)
         val payload = dashboardWidgetPayload(
-            snapshotJson = WidgetSnapshotCache(context).read(),
+            snapshotJson = ProviderWidgetCardCatalog.authoritativeSnapshotJson(context),
             order = preferences.dashboardWidgetProviderOrder(appWidgetId),
-            hidden = preferences.dashboardWidgetHiddenProviders(appWidgetId)
+            hidden = preferences.dashboardWidgetHiddenProviders(appWidgetId),
+            cardOrder = ProviderCardPreferencesRepository(context).dashboardWidgetCardOrder(appWidgetId),
+            hiddenCards = ProviderCardPreferencesRepository(context).dashboardWidgetHiddenCards(appWidgetId),
         )
-        val capacitySpec = unifiedWidgetLayoutSpec(
-            cellWidth = dashboardWidgetCellWidthForDp(widthDp),
-            cellHeight = unifiedWidgetCellHeightForDp(heightDp),
-            widgetHeightDp = heightDp
-        )
-        val providers = payload.providers.take(capacitySpec.maxProviderCount)
+        val providers = payload.providers.take(dashboardWidgetMaxAccountCount(widthDp, heightDp))
         val spec = unifiedWidgetLayoutSpec(
             cellWidth = dashboardWidgetCellWidthForDp(widthDp),
             cellHeight = unifiedWidgetCellHeightForDp(heightDp),
@@ -121,7 +120,7 @@ object DashboardWidgetImmediateRenderer {
         views.setTextViewText(R.id.dashboard_immediate_empty, context.getString(R.string.widget_no_data))
         views.setOnClickPendingIntent(R.id.dashboard_immediate_root, homePendingIntent(context, appWidgetId))
 
-        applyRows(views, providers, spec, themeColors)
+        applyRows(views, providers, spec, themeColors, context)
         return views
     }
 
@@ -129,7 +128,8 @@ object DashboardWidgetImmediateRenderer {
         views: RemoteViews,
         providers: List<ProviderWidgetPayload>,
         spec: UnifiedWidgetLayoutSpec,
-        themeColors: WidgetThemeColors
+        themeColors: WidgetThemeColors,
+        context: Context
     ) {
         val rowIds = dashboardRowIds()
         views.setViewVisibility(
@@ -143,6 +143,11 @@ object DashboardWidgetImmediateRenderer {
             } else {
                 views.setViewVisibility(ids.containerId, View.VISIBLE)
                 applyProviderRow(views, ids, provider, spec, themeColors)
+                provider.accountId?.let(ProviderAccountIdStorageCodec::decodeOrNull)?.let { accountId ->
+                    views.setOnClickPendingIntent(ids.containerId, PendingIntent.getActivity(
+                        context, 71000 + accountId.hashCode(), MainActivity.createProviderDetailIntent(context, accountId),
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+                }
             }
         }
     }

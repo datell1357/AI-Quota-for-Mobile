@@ -140,8 +140,8 @@ class ProviderWidgetBindingAndRenderTest {
     private fun snapshot(remaining: Int) = ProviderUsageSnapshot(
         providerId = ProviderId.CODEX,
         connectionState = ProviderConnectionState.CONNECTED,
-        updatedAt = "2026-08-29T00:00:00Z",
-        statusUpdatedAt = "2026-08-29T00:00:00Z",
+        updatedAt = java.time.Instant.now().toString(),
+        statusUpdatedAt = java.time.Instant.now().toString(),
         lines = listOf(
             ProviderUsageLine(
                 key = "quota",

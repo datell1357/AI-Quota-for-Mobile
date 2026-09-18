@@ -128,7 +128,8 @@ object ProviderWidgetImmediateRenderer {
         val spec = providerWidgetLayoutSpec(
             cellWidth = cellWidth,
             cellHeight = cellHeight,
-            widgetHeightDp = heightDp
+            widgetHeightDp = heightDp,
+            visibleLineCount = payload.lines.size,
         )
         val themeColors = widgetThemeColors(context)
         val views = RemoteViews(context.packageName, R.layout.ai_quota_widget_provider_immediate)

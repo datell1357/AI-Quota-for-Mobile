@@ -1,5 +1,7 @@
-﻿package com.aiquota.mobile.widget
+package com.aiquota.mobile.widget
 
+import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
+import com.aiquota.mobile.local.ProviderCardPreferencesRepository
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -44,7 +46,8 @@ class AIQuotaCircularWidgetProvider : AppWidgetProvider() {
         private val gaugeRowIds = intArrayOf(
             R.id.circular_gauge_row_0,
             R.id.circular_gauge_row_1,
-            R.id.circular_gauge_row_2
+            R.id.circular_gauge_row_2,
+            R.id.circular_gauge_row_3,
         )
 
         private val gaugeGridViewIds = arrayOf(
@@ -62,6 +65,11 @@ class AIQuotaCircularWidgetProvider : AppWidgetProvider() {
                 R.id.circular_gauge_6,
                 R.id.circular_gauge_7,
                 R.id.circular_gauge_8
+            ),
+            intArrayOf(
+                R.id.circular_gauge_9,
+                R.id.circular_gauge_10,
+                R.id.circular_gauge_11
             )
         )
 
@@ -91,9 +99,11 @@ class AIQuotaCircularWidgetProvider : AppWidgetProvider() {
 
             appWidgetIds.forEach { appWidgetId ->
                 val payload = dashboardWidgetPayload(
-                    snapshotJson = widgetState.snapshotJson,
+                    snapshotJson = ProviderWidgetCardCatalog.authoritativeSnapshotJson(context),
                     order = preferences.dashboardWidgetProviderOrder(appWidgetId),
-                    hidden = preferences.dashboardWidgetHiddenProviders(appWidgetId)
+                    hidden = preferences.dashboardWidgetHiddenProviders(appWidgetId),
+                    cardOrder = ProviderCardPreferencesRepository(context).dashboardWidgetCardOrder(appWidgetId),
+                    hiddenCards = ProviderCardPreferencesRepository(context).dashboardWidgetHiddenCards(appWidgetId),
                 )
                 val isRefreshing = WidgetRefreshFeedback.isRefreshInProgress(
                     widgetRefreshActive = WidgetRefreshFeedback.isWidgetRefreshInProgress(context, appWidgetId)
@@ -189,6 +199,16 @@ class AIQuotaCircularWidgetProvider : AppWidgetProvider() {
             val hasProviderData = gauges.isNotEmpty()
             val views = RemoteViews(context.packageName, R.layout.ai_quota_widget_circular)
             views.setInt(R.id.circular_widget_root, "setBackgroundResource", widgetBackgroundRes(theme))
+            if (layoutSpec.cellWidth == 1 && layoutSpec.cellHeight >= 3) {
+                val compactPaddingPx = (4 * context.resources.displayMetrics.density).roundToInt()
+                views.setViewPadding(
+                    R.id.circular_widget_root,
+                    compactPaddingPx,
+                    compactPaddingPx,
+                    compactPaddingPx,
+                    compactPaddingPx,
+                )
+            }
             views.setTextColor(R.id.circular_login_message, themeColors.caption.toArgb())
             views.setOnClickPendingIntent(
                 R.id.circular_widget_root,
@@ -231,7 +251,13 @@ class AIQuotaCircularWidgetProvider : AppWidgetProvider() {
                         views.setViewVisibility(viewId, View.GONE)
                     } else {
                         views.setViewVisibility(viewId, View.VISIBLE)
-                        views.setImageViewBitmap(viewId, circularGaugeBitmap(context, gauge, themeColors))
+                        views.setImageViewBitmap(viewId, circularGaugeBitmap(context, gauge, themeColors, batteryAccountCaption(gauge, gauges)))
+                        views.setContentDescription(viewId, gauge.accountLabel?.let { "$it · ${gauge.providerId}" } ?: gauge.providerId)
+                        gauge.accountId?.let(ProviderAccountIdStorageCodec::decodeOrNull)?.let { accountId ->
+                            views.setOnClickPendingIntent(viewId, PendingIntent.getActivity(
+                                context, 72000 + accountId.hashCode(), MainActivity.createProviderDetailIntent(context, accountId),
+                                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+                        }
                     }
                 }
             }
@@ -260,7 +286,8 @@ class AIQuotaCircularWidgetProvider : AppWidgetProvider() {
         private fun circularGaugeBitmap(
             context: Context,
             gauge: WidgetProviderGauge,
-            themeColors: WidgetThemeColors
+            themeColors: WidgetThemeColors,
+            caption: String? = null
         ): Bitmap {
             val bitmap = Bitmap.createBitmap(
                 CIRCULAR_GAUGE_CANVAS_SIZE_PX,
@@ -294,19 +321,41 @@ class AIQuotaCircularWidgetProvider : AppWidgetProvider() {
 
             canvas.drawArc(rect, -90f, 360f, false, trackPaint)
             canvas.drawArc(rect, remainingStartAngle, 360f * ratio, false, activePaint)
-            drawProviderIcon(context, canvas, gauge.providerId)
+            drawProviderIcon(context, canvas, gauge.providerId, caption != null)
+            if (gauge.isStale) {
+                // A small clock marks cached usage without changing the ring value or caption.
+                val clockPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = themeColors.caption.toArgb()
+                    style = Paint.Style.STROKE
+                    strokeWidth = 2.5f
+                }
+                canvas.drawCircle(98f, 30f, 9f, clockPaint)
+                canvas.drawLine(98f, 30f, 98f, 24f, clockPaint)
+                canvas.drawLine(98f, 30f, 102f, 33f, clockPaint)
+            }
+            if (caption != null) {
+                val paint = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = themeColors.caption.toArgb()
+                    textSize = 13f
+                    textAlign = Paint.Align.CENTER
+                    typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+                }
+                val text = android.text.TextUtils.ellipsize(caption, paint, 88f, android.text.TextUtils.TruncateAt.END)
+                canvas.drawText(text.toString(), 64f, 96f, paint)
+            }
             return bitmap
         }
 
-        private fun drawProviderIcon(context: Context, canvas: Canvas, providerId: String) {
+        private fun drawProviderIcon(context: Context, canvas: Canvas, providerId: String, hasCaption: Boolean) {
             val drawable = ContextCompat.getDrawable(context, providerIconRes(providerId))?.mutate() ?: return
-            val left = (CIRCULAR_GAUGE_CANVAS_SIZE_PX - CIRCULAR_GAUGE_ICON_SIZE_PX) / 2
-            val top = (CIRCULAR_GAUGE_CANVAS_SIZE_PX - CIRCULAR_GAUGE_ICON_SIZE_PX) / 2
+            val iconSize = if (hasCaption) 42 else CIRCULAR_GAUGE_ICON_SIZE_PX
+            val left = (CIRCULAR_GAUGE_CANVAS_SIZE_PX - iconSize) / 2
+            val top = if (hasCaption) 32 else (CIRCULAR_GAUGE_CANVAS_SIZE_PX - iconSize) / 2
             drawable.setBounds(
                 left,
                 top,
-                left + CIRCULAR_GAUGE_ICON_SIZE_PX,
-                top + CIRCULAR_GAUGE_ICON_SIZE_PX
+                left + iconSize,
+                top + iconSize
             )
             drawable.draw(canvas)
         }
@@ -370,17 +419,21 @@ internal fun circularWidgetLayoutSpecForSize(
         measuredCellWidth = circularWidgetCellSpanForDp(widthDp)
     )
     val cellHeight = circularWidgetCellSpanForDp(heightDp)
-    val maxGaugeCount = (cellWidth * cellHeight).coerceIn(1, CIRCULAR_MAX_GAUGES)
+    val maxGaugeCount = when {
+        cellWidth == 1 && cellHeight >= 3 -> 4
+        else -> cellWidth * cellHeight
+    }.coerceIn(1, CIRCULAR_MAX_GAUGES)
     val visibleGaugeCount = availableGaugeCount.coerceIn(0, maxGaugeCount)
     val columnCount = circularWidgetColumnCount(
         cellWidth = cellWidth,
         cellHeight = cellHeight,
         visibleGaugeCount = visibleGaugeCount
     )
+    val maxRowCount = if (cellWidth == 1 && cellHeight >= 3) 4 else cellHeight
     val rowCount = if (visibleGaugeCount == 0) {
         0
     } else {
-        ((visibleGaugeCount + columnCount - 1) / columnCount).coerceIn(1, cellHeight)
+        ((visibleGaugeCount + columnCount - 1) / columnCount).coerceIn(1, maxRowCount)
     }
     return CircularWidgetLayoutSpec(
         cellWidth = cellWidth,

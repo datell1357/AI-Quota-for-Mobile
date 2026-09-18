@@ -1,6 +1,10 @@
 ﻿package com.aiquota.mobile.widget
 
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
 import com.aiquota.mobile.local.ProviderId
+import com.aiquota.mobile.local.ProviderConnectionState
+import com.aiquota.mobile.local.usageDisplayConnectionState
 import com.aiquota.mobile.local.ProviderPreferencesCodec
 import com.aiquota.mobile.local.displayResetText
 import com.aiquota.mobile.local.displayRemainingText
@@ -19,7 +23,10 @@ data class WidgetProviderGauge(
     val remainingRatio: Float,
     val remainingText: String,
     val resetText: String?,
-    val gaugeColorHex: String? = null
+    val gaugeColorHex: String? = null,
+    val accountId: String? = null,
+    val accountLabel: String? = null,
+    val isStale: Boolean = false,
 )
 
 data class UnifiedWidgetPayload(
@@ -37,7 +44,8 @@ data class ProviderWidgetPayload(
     val status: String,
     val visible: Boolean,
     val gaugeColorHex: String? = null,
-    val lines: List<ProviderWidgetLine>
+    val lines: List<ProviderWidgetLine>,
+    val accountId: String? = null
 )
 
 data class ProviderWidgetLine(
@@ -77,7 +85,10 @@ fun parseWidgetProviderGauges(snapshotJson: String, now: Instant = Instant.now()
                         remainingRatio = line.ratio,
                         remainingText = displayRemainingText(line.remainingText),
                         resetText = displayResetTextForLocale(line.resetText),
-                        gaugeColorHex = provider.gaugeColorHex()
+                        gaugeColorHex = provider.gaugeColorHex(),
+                        accountId = provider.optionalString("accountId"),
+                        accountLabel = provider.optionalString(KEY_DISPLAY_NAME),
+                        isStale = provider.displayConnectionState(now) == ProviderConnectionState.STALE,
                     )
                 )
             }
@@ -106,9 +117,29 @@ fun dashboardWidgetPayload(
     snapshotJson: String,
     order: List<ProviderId>,
     hidden: Set<ProviderId>,
-    now: Instant = Instant.now()
+    now: Instant = Instant.now(),
+    cardOrder: List<ProviderAccountId> = emptyList(),
+    hiddenCards: Set<ProviderAccountId> = emptySet(),
 ): UnifiedWidgetPayload {
-    return parseUnifiedWidgetPayload(snapshotJson, now).withProviderOrder(order, hidden)
+    val payload = parseUnifiedWidgetPayload(snapshotJson, now)
+    return (if (cardOrder.isNotEmpty()) payload else payload.withProviderOrder(order, hidden))
+        .withDashboardCardPreferences(cardOrder, hiddenCards)
+}
+
+fun UnifiedWidgetPayload.withDashboardCardPreferences(
+    order: List<ProviderAccountId>, hidden: Set<ProviderAccountId>,
+): UnifiedWidgetPayload {
+    if (order.isEmpty() && hidden.isEmpty()) return this
+    val orderedIds = order.map(ProviderAccountIdStorageCodec::encode)
+    val hiddenIds = hidden.map(ProviderAccountIdStorageCodec::encode).toSet()
+    val providersById = providers.groupBy { it.accountId }
+    val gaugesById = gauges.groupBy { it.accountId }
+    return copy(
+        providers = orderedIds.filterNot { it in hiddenIds }.flatMap { providersById[it].orEmpty() } +
+            providers.filter { it.accountId !in hiddenIds && it.accountId !in orderedIds },
+        gauges = orderedIds.filterNot { it in hiddenIds }.flatMap { gaugesById[it].orEmpty() } +
+            gauges.filter { it.accountId !in hiddenIds && it.accountId !in orderedIds },
+    )
 }
 
 fun providerWidgetPayload(
@@ -141,14 +172,14 @@ private fun UnifiedWidgetPayload.withProviderOrder(
     val orderedIds = ProviderPreferencesCodec.visibleProviders(order, hidden)
         .map { it.storageId.lowercase(Locale.US) }
     val orderedIdSet = orderedIds.toSet()
-    val providersById = providers.associateBy { it.providerId.lowercase(Locale.US) }
-    val gaugesById = gauges.associateBy { it.providerId.lowercase(Locale.US) }
-    val orderedProviders = orderedIds.mapNotNull { providersById[it] } +
+    val providersById = providers.groupBy { it.providerId.lowercase(Locale.US) }
+    val gaugesById = gauges.groupBy { it.providerId.lowercase(Locale.US) }
+    val orderedProviders = orderedIds.flatMap { providersById[it].orEmpty() } +
         providers.filter { provider ->
             val id = provider.providerId.lowercase(Locale.US)
             id !in orderedIdSet && id !in hiddenIds
         }
-    val orderedGauges = orderedIds.mapNotNull { gaugesById[it] } +
+    val orderedGauges = orderedIds.flatMap { gaugesById[it].orEmpty() } +
         gauges.filter { gauge ->
             val id = gauge.providerId.lowercase(Locale.US)
             id !in orderedIdSet && id !in hiddenIds
@@ -214,22 +245,29 @@ private fun JSONObject.toWidgetGauge(providerId: String, now: Instant): WidgetPr
         remainingRatio = line.ratio,
         remainingText = displayRemainingText(line.remainingText),
         resetText = displayResetTextForLocale(line.resetText),
-        gaugeColorHex = gaugeColorHex()
+        gaugeColorHex = gaugeColorHex(),
+        accountId = optionalString("accountId"),
+        accountLabel = optionalString(KEY_DISPLAY_NAME),
+        isStale = displayConnectionState(now) == ProviderConnectionState.STALE,
     )
 }
 
 private fun JSONObject.toProviderWidgetPayload(providerId: String, now: Instant): ProviderWidgetPayload {
     val linesJson = optJSONArray(KEY_LINES) ?: JSONArray()
+    val state = displayConnectionState(now)
+    val rawStatus = optionalString(KEY_CONNECTION_STATE) ?: optionalString(KEY_STATUS) ?: DISCONNECTED_STATUS
     return ProviderWidgetPayload(
         providerId = providerId,
         displayName = normalizedProviderDisplayName(providerId, optionalString(KEY_DISPLAY_NAME)),
-        status = optionalString(KEY_CONNECTION_STATE) ?: optionalString(KEY_STATUS) ?: DISCONNECTED_STATUS,
+        status = if (state == ProviderConnectionState.STALE && !rawStatus.equals("STALE", true)) "STALE" else rawStatus,
         visible = isVisibleProvider(),
         gaugeColorHex = gaugeColorHex(),
+        accountId = optionalString("accountId"),
         lines = buildList {
             for (index in 0 until linesJson.length()) {
                 val line = linesJson.optJSONObject(index) ?: continue
-                add(line.toProviderWidgetLine(providerId, index, now))
+                val parsed = line.toProviderWidgetLine(providerId, index, now)
+                add(parsed.copy(remainingText = delayedUsageText(parsed.remainingText, state == ProviderConnectionState.STALE)))
             }
         }
     )
@@ -237,6 +275,15 @@ private fun JSONObject.toProviderWidgetPayload(providerId: String, now: Instant)
 
 private fun JSONObject.gaugeColorHex(): String? {
     return com.aiquota.mobile.local.ProviderGaugeColor.normalize(optionalString(KEY_GAUGE_COLOR))
+}
+
+private fun JSONObject.displayConnectionState(now: Instant): ProviderConnectionState {
+    val raw = optionalString(KEY_CONNECTION_STATE) ?: optionalString(KEY_STATUS) ?: DISCONNECTED_STATUS
+    val state = runCatching { ProviderConnectionState.valueOf(raw.uppercase(Locale.US)) }
+        .getOrDefault(ProviderConnectionState.DISCONNECTED)
+    return usageDisplayConnectionState(state,
+        optionalString("updatedAt") ?: optionalString("fetchedAt").orEmpty(),
+        (optJSONArray(KEY_LINES)?.length() ?: 0) > 0, now)
 }
 
 private fun JSONObject.toProviderWidgetLine(providerId: String, lineIndex: Int, now: Instant): ProviderWidgetLine {

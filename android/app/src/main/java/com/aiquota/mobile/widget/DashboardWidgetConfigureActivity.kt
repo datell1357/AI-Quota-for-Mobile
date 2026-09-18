@@ -1,7 +1,5 @@
-﻿package com.aiquota.mobile.widget
+package com.aiquota.mobile.widget
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.app.Activity
 import android.appwidget.AppWidgetManager
@@ -9,18 +7,18 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
-import android.provider.Settings
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.ViewGroup
-import android.view.animation.DecelerateInterpolator
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.ComponentActivity
+import com.aiquota.mobile.accounts.ProviderAccountId
+import com.aiquota.mobile.local.ProviderCardPreferencesRepository
 import com.aiquota.mobile.R
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderPreferencesCodec
@@ -30,7 +28,6 @@ import com.aiquota.mobile.localization.withAppLanguageForDeviceLanguage
 import com.aiquota.mobile.ui.appLayoutMetrics
 import com.aiquota.mobile.ui.dashboard.ProviderCardOrder
 import com.aiquota.mobile.ui.provider.providerIconRes
-import kotlin.math.abs
 
 private const val WIDGET_CONFIGURE_VISIBILITY_BUTTON_SIZE_DP = 48
 private const val WIDGET_CONFIGURE_VISIBILITY_BUTTON_TEXT_SIZE_SP = 16f
@@ -43,11 +40,16 @@ class DashboardWidgetConfigureActivity : ComponentActivity() {
     private lateinit var listContainer: LinearLayout
     private lateinit var hiddenSectionTitle: TextView
     private lateinit var hiddenListContainer: LinearLayout
+    private lateinit var capacityNotice: TextView
     private var providerOrder: List<ProviderId> = emptyList()
     private var previewProviderOrder: List<ProviderId> = emptyList()
     private var hiddenProviders: Set<ProviderId> = emptySet()
     private var draggedRow: View? = null
-    private var draggedProviderId: ProviderId? = null
+    private lateinit var cardPreferencesRepository: ProviderCardPreferencesRepository
+    private var cardOrder: List<ProviderAccountId> = emptyList()
+    private var hiddenCards: Set<ProviderAccountId> = emptySet()
+    private var activeWidgetCards: List<ProviderWidgetCardSelection> = emptyList()
+    private var previewCardOrder: List<ProviderAccountId> = emptyList()
     private val rowTranslationAnimators = mutableMapOf<View, ValueAnimator>()
     private val rowTranslationTargets = mutableMapOf<View, Float>()
 
@@ -70,6 +72,9 @@ class DashboardWidgetConfigureActivity : ComponentActivity() {
         }
 
         preferencesRepository = ProviderPreferencesRepository(this)
+        cardPreferencesRepository = ProviderCardPreferencesRepository(this)
+        cardOrder = cardPreferencesRepository.dashboardWidgetCardOrder(appWidgetId)
+        hiddenCards = cardPreferencesRepository.dashboardWidgetHiddenCards(appWidgetId)
         providerOrder = ProviderCardOrder.normalizedOrder(
             preferencesRepository.dashboardWidgetProviderOrder(appWidgetId)
         )
@@ -124,8 +129,15 @@ class DashboardWidgetConfigureActivity : ComponentActivity() {
                 topMargin = 8.dp()
             }
         )
+        capacityNotice = TextView(this).apply {
+            applyWidgetConfigureText(style, textSizeSp = 13f, muted = true)
+            text = getString(R.string.widget_select_max_six)
+        }
+        root.addView(capacityNotice, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = 12.dp() })
         visibleSectionTitle = TextView(this).apply {
-            text = getString(R.string.widget_configure_visible_title)
+            text = getString(R.string.widget_configure_accounts_title)
             applyWidgetConfigureText(style, textSizeSp = 13f, bold = true, muted = true)
         }
         root.addView(
@@ -175,7 +187,7 @@ class DashboardWidgetConfigureActivity : ComponentActivity() {
                 topMargin = 8.dp()
             }
         )
-        renderProviderRows(style)
+        renderUnifiedCardRows(style)
 
         root.addView(
             TextView(this).apply {
@@ -215,162 +227,93 @@ class DashboardWidgetConfigureActivity : ComponentActivity() {
         )
     }
 
-    private fun renderProviderRows(style: WidgetConfigureStyle) {
+    private fun rowLayout() = LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+    ).apply { bottomMargin = 8.dp() }
+
+    private fun renderUnifiedCardRows(style: WidgetConfigureStyle) {
         cancelProviderRowAnimations()
+        activeWidgetCards = ProviderWidgetCardCatalog.activeSelections(this)
+        val byId = activeWidgetCards.associateBy { it.accountId }
+        val initial = cardOrder.isEmpty()
+        val legacyOrder = if (initial) providerOrder.flatMap { provider ->
+            activeWidgetCards.filter { it.providerId == provider }.map { it.accountId }
+        } else cardOrder
+        val normalized = (legacyOrder + activeWidgetCards.map { it.accountId }.filterNot { it in cardOrder })
+            .distinct().filter { it in byId }
+        if (initial) hiddenCards = hiddenCards + activeWidgetCards.filter { it.providerId in hiddenProviders }.map { it.accountId }
+        cardOrder = normalized
+        val limitedHidden = widgetHiddenCardsWithinLimit(cardOrder, hiddenCards)
+        if (limitedHidden != hiddenCards) {
+            hiddenCards = limitedHidden
+            saveCardPreferences()
+            refreshConfiguredWidgets()
+        }
+        previewCardOrder = cardOrder.filterNot { it in hiddenCards }
         listContainer.removeAllViews()
         hiddenListContainer.removeAllViews()
-        previewProviderOrder = previewProviderOrder.filterNot { it in hiddenProviders }
-        previewProviderOrder.distinct().forEach { providerId ->
-            listContainer.addView(
-                providerOrderRow(providerId, style),
-                LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    bottomMargin = 8.dp()
-                }
-            )
-        }
-        val hiddenProviderOrder = hiddenProviderOrder()
-        val hiddenVisibility = if (hiddenProviderOrder.isEmpty()) View.GONE else View.VISIBLE
-        hiddenSectionTitle.visibility = hiddenVisibility
-        hiddenListContainer.visibility = hiddenVisibility
-        hiddenProviderOrder.forEach { providerId ->
-            hiddenListContainer.addView(
-                hiddenProviderRow(providerId, style),
-                LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    bottomMargin = 8.dp()
-                }
-            )
-        }
+        previewCardOrder.forEach { listContainer.addView(unifiedCardRow(byId.getValue(it), style, false), rowLayout()) }
+        val hidden = cardOrder.filter { it in hiddenCards }
+        hidden.forEach { hiddenListContainer.addView(unifiedCardRow(byId.getValue(it), style, true), rowLayout()) }
+        val visibility = if (hidden.isEmpty()) View.GONE else View.VISIBLE
+        hiddenSectionTitle.visibility = visibility
+        hiddenListContainer.visibility = visibility
     }
 
     private fun cancelProviderRowAnimations() {
-        if (!::listContainer.isInitialized) return
         rowTranslationAnimators.values.forEach { it.cancel() }
         rowTranslationAnimators.clear()
         rowTranslationTargets.clear()
         for (index in 0 until listContainer.childCount) {
-            val row = listContainer.getChildAt(index) ?: continue
-            row.animate().cancel()
-            row.clearAnimation()
-            row.translationY = 0f
-            row.alpha = 1f
-            row.scaleX = 1f
-            row.scaleY = 1f
-            row.elevation = 0f
+            listContainer.getChildAt(index)?.apply {
+                animate().cancel(); clearAnimation(); translationY = 0f
+                alpha = 1f; scaleX = 1f; scaleY = 1f; elevation = 0f
+            }
         }
     }
 
-    private fun providerOrderRow(providerId: ProviderId, style: WidgetConfigureStyle): LinearLayout {
-        return LinearLayout(this).apply {
-            tag = providerId
+    private fun unifiedCardRow(card: ProviderWidgetCardSelection, style: WidgetConfigureStyle, hidden: Boolean): LinearLayout =
+        LinearLayout(this).apply {
+            tag = card.accountId
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             applyWidgetConfigureRowBackground(style)
             setPadding(14.dp(), 12.dp(), 10.dp(), 12.dp())
-
-            addView(
-                ImageView(this@DashboardWidgetConfigureActivity).apply {
-                    setImageResource(providerIconRes(providerId))
-                    scaleType = ImageView.ScaleType.FIT_CENTER
-                    contentDescription = providerId.displayName
-                },
-                LinearLayout.LayoutParams(30.dp(), 30.dp())
-            )
-
-            addView(
-                TextView(this@DashboardWidgetConfigureActivity).apply {
-                    text = providerId.displayName
-                    applyWidgetConfigureText(style, textSizeSp = 16f)
-                    gravity = Gravity.CENTER_VERTICAL
-                },
-                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                    marginStart = 12.dp()
-                }
-            )
-
-            addView(
-                providerVisibilityButton(
-                    symbol = "-",
-                    contentDescription = getString(R.string.widget_configure_remove_provider, providerId.displayName),
-                    style = style,
-                    onClick = { hideProviderFromWidget(providerId) }
-                ),
-                LinearLayout.LayoutParams(
-                    WIDGET_CONFIGURE_VISIBILITY_BUTTON_SIZE_DP.dp(),
-                    WIDGET_CONFIGURE_VISIBILITY_BUTTON_SIZE_DP.dp()
-                ).apply {
-                    marginStart = 8.dp()
-                }
-            )
-
-            addView(
-                ImageView(this@DashboardWidgetConfigureActivity).apply {
-                    setImageResource(R.drawable.ic_drag_handle)
-                    imageTintList = ColorStateList.valueOf(style.mutedTextColor)
-                    scaleType = ImageView.ScaleType.CENTER
-                    contentDescription = getString(R.string.provider_reorder_handle)
-                    isClickable = true
-                    isFocusable = true
-                    setPadding(6.dp(), 6.dp(), 6.dp(), 6.dp())
-                    setOnTouchListener(providerDragTouchListener(providerId))
-                },
-                LinearLayout.LayoutParams(
-                    WIDGET_CONFIGURE_DRAG_HANDLE_SIZE_DP.dp(),
-                    WIDGET_CONFIGURE_DRAG_HANDLE_SIZE_DP.dp()
-                )
-            )
+            addView(ImageView(this@DashboardWidgetConfigureActivity).apply {
+                setImageResource(providerIconRes(card.providerId))
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                alpha = if (hidden) 0.72f else 1f
+                contentDescription = card.alias
+            }, LinearLayout.LayoutParams(30.dp(), 30.dp()))
+            addView(TextView(this@DashboardWidgetConfigureActivity).apply {
+                text = card.alias
+                applyWidgetConfigureText(style, textSizeSp = 16f, muted = hidden)
+                gravity = Gravity.CENTER_VERTICAL
+            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = 12.dp() })
+            addView(providerVisibilityButton(
+                if (hidden) "+" else "−",
+                getString(if (hidden) R.string.widget_configure_add_provider else R.string.widget_configure_remove_provider, card.alias),
+                style,
+            ) {
+                if (hidden && !widgetCanSelectAccount(previewCardOrder.size)) return@providerVisibilityButton
+                hiddenCards = if (hidden) hiddenCards - card.accountId else hiddenCards + card.accountId
+                saveCardPreferences()
+                renderUnifiedCardRows(style)
+                refreshConfiguredWidgets()
+            }.apply {
+                isEnabled = !hidden || widgetCanSelectAccount(previewCardOrder.size)
+                alpha = if (isEnabled) 1f else 0.3f
+            }, LinearLayout.LayoutParams(48.dp(), 48.dp()).apply { marginStart = 8.dp() })
+            if (!hidden) addView(ImageView(this@DashboardWidgetConfigureActivity).apply {
+                setImageResource(R.drawable.ic_drag_handle)
+                imageTintList = ColorStateList.valueOf(style.mutedTextColor)
+                scaleType = ImageView.ScaleType.CENTER
+                contentDescription = getString(R.string.provider_reorder_handle)
+                isClickable = true; isFocusable = true
+                setPadding(6.dp(), 6.dp(), 6.dp(), 6.dp())
+                setOnTouchListener(cardDragTouchListener(card.accountId))
+            }, LinearLayout.LayoutParams(48.dp(), 48.dp()))
         }
-    }
-
-    private fun hiddenProviderRow(providerId: ProviderId, style: WidgetConfigureStyle): LinearLayout {
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            applyWidgetConfigureRowBackground(style)
-            setPadding(14.dp(), 12.dp(), 10.dp(), 12.dp())
-
-            addView(
-                ImageView(this@DashboardWidgetConfigureActivity).apply {
-                    setImageResource(providerIconRes(providerId))
-                    scaleType = ImageView.ScaleType.FIT_CENTER
-                    alpha = 0.72f
-                    contentDescription = providerId.displayName
-                },
-                LinearLayout.LayoutParams(30.dp(), 30.dp())
-            )
-
-            addView(
-                TextView(this@DashboardWidgetConfigureActivity).apply {
-                    text = providerId.displayName
-                    applyWidgetConfigureText(style, textSizeSp = 16f, muted = true)
-                    gravity = Gravity.CENTER_VERTICAL
-                },
-                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                    marginStart = 12.dp()
-                }
-            )
-
-            addView(
-                providerVisibilityButton(
-                    symbol = "+",
-                    contentDescription = getString(R.string.widget_configure_add_provider, providerId.displayName),
-                    style = style,
-                    onClick = { restoreProviderToWidget(providerId) }
-                ),
-                LinearLayout.LayoutParams(
-                    WIDGET_CONFIGURE_VISIBILITY_BUTTON_SIZE_DP.dp(),
-                    WIDGET_CONFIGURE_VISIBILITY_BUTTON_SIZE_DP.dp()
-                ).apply {
-                    marginStart = 8.dp()
-                }
-            )
-        }
-    }
 
     private fun providerVisibilityButton(
         symbol: String,
@@ -400,130 +343,42 @@ class DashboardWidgetConfigureActivity : ComponentActivity() {
         }
     }
 
-    private fun providerDragTouchListener(providerId: ProviderId): View.OnTouchListener {
-        val longPressTimeoutMs = ViewConfiguration.getLongPressTimeout().toLong()
+    private fun cardDragTouchListener(accountId: ProviderAccountId): View.OnTouchListener {
         var startRawY = 0f
         var dragging = false
-        var pendingLongPress: Runnable? = null
-
-        return View.OnTouchListener { handle, event ->
+        var pending: Runnable? = null
+        return View.OnTouchListener { view, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     startRawY = event.rawY
-                    dragging = false
-                    pendingLongPress = Runnable {
+                    pending = Runnable {
                         dragging = true
-                        startDraggingRow(providerId)
+                        draggedRow = view.parent as? View
+                        draggedRow?.apply { alpha = 0.82f; scaleX = 1.02f; scaleY = 1.02f; elevation = 8.dp().toFloat() }
                         listContainer.parent?.requestDisallowInterceptTouchEvent(true)
-                    }.also {
-                        handle.postDelayed(it, longPressTimeoutMs)
-                    }
+                    }.also { view.postDelayed(it, ViewConfiguration.getLongPressTimeout().toLong()) }
                     true
                 }
-
                 MotionEvent.ACTION_MOVE -> {
-                    if (dragging) {
-                        handleDragMove(providerId, event.rawY, startRawY)
-                        true
-                    } else {
-                        true
-                    }
+                    if (dragging) handleCardDragMove(accountId, event.rawY, startRawY)
+                    true
                 }
-
-                MotionEvent.ACTION_UP -> {
-                    pendingLongPress?.let { handle.removeCallbacks(it) }
-                    if (dragging) {
-                        finishDraggingRow(commitDrop = true)
-                    }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    pending?.let(view::removeCallbacks)
+                    if (dragging) finishCardDrag(event.actionMasked == MotionEvent.ACTION_UP)
                     dragging = false
                     true
                 }
-
-                MotionEvent.ACTION_CANCEL -> {
-                    pendingLongPress?.let { handle.removeCallbacks(it) }
-                    if (dragging) {
-                        cancelDraggingRow()
-                    }
-                    dragging = false
-                    true
-                }
-
                 else -> false
             }
         }
     }
 
-    private fun startDraggingRow(providerId: ProviderId) {
-        draggedProviderId = providerId
-        previewProviderOrder = providerRowOrder().ifEmpty { providerOrder }.distinct()
-        draggedRow = findProviderRow(providerId)?.apply {
-            alpha = 0.82f
-            scaleX = 1.02f
-            scaleY = 1.02f
-            elevation = 8.dp().toFloat()
-        }
-    }
-
-    private fun finishDraggingRow(commitDrop: Boolean) {
-        draggedRow?.apply {
-            alpha = 1f
-            scaleX = 1f
-            scaleY = 1f
-            elevation = 0f
-        }
-        draggedRow = null
-        draggedProviderId = null
-        if (commitDrop && previewProviderOrder != visibleProviderOrder()) {
-            providerOrder = orderWithVisibleProviders(previewProviderOrder)
-            preferencesRepository.saveDashboardWidgetProviderOrder(appWidgetId, providerOrder)
-            previewProviderOrder = visibleProviderOrder()
-            postRenderProviderRows(widgetConfigureStyle(ThemePreferencesRepository(this).currentTheme()))
-            refreshConfiguredWidgets()
-        } else {
-            resetProviderRowTranslations()
-        }
-        listContainer.parent?.requestDisallowInterceptTouchEvent(false)
-    }
-
-    private fun cancelDraggingRow() {
-        draggedRow?.apply {
-            alpha = 1f
-            scaleX = 1f
-            scaleY = 1f
-            elevation = 0f
-        }
-        draggedRow = null
-        draggedProviderId = null
-        previewProviderOrder = visibleProviderOrder()
-        postRenderProviderRows(widgetConfigureStyle(ThemePreferencesRepository(this).currentTheme()))
-        listContainer.parent?.requestDisallowInterceptTouchEvent(false)
-    }
-
-    private fun handleDragMove(providerId: ProviderId, rawY: Float, startRawY: Float) {
-        val targetIndex = dragTargetIndex(rawY)
-        if (targetIndex < 0) return
-
-        val draggedTranslationY = rawY - startRawY
-        val currentIndex = previewProviderOrder.indexOf(providerId)
-        if (currentIndex < 0) {
-            applyProviderRowTranslations(providerId, draggedTranslationY)
-            return
-        }
-        if (targetIndex != currentIndex) {
-            previewProviderOrder = ProviderCardOrder.previewVisibleOrder(
-                visibleOrder = previewProviderOrder,
-                draggedProvider = providerId,
-                targetVisibleIndex = targetIndex
-            )
-        }
-        applyProviderRowTranslations(providerId, draggedTranslationY)
-    }
-
-    private fun dragTargetIndex(rawY: Float): Int {
-        if (!::listContainer.isInitialized || listContainer.childCount == 0) return -1
-        val containerLocation = IntArray(2)
-        listContainer.getLocationOnScreen(containerLocation)
-        val localY = rawY - containerLocation[1]
+    private fun cardDragTargetIndex(rawY: Float): Int {
+        if (listContainer.childCount == 0) return -1
+        val location = IntArray(2)
+        listContainer.getLocationOnScreen(location)
+        val localY = rawY - location[1]
         for (index in 0 until listContainer.childCount) {
             val child = listContainer.getChildAt(index)
             if (localY < child.top + child.height / 2f) return index
@@ -531,165 +386,36 @@ class DashboardWidgetConfigureActivity : ComponentActivity() {
         return listContainer.childCount - 1
     }
 
-    private fun findProviderRow(providerId: ProviderId): View? {
-        for (index in 0 until listContainer.childCount) {
-            val child = listContainer.getChildAt(index)
-            if (child.tag == providerId) return child
+    private fun handleCardDragMove(accountId: ProviderAccountId, rawY: Float, startRawY: Float) {
+        val target = cardDragTargetIndex(rawY)
+        val current = previewCardOrder.indexOf(accountId)
+        if (target >= 0 && current >= 0 && target != current) {
+            previewCardOrder = ProviderCardOrder.moveExactToTargetIndex(previewCardOrder, accountId, target)
         }
-        return null
+        draggedRow?.translationY = rawY - startRawY
     }
 
-    private fun providerRowOrder(): List<ProviderId> {
-        return buildList {
-            for (index in 0 until listContainer.childCount) {
-                val providerId = listContainer.getChildAt(index).tag as? ProviderId
-                if (providerId != null) add(providerId)
-            }
+    private fun finishCardDrag(commitDrop: Boolean) {
+        draggedRow?.apply { alpha = 1f; scaleX = 1f; scaleY = 1f; elevation = 0f; translationY = 0f }
+        draggedRow = null
+        if (commitDrop && previewCardOrder != cardOrder.filterNot { it in hiddenCards }) {
+            val visible = ArrayDeque(previewCardOrder)
+            cardOrder = cardOrder.map { if (it in hiddenCards) it else visible.removeFirst() }
+            saveCardPreferences()
+            refreshConfiguredWidgets()
         }
+        previewCardOrder = cardOrder.filterNot { it in hiddenCards }
+        listContainer.parent?.requestDisallowInterceptTouchEvent(false)
+        renderUnifiedCardRows(widgetConfigureStyle(ThemePreferencesRepository(this).currentTheme()))
     }
 
-    private fun applyProviderRowTranslations(draggedProvider: ProviderId, draggedTranslationY: Float) {
-        val rowStep = providerRowStepPx()
-        for (index in 0 until listContainer.childCount) {
-            val row = listContainer.getChildAt(index) ?: continue
-            val providerId = row.tag as? ProviderId ?: continue
-            if (providerId == draggedProvider) {
-                row.translationY = draggedTranslationY
-                continue
-            }
-            val previewIndex = previewProviderOrder.indexOf(providerId)
-            if (previewIndex < 0) continue
-            val targetTranslation = (previewIndex - index) * rowStep
-            animateProviderRowTranslation(row, targetTranslation)
-        }
+    private fun saveCardPreferences() {
+        cardPreferencesRepository.saveDashboardWidgetCardOrder(appWidgetId, cardOrder)
+        cardPreferencesRepository.saveDashboardWidgetHiddenCards(appWidgetId, hiddenCards)
     }
 
-    private fun animateProviderRowTranslation(row: View, targetTranslation: Float) {
-        val existingTarget = rowTranslationTargets[row]
-        if (existingTarget != null && abs(existingTarget - targetTranslation) < 0.5f) return
-
-        rowTranslationAnimators.remove(row)?.cancel()
-        rowTranslationTargets[row] = targetTranslation
-
-        if (!animationsEnabled()) {
-            row.translationY = targetTranslation
-            rowTranslationTargets.remove(row)
-            return
-        }
-
-        val startTranslation = row.translationY
-        if (abs(startTranslation - targetTranslation) < 0.5f) {
-            row.translationY = targetTranslation
-            rowTranslationTargets.remove(row)
-            return
-        }
-
-        val animator = ValueAnimator.ofFloat(startTranslation, targetTranslation).apply {
-            duration = 120L
-            interpolator = DecelerateInterpolator()
-            addUpdateListener { valueAnimator ->
-                row.translationY = valueAnimator.animatedValue as Float
-            }
-            addListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) {
-                    if (rowTranslationAnimators[row] == animation) {
-                        row.translationY = targetTranslation
-                        rowTranslationAnimators.remove(row)
-                        rowTranslationTargets.remove(row)
-                    }
-                }
-
-                override fun onAnimationCancel(animation: Animator) {
-                    if (rowTranslationAnimators[row] == animation) {
-                        rowTranslationAnimators.remove(row)
-                        rowTranslationTargets.remove(row)
-                    }
-                }
-            })
-        }
-        rowTranslationAnimators[row] = animator
-        animator.start()
-    }
-
-    private fun animationsEnabled(): Boolean {
-        return Settings.Global.getFloat(
-            contentResolver,
-            Settings.Global.ANIMATOR_DURATION_SCALE,
-            1f
-        ) > 0f
-    }
-
-    private fun resetProviderRowTranslations() {
-        rowTranslationAnimators.values.forEach { it.cancel() }
-        rowTranslationAnimators.clear()
-        rowTranslationTargets.clear()
-        for (index in 0 until listContainer.childCount) {
-            val row = listContainer.getChildAt(index) ?: continue
-            row.animate().cancel()
-            row.translationY = 0f
-        }
-    }
-
-    private fun providerRowStepPx(): Float {
-        val first = firstProviderRow() ?: return 0f
-        val bottomMargin = (first.layoutParams as? ViewGroup.MarginLayoutParams)?.bottomMargin ?: 0
-        return (first.height + bottomMargin).toFloat()
-    }
-
-    private fun firstProviderRow(): View? {
-        for (index in 0 until listContainer.childCount) {
-            val row = listContainer.getChildAt(index) ?: continue
-            if (row.tag is ProviderId) {
-                return row
-            }
-        }
-        return null
-    }
-
-    private fun postRenderProviderRows(style: WidgetConfigureStyle) {
-        listContainer.post {
-            if (!isFinishing && !isDestroyed) {
-                renderProviderRows(style)
-            }
-        }
-    }
-
-    private fun hideProviderFromWidget(providerId: ProviderId) {
-        if (providerId in hiddenProviders) return
-        hiddenProviders = hiddenProviders + providerId
-        preferencesRepository.setDashboardWidgetProviderHidden(appWidgetId, providerId, true)
-        previewProviderOrder = visibleProviderOrder()
-        renderProviderRows(widgetConfigureStyle(ThemePreferencesRepository(this).currentTheme()))
-        refreshConfiguredWidgets()
-    }
-
-    private fun restoreProviderToWidget(providerId: ProviderId) {
-        if (providerId !in hiddenProviders) return
-        hiddenProviders = hiddenProviders - providerId
-        preferencesRepository.setDashboardWidgetProviderHidden(appWidgetId, providerId, false)
-        previewProviderOrder = visibleProviderOrder()
-        renderProviderRows(widgetConfigureStyle(ThemePreferencesRepository(this).currentTheme()))
-        refreshConfiguredWidgets()
-    }
-
-    private fun visibleProviderOrder(): List<ProviderId> {
-        return ProviderPreferencesCodec.visibleProviders(providerOrder, hiddenProviders)
-    }
-
-    private fun hiddenProviderOrder(): List<ProviderId> {
-        return ProviderCardOrder.normalizedOrder(providerOrder).filter { it in hiddenProviders }
-    }
-
-    private fun orderWithVisibleProviders(visibleOrder: List<ProviderId>): List<ProviderId> {
-        val reorderedVisible = ArrayDeque(visibleOrder.distinct())
-        return ProviderCardOrder.normalizedOrder(providerOrder).mapNotNull { providerId ->
-            if (providerId in hiddenProviders) {
-                providerId
-            } else {
-                reorderedVisible.removeFirstOrNull()
-            }
-        }
-    }
+    private fun visibleProviderOrder(): List<ProviderId> =
+        ProviderPreferencesCodec.visibleProviders(providerOrder, hiddenProviders)
 
     private fun refreshConfiguredWidgets() {
         val providerClassName = AppWidgetManager.getInstance(applicationContext)
@@ -709,6 +435,7 @@ class DashboardWidgetConfigureActivity : ComponentActivity() {
     private fun finishConfigured() {
         preferencesRepository.saveDashboardWidgetProviderOrder(appWidgetId, providerOrder)
         preferencesRepository.saveDashboardWidgetHiddenProviders(appWidgetId, hiddenProviders)
+        saveCardPreferences()
         refreshConfiguredWidgets()
         setResult(
             Activity.RESULT_OK,

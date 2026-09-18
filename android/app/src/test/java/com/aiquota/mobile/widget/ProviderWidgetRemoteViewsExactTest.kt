@@ -78,6 +78,23 @@ class ProviderWidgetRemoteViewsExactTest {
         )
     }
 
+    @Test
+    fun latestAuthorityUsageWinsOverMigrationCacheAfterCollectionAndReopen() {
+        MainProcessAccountAuthority.open(context).use { authority ->
+            authority.register(seed(a, "Codex", 81))
+            authority.register(seed(b, "Codex 2", 64))
+        }
+        WidgetSnapshotCache(context).writeExactCardSnapshot(a,
+            ProviderSnapshotCodec.encode(listOf(snapshot(81))))
+        MainProcessAccountAuthority.open(context).use { authority ->
+            val lease = authority.beginAttempt(a, com.aiquota.mobile.accounts.AccountDemandSet.NONE,
+                com.aiquota.mobile.accounts.AttemptNonce.parseOpaque("attempt_0000000000000001"))
+            authority.commitAttempt(lease, snapshot(23))
+        }
+        assertEquals("23%", presentation(a).payload.lines.single().remainingText)
+        assertEquals("64%", presentation(b).payload.lines.single().remainingText)
+    }
+
     private fun seed(accountId: ProviderAccountId, alias: String, remaining: Int) = AuthorityAccountSeed(
         account = AccountRecord(
             id = accountId,
@@ -95,8 +112,8 @@ class ProviderWidgetRemoteViewsExactTest {
     private fun snapshot(remaining: Int) = ProviderUsageSnapshot(
         providerId = ProviderId.CODEX,
         connectionState = ProviderConnectionState.CONNECTED,
-        updatedAt = "2026-08-29T00:00:00Z",
-        statusUpdatedAt = "2026-08-29T00:00:00Z",
+        updatedAt = java.time.Instant.now().toString(),
+        statusUpdatedAt = java.time.Instant.now().toString(),
         lines = listOf(
             ProviderUsageLine(
                 key = "quota",

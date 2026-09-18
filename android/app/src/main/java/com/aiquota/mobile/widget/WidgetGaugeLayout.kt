@@ -216,7 +216,8 @@ fun unifiedWidgetLayoutSpec(
 fun providerWidgetLayoutSpec(
     cellWidth: Int,
     cellHeight: Int,
-    widgetHeightDp: Int = 0
+    widgetHeightDp: Int = 0,
+    visibleLineCount: Int? = null
 ): ProviderWidgetLayoutSpec {
     val normalizedCellWidth = cellWidth.coerceIn(2, 3)
     val normalizedCellHeight = cellHeight.coerceIn(1, 4)
@@ -231,7 +232,7 @@ fun providerWidgetLayoutSpec(
         2 -> 3
         3 -> 4
         else -> 5
-    }
+    }.let { maximum -> visibleLineCount?.coerceIn(1, maximum) ?: maximum }
     val gaugeHeightDp = when (normalizedCellHeight) {
         1 -> if (wideCompact) 6 else 7
         2 -> 9
@@ -288,7 +289,7 @@ fun providerWidgetLayoutSpec(
         maxLineCount = maxLineCount,
         showResetCaption = normalizedCellHeight == 1 || (normalizedCellHeight > 1 && lineRowHeightDp >= 40)
     )
-    if (widgetHeightDp <= 0) return baseSpec
+    if (widgetHeightDp <= 0 || (normalizedCellWidth == 2 && normalizedCellHeight == 2 && maxLineCount == 2)) return baseSpec
 
     val extraHeightDp = (widgetHeightDp - providerWidgetEstimatedContentHeightDp(baseSpec))
         .coerceAtLeast(0)

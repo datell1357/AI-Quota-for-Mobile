@@ -30,10 +30,10 @@ class CircularWidgetSizeTest {
         val layout = File("src/main/res/layout/ai_quota_widget_circular.xml").readText()
         val source = File("src/main/java/com/aiquota/mobile/widget/AIQuotaCircularWidgetProvider.kt").readText()
 
-        (0..8).forEach { index ->
+        (0..11).forEach { index ->
             assertTrue(layout.contains("@+id/circular_gauge_$index"))
         }
-        assertTrue(layout.contains("@+id/circular_gauge_row_2"))
+        assertTrue(layout.contains("@+id/circular_gauge_row_3"))
         assertTrue(layout.contains("""android:scaleType="fitCenter""""))
         assertFalse(source.contains("\"setOrientation\""))
     }
@@ -60,25 +60,38 @@ class CircularWidgetSizeTest {
         assertEquals(2, oneByTwo.maxGaugeCount)
         assertEquals(1, oneByTwo.columnCount)
         assertEquals(2, oneByTwo.rowCount)
-        assertEquals(3, oneByThree.maxGaugeCount)
+        assertEquals(4, oneByThree.maxGaugeCount)
         assertEquals(1, oneByThree.columnCount)
-        assertEquals(3, oneByThree.rowCount)
+        assertEquals(4, oneByThree.rowCount)
     }
 
     @Test
-    fun circularWidgetTreatsLauncherReportedNarrowPortraitBoundsAsOneColumn() {
+    fun circularWidgetShowsFourGaugesInLauncherReportedOneByThreeBounds() {
         listOf(76, 90, 109).forEach { widthDp ->
             val narrowPortrait = circularWidgetLayoutSpecForSize(widthDp = widthDp, heightDp = 180, availableGaugeCount = 6)
 
-            assertEquals(3, narrowPortrait.maxGaugeCount)
+            assertEquals(4, narrowPortrait.maxGaugeCount)
+            assertEquals(4, narrowPortrait.visibleGaugeCount)
             assertEquals(1, narrowPortrait.columnCount)
-            assertEquals(3, narrowPortrait.rowCount)
+            assertEquals(4, narrowPortrait.rowCount)
         }
 
         val twoByThree = circularWidgetLayoutSpecForSize(widthDp = 110, heightDp = 180, availableGaugeCount = 6)
         assertEquals(6, twoByThree.maxGaugeCount)
         assertEquals(2, twoByThree.columnCount)
         assertEquals(3, twoByThree.rowCount)
+    }
+
+    @Test
+    fun oneByThreeKeepsSingleColumnUntilAFourthGaugeIsVisible() {
+        val three = circularWidgetLayoutSpecForSize(widthDp = 76, heightDp = 180, availableGaugeCount = 3)
+        val four = circularWidgetLayoutSpecForSize(widthDp = 76, heightDp = 180, availableGaugeCount = 4)
+
+        assertEquals(4, three.maxGaugeCount)
+        assertEquals(1, three.columnCount)
+        assertEquals(3, three.rowCount)
+        assertEquals(1, four.columnCount)
+        assertEquals(4, four.rowCount)
     }
 
     @Test
