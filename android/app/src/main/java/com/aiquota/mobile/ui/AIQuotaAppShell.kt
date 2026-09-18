@@ -108,6 +108,7 @@ import com.aiquota.mobile.providers.UsageSurfaceRefresher
 import com.aiquota.mobile.providers.WebLoginActivity
 import com.aiquota.mobile.sync.ForegroundRefreshController
 import com.aiquota.mobile.sync.ForegroundRefreshPolicy
+import com.aiquota.mobile.sync.LiveRefreshPromptLoginTracker
 import com.aiquota.mobile.sync.LiveRefreshPromptPolicy
 import com.aiquota.mobile.ui.dashboard.ProviderCardOrder
 import com.aiquota.mobile.ui.dashboard.UnifiedDashboardScreen
@@ -188,7 +189,7 @@ fun AIQuotaAppShell(
     var snapshots by remember { mutableStateOf(localUsageRepository.readSnapshots()) }
     var busyProvider by remember { mutableStateOf<ProviderId?>(null) }
     var canPostNotifications by remember {
-        mutableStateOf(UsageLimitNotificationController.canPostNotifications(launchContext))
+        mutableStateOf(UsageLimitNotificationController.canShowStatusNotification(launchContext))
     }
     var notificationEnabled by remember {
         mutableStateOf(UsageLimitNotificationController.isEnabled(appContext) && canPostNotifications)
@@ -214,6 +215,7 @@ fun AIQuotaAppShell(
     var liveRefreshStatusNowMillis by remember { mutableStateOf(System.currentTimeMillis()) }
     var showLiveRefreshPrompt by remember { mutableStateOf(false) }
     var liveRefreshPromptDismissed by remember { mutableStateOf(false) }
+    val liveRefreshLoginTracker = remember { LiveRefreshPromptLoginTracker() }
     var showDashboardWidgetPicker by remember { mutableStateOf(false) }
     var showProviderRemoval by remember { mutableStateOf(false) }
     var restoreProviderRemovalFocus by remember { mutableStateOf(false) }
@@ -611,7 +613,7 @@ fun AIQuotaAppShell(
     }
 
     fun refreshNotificationState() {
-        canPostNotifications = UsageLimitNotificationController.canPostNotifications(launchContext)
+        canPostNotifications = UsageLimitNotificationController.canShowStatusNotification(launchContext)
         notificationEnabled = UsageLimitNotificationController.isEnabled(appContext) && canPostNotifications
         liveMonitoringEnabled = foregroundRefreshController.liveMonitoringEnabled()
         batteryOptimizationExempt = isBatteryOptimizationExempt(appContext)
@@ -619,7 +621,7 @@ fun AIQuotaAppShell(
     }
 
     fun enableLiveMonitoringWhenAllowed(): Boolean {
-        canPostNotifications = UsageLimitNotificationController.canPostNotifications(launchContext)
+        canPostNotifications = UsageLimitNotificationController.canShowStatusNotification(launchContext)
         if (!canPostNotifications) return false
         UsageLimitNotificationController.setEnabled(appContext, true)
         UsageLimitNotificationController.updateFromCache(appContext)
@@ -632,23 +634,28 @@ fun AIQuotaAppShell(
         return true
     }
 
+    var permissionEnablesLiveRefresh by rememberSaveable { mutableStateOf(false) }
+    var resumeLiveAfterNotificationSettings by rememberSaveable { mutableStateOf(false) }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        canPostNotifications = granted || UsageLimitNotificationController.canPostNotifications(launchContext)
+    ) { _ ->
+        canPostNotifications = UsageLimitNotificationController.canShowStatusNotification(launchContext)
         if (canPostNotifications) {
-            enableLiveMonitoringWhenAllowed()
+            if (permissionEnablesLiveRefresh) enableLiveMonitoringWhenAllowed()
+            else refreshNotificationState()
         } else {
             notificationEnabled = false
             liveMonitoringEnabled = foregroundRefreshController.liveMonitoringEnabled()
-            showLiveRefreshPrompt = true
+            if (permissionEnablesLiveRefresh) showLiveRefreshPrompt = true
         }
+        permissionEnablesLiveRefresh = false
     }
 
-    fun openNotificationSettings() {
+    fun openNotificationSettings(channelId: String? = null) {
         val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            Intent(if (channelId == null) Settings.ACTION_APP_NOTIFICATION_SETTINGS else Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
                 .putExtra(Settings.EXTRA_APP_PACKAGE, appContext.packageName)
+                .apply { channelId?.let { putExtra(Settings.EXTRA_CHANNEL_ID, it) } }
         } else {
             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                 .setData(Uri.parse("package:${appContext.packageName}"))
@@ -688,14 +695,30 @@ fun AIQuotaAppShell(
         }
     }
 
-    fun requestLiveMonitoringFromPrompt() {
-        UsageLimitNotificationController.setEnabled(appContext, true)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !canPostNotifications) {
-            UsageLimitNotificationController.markNotificationPermissionRequested(appContext)
-            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    fun requestNotificationAccess(enableLiveRefresh: Boolean, channelId: String = UsageLimitNotificationController.CHANNEL_ID) {
+        val appNotificationsAllowed = UsageLimitNotificationController.canPostNotifications(launchContext)
+        if (appNotificationsAllowed && !UsageLimitNotificationController.isChannelEnabled(launchContext, channelId)) {
+            resumeLiveAfterNotificationSettings = enableLiveRefresh
+            openNotificationSettings(channelId)
             return
         }
-        enableLiveMonitoringWhenAllowed()
+        if (appNotificationsAllowed) {
+            if (enableLiveRefresh) enableLiveMonitoringWhenAllowed()
+            return
+        }
+        permissionEnablesLiveRefresh = enableLiveRefresh
+        if (UsageLimitNotificationController.shouldRequestNotificationPermissionOnLaunch(launchContext)) {
+            UsageLimitNotificationController.markNotificationPermissionRequested(appContext)
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            resumeLiveAfterNotificationSettings = enableLiveRefresh
+            openNotificationSettings()
+        }
+    }
+
+    fun requestLiveMonitoringFromPrompt() {
+        UsageLimitNotificationController.setEnabled(appContext, true)
+        requestNotificationAccess(enableLiveRefresh = true)
     }
 
     fun setNotificationEnabled(enabled: Boolean) {
@@ -704,26 +727,11 @@ fun AIQuotaAppShell(
             foregroundRefreshController.setLiveMonitoringEnabled(false)
             liveMonitoringEnabled = false
             notificationEnabled = false
+            resumeLiveAfterNotificationSettings = false
             return
         }
-
-        canPostNotifications = UsageLimitNotificationController.canPostNotifications(launchContext)
-        if (!canPostNotifications) {
-            UsageLimitNotificationController.setEnabled(appContext, true)
-            notificationEnabled = false
-            // 시스템 설정으로 곧장 보내면 사용자는 토글이 스스로 꺼진 것만 보게 된다. 아직 물어본
-            // 적이 없다면 앱에서 권한을 요청하고, 허용되면 그 자리에서 켠다. 이미 거절당한 뒤라면
-            // 앱이 다시 물을 수 없으므로 그때만 설정 화면으로 안내한다.
-            if (UsageLimitNotificationController.shouldRequestNotificationPermissionOnLaunch(launchContext)) {
-                UsageLimitNotificationController.markNotificationPermissionRequested(appContext)
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            } else {
-                openNotificationSettings()
-            }
-            return
-        }
-
-        enableLiveMonitoringWhenAllowed()
+        UsageLimitNotificationController.setEnabled(appContext, true)
+        requestNotificationAccess(enableLiveRefresh = true)
     }
 
     fun showWidgetPinFeedback(status: WidgetPinRequestStatus) {
@@ -816,6 +824,14 @@ fun AIQuotaAppShell(
         }
     }
 
+    fun shouldRunLiveRefresh(): Boolean = if (cardRuntime.enabled) {
+        ForegroundRefreshPolicy.shouldRunForAccounts(
+            cardRuntime.state.catalog.cards, liveMonitoringEnabled, canPostNotifications)
+    } else {
+        ForegroundRefreshPolicy.shouldRunForegroundLoop(
+            snapshots, liveMonitoringEnabled, canPostNotifications)
+    }
+
     val lifecycleOwner = remember(launchContext) { launchContext.findLifecycleOwner() }
     DisposableEffect(lifecycleOwner) {
         if (lifecycleOwner == null) {
@@ -825,16 +841,18 @@ fun AIQuotaAppShell(
                 if (event == Lifecycle.Event.ON_RESUME) {
                     refreshSnapshots()
                     cardRuntime.reload()
-                    canPostNotifications = UsageLimitNotificationController.canPostNotifications(launchContext)
+                    canPostNotifications = UsageLimitNotificationController.canShowStatusNotification(launchContext)
+                    if (resumeLiveAfterNotificationSettings && canPostNotifications &&
+                        UsageLimitNotificationController.isChannelEnabled(launchContext, UsageLimitNotificationController.CHANNEL_ID)) {
+                        resumeLiveAfterNotificationSettings = false
+                        enableLiveMonitoringWhenAllowed()
+                    }
+                    notificationEnabled = UsageLimitNotificationController.isEnabled(appContext) && canPostNotifications
                     liveMonitoringEnabled = foregroundRefreshController.liveMonitoringEnabled()
                     batteryOptimizationExempt = isBatteryOptimizationExempt(appContext)
                     liveRefreshStatusNowMillis = System.currentTimeMillis()
                     if (
-                        ForegroundRefreshPolicy.shouldRunForegroundLoop(
-                            snapshots = localUsageRepository.readSnapshots(),
-                            liveMonitoringEnabled = liveMonitoringEnabled,
-                            canPostNotifications = canPostNotifications
-                        ) &&
+                        shouldRunLiveRefresh() &&
                         refreshStateRepository.isHeartbeatStale()
                     ) {
                         runCatching { foregroundRefreshController.startPreciseRefresh() }
@@ -878,7 +896,7 @@ fun AIQuotaAppShell(
         }
     }
 
-    LaunchedEffect(providerOrder, hiddenProviders, snapshots, currentTheme) {
+    LaunchedEffect(cardRuntime.state.catalog, providerOrder, hiddenProviders, snapshots, currentTheme) {
         UsageSurfaceRefresher.refresh(
             context = appContext,
             repository = localUsageRepository,
@@ -894,27 +912,33 @@ fun AIQuotaAppShell(
         }
     }
 
-    LaunchedEffect(snapshots, liveMonitoringEnabled, canPostNotifications) {
-        if (
-            ForegroundRefreshPolicy.shouldRunForegroundLoop(
-                snapshots = snapshots,
-                liveMonitoringEnabled = liveMonitoringEnabled,
-                canPostNotifications = canPostNotifications
-            )
-        ) {
+    LaunchedEffect(cardRuntime.state.catalog, snapshots, liveMonitoringEnabled, canPostNotifications) {
+        if (shouldRunLiveRefresh()) {
             runCatching { foregroundRefreshController.startPreciseRefresh() }
         } else {
             foregroundRefreshController.stopPreciseRefresh()
         }
     }
 
-    LaunchedEffect(snapshots, liveMonitoringEnabled, canPostNotifications, batteryOptimizationExempt, liveRefreshPromptDismissed) {
-        val shouldShowPrompt = LiveRefreshPromptPolicy.shouldShowOnAppEntry(
-            snapshots = snapshots,
-            liveMonitoringEnabled = liveMonitoringEnabled,
-            canPostNotifications = canPostNotifications,
-            batteryOptimizationExempt = batteryOptimizationExempt
-        )
+    LaunchedEffect(cardRuntime.state.catalog, snapshots, liveMonitoringEnabled, canPostNotifications, batteryOptimizationExempt, liveRefreshPromptDismissed) {
+        val cards = cardRuntime.state.catalog.cards
+        val newLogin = cardRuntime.enabled && liveRefreshLoginTracker.observe(cards)
+        if (newLogin) liveRefreshPromptDismissed = false
+        val shouldShowPrompt = if (cardRuntime.enabled) {
+            LiveRefreshPromptPolicy.shouldShowForAccounts(
+                cards = cards,
+                liveMonitoringEnabled = liveMonitoringEnabled,
+                canPostNotifications = canPostNotifications,
+                batteryOptimizationExempt = batteryOptimizationExempt,
+            )
+        } else {
+            LiveRefreshPromptPolicy.shouldShowOnAppEntry(
+                snapshots = snapshots,
+                liveMonitoringEnabled = liveMonitoringEnabled,
+                canPostNotifications = canPostNotifications,
+                batteryOptimizationExempt = batteryOptimizationExempt,
+            )
+        }
         if (!shouldShowPrompt) {
             showLiveRefreshPrompt = false
             liveRefreshPromptDismissed = false
@@ -1085,20 +1109,29 @@ fun AIQuotaAppShell(
                                     currentRoute.providerId in resetNotificationProviders
                                 },
                                 onResetNotificationChange = { enabled ->
+                                    if (enabled) requestNotificationAccess(enableLiveRefresh = false,
+                                        channelId = com.aiquota.mobile.notification.ProviderResetNotificationController.CHANNEL_ID)
                                     if (exactId != null) {
                                         cardRuntime.setResetNotificationEnabled(exactId, enabled)
                                     } else {
                                         setResetNotificationEnabled(currentRoute.providerId, enabled)
                                     }
                                 },
-                                autoResetPrimeEnabled = claudeAutoResetPrimeEnabled,
-                                onAutoResetPrimeChange = ::setClaudeAutoResetPrimeEnabled,
+                                autoResetPrimeEnabled = if (exactId != null) {
+                                    cardRuntime.claudeAutoResetPrimeEnabled(exactId)
+                                } else claudeAutoResetPrimeEnabled,
+                                onAutoResetPrimeChange = { enabled ->
+                                    if (exactId != null) cardRuntime.setClaudeAutoResetPrimeEnabled(exactId, enabled)
+                                    else if (!cardRuntime.enabled) setClaudeAutoResetPrimeEnabled(enabled)
+                                },
                                 usageThresholdEnabled = if (exactId != null) {
                                     cardRuntime.usageThresholdEnabled(exactId)
                                 } else {
                                     currentRoute.providerId in usageThresholdProviders
                                 },
                                 onUsageThresholdEnabledChange = { enabled ->
+                                    if (enabled) requestNotificationAccess(enableLiveRefresh = false,
+                                        channelId = com.aiquota.mobile.notification.ProviderUsageThresholdNotificationController.CHANNEL_ID)
                                     if (exactId != null) {
                                         cardRuntime.setUsageThresholdEnabled(exactId, enabled)
                                     } else {
@@ -1142,7 +1175,7 @@ fun AIQuotaAppShell(
                             liveRefreshState = liveRefreshState,
                             batteryOptimizationExempt = batteryOptimizationExempt,
                             onNotificationEnabledChanged = ::setNotificationEnabled,
-                            onOpenNotificationSettings = ::openNotificationSettings,
+                            onOpenNotificationSettings = { openNotificationSettings() },
                             onOpenBatteryOptimizationSettings = ::openBatteryOptimizationSettings,
                             providerOrder = providerOrder,
                             snapshots = snapshots,
@@ -1718,7 +1751,7 @@ private fun ProviderNavigationChip(
                 modifier = Modifier.size(22.dp)
             )
             Text(
-                text = label,
+                text = providerNavigationLabel(providerId, label),
                 modifier = Modifier.fillMaxWidth(),
                 color = textColor,
                 style = compactProviderLineBreakStyle(providerId, MaterialTheme.typography.labelSmall),
@@ -1731,7 +1764,10 @@ private fun ProviderNavigationChip(
     }
 }
 
-private fun providerNavigationLabel(providerId: ProviderId): String {
+internal fun providerNavigationLabel(providerId: ProviderId, alias: String? = null): String {
+    if (alias != null && !(providerId == ProviderId.ANTIGRAVITY && alias.equals("Antigravity", ignoreCase = true))) {
+        return alias
+    }
     return when (providerId) {
         ProviderId.CLAUDE -> "Claude"
         ProviderId.CODEX -> "Codex"
@@ -1739,7 +1775,7 @@ private fun providerNavigationLabel(providerId: ProviderId): String {
         ProviderId.OPENCODE -> "OpenCode"
         ProviderId.GEMINI -> "Gemini"
         ProviderId.COPILOT -> "Copilot"
-        ProviderId.ANTIGRAVITY -> "Anti\nGravity"
+        ProviderId.ANTIGRAVITY -> "Anti\ngravity"
         ProviderId.CURSOR -> "Cursor"
         ProviderId.GROK -> "Grok"
         ProviderId.KIMI -> "Kimi"

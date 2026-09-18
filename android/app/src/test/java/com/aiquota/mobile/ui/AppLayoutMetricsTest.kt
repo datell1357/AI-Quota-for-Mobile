@@ -58,20 +58,19 @@ class AppLayoutMetricsTest {
         assertEquals(4, tablet.dashboardVisibleProviderCount)
         assertEquals(2, tablet.dashboardGridColumnCount)
 
+        // 실제 Column은 위아래 같은 패딩에 헤더·행 간격까지 들어가므로, 그 합계가
+        // 뷰포트 안이어야 모든 표시 행이 온전히 보인다.
         val phoneCardHeight = dashboardProviderCardHeightDp(viewportHeightDp = 720, layoutMetrics = phone)
-        val phoneNextStart = phone.contentVerticalPaddingDp +
+        val phoneStack = phone.contentVerticalPaddingDp * 2 +
             phone.dashboardTitleHeightDp +
-            phone.sectionSpacingDp * (phone.dashboardVisibleProviderCount + 1) +
-            phoneCardHeight * phone.dashboardVisibleProviderCount
-        assertTrue(phoneNextStart >= 720)
+            phone.sectionSpacingDp +
+            phoneCardHeight * phone.dashboardVisibleProviderCount +
+            phone.sectionSpacingDp * (phone.dashboardVisibleProviderCount - 1)
+        assertTrue(phoneStack <= 720)
 
+        // 최소 카드 높이에 걸리는 좁은 뷰포트는 스크롤이 보완한다.
         val tabletCardHeight = dashboardProviderCardHeightDp(viewportHeightDp = 580, layoutMetrics = tablet)
-        val tabletVisibleRows = tablet.dashboardVisibleProviderCount / tablet.dashboardGridColumnCount
-        val tabletNextStart = tablet.contentVerticalPaddingDp +
-            tablet.dashboardTitleHeightDp +
-            tablet.sectionSpacingDp * (tabletVisibleRows + 1) +
-            tabletCardHeight * tabletVisibleRows
-        assertTrue(tabletNextStart >= 580)
+        assertEquals(tablet.dashboardCardMinHeightDp, tabletCardHeight)
     }
 
     @Test

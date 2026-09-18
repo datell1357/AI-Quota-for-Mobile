@@ -41,12 +41,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,7 +57,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalConfiguration
@@ -78,6 +82,7 @@ import com.aiquota.mobile.R
 import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.ProviderCardDisplayRecord
 import com.aiquota.mobile.local.ProviderConnectionState
+import com.aiquota.mobile.local.usageDisplayConnectionState
 import com.aiquota.mobile.local.ProviderGaugeColor
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderPreferencesCodec
@@ -107,6 +112,9 @@ import kotlin.math.roundToInt
 private val ExplorerAccentColor = AIQuotaColors.SurfaceRaised
 /** 대시보드 상단 행의 정사각형 버튼(설정·목록형·카드형) 한 변. */
 private val DashboardHeaderButtonSize = 48.dp
+
+// 목록형·카드형 버튼은 위젯 추가 버튼(OutlinedButton 기본 높이 40dp)과 높이를 맞춘다.
+private val DashboardViewModeButtonSize = 40.dp
 private const val DashboardGaugeBaseHeightDp = 4f
 private const val DashboardGaugeMaxScale = 2f
 private const val DashboardGaugeFullExtraHeightDp = 80f
@@ -189,7 +197,6 @@ fun UnifiedDashboardScreen(
     val layoutMetrics = rememberAppLayoutMetrics().forDashboardViewMode(viewMode)
     val colors = AIQuotaTheme.colors
     val scrollState = rememberScrollState()
-    val coroutineScope = rememberCoroutineScope()
     val visibleProviders = ProviderPreferencesCodec.visibleProviders(providerOrder, hiddenProviders)
     val snapshotsByProvider = snapshots.associateBy { it.providerId }
     val cardCenters = remember { mutableStateMapOf<ProviderId, DashboardCardCenter>() }
@@ -200,6 +207,7 @@ fun UnifiedDashboardScreen(
     var dragOverlayBounds by remember { mutableStateOf<DashboardCardBounds?>(null) }
     var dragOverlayOffsetX by remember { mutableStateOf(0f) }
     var dragOverlayOffsetY by remember { mutableStateOf(0f) }
+    var dragEdgeY by remember { mutableStateOf<Float?>(null) }
     val previewProviders = ProviderCardOrder.previewVisibleOrder(
         visibleOrder = visibleProviders,
         draggedProvider = draggedProvider,
@@ -218,23 +226,48 @@ fun UnifiedDashboardScreen(
         val density = LocalDensity.current
         val animationsEnabled = systemAnimationsEnabled()
         val stackHeaderActions = shouldStackDashboardHeaderActions(layoutMetrics)
+        // 헤더가 두 줄로 쌓이면 제목 높이만 빼는 기본값이 카드를 지나치게 키운다.
+        var headerHeightDp by remember { mutableStateOf<Int?>(null) }
         val cardHeightDp = dashboardProviderCardHeightDp(
             viewportHeightDp = maxHeight.value.roundToInt(),
-            layoutMetrics = layoutMetrics
+            layoutMetrics = layoutMetrics,
+            headerHeightDp = headerHeightDp ?: layoutMetrics.dashboardTitleHeightDp
         )
         val gridColumnCount = layoutMetrics.dashboardGridColumnCount.coerceAtLeast(1)
         val viewportTopY = dashboardRootPosition.y
         val viewportBottomY = dashboardRootPosition.y + with(density) { maxHeight.toPx() }
         val edgeThresholdPx = with(density) { 96.dp.toPx() }
+        // 드래그 중 손가락 Y를 기록해 둔다. 실제 스크롤은 아래 프레임 루프가 담당한다.
         val onAutoScroll: (Float) -> Unit = { draggedCenterY ->
-            val delta = dashboardAutoScrollDelta(
-                draggedCenterY = draggedCenterY,
-                viewportTopY = viewportTopY,
-                viewportBottomY = viewportBottomY,
-                edgeThresholdPx = edgeThresholdPx
-            )
-            if (delta != 0f) {
-                coroutineScope.launch { scrollState.scrollBy(delta) }
+            dragEdgeY = draggedCenterY
+        }
+        // 손가락이 가장자리에서 멈춰 있어도 스크롤이 계속되도록 프레임마다 델타를 적용한다.
+        LaunchedEffect(draggedProvider != null) {
+            if (draggedProvider == null) {
+                dragEdgeY = null
+                return@LaunchedEffect
+            }
+            var lastFrameNanos = 0L
+            while (true) {
+                val frameNanos = withFrameNanos { it }
+                val frameScale = if (lastFrameNanos == 0L) {
+                    1f
+                } else {
+                    ((frameNanos - lastFrameNanos) / 16_666_668f).coerceIn(0.5f, 2f)
+                }
+                lastFrameNanos = frameNanos
+                val edgeY = dragEdgeY
+                if (edgeY != null) {
+                    val delta = dashboardAutoScrollDelta(
+                        draggedCenterY = edgeY,
+                        viewportTopY = viewportTopY,
+                        viewportBottomY = viewportBottomY,
+                        edgeThresholdPx = edgeThresholdPx
+                    )
+                    if (delta != 0f) {
+                        scrollState.scrollBy(delta * frameScale)
+                    }
+                }
             }
         }
         val onDragOverlayChanged: (DashboardCardBounds?, Float, Float) -> Unit = { bounds, offsetX, offsetY ->
@@ -296,7 +329,11 @@ fun UnifiedDashboardScreen(
             }
             if (stackHeaderActions) {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onSizeChanged { headerSize ->
+                            headerHeightDp = with(density) { headerSize.height.toDp().value.roundToInt() }
+                        },
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Row(
@@ -541,7 +578,7 @@ private fun DashboardViewModeButton(
         onClick = onClick,
         // requiredSize라야 상단 행이 좁아져도 두 버튼이 같은 정사각형으로 남는다.
         // size만 쓰면 폭이 모자랄 때 마지막 버튼만 찌그러진다.
-        modifier = Modifier.requiredSize(DashboardHeaderButtonSize),
+        modifier = Modifier.requiredSize(DashboardViewModeButtonSize),
         shape = RoundedCornerShape(10.dp),
         color = if (selected) colors.primary.copy(alpha = 0.16f) else Color.Transparent,
         border = BorderStroke(1.dp, if (selected) colors.primary else colors.borderSoft)
@@ -550,7 +587,7 @@ private fun DashboardViewModeButton(
             Icon(
                 painter = painterResource(iconRes),
                 contentDescription = stringResource(descriptionRes),
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(20.dp),
                 tint = if (selected) colors.primary else colors.textSecondary
             )
         }
@@ -721,6 +758,7 @@ internal fun ProviderUsageCard(
     var dragOriginCenter by remember(interactionKey) { mutableStateOf<DashboardCardCenter?>(null) }
     var isDragging by remember(interactionKey) { mutableStateOf(false) }
     var dragStartVisibleIndex by remember(interactionKey) { mutableStateOf<Int?>(null) }
+    var handleCoordinates by remember(interactionKey) { mutableStateOf<LayoutCoordinates?>(null) }
     val reorderActions = if (!isPlaceholder && dragEnabled && !isDragging) {
         buildList {
             if (visibleIndex > 0 && onMoveUp != null) {
@@ -746,7 +784,37 @@ internal fun ProviderUsageCard(
     val currentVisibleIndex by rememberUpdatedState(visibleIndex)
     val currentVisibleCardCenters by rememberUpdatedState(visibleCardCenters)
     val currentPreviewTargetIndex by rememberUpdatedState(previewTargetIndex)
-    val dragHandleModifier = if (dragEnabled) Modifier.pointerInput(interactionKey) {
+    // 드래그 중에는 프레임마다 슬롯을 다시 계산한다. 오토스크롤로 다른 카드가 손가락
+    // 아래를 지나가도 제스처 이벤트가 없으면 프리뷰가 멈추므로 여기서 상시 추적한다.
+    LaunchedEffect(isDragging) {
+        if (!isDragging) return@LaunchedEffect
+        while (true) {
+            withFrameNanos { }
+            val dragBaseCenter = dragOriginCenter?.takeIf { it.isValid() } ?: cardCenter
+            if (dragBaseCenter.isValid()) {
+                val draggedCenter = DashboardCardCenter(
+                    x = dragBaseCenter.x + dragOffsetX,
+                    y = dragBaseCenter.y + dragOffsetY
+                )
+                val slotIndex = dragInsertionSlotFromCenter(
+                    cardCenters = currentVisibleCardCenters,
+                    currentVisibleIndex = currentVisibleIndex,
+                    draggedCenter = draggedCenter
+                )
+                onDropSlotChanged(slotIndex)
+                onPreviewTargetChanged(
+                    targetIndexFromInsertionSlot(
+                        slotIndex = slotIndex,
+                        currentVisibleIndex = currentVisibleIndex,
+                        itemCount = currentVisibleCardCenters.size
+                    )
+                )
+            }
+        }
+    }
+    val dragHandleModifier = if (dragEnabled) Modifier
+        .onGloballyPositioned { coordinates -> handleCoordinates = coordinates }
+        .pointerInput(interactionKey) {
         detectDragGesturesAfterLongPress(
             onDragStart = {
                 isDragging = true
@@ -813,21 +881,10 @@ internal fun ProviderUsageCard(
                     y = dragBaseCenter.y + dragOffsetY
                 )
                 onDragOverlayChanged(dragOriginBounds, dragOffsetX, dragOffsetY)
-                onAutoScroll(draggedCenter.y)
-                val slotIndex = dragInsertionSlotFromCenter(
-                        cardCenters = currentVisibleCardCenters,
-                        currentVisibleIndex = currentVisibleIndex,
-                        draggedCenter = draggedCenter
-                    )
-                onDropSlotChanged(slotIndex)
-                onPreviewTargetChanged(
-                    targetIndexFromInsertionSlot(
-                        slotIndex = slotIndex,
-                        currentVisibleIndex = currentVisibleIndex,
-                        itemCount = currentVisibleCardCenters.size
-                    )
-                )
-
+                // 오토스크롤은 카드 중심이 아니라 손가락 위치로 판단한다. 카드 중심은 핸들보다
+                // 아래에 있어 손가락이 위에 있어도 아래쪽 가장자리 판정이 나는 비대칭이 생긴다.
+                val pointerRootY = handleCoordinates?.localToRoot(change.position)?.y
+                onAutoScroll(pointerRootY ?: draggedCenter.y)
             }
         )
     } else {
@@ -1229,22 +1286,24 @@ internal fun dragInsertionSlotFromCenter(
     if (
         cardCenters.isEmpty() ||
         currentVisibleIndex !in cardCenters.indices ||
-        !draggedCenter.isValid()
+        !draggedCenter.isValid() ||
+        !cardCenters[currentVisibleIndex].isValid()
     ) {
         return currentVisibleIndex
     }
 
-    if (cardCenters.any { !it.isValid() }) {
-        return currentVisibleIndex
-    }
-
-    val nearestCardIndex = cardCenters.indices.minByOrNull { index ->
-        val center = cardCenters[index]
-        val dx = center.x - draggedCenter.x
-        val dy = center.y - draggedCenter.y
-        dx * dx + dy * dy
-    } ?: return currentVisibleIndex
-    if (nearestCardIndex == currentVisibleIndex) return currentVisibleIndex
+    // Lazy 격자는 화면에 보이는 카드만 센터를 올린다. 화면 밖 카드가 NaN이라고 계산을
+    // 포기하면 카드 수가 표시 수를 넘는 순간 재정렬이 아예 멈추므로 유효한 센터끼리 비교한다.
+    // 드래그 중인 카드의 플레이스홀더 센터는 프리뷰 위치를 따라 애니메이션되므로 최근접
+    // 검색에 넣으면 슬롯이 자기 자신을 참조해 매 프레임 진동한다. 자기 인덱스는 제외한다.
+    val nearestCardIndex = cardCenters.indices
+        .filter { index -> index != currentVisibleIndex && cardCenters[index].isValid() }
+        .minByOrNull { index ->
+            val center = cardCenters[index]
+            val dx = center.x - draggedCenter.x
+            val dy = center.y - draggedCenter.y
+            dx * dx + dy * dy
+        } ?: return currentVisibleIndex
 
     val currentCenter = cardCenters[currentVisibleIndex]
     val nearestCenter = cardCenters[nearestCardIndex]
@@ -1442,7 +1501,7 @@ private fun ProviderUsageSnapshot.statusLabel(): String {
     if (connectionState == ProviderConnectionState.COLLECTING || refreshState == ProviderRefreshState.REFRESHING) {
         return stringResource(R.string.provider_status_collecting)
     }
-    return when (connectionState) {
+    return when (usageDisplayConnectionState()) {
         ProviderConnectionState.DISCONNECTED -> stringResource(R.string.provider_status_disconnected)
         ProviderConnectionState.CONNECTING -> stringResource(R.string.provider_status_connecting)
         ProviderConnectionState.CONNECTED -> stringResource(R.string.provider_status_connected)
@@ -1450,7 +1509,7 @@ private fun ProviderUsageSnapshot.statusLabel(): String {
         ProviderConnectionState.STALE -> if (lines.isEmpty()) {
             stringResource(R.string.provider_status_auth_required)
         } else {
-            stringResource(R.string.provider_status_connected)
+            stringResource(R.string.provider_status_stale)
         }
         ProviderConnectionState.INTERACTIVE_AUTH_REQUIRED -> stringResource(R.string.provider_status_auth_required)
         ProviderConnectionState.UNAVAILABLE -> stringResource(R.string.provider_unavailable)

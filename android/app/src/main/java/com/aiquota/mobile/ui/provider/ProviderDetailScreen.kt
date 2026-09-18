@@ -94,6 +94,7 @@ import com.aiquota.mobile.local.AppTheme
 import com.aiquota.mobile.local.ProviderGaugeColor
 import com.aiquota.mobile.local.ProviderConnectionAction
 import com.aiquota.mobile.local.ProviderConnectionState
+import com.aiquota.mobile.local.usageDisplayConnectionState
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderPreferencesRepository
 import com.aiquota.mobile.local.ProviderRefreshState
@@ -750,8 +751,8 @@ private fun ProviderResetAlertBell(
 }
 
 /**
- * Per-provider personal settings: reset alerts, Claude auto-start, and the gauge colour
- * picker (shown inline here instead of behind its own button).
+ * Per-provider personal settings: reset alerts, Claude auto-start, the usage threshold,
+ * and the gauge colour picker (shown inline here instead of behind its own button).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -787,7 +788,8 @@ private fun ProviderPersonalSettingsDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .widthIn(max = 360.dp),
+                .widthIn(max = 360.dp)
+                .heightIn(max = 560.dp),
             shape = RoundedCornerShape(if (colors.theme == AppTheme.MACOS) 16.dp else 2.dp),
             color = colors.panel,
             border = BorderStroke(if (colors.theme == AppTheme.MACOS) 1.dp else 2.dp, colors.border),
@@ -808,24 +810,27 @@ private fun ProviderPersonalSettingsDialog(
 
                 ProviderPersonalSettingsToggle(
                     title = stringResource(R.string.provider_reset_notification_setting_title),
-                    description = stringResource(R.string.provider_reset_notification_setting_description),
+                    description = null,
                     checked = resetNotificationEnabled,
                     onCheckedChange = onResetNotificationChange
                 )
 
-                if (providerId == ProviderId.CLAUDE && !com.aiquota.mobile.BuildConfig.MULTI_ACCOUNT_ENABLED) {
-                    ProviderPersonalSettingsToggle(
-                        title = stringResource(R.string.settings_claude_auto_reset_prime_title),
-                        description = stringResource(R.string.settings_claude_auto_reset_prime_description),
-                        checked = autoResetPrimeEnabled,
-                        onCheckedChange = onAutoResetPrimeChange
-                    )
-                } else if (providerId == ProviderId.CLAUDE) {
-                    Text(
-                        text = stringResource(R.string.settings_claude_auto_reset_prime_unavailable),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.textSecondary
-                    )
+                if (providerId == ProviderId.CLAUDE) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        ProviderPersonalSettingsToggle(
+                            title = stringResource(R.string.settings_claude_auto_reset_prime_title),
+                            description = stringResource(R.string.settings_claude_auto_reset_prime_description),
+                            checked = autoResetPrimeEnabled,
+                            onCheckedChange = onAutoResetPrimeChange
+                        )
+                        if (autoResetPrimeEnabled) {
+                            Text(
+                                text = stringResource(R.string.settings_claude_auto_reset_prime_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colors.textMuted
+                            )
+                        }
+                    }
                 }
 
                 ProviderUsageThresholdToggle(
@@ -932,11 +937,12 @@ private fun ProviderPersonalSettingsDialog(
 @Composable
 private fun ProviderPersonalSettingsToggle(
     title: String,
-    description: String,
+    description: String?,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
     val colors = AIQuotaTheme.colors
+    val accessibilityText = listOfNotNull(title, description).joinToString(". ")
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -949,18 +955,20 @@ private fun ProviderPersonalSettingsToggle(
                 color = colors.textPrimary,
                 fontWeight = FontWeight.SemiBold
             )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.textMuted
-            )
+            description?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.textMuted
+                )
+            }
         }
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             modifier = Modifier
                 .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                .semantics { contentDescription = "$title. $description" },
+                .semantics { contentDescription = accessibilityText },
             colors = SwitchDefaults.colors(
                 checkedThumbColor = colors.panel,
                 checkedTrackColor = colors.primary,
@@ -976,7 +984,7 @@ private fun ProviderPersonalSettingsToggle(
 @Composable
 private fun ProviderUsageThresholdToggle(
     title: String,
-    description: String,
+    description: String?,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     percent: Int,
@@ -984,210 +992,118 @@ private fun ProviderUsageThresholdToggle(
 ) {
     val colors = AIQuotaTheme.colors
     var input by remember(percent) { mutableStateOf(percent.toString()) }
-    Row(
+    val thresholdFieldFocusRequester = remember { FocusRequester() }
+    val accessibilityText = listOfNotNull(title, description).joinToString(". ")
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = colors.textPrimary,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = description,
-                // Trim.None keeps the first line's ascenders from being clipped on
-                // multi-line Korean text.
-                style = MaterialTheme.typography.bodySmall.copy(
-                    lineHeightStyle = LineHeightStyle(
-                        alignment = LineHeightStyle.Alignment.Center,
-                        trim = LineHeightStyle.Trim.None
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = colors.textPrimary,
+                    fontWeight = FontWeight.SemiBold
+                )
+                description?.let {
+                    Text(
+                        text = it,
+                        // Trim.None keeps the first line's ascenders from being clipped on
+                        // multi-line Korean text.
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            lineHeightStyle = LineHeightStyle(
+                                alignment = LineHeightStyle.Alignment.Center,
+                                trim = LineHeightStyle.Trim.None
+                            )
+                        ),
+                        color = colors.textMuted
                     )
-                ),
-                color = colors.textMuted
+                }
+            }
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                modifier = Modifier
+                    .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                    .semantics { contentDescription = accessibilityText },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = colors.panel,
+                    checkedTrackColor = colors.primary,
+                    checkedBorderColor = colors.primary,
+                    uncheckedThumbColor = colors.textMuted,
+                    uncheckedTrackColor = colors.progressTrack,
+                    uncheckedBorderColor = colors.border
+                )
             )
         }
-        // Compact numeric threshold input, sized to match the on/off switch to its right.
-        Box(
-            modifier = Modifier
-                .heightIn(min = 48.dp)
-                .widthIn(min = 48.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .border(BorderStroke(1.dp, colors.border), RoundedCornerShape(8.dp))
-                .padding(horizontal = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                BasicTextField(
-                    value = input,
-                    onValueChange = { raw ->
-                        val digits = raw.filter { it.isDigit() }.take(2)
-                        input = digits
-                        digits.toIntOrNull()
-                            ?.coerceIn(
-                                ProviderPreferencesRepository.MIN_USAGE_THRESHOLD_PERCENT,
-                                ProviderPreferencesRepository.MAX_USAGE_THRESHOLD_PERCENT
-                            )
-                            ?.let(onPercentChange)
-                    },
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.bodySmall.copy(
-                        color = colors.textPrimary,
-                        textAlign = TextAlign.End
-                    ),
-                    cursorBrush = SolidColor(colors.primary),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier
-                        .widthIn(min = 48.dp)
-                        .heightIn(min = 48.dp)
-                        .semantics { contentDescription = "$title. $description" }
-                )
+        if (checked) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    text = stringResource(R.string.provider_usage_threshold_percent_label),
+                    text = stringResource(R.string.provider_usage_threshold_input_label),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.textMuted
                 )
+                Spacer(modifier = Modifier.weight(1f))
+                // Compact numeric threshold input under the switch it belongs to. Tapping
+                // anywhere in the box focuses the field; the field itself hugs its digits
+                // so the value and the % suffix stay on one baseline.
+                Box(
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .border(BorderStroke(1.dp, colors.border), RoundedCornerShape(8.dp))
+                        .pointerInput(thresholdFieldFocusRequester) {
+                            detectTapGestures { thresholdFieldFocusRequester.requestFocus() }
+                        }
+                        .padding(horizontal = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        BasicTextField(
+                            value = input,
+                            onValueChange = { raw ->
+                                val digits = raw.filter { it.isDigit() }.take(2)
+                                input = digits
+                                digits.toIntOrNull()
+                                    ?.coerceIn(
+                                        ProviderPreferencesRepository.MIN_USAGE_THRESHOLD_PERCENT,
+                                        ProviderPreferencesRepository.MAX_USAGE_THRESHOLD_PERCENT
+                                    )
+                                    ?.let(onPercentChange)
+                            },
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodySmall.copy(
+                                color = colors.textPrimary,
+                                textAlign = TextAlign.End
+                            ),
+                            cursorBrush = SolidColor(colors.primary),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier
+                                .focusRequester(thresholdFieldFocusRequester)
+                                .widthIn(min = 32.dp)
+                                .semantics { contentDescription = accessibilityText }
+                        )
+                        Text(
+                            text = stringResource(R.string.provider_usage_threshold_percent_label),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.textMuted
+                        )
+                    }
+                }
             }
         }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            modifier = Modifier
-                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                .semantics { contentDescription = "$title. $description" },
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = colors.panel,
-                checkedTrackColor = colors.primary,
-                checkedBorderColor = colors.primary,
-                uncheckedThumbColor = colors.textMuted,
-                uncheckedTrackColor = colors.progressTrack,
-                uncheckedBorderColor = colors.border
-            )
-        )
     }
 }
 
-// NOTE: Unused since the colour picker moved inline into ProviderPersonalSettingsDialog.
-// Kept (commented out) in case the standalone colour dialog is needed again.
-// @Composable
-// private fun ProviderGaugeColorDialog(
-//     selectedColor: String?,
-//     onDismiss: () -> Unit,
-//     onApply: (String?) -> Unit
-// ) {
-//     var input by remember(selectedColor) { mutableStateOf(selectedColor.orEmpty()) }
-//     var showGradientPicker by remember { mutableStateOf(false) }
-//     val normalizedInput = ProviderGaugeColor.normalize(input)
-//     val showError = input.isNotBlank() && normalizedInput == null
-//
-//     val colors = AIQuotaTheme.colors
-//     Dialog(onDismissRequest = onDismiss) {
-//         Surface(
-//             modifier = Modifier
-//                 .fillMaxWidth()
-//                 .widthIn(max = 360.dp),
-//             shape = RoundedCornerShape(if (colors.theme == AppTheme.MACOS) 16.dp else 2.dp),
-//             color = colors.panel,
-//             border = BorderStroke(if (colors.theme == AppTheme.MACOS) 1.dp else 2.dp, colors.border),
-//             shadowElevation = if (colors.theme == AppTheme.MACOS) 12.dp else 2.dp
-//         ) {
-//             Column(
-//                 modifier = Modifier.padding(18.dp),
-//                 verticalArrangement = Arrangement.spacedBy(14.dp)
-//             ) {
-//                 Row(
-//                     modifier = Modifier.fillMaxWidth(),
-//                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-//                     verticalAlignment = Alignment.CenterVertically
-//                 ) {
-//                     Text(
-//                         text = stringResource(R.string.provider_usage_color_title),
-//                         modifier = Modifier.weight(1f),
-//                         style = MaterialTheme.typography.titleMedium,
-//                         color = colors.textPrimary,
-//                         fontWeight = FontWeight.SemiBold
-//                     )
-//                 }
-//                 ProviderGaugeColorPalette(
-//                     selectedColor = normalizedInput ?: selectedColor,
-//                     onColorSelected = { input = it },
-//                     onGradientClick = { showGradientPicker = true }
-//                 )
-//                 Row(
-//                     modifier = Modifier.fillMaxWidth(),
-//                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-//                     verticalAlignment = Alignment.CenterVertically
-//                 ) {
-//                     OutlinedTextField(
-//                         value = input,
-//                         onValueChange = { input = it },
-//                         label = {
-//                             Text(
-//                                 text = stringResource(R.string.provider_usage_color_input_label),
-//                                 color = colors.textSecondary
-//                             )
-//                         },
-//                         singleLine = true,
-//                         isError = showError,
-//                         supportingText = {
-//                             if (showError) {
-//                                 Text(
-//                                     text = stringResource(R.string.provider_usage_color_invalid),
-//                                     color = MaterialTheme.colorScheme.error
-//                                 )
-//                             }
-//                         },
-//                         modifier = Modifier.weight(1f)
-//                     )
-//                     Surface(
-//                         modifier = Modifier.size(42.dp),
-//                         shape = RoundedCornerShape(8.dp),
-//                         color = ProviderGaugeColor.toArgbOrNull(normalizedInput)?.let(::Color) ?: Color.Transparent,
-//                         border = BorderStroke(1.dp, colors.border),
-//                         content = {}
-//                     )
-//                 }
-//                 Row(
-//                     modifier = Modifier.fillMaxWidth(),
-//                     horizontalArrangement = Arrangement.End,
-//                     verticalAlignment = Alignment.CenterVertically
-//                 ) {
-//                     TextButton(onClick = { onApply(null) }) {
-//                         Text(
-//                             text = stringResource(R.string.provider_usage_color_reset),
-//                             color = colors.primary
-//                         )
-//                     }
-//                     TextButton(onClick = onDismiss) {
-//                         Text(
-//                             text = stringResource(R.string.settings_close),
-//                             color = colors.primary
-//                         )
-//                     }
-//                     TextButton(
-//                         enabled = normalizedInput != null,
-//                         onClick = { onApply(normalizedInput) }
-//                     ) {
-//                         Text(
-//                             text = stringResource(R.string.provider_usage_color_apply),
-//                             color = colors.primary
-//                         )
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//     if (showGradientPicker) {
-//         ProviderGaugeGradientPickerDialog(
-//             selectedColor = normalizedInput ?: selectedColor,
-//             onColorSelected = { input = it },
-//             onDismiss = { showGradientPicker = false }
-//         )
-//     }
-// }
-//
 @Composable
 private fun ProviderGaugeGradientButton(
     onClick: () -> Unit,
@@ -1198,17 +1114,17 @@ private fun ProviderGaugeGradientButton(
 
     Box(
         modifier = modifier
-            .width(48.dp)
-            .height(152.dp)
+            .fillMaxWidth()
+            .height(48.dp)
             .clip(shape)
-            .background(Brush.verticalGradient(GaugeGradientColors))
+            .background(Brush.horizontalGradient(GaugeGradientColors))
             .clickable(role = Role.Button, onClick = onClick)
             .semantics {
                 contentDescription = accessibilityLabel
             }
     ) {
         Surface(
-            modifier = Modifier.fillMaxWidth().height(152.dp),
+            modifier = Modifier.fillMaxWidth().height(48.dp),
             shape = shape,
             color = Color.Transparent,
             border = BorderStroke(1.dp, AIQuotaTheme.colors.border),
@@ -1380,17 +1296,19 @@ private fun ProviderGaugeColorPalette(
     onGradientClick: () -> Unit,
     gradientFocusRequester: FocusRequester,
 ) {
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        ProviderGaugeColor.palette.forEach { hexColor ->
-            ProviderGaugeColorSwatch(
-                hexColor = hexColor,
-                selected = hexColor.equals(selectedColor, ignoreCase = true),
-                onClick = { onColorSelected(hexColor) }
-            )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            ProviderGaugeColor.palette.forEach { hexColor ->
+                ProviderGaugeColorSwatch(
+                    hexColor = hexColor,
+                    selected = hexColor.equals(selectedColor, ignoreCase = true),
+                    onClick = { onColorSelected(hexColor) }
+                )
+            }
         }
         ProviderGaugeGradientButton(
             onClick = onGradientClick,
@@ -1597,7 +1515,7 @@ private fun providerStatus(snapshot: ProviderUsageSnapshot, isBusy: Boolean): St
     if (snapshot.connectionState == ProviderConnectionState.COLLECTING || snapshot.refreshState == ProviderRefreshState.REFRESHING) {
         return stringResource(R.string.provider_status_collecting)
     }
-    return when (snapshot.connectionState) {
+    return when (snapshot.usageDisplayConnectionState()) {
         ProviderConnectionState.DISCONNECTED -> stringResource(R.string.provider_status_disconnected)
         ProviderConnectionState.CONNECTING -> stringResource(R.string.provider_status_connecting)
         ProviderConnectionState.CONNECTED -> stringResource(R.string.provider_status_connected)
@@ -1605,7 +1523,7 @@ private fun providerStatus(snapshot: ProviderUsageSnapshot, isBusy: Boolean): St
         ProviderConnectionState.STALE -> if (snapshot.lines.isEmpty()) {
             stringResource(R.string.provider_status_auth_required)
         } else {
-            stringResource(R.string.provider_status_connected)
+            stringResource(R.string.provider_status_stale)
         }
         ProviderConnectionState.INTERACTIVE_AUTH_REQUIRED -> stringResource(R.string.provider_status_auth_required)
         ProviderConnectionState.UNAVAILABLE -> stringResource(R.string.provider_unavailable)

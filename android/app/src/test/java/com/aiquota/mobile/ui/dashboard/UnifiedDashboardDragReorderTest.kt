@@ -173,6 +173,27 @@ class UnifiedDashboardDragReorderTest {
     }
 
     @Test
+    fun dragInsertionSlotIgnoresOffscreenCardsWithoutCenters() {
+        // Lazy 격자라 화면 밖 카드는 센터를 올리지 못해 NaN으로 남는다.
+        // NaN이 섞여 있어도 보이는 카드끼리는 재정렬이 동작해야 한다.
+        val centers = listOf(
+            DashboardCardCenter(x = 100f, y = 100f),
+            DashboardCardCenter(x = 100f, y = 300f),
+            DashboardCardCenter(x = 100f, y = 500f),
+            DashboardCardCenter(x = Float.NaN, y = Float.NaN),
+            DashboardCardCenter(x = Float.NaN, y = Float.NaN)
+        )
+
+        val targetIndex = dragTargetIndexFromCenter(
+            cardCenters = centers,
+            currentVisibleIndex = 0,
+            draggedCenter = DashboardCardCenter(x = 100f, y = 300f)
+        )
+
+        assertEquals(1, targetIndex)
+    }
+
+    @Test
     fun dragInsertionSlotReportsExactDropGap() {
         val centers = listOf(
             DashboardCardCenter(x = 100f, y = 100f),

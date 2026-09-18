@@ -17,14 +17,21 @@ class ProviderNavigationLayoutTest {
         )
         assertTrue(
             "Antigravity should be shown as a centered two-line navigation label.",
-            source.contains("ProviderId.ANTIGRAVITY -> \"Anti\\nGravity\"")
+            source.contains("ProviderId.ANTIGRAVITY -> \"Anti\\ngravity\"")
         )
         assertTrue(
             "Provider navigation text must allow the two-line Antigravity label.",
             source.substringAfter("private fun ProviderNavigationChip")
-                .substringBefore("private fun providerNavigationLabel")
+                .substringBefore("internal fun providerNavigationLabel")
                 .contains("maxLines = 2")
         )
+    }
+
+    @Test
+    fun antigravityDefaultAccountAliasUsesTwoLinesButCustomAliasesArePreserved() {
+        assertEquals("Anti\ngravity", providerNavigationLabel(ProviderId.ANTIGRAVITY, "Antigravity"))
+        assertEquals("Work", providerNavigationLabel(ProviderId.ANTIGRAVITY, "Work"))
+        assertEquals("Claude 2", providerNavigationLabel(ProviderId.CLAUDE, "Claude 2"))
     }
 
     @Test

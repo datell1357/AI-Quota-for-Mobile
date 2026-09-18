@@ -56,6 +56,7 @@ import com.aiquota.mobile.accounts.ProviderAccountId
 import com.aiquota.mobile.accounts.ProviderCardDisplayRecord
 import com.aiquota.mobile.local.AppTheme
 import com.aiquota.mobile.local.ProviderConnectionState
+import com.aiquota.mobile.local.usageDisplayConnectionState
 import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderPreferencesCodec
 import com.aiquota.mobile.local.ProviderRefreshState
@@ -930,7 +931,7 @@ private fun settingsConnectionStatusLabel(providerId: ProviderId, snapshot: Prov
 
 @StringRes
 private fun settingsConnectionStatusLabel(snapshot: ProviderUsageSnapshot?): Int {
-    val state = snapshot?.connectionState ?: ProviderConnectionState.DISCONNECTED
+    val state = snapshot?.usageDisplayConnectionState() ?: ProviderConnectionState.DISCONNECTED
     return when (state) {
         ProviderConnectionState.DISCONNECTED,
         ProviderConnectionState.NOT_CONNECTED -> R.string.provider_status_disconnected

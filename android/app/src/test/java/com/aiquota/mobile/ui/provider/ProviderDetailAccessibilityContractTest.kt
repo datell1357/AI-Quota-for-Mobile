@@ -25,7 +25,7 @@ class ProviderDetailAccessibilityContractTest {
     @Test
     fun detailInteractiveControlsExposeLocalized48dpTargets() {
         val bell = source.substringAfter("private fun ProviderResetAlertBell").substringBefore("private fun ProviderPersonalSettingsDialog")
-        val threshold = source.substringAfter("private fun ProviderUsageThresholdToggle").substringBefore("// NOTE:")
+        val threshold = source.substringAfter("private fun ProviderUsageThresholdToggle").substringBefore("private fun ProviderGaugeGradientButton")
         val gradient = source.substringAfter("private fun ProviderGaugeGradientButton").substringBefore("private fun ProviderGaugeGradientPickerDialog")
         val swatch = source.substringAfter("private fun ProviderGaugeColorSwatch").substringBefore("private fun normalizedPickerPosition")
 
@@ -33,7 +33,7 @@ class ProviderDetailAccessibilityContractTest {
         assertTrue(bell.contains("contentDescription"))
         assertTrue(threshold.contains("minHeight = 48.dp"))
         assertTrue(threshold.contains("contentDescription"))
-        assertTrue(gradient.contains("width(48.dp)"))
+        assertTrue(gradient.contains("height(48.dp)"))
         assertTrue(gradient.contains("contentDescription"))
         assertTrue(swatch.contains("size(48.dp)"))
         assertTrue(swatch.contains("contentDescription"))

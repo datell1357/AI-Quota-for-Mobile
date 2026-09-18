@@ -115,7 +115,10 @@ fun appLayoutMetrics(
             (if (isTablet) scaled(38, 48) else scaled(36, 42)) * accessibilityFontScale
         ).roundToInt().coerceAtLeast(48),
         dashboardCardMinHeightDp = (
-            (if (isTablet) scaled(180, 220) else scaled(176, 220)) * accessibilityFontScale
+            // 폰 목록형은 헤더·패딩을 제외한 뷰포트를 카드 개수로 나눈 값이 이 하한보다
+            // 작을 수 있다. 하한이 피팅을 누르면 세 번째 카드가 하단 내비 뒤로 잘리므로,
+            // 폰 하한은 피팅이 이기도록 낮춰 둔다.
+            (if (isTablet) scaled(180, 220) else scaled(145, 200)) * accessibilityFontScale
         ).roundToInt(),
         dashboardCompactCard = dashboardGridColumnCount == 1,
         isTablet = isTablet,
@@ -154,19 +157,21 @@ fun AppLayoutMetrics.forDashboardViewMode(mode: DashboardViewMode): AppLayoutMet
 
 fun dashboardProviderCardHeightDp(
     viewportHeightDp: Int,
-    layoutMetrics: AppLayoutMetrics
+    layoutMetrics: AppLayoutMetrics,
+    headerHeightDp: Int = layoutMetrics.dashboardTitleHeightDp,
 ): Int {
     val visibleCount = layoutMetrics.dashboardVisibleProviderCount.coerceAtLeast(1)
     val columnCount = layoutMetrics.dashboardGridColumnCount.coerceAtLeast(1)
     val visibleRowCount = ceil(visibleCount / columnCount.toFloat())
         .roundToInt()
         .coerceAtLeast(1)
+    // 콘텐츠 Column은 위아래 같은 패딩을 쓰므로 둘 다 뺀다. 정수 나눗셈(내림)으로
+    // 잡아야 행 합계가 가용 높이를 넘지 않는다.
     val availableHeight = viewportHeightDp -
-        layoutMetrics.contentVerticalPaddingDp -
-        layoutMetrics.dashboardTitleHeightDp -
+        layoutMetrics.contentVerticalPaddingDp * 2 -
+        headerHeightDp -
         layoutMetrics.sectionSpacingDp * visibleRowCount
-    val fittedHeight = ceil(availableHeight / visibleRowCount.toFloat())
-        .roundToInt()
+    val fittedHeight = availableHeight / visibleRowCount
 
     return fittedHeight.coerceAtLeast(layoutMetrics.dashboardCardMinHeightDp)
 }

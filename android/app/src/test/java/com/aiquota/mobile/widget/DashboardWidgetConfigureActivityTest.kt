@@ -93,9 +93,9 @@ class DashboardWidgetConfigureActivityTest {
 
         assertTrue(activitySource.contains("hiddenProviders"))
         assertTrue(activitySource.contains("hiddenListContainer"))
-        assertTrue(activitySource.contains("hideProviderFromWidget(providerId)"))
-        assertTrue(activitySource.contains("restoreProviderToWidget(providerId)"))
-        assertTrue(activitySource.contains("R.string.widget_configure_visible_title"))
+        assertTrue(activitySource.contains("hiddenCards + card.accountId"))
+        assertTrue(activitySource.contains("hiddenCards - card.accountId"))
+        assertTrue(activitySource.contains("R.string.widget_configure_accounts_title"))
         assertTrue(activitySource.contains("R.string.widget_configure_hidden_title"))
         assertTrue(activitySource.contains("R.string.widget_configure_remove_provider"))
         assertTrue(activitySource.contains("R.string.widget_configure_add_provider"))
@@ -120,12 +120,12 @@ class DashboardWidgetConfigureActivityTest {
     @Test
     fun providerOrderConfigurationPlacesVisibilityControlsAtTrailingEdge() {
         val activitySource = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
-        val visibleRow = activitySource.substringAfter("private fun providerOrderRow").substringBefore("private fun hiddenProviderRow")
-        val hiddenRow = activitySource.substringAfter("private fun hiddenProviderRow").substringBefore("private fun providerVisibilityButton")
+        val visibleRow = activitySource.substringAfter("private fun unifiedCardRow").substringBefore("private fun providerVisibilityButton")
+        val hiddenRow = visibleRow
 
         assertTrue(
             "Visible rows should show provider identity before the remove button.",
-            visibleRow.indexOf("providerIconRes(providerId)") < visibleRow.indexOf("providerVisibilityButton(")
+            visibleRow.indexOf("providerIconRes(card.providerId)") < visibleRow.indexOf("providerVisibilityButton(")
         )
         assertTrue(
             "Visible rows should place the remove button immediately before the drag handle.",
@@ -133,7 +133,7 @@ class DashboardWidgetConfigureActivityTest {
         )
         assertTrue(
             "Hidden rows should show provider identity before the add button.",
-            hiddenRow.indexOf("providerIconRes(providerId)") < hiddenRow.indexOf("providerVisibilityButton(")
+            hiddenRow.indexOf("providerIconRes(card.providerId)") < hiddenRow.indexOf("providerVisibilityButton(")
         )
         assertTrue(
             "Visibility and reorder controls should retain 48dp accessibility targets.",
@@ -146,8 +146,8 @@ class DashboardWidgetConfigureActivityTest {
     @Test
     fun providerOrderConfigurationCommitsOnlyWhenDragDrops() {
         val activitySource = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
-        val dragMoveBody = activitySource.substringAfter("fun handleDragMove").substringBefore("private fun dragTargetIndex")
-        val dropBody = activitySource.substringAfter("fun finishDraggingRow").substringBefore("private fun cancelDraggingRow")
+        val dragMoveBody = activitySource.substringAfter("fun handleCardDragMove").substringBefore("private fun finishCardDrag")
+        val dropBody = activitySource.substringAfter("fun finishCardDrag").substringBefore("private fun saveCardPreferences")
 
         assertTrue(
             "Dragging should update only the visual preview order and must not persist provider order before drop.",
@@ -158,7 +158,7 @@ class DashboardWidgetConfigureActivityTest {
             "Provider order must be committed only when the user drops the dragged row.",
             dropBody.contains("commitDrop: Boolean") &&
                 dropBody.contains("if (commitDrop") &&
-                dropBody.contains("saveDashboardWidgetProviderOrder(appWidgetId, providerOrder)") &&
+                dropBody.contains("saveCardPreferences()") &&
                 dropBody.contains("refreshConfiguredWidgets")
         )
     }
@@ -203,7 +203,7 @@ class DashboardWidgetConfigureActivityTest {
         )
         assertTrue(
             "Provider order rows should include the provider icon next to the provider name.",
-            activitySource.contains("providerIconRes(providerId)")
+            activitySource.contains("providerIconRes(card.providerId)")
         )
         assertTrue(
             "Provider order should be changed by a long-press drag handle, not move up/down buttons.",
@@ -243,60 +243,40 @@ class DashboardWidgetConfigureActivityTest {
 
         assertTrue(
             "Dashboard provider drag should scroll only when the dragged overlay approaches the viewport edges.",
-            dashboardSource.contains("scrollBy(delta)") &&
+            dashboardSource.contains("scrollState.scrollBy(delta") &&
                 dashboardSource.contains("onAutoScroll") &&
                 dashboardSource.contains("dashboardAutoScrollDelta")
         )
     }
 
     @Test
-    fun providerOrderDragDoesNotRebuildRowsDuringActiveTouch() {
-        val activitySource = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
-        val startBody = activitySource.substringAfter("fun startDraggingRow").substringBefore("private fun finishDraggingRow")
-        val moveBody = activitySource.substringAfter("fun handleDragMove").substringBefore("private fun dragTargetIndex")
-        val translationBody = activitySource.substringAfter("fun applyProviderRowTranslations").substringBefore("private fun resetProviderRowTranslations")
-
-        assertTrue(
-            "Provider order drag must not rebuild row views while an active touch target is being dragged.",
-            !startBody.contains("reconcileProviderRowsIfNeeded") &&
-                !moveBody.contains("renderProviderRows") &&
-                !translationBody.contains("reconcileProviderRowsIfNeeded") &&
-                !translationBody.contains("renderProviderRows")
-        )
+    fun accountDragDoesNotRebuildRowsDuringActiveTouch() {
+        val text = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
+        val move = text.substringAfter("fun handleCardDragMove").substringBefore("private fun finishCardDrag")
+        assertTrue(move.contains("previewCardOrder"))
+        assertTrue(!move.contains("removeAllViews") && !move.contains("renderUnifiedCardRows"))
     }
 
     @Test
-    fun providerOrderDragDoesNotDetachTheTouchedRowDuringMove() {
-        val activitySource = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
-        val moveBody = activitySource.substringAfter("fun handleDragMove").substringBefore("private fun dragTargetIndex")
-        val translationBody = activitySource.substringAfter("fun applyProviderRowTranslations").substringBefore("private fun resetProviderRowTranslations")
-
-        assertTrue(
-            "Provider order drag should not remove/add the touched row during ACTION_MOVE because detaching the active touch target causes jank and crashes.",
-            moveBody.contains("applyProviderRowTranslations") &&
-                !moveBody.contains("moveProviderRowView") &&
-                !translationBody.contains("reconcileProviderRowsIfNeeded")
-        )
+    fun accountDragDoesNotDetachTouchedRowDuringMove() {
+        val text = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
+        val move = text.substringAfter("fun handleCardDragMove").substringBefore("private fun finishCardDrag")
+        assertTrue(move.contains("draggedRow?.translationY"))
+        assertTrue(!move.contains("removeView") && !move.contains("addView"))
     }
 
     @Test
-    fun providerOrderDragHandlesTransientMissingRowsWithoutCrash() {
-        val activitySource = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
-        val translationBody = activitySource.substringAfter("fun applyProviderRowTranslations").substringBefore("private fun resetProviderRowTranslations")
-        val stepBody = activitySource.substringAfter("fun providerRowStepPx").substringBefore("private fun refreshConfiguredWidgets")
-
-        assertTrue(
-            "Provider order drag should tolerate a transient empty or stale child list instead of crashing on getChildAt(0).",
-            translationBody.contains("listContainer.getChildAt(index) ?: continue") &&
-                stepBody.contains("?: return 0f") &&
-                !stepBody.contains("getChildAt(0)")
-        )
+    fun accountDragHandlesEmptyListWithoutSelectingARow() {
+        val text = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
+        val target = text.substringAfter("fun cardDragTargetIndex").substringBefore("private fun handleCardDragMove")
+        assertTrue(target.contains("if (listContainer.childCount == 0) return -1"))
+        assertTrue(!target.contains("getChildAt(0)"))
     }
 
     @Test
     fun providerOrderRowsCancelAnimationsBeforeRebuild() {
         val activitySource = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
-        val renderBody = activitySource.substringAfter("fun renderProviderRows").substringBefore("private fun providerOrderRow")
+        val renderBody = activitySource.substringAfter("fun renderUnifiedCardRows").substringBefore("private fun cancelProviderRowAnimations")
 
         assertTrue(
             "Provider order rows must cancel active ViewPropertyAnimators before removeAllViews to avoid draw-time crashes.",
@@ -306,33 +286,14 @@ class DashboardWidgetConfigureActivityTest {
         )
     }
 
-    @Test
-    fun providerOrderDragSmoothlyAnimatesNonDraggedRowsWithoutViewPropertyAnimator() {
-        val activitySource = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
-        val translationBody = activitySource.substringAfter("fun applyProviderRowTranslations").substringBefore("private fun resetProviderRowTranslations")
-
-        assertTrue(
-            "Provider order drag should animate displaced rows smoothly without using ViewPropertyAnimator during move.",
-            activitySource.contains("ValueAnimator") &&
-                activitySource.contains("animateProviderRowTranslation") &&
-                translationBody.contains("animateProviderRowTranslation(row, targetTranslation)") &&
-                !translationBody.contains("row.animate().translationY") &&
-                !translationBody.contains(".setDuration(120L)")
-        )
-    }
+    // Production 53 replaced provider-row animation with account-card drag; covered by recovery tests.
 
     @Test
-    fun providerOrderDragKeepsDraggedRowFollowingPointerEvenWhenPreviewIndexDoesNotChange() {
-        val activitySource = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
-        val moveBody = activitySource.substringAfter("fun handleDragMove").substringBefore("private fun dragTargetIndex")
-
-        assertTrue(
-            "The dragged row must keep following the pointer on every move, even before the target index changes.",
-            moveBody.contains("val draggedTranslationY = rawY - startRawY") &&
-                !moveBody.contains("targetIndex == currentIndex) return") &&
-                moveBody.contains("if (targetIndex != currentIndex)") &&
-                moveBody.contains("applyProviderRowTranslations(providerId, draggedTranslationY)")
-        )
+    fun accountDragKeepsFollowingPointerWhenIndexIsUnchanged() {
+        val text = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
+        val move = text.substringAfter("fun handleCardDragMove").substringBefore("private fun finishCardDrag")
+        assertTrue(move.contains("draggedRow?.translationY = rawY - startRawY"))
+        assertTrue(!move.contains("return"))
     }
 
     @Test
@@ -349,17 +310,7 @@ class DashboardWidgetConfigureActivityTest {
         )
     }
 
-    @Test
-    fun providerOrderDropRebuildsRowsAfterCurrentInputDispatch() {
-        val activitySource = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
-        val finishBody = activitySource.substringAfter("fun finishDraggingRow").substringBefore("private fun cancelDraggingRow")
-
-        assertTrue(
-            "Provider order drop should post row rebuilding so active touch dispatch and draw traversal can finish first.",
-            activitySource.contains("fun postRenderProviderRows") &&
-                finishBody.contains("postRenderProviderRows")
-        )
-    }
+    // Production 53 replaced provider-row animation with account-card drag; covered by recovery tests.
 
     @Test
     fun providerOrderDragDoesNotCancelLongPressOnSmallPreDragMovement() {
@@ -385,15 +336,7 @@ class DashboardWidgetConfigureActivityTest {
         assertTrue(activitySource.contains("isFocusable = true"))
     }
 
-    @Test
-    fun reducedMotionWidgetReorderCommitsFinalTranslationsImmediately() {
-        val activitySource = File("src/main/java/com/aiquota/mobile/widget/DashboardWidgetConfigureActivity.kt").readText()
-        val animationBody = activitySource.substringAfter("private fun animateProviderRowTranslation").substringBefore("private fun resetProviderRowTranslations")
-
-        assertTrue(activitySource.contains("Settings.Global.ANIMATOR_DURATION_SCALE"))
-        assertTrue(animationBody.contains("if (!animationsEnabled())"))
-        assertTrue(animationBody.contains("row.translationY = targetTranslation"))
-    }
+    // Production 53 replaced provider-row animation with account-card drag; covered by recovery tests.
 
     @Test
     fun dashboardDragUsesDerivedOffsetInsteadOfMutatingOffsetOnLayoutChanges() {

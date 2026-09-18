@@ -32,12 +32,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.LocalPinnableContainer
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -97,6 +99,7 @@ internal fun ExactDashboardCardsContent(
     var dragOverlayBounds by remember { mutableStateOf<DashboardCardBounds?>(null) }
     var dragOverlayOffsetX by remember { mutableStateOf(0f) }
     var dragOverlayOffsetY by remember { mutableStateOf(0f) }
+    var dragEdgeY by remember { mutableStateOf<Float?>(null) }
     val previewIds = ProviderCardOrder.previewExactVisibleOrder(orderedIds, draggedAccount, previewTargetIndex)
     val visibleCenters = previewIds.map { centers[it] ?: DashboardCardCenter(Float.NaN, Float.NaN) }
 
@@ -116,20 +119,49 @@ internal fun ExactDashboardCardsContent(
     ) {
         val density = androidx.compose.ui.platform.LocalDensity.current
         val animationsEnabled = systemAnimationsEnabled()
-        val cardHeightDp = dashboardProviderCardHeightDp(maxHeight.value.roundToInt(), layoutMetrics)
+        // 헤더가 두 줄이라 제목 높이만 빼면 카드가 지나치게 커진다. 실측 높이를 넘긴다.
+        var headerHeightDp by remember { mutableStateOf<Int?>(null) }
+        val cardHeightDp = dashboardProviderCardHeightDp(
+            viewportHeightDp = maxHeight.value.roundToInt(),
+            layoutMetrics = layoutMetrics,
+            headerHeightDp = headerHeightDp ?: layoutMetrics.dashboardTitleHeightDp,
+        )
         val columns = layoutMetrics.dashboardGridColumnCount.coerceAtLeast(1)
         val viewportTopY = dashboardRootPosition.y
         val viewportBottomY = dashboardRootPosition.y + with(density) { maxHeight.toPx() }
         val edgeThresholdPx = with(density) { 96.dp.toPx() }
+        // 드래그 중 손가락 Y를 기록해 둔다. 실제 스크롤은 아래 프레임 루프가 담당한다.
         val onAutoScroll: (Float) -> Unit = { draggedCenterY ->
-            val delta = dashboardAutoScrollDelta(
-                draggedCenterY = draggedCenterY,
-                viewportTopY = viewportTopY,
-                viewportBottomY = viewportBottomY,
-                edgeThresholdPx = edgeThresholdPx,
-            )
-            if (delta != 0f) {
-                coroutineScope.launch { scrollState.scrollBy(delta) }
+            dragEdgeY = draggedCenterY
+        }
+        // 손가락이 가장자리에서 멈춰 있어도 스크롤이 계속되도록 프레임마다 델타를 적용한다.
+        // 이벤트 단위 scrollBy는 제스처가 멈추면 함께 멈추고 연속 launch가 겹쳐 튄다.
+        LaunchedEffect(draggedAccount != null) {
+            if (draggedAccount == null) {
+                dragEdgeY = null
+                return@LaunchedEffect
+            }
+            var lastFrameNanos = 0L
+            while (true) {
+                val frameNanos = withFrameNanos { it }
+                val frameScale = if (lastFrameNanos == 0L) {
+                    1f
+                } else {
+                    ((frameNanos - lastFrameNanos) / 16_666_668f).coerceIn(0.5f, 2f)
+                }
+                lastFrameNanos = frameNanos
+                val edgeY = dragEdgeY
+                if (edgeY != null) {
+                    val delta = dashboardAutoScrollDelta(
+                        draggedCenterY = edgeY,
+                        viewportTopY = viewportTopY,
+                        viewportBottomY = viewportBottomY,
+                        edgeThresholdPx = edgeThresholdPx,
+                    )
+                    if (delta != 0f) {
+                        scrollState.scrollBy(delta * frameScale)
+                    }
+                }
             }
         }
         val onDragOverlayChanged: (DashboardCardBounds?, Float, Float) -> Unit = { bounds, offsetX, offsetY ->
@@ -166,7 +198,11 @@ internal fun ExactDashboardCardsContent(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onSizeChanged { headerSize ->
+                        headerHeightDp = with(density) { headerSize.height.toDp().value.roundToInt() }
+                    },
                 verticalArrangement = Arrangement.spacedBy(layoutMetrics.cardSpacingDp.dp),
             ) {
                 Row(
@@ -269,6 +305,11 @@ internal fun ExactDashboardCardsContent(
                         DisposableEffect(accountId == draggedAccount, pinnableContainer) {
                             val pinned = if (accountId == draggedAccount) pinnableContainer?.pin() else null
                             onDispose { pinned?.release() }
+                        }
+                        // 화면 밖으로 나가 composition이 해제되면 센터가 stale 좌표로 남아
+                        // 최근접 카드 검색을 오염시키므로 지운다.
+                        DisposableEffect(accountId) {
+                            onDispose { centers.remove(accountId) }
                         }
                         ExactProviderUsageCard(
                             content = contentById.getValue(accountId),

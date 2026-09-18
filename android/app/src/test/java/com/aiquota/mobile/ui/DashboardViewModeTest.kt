@@ -91,7 +91,7 @@ class DashboardViewModeTest {
 
         assertTrue(
             "폭이 모자랄 때 마지막 버튼만 찌그러지지 않도록 requiredSize로 고정한다",
-            source.contains("Modifier.requiredSize(DashboardHeaderButtonSize)")
+            source.contains("Modifier.requiredSize(DashboardViewModeButtonSize)")
         )
         assertTrue(
             "제목이 대신 줄어들어야 버튼이 온전한 정사각형으로 남는다",
