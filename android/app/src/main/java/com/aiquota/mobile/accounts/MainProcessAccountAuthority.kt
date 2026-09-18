@@ -255,6 +255,20 @@ class MainProcessAccountAuthority private constructor(
         accountId: ProviderAccountId,
         demand: AccountDemandSet,
         nonce: AttemptNonce
+    ): AttemptLease = beginAttemptInternal(accountId, demand, nonce, issueNonce = false)
+
+    /** New collection attempts use a durable unique version instead of growing replay history. */
+    internal fun beginRefreshAttempt(
+        accountId: ProviderAccountId,
+        demand: AccountDemandSet,
+        entropy: AttemptNonce,
+    ): AttemptLease = beginAttemptInternal(accountId, demand, entropy, issueNonce = true)
+
+    private fun beginAttemptInternal(
+        accountId: ProviderAccountId,
+        demand: AccountDemandSet,
+        nonce: AttemptNonce,
+        issueNonce: Boolean,
     ): AttemptLease = transaction { db ->
         val account = requireNotNull(readAccount(db, accountId)) { "Account is not registered" }
         require(
@@ -262,13 +276,16 @@ class MainProcessAccountAuthority private constructor(
                 account.authState == AccountAuthState.AUTHENTICATED &&
                 account.deletionState == AccountDeletionState.NONE
         ) { "Account is not eligible for an attempt" }
-        require(!isPublished(db, accountId, nonce)) { "Attempt nonce was already published" }
+        // Issued values cannot be supplied again, even after their published head is replaced.
+        require(!nonce.authorityIssued) { "Authority-issued nonce cannot be reused" }
+        if (!issueNonce) require(!isPublished(db, accountId, nonce)) { "Attempt nonce was already published" }
         val version = readVersion(db).next()
+        val attemptNonce = if (issueNonce) AttemptNonce.issue(version, nonce) else nonce
         updateAccountVersion(db, accountId, version)
         writeDemand(db, accountId, demand)
-        writeAttempt(db, accountId, account.generation, account.sessionRevision, nonce)
+        writeAttempt(db, accountId, account.generation, account.sessionRevision, attemptNonce)
         writeVersion(db, version)
-        AttemptLease(accountId, account.generation, account.sessionRevision, nonce)
+        AttemptLease(accountId, account.generation, account.sessionRevision, attemptNonce)
     }
 
     override fun beginAuthentication(id: ProviderAccountId): AccountLoginSessionBinding? = transaction { db ->
@@ -353,6 +370,12 @@ class MainProcessAccountAuthority private constructor(
         deleteAccountSnapshot(db, id)
         writeVersion(db, version)
         true
+    }
+
+    internal fun isAuthenticated(id: ProviderAccountId): Boolean {
+        val account = readAccount(database.readableDatabase, id) ?: return false
+        return account.state == AccountState.ACTIVE && account.deletionState == AccountDeletionState.NONE &&
+            account.authState == AccountAuthState.AUTHENTICATED
     }
 
     override fun currentBinding(id: ProviderAccountId): AccountLoginSessionBinding? {
@@ -775,11 +798,21 @@ class MainProcessAccountAuthority private constructor(
                 statement.bindString(2, accountId.accountKey.storageValue())
                 check(statement.executeUpdateDelete() == 1) { "Provider-card metadata disappeared" }
             }
+            val followingRanks = db.rawQuery(
+                "SELECT active_rank FROM provider_card_catalog WHERE active_rank>? ORDER BY active_rank ASC",
+                arrayOf(activeRank.toString()),
+            ).use { cursor ->
+                buildList { while (cursor.moveToNext()) add(cursor.getLong(0)) }
+            }
             db.compileStatement(
-                "UPDATE provider_card_catalog SET active_rank=active_rank-1 WHERE active_rank>?"
+                "UPDATE provider_card_catalog SET active_rank=? WHERE active_rank=?"
             ).use { statement ->
-                statement.bindLong(1, activeRank)
-                statement.executeUpdateDelete()
+                followingRanks.forEach { rank ->
+                    statement.clearBindings()
+                    statement.bindLong(1, rank - 1)
+                    statement.bindLong(2, rank)
+                    check(statement.executeUpdateDelete() == 1) { "Provider-card rank disappeared during deletion" }
+                }
             }
         } else {
             updateAccountVersion(db, accountId, version)

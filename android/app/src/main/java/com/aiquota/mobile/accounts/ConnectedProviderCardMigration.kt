@@ -211,7 +211,9 @@ internal fun initializeConnectedProviderCards(
                     AccountRecord(
                         id = id,
                         state = AccountState.ACTIVE,
-                        authState = AccountAuthState.REAUTH_REQUIRED,
+                        authState = connectedProviderMigrationAuthState(
+                            policy.multiplicity, snapshotsByProvider[id.providerId]?.connectionState,
+                        ),
                         deletionState = AccountDeletionState.NONE,
                         generation = AccountGeneration.of(1),
                         sessionRevision = SessionRevision.of(1),
@@ -561,3 +563,18 @@ private val CONNECTED_PROVIDER_CARD_STATES = setOf(
 )
 private const val CONNECTED_PROVIDER_CARD_MIGRATION_VERSION = 1
 private const val ZERO_SHA256 = "0000000000000000000000000000000000000000000000000000000000000000"
+
+/**
+ * Preserve the last known connected state only when importing a new shared-session account.
+ * Its collector still uses the existing credential store/profile and performs normal validation
+ * on the next scheduled collection. Usage history or credential presence alone is not evidence
+ * of a connected session. Named-profile accounts retain their separate cookie/context handoff.
+ * This must not be used to repair existing accounts: a later logout/expiry must remain authoritative.
+ */
+internal fun connectedProviderMigrationAuthState(
+    multiplicity: ProviderCardMultiplicity,
+    connectionState: ProviderConnectionState?,
+): AccountAuthState = if (
+    multiplicity == ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT &&
+    connectionState == ProviderConnectionState.CONNECTED
+) AccountAuthState.AUTHENTICATED else AccountAuthState.REAUTH_REQUIRED

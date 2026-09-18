@@ -21,12 +21,12 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class LegacyMigrationVerifierRegressionTest {
     @Test
-    fun v601ReleaseDisabledStartupHasNoMigrationReachability() {
+    fun production53ReleaseEnablesMultiAccountStartup() {
         val application = File("src/main/java/com/aiquota/mobile/AIQuotaApplication.kt").readText()
         val build = File("build.gradle.kts").readText()
 
         assertTrue(build.contains("debug {\n            buildConfigField(\"boolean\", \"MULTI_ACCOUNT_ENABLED\", \"true\")"))
-        assertTrue(build.contains("release {\n            buildConfigField(\"boolean\", \"MULTI_ACCOUNT_ENABLED\", \"false\")"))
+        assertTrue(build.contains("release {\n            buildConfigField(\"boolean\", \"MULTI_ACCOUNT_ENABLED\", \"true\")"))
         assertTrue(application.contains("if (BuildConfig.MULTI_ACCOUNT_ENABLED)"))
         assertFalse(application.contains("LegacyAccountMigrationRunner.run(this)\n"))
         var calls = 0

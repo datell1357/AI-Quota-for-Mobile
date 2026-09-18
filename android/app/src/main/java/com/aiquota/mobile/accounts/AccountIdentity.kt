@@ -90,8 +90,19 @@ value class AttemptNonce private constructor(private val token: String) {
 
     internal fun storageValue(): String = token
 
+    internal val authorityIssued: Boolean get() = ISSUED_PATTERN.matches(token)
+
     companion object {
         private val TOKEN_PATTERN = Regex("attempt_[0-9a-z]{16,64}")
+        private val ISSUED_PATTERN = Regex("attempt_v2[0-9a-f]{16}[0-9a-z]{32}")
+
+        /** The durable display version never repeats; entropy keeps attempt identifiers opaque. */
+        internal fun issue(version: DisplayVersion, entropy: AttemptNonce): AttemptNonce {
+            require(version.value > 0)
+            require(!entropy.authorityIssued)
+            val suffix = entropy.storageValue().removePrefix("attempt_").takeLast(32).padStart(32, '0')
+            return parseOpaque("attempt_v2${version.value.toString(16).padStart(16, '0')}$suffix")
+        }
 
         fun parseOpaque(token: String): AttemptNonce {
             require(TOKEN_PATTERN.matches(token)) { "Malformed opaque attempt nonce" }

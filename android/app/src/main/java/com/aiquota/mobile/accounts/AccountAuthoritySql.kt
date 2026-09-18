@@ -373,6 +373,9 @@ internal fun writeNonceHead(db: SQLiteDatabase, id: ProviderAccountId, nonce: At
 
 internal fun publishNonce(db: SQLiteDatabase, id: ProviderAccountId, nonce: AttemptNonce) {
     writeNonceHead(db, id, nonce)
+    // Issued versions never repeat. Late callbacks must still match the active attempt/session.
+    // Preserve legacy history and its replay checks; only new collection growth is eliminated.
+    if (nonce.authorityIssued) return
     db.compileStatement(
         "INSERT INTO published_nonces(provider_id, account_key, nonce) VALUES(?, ?, ?)"
     ).use { statement ->
@@ -452,7 +455,11 @@ internal fun attemptMatches(db: SQLiteDatabase, lease: AttemptLease): Boolean =
 
 internal fun isPublished(db: SQLiteDatabase, id: ProviderAccountId, nonce: AttemptNonce): Boolean =
     db.rawQuery(
-        "SELECT 1 FROM published_nonces WHERE provider_id = ? AND account_key = ? AND nonce = ?",
+        if (nonce.authorityIssued) {
+            "SELECT 1 FROM nonce_heads WHERE provider_id = ? AND account_key = ? AND last_nonce = ?"
+        } else {
+            "SELECT 1 FROM published_nonces WHERE provider_id = ? AND account_key = ? AND nonce = ?"
+        },
         arrayOf(id.providerId.storageId, id.accountKey.storageValue(), nonce.storageValue())
     ).use(Cursor::moveToFirst)
 

@@ -51,6 +51,40 @@ class ConnectedProviderCardMigrationTest {
     }
 
     @Test
+    fun connectedSharedSessionImportsPreserveStateWithoutRewritingExistingAccounts() {
+        val providers = ProviderId.entries.filter {
+            (ProviderCardCatalogPolicy.classify(it) as? ProviderCardProviderPolicy.Released)?.multiplicity ==
+                ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT
+        }
+        val fixture = fixture("shared-session-preservation", source(*providers.map {
+            snapshot(it, ProviderConnectionState.CONNECTED, usage = true)
+        }.toTypedArray()))
+        completed(fixture.migration.run())
+        val records = fixture.authority.catalog(0, 100).records
+        assertEquals(providers.toSet(), records.map { it.id.providerId }.toSet())
+        assertTrue(records.all { it.authState == AccountAuthState.AUTHENTICATED })
+        assertEquals(0, tableCount(fixture.databaseName, "named_profile_lifecycle"))
+        val first = records.first().id
+        fixture.authority.requireReauthentication(first)
+        val before = accountCatalogDump(fixture.databaseName)
+        completed(fixture.migration.run())
+        assertEquals(before, accountCatalogDump(fixture.databaseName))
+        assertEquals(AccountAuthState.REAUTH_REQUIRED, fixture.authority.catalog(0, 100).records.single { it.id == first }.authState)
+    }
+
+    @Test
+    fun onlyExplicitConnectedSharedSessionsInheritAuthentication() {
+        for (multiplicity in ProviderCardMultiplicity.entries) {
+            for (state in ProviderConnectionState.entries) {
+                val expected = if (multiplicity == ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT && state == ProviderConnectionState.CONNECTED)
+                    AccountAuthState.AUTHENTICATED else AccountAuthState.REAUTH_REQUIRED
+                assertEquals(expected, connectedProviderMigrationAuthState(multiplicity, state))
+            }
+            assertEquals(AccountAuthState.REAUTH_REQUIRED, connectedProviderMigrationAuthState(multiplicity, null))
+        }
+    }
+
+    @Test
     fun zeroConnectedZeroUsageZeroCatalogCommitsPendingAndShowsPickerOnceInitialized() {
         val fixture = fixture("zero", source())
         val before = databaseHash(fixture.databaseName)
