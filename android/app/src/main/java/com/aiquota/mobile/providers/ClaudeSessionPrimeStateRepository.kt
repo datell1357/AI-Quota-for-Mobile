@@ -1,6 +1,8 @@
 package com.aiquota.mobile.providers
 
 import android.content.Context
+import com.aiquota.mobile.accounts.AccountLoginSessionBinding
+import com.aiquota.mobile.accounts.ProviderAccountIdStorageCodec
 
 /**
  * Tracks the Claude 5-hour reset boundary the auto-prime feature is waiting to cross,
@@ -31,7 +33,27 @@ class ClaudeSessionPrimeStateRepository(context: Context) {
             .apply()
     }
 
+    internal fun exactState(optInRevision: Long): ExactClaudePrimeState = object : ExactClaudePrimeState {
+        private fun key(binding: AccountLoginSessionBinding, suffix: String) =
+            "exact:${ProviderAccountIdStorageCodec.encode(binding.accountId)}:${binding.generation.value}:${binding.sessionRevision.value}:$suffix"
+        override fun pending(binding: AccountLoginSessionBinding): Long? =
+            preferences.getLong(key(binding, "pending:$optInRevision"), -1L).takeIf { it > 0 }
+        override fun savePending(binding: AccountLoginSessionBinding, value: Long?) {
+            preferences.edit().putLong(key(binding, "pending:$optInRevision"), value ?: -1L).apply()
+        }
+        override fun attempted(binding: AccountLoginSessionBinding): Long? =
+            preferences.getLong(key(binding, "attempted"), -1L).takeIf { it > 0 }
+        override fun claim(binding: AccountLoginSessionBinding, resetMillis: Long): Boolean = synchronized(LOCK) {
+            if (attempted(binding) == resetMillis) false
+            else preferences.edit().putLong(key(binding, "attempted"), resetMillis).commit()
+        }
+        override fun recordPrimed(binding: AccountLoginSessionBinding, resetMillis: Long) {
+            preferences.edit().putLong(key(binding, "primed"), resetMillis).apply()
+        }
+    }
+
     private companion object {
+        val LOCK = Any()
         const val PREFERENCES_NAME = "ai_quota_claude_prime_state"
         const val KEY_PENDING_RESET_MILLIS = "pending_reset_millis"
         const val KEY_LAST_PRIMED_RESET_MILLIS = "last_primed_reset_millis"

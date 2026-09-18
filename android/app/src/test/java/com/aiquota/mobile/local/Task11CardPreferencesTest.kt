@@ -267,7 +267,12 @@ class Task11CardPreferencesTest {
             ProviderAccountIdStorageCodec.encode(codexA),
             ProviderAccountIdStorageCodec.encode(codexB),
         )), afterRestart)
-        assertFalse(afterDelete.keys.any { it.contains(ProviderAccountIdStorageCodec.encode(codexA)) })
+        val invalidationKey = ProviderCardPreferencesRepository.CLAUDE_AUTO_PRIME_REVISION_PREFIX +
+            ProviderAccountIdStorageCodec.encode(codexA)
+        assertEquals(setOf(invalidationKey), afterDelete.keys.filter {
+            it.contains(ProviderAccountIdStorageCodec.encode(codexA))
+        }.toSet())
+        assertEquals(1L, afterDelete[invalidationKey])
         assertTrue(afterDelete.keys.any { it.contains(ProviderAccountIdStorageCodec.encode(codexB)) })
         println("QA_TASK11_CARD_TRACE=before=$before;restart=$afterRestart;afterDelete=$afterDelete")
     }

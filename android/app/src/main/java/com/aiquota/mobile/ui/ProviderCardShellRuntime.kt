@@ -59,6 +59,16 @@ class ProviderCardShellRuntime private constructor(
     var preferenceRevision: Int by mutableStateOf(0)
         private set
 
+    fun claudeAutoResetPrimeEnabled(accountId: ProviderAccountId): Boolean {
+        preferenceRevision
+        return preferencesRepository.isClaudeAutoResetPrimeEnabled(accountId)
+    }
+
+    fun setClaudeAutoResetPrimeEnabled(accountId: ProviderAccountId, enabled: Boolean) {
+        preferencesRepository.setClaudeAutoResetPrimeEnabled(accountId, enabled)
+        preferenceRevision++
+    }
+
     fun reload() {
         val repository = usageRepository ?: return
         state = state.applyCatalog(ProviderCardCatalogLoader(repository).load())

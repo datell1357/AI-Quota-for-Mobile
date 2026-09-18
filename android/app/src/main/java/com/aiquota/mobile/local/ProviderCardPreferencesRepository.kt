@@ -46,6 +46,26 @@ class ProviderCardPreferencesRepository(context: Context) {
         preferences.edit().remove(widgetSelectionKey(appWidgetId)).commit()
     }
 
+    fun isClaudeAutoResetPrimeEnabled(accountId: ProviderAccountId): Boolean = synchronized(LOCK) {
+        accountId.providerId == ProviderId.CLAUDE &&
+            preferences.getBoolean(cardKey(CLAUDE_AUTO_PRIME_PREFIX, accountId), false)
+    }
+
+    fun claudeAutoResetPrimeRevision(accountId: ProviderAccountId): Long? = synchronized(LOCK) {
+        if (isClaudeAutoResetPrimeEnabled(accountId))
+            preferences.getLong(cardKey(CLAUDE_AUTO_PRIME_REVISION_PREFIX, accountId), 0L) else null
+    }
+
+    fun setClaudeAutoResetPrimeEnabled(accountId: ProviderAccountId, enabled: Boolean): Boolean = synchronized(LOCK) {
+        if (accountId.providerId != ProviderId.CLAUDE) return@synchronized false
+        preferences.edit().putBoolean(cardKey(CLAUDE_AUTO_PRIME_PREFIX, accountId), enabled).apply {
+            if (isClaudeAutoResetPrimeEnabled(accountId) != enabled) {
+                val key = cardKey(CLAUDE_AUTO_PRIME_REVISION_PREFIX, accountId)
+                putLong(key, preferences.getLong(key, 0L) + 1)
+            }
+        }.commit()
+    }
+
     fun isResetNotificationEnabled(accountId: ProviderAccountId): Boolean = synchronized(LOCK) {
         preferences.getBoolean(cardKey(RESET_PREFIX, accountId), true)
     }
@@ -98,6 +118,9 @@ class ProviderCardPreferencesRepository(context: Context) {
     fun clearExactCardArtifacts(accountId: ProviderAccountId): Boolean = synchronized(LOCK) {
         val encoded = ProviderAccountIdStorageCodec.encode(accountId)
         val editor = preferences.edit()
+            .remove("$CLAUDE_AUTO_PRIME_PREFIX$encoded")
+            .putLong("$CLAUDE_AUTO_PRIME_REVISION_PREFIX$encoded",
+                preferences.getLong("$CLAUDE_AUTO_PRIME_REVISION_PREFIX$encoded", 0L) + 1)
             .remove("$GAUGE_COLOR_PREFIX$encoded")
             .remove("$RESET_PREFIX$encoded")
             .remove("$THRESHOLD_ENABLED_PREFIX$encoded")
@@ -127,6 +150,8 @@ class ProviderCardPreferencesRepository(context: Context) {
         internal const val WIDGET_SELECTION_PREFIX = "provider_widget_card_selection_v1_"
         internal const val WIDGET_ORDER_PREFIX = "dashboard_widget_card_order_v1_"
         internal const val WIDGET_HIDDEN_PREFIX = "dashboard_widget_hidden_cards_v1_"
+        internal const val CLAUDE_AUTO_PRIME_PREFIX = "card_claude_auto_prime_enabled_v1_"
+        internal const val CLAUDE_AUTO_PRIME_REVISION_PREFIX = "card_claude_auto_prime_revision_v1_"
         internal const val GAUGE_COLOR_PREFIX = "card_gauge_color_v1_"
         internal const val RESET_PREFIX = "card_reset_notification_enabled_v1_"
         internal const val THRESHOLD_ENABLED_PREFIX = "card_usage_threshold_enabled_v1_"

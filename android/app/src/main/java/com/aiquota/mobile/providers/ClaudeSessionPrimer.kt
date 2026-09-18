@@ -46,23 +46,32 @@ object ClaudeSessionPrimer {
         // different UA (even with a valid cookie) is rejected by Cloudflare with 403.
         val userAgent = ProviderWebViewUserAgent.hiddenCollectorUserAgent(context, ProviderId.CLAUDE)
 
-        val conversationUuid = UUID.randomUUID().toString()
-        val createBody = JSONObject()
-            .put("uuid", conversationUuid)
-            .put("name", "")
-            .toString()
-        val created = send(
-            method = "POST",
-            url = "$BASE/api/organizations/$organizationId/chat_conversations",
-            body = createBody,
-            accept = "application/json",
-            cookieHeader = cookieHeader,
-            replayHeaders = replayHeaders,
-            userAgent = userAgent
-        )
-        if (!created.ok) return fail("create_conversation_status=${created.status}")
+        return prime(Credentials(cookieHeader, replayHeaders, userAgent))
+    }
 
-        val completionBody = JSONObject().apply {
+    data class Credentials(val cookieHeader: String, val replayHeaders: Map<String, String>, val userAgent: String)
+    data class Request(val method: String, val url: String, val body: String?, val accept: String, val credentials: Credentials)
+    fun interface Transport { fun send(request: Request): Int }
+
+    fun prime(
+        credentials: Credentials,
+        authorized: () -> Boolean = { true },
+        transport: Transport = Transport { request ->
+            send(request.method, request.url, request.body, request.accept,
+                request.credentials.cookieHeader, request.credentials.replayHeaders, request.credentials.userAgent).status
+        },
+    ): Result {
+        val organizationId = organizationId(credentials.cookieHeader)
+            ?.takeIf { it.matches(Regex("[A-Za-z0-9_-]+")) } ?: return Result(false, "no_organization_id")
+        if (credentials.cookieHeader.isBlank()) return Result(false, "no_session_cookie")
+        fun request(method: String, url: String, body: String?, accept: String): Int =
+            if (authorized()) transport.send(Request(method, url, body, accept,
+                credentials.copy(replayHeaders = ClaudeNativeHeaderStore.replaySafeHeaders(credentials.replayHeaders)))) else -1
+        val conversationUuid = UUID.randomUUID().toString()
+        val url = "$BASE/api/organizations/$organizationId/chat_conversations"
+        val created = request("POST", url, JSONObject().put("uuid", conversationUuid).put("name", "").toString(), "application/json")
+        if (created !in 200..299) return Result(false, "create_conversation_status=$created")
+        val body = JSONObject().apply {
             put("prompt", PRIME_PROMPT)
             put("parent_message_uuid", EMPTY_PARENT_MESSAGE_UUID)
             put("timezone", "UTC")
@@ -72,37 +81,13 @@ object ClaudeSessionPrimer {
             put("rendering_mode", "messages")
             PRIME_MODEL?.let { put("model", it) }
         }.toString()
-        val completion = send(
-            method = "POST",
-            url = "$BASE/api/organizations/$organizationId/chat_conversations/$conversationUuid/completion",
-            body = completionBody,
-            accept = "text/event-stream",
-            cookieHeader = cookieHeader,
-            replayHeaders = replayHeaders,
-            userAgent = userAgent
-        )
-
-        // Best-effort cleanup regardless of completion outcome.
-        send(
-            method = "DELETE",
-            url = "$BASE/api/organizations/$organizationId/chat_conversations/$conversationUuid",
-            body = null,
-            accept = "application/json",
-            cookieHeader = cookieHeader,
-            replayHeaders = replayHeaders,
-            userAgent = userAgent
-        )
-
-        return if (completion.ok) {
-            Log.i(TAG, "provider=claude primed=true completionStatus=${completion.status}")
-            Result(true, "completion_status=${completion.status}")
-        } else {
-            fail("completion_status=${completion.status}")
-        }
+        val completion = request("POST", "$url/$conversationUuid/completion", body, "text/event-stream")
+        request("DELETE", "$url/$conversationUuid", null, "application/json")
+        return Result(completion in 200..299, "completion_status=$completion")
     }
 
-    private fun organizationId(): String? {
-        return CookieManager.getInstance().getCookie(BASE)
+    private fun organizationId(cookieHeader: String? = CookieManager.getInstance().getCookie(BASE)): String? {
+        return cookieHeader
             ?.split(";")
             ?.firstNotNullOfOrNull { cookie ->
                 val parts = cookie.trim().split("=", limit = 2)
