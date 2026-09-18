@@ -1,0 +1,7 @@
+# First-run onboarding and bulk provider selection
+
+Added a first-run welcome dialog before the existing provider picker, explaining provider selection/login, usage/widgets, and optional Live Refresh/permission setup. Continue opens the picker; Later/dismiss uses the existing persistent onboarding skip state. Welcome progress is included in saved instance state; explicit Add does not show the welcome. Existing initialized catalogs use the existing eligibility gate.
+
+Added Select all and Deselect all to the shared picker used at first run and explicit Add. Select all uses only currently available providers (already-added single-account providers are excluded); deselection does not remove existing accounts. Selection controls reflect whether there is anything to select/clear. Korean and English strings included.
+
+Validation: 9 enrollment state tests passed, debug build succeeded, git diff --check passed. Installed debug APK preserving account data. In the existing debug-only in-memory enrollment activity, visually inspected welcome and picker, confirmed Select all checked all 10 providers, and Deselect all cleared all 10. Evidence: artifacts/widget-audit-20260914/onboarding-{welcome,select-all,clear-all}.png. This UI check was in English; Korean resource text added but not visually checked. Actual production first-install/upgrade flow and full instrumentation suite were not executed. Existing account database was not reset.
