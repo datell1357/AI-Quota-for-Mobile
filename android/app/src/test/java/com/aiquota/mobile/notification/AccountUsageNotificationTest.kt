@@ -40,6 +40,10 @@ class AccountUsageNotificationTest {
 
     @Test fun expandedRemoteViewsUseRowOrderLikeCompactAndHideUnusedSlotsOnSmallerUpdates() {
         val context: Context = ApplicationProvider.getApplicationContext()
+        org.junit.Assume.assumeTrue(
+            "Run with -Paiquota.testIncludeAndroidResources=true",
+            context.resources.getIdentifier("notification_usage_gauges", "layout", context.packageName) != 0,
+        )
         val method = UsageLimitNotificationController::class.java.getDeclaredMethod(
             "remoteViews", Context::class.java, UsageNotificationContent::class.java).apply { isAccessible = true }
         val compactMethod = UsageLimitNotificationController::class.java.getDeclaredMethod(

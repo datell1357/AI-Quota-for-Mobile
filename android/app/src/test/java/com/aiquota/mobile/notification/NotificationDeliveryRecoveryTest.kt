@@ -53,6 +53,10 @@ class NotificationDeliveryRecoveryTest {
     }
 
     @Test fun optionalMetadataFailureDoesNotTurnPostedAlertIntoFailure() {
+        org.junit.Assume.assumeTrue(
+            "Run with -Paiquota.testIncludeAndroidResources=true",
+            context.resources.getIdentifier("notification_usage_gauges", "layout", context.packageName) != 0,
+        )
         val manager = context.getSystemService(NotificationManager::class.java)
         shadowOf(manager).setNotificationsEnabled(true)
         // Simulate an unreadable optional metadata value without affecting notification identity.
@@ -70,6 +74,10 @@ class NotificationDeliveryRecoveryTest {
     }
 
     @Test fun permissionDeniedThenGrantedUsesCurrentUsageAndDoesNotReplayRecoveredUsage() {
+        org.junit.Assume.assumeTrue(
+            "Run with -Paiquota.testIncludeAndroidResources=true",
+            context.resources.getIdentifier("notification_usage_gauges", "layout", context.packageName) != 0,
+        )
         enableAlerts()
         val manager = context.getSystemService(NotificationManager::class.java)
         ProviderUsageThresholdNotificationStateRepository(context).writeExactArmed(mapOf(key to true))
@@ -109,6 +117,10 @@ class NotificationDeliveryRecoveryTest {
 
     @Test @Config(sdk = [33])
     fun runtimePermissionDenialPreservesTheAlertUntilPermissionIsGranted() {
+        org.junit.Assume.assumeTrue(
+            "Run with -Paiquota.testIncludeAndroidResources=true",
+            context.resources.getIdentifier("notification_usage_gauges", "layout", context.packageName) != 0,
+        )
         enableAlerts()
         val app = context as Application
         shadowOf(context.getSystemService(NotificationManager::class.java)).setNotificationsEnabled(true)
@@ -140,6 +152,10 @@ class NotificationDeliveryRecoveryTest {
     }
 
     @Test fun compactAndExpandedRemoteViewsShowDelayWithoutClippingShortUsageLabels() {
+        org.junit.Assume.assumeTrue(
+            "Run with -Paiquota.testIncludeAndroidResources=true",
+            context.resources.getIdentifier("notification_usage_gauges", "layout", context.packageName) != 0,
+        )
         val locale = java.util.Locale.getDefault()
         java.util.Locale.setDefault(java.util.Locale.KOREAN)
         try {

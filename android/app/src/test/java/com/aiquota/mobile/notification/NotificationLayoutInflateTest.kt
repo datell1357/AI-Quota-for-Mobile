@@ -14,12 +14,21 @@ import org.robolectric.RobolectricTestRunner
 class NotificationLayoutInflateTest {
     private val context: Context get() = ApplicationProvider.getApplicationContext()
 
+    private fun assumeAndroidResources() {
+        org.junit.Assume.assumeTrue(
+            "Run with -Paiquota.testIncludeAndroidResources=true",
+            context.resources.getIdentifier("notification_usage_gauges", "layout", context.packageName) != 0,
+        )
+    }
+
     @Test fun expandedLayoutInflates() {
+        assumeAndroidResources()
         RemoteViews(context.packageName, R.layout.notification_usage_gauges)
             .apply(context, FrameLayout(context))
     }
 
     @Test fun compactLayoutInflates() {
+        assumeAndroidResources()
         RemoteViews(context.packageName, R.layout.notification_usage_compact)
             .apply(context, FrameLayout(context))
     }
