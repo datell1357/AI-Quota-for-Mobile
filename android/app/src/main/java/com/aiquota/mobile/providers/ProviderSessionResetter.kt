@@ -81,6 +81,9 @@ class ProviderSessionResetter(context: Context) {
             ProviderId.DEVIN -> {
                 DevinAuthContextStore(appContext).clear()
             }
+            ProviderId.MANUS -> {
+                ManusAuthContextStore(appContext).clear()
+            }
             ProviderId.COPILOT,
             ProviderId.CURSOR,
             ProviderId.GROK,

@@ -38,6 +38,8 @@ object ProviderLoginStrategy {
                 false
             ProviderId.DEVIN ->
                 false
+            ProviderId.MANUS ->
+                false
         }
     }
 

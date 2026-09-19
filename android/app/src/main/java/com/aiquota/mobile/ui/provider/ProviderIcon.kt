@@ -27,6 +27,7 @@ fun providerIconRes(providerId: ProviderId): Int {
         ProviderId.KIMI -> R.drawable.ic_provider_kimi
         ProviderId.KIRO -> R.drawable.ic_provider_kiro
         ProviderId.DEVIN -> R.drawable.ic_provider_devin
+        ProviderId.MANUS -> R.drawable.ic_provider_manus
     }
 }
 
@@ -83,5 +84,6 @@ internal fun providerIconVisualScale(providerId: ProviderId): Float {
         ProviderId.KIMI -> 0.80f
         ProviderId.KIRO -> 0.78f
         ProviderId.DEVIN -> 0.76f
+        ProviderId.MANUS -> 0.80f
     }
 }

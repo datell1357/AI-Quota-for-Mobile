@@ -14,6 +14,7 @@ object ProviderAboutBlankCollectorPolicy {
             providerId == ProviderId.GROK ||
             providerId == ProviderId.KIMI ||
             providerId == ProviderId.KIRO ||
-            providerId == ProviderId.DEVIN
+            providerId == ProviderId.DEVIN ||
+            providerId == ProviderId.MANUS
     }
 }

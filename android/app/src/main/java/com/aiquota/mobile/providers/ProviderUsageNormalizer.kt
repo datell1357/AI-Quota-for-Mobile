@@ -53,6 +53,7 @@ object ProviderUsageNormalizer {
             ProviderId.KIMI -> normalizeKimi(json, source, fetchedAt)
             ProviderId.KIRO -> normalizeKiro(json, source, fetchedAt)
             ProviderId.DEVIN -> normalizeDevin(json, source, fetchedAt)
+            ProviderId.MANUS -> normalizeManus(json, source, fetchedAt)
         }
         return snapshot?.takeIf { it.lines.isNotEmpty() }
     }
@@ -218,6 +219,87 @@ object ProviderUsageNormalizer {
             fetchedAt = fetchedAt,
             lines = lines
         )
+    }
+
+    private fun normalizeManus(json: JSONObject, source: ProviderPayloadSource, fetchedAt: String): ProviderUsageSnapshot? {
+        val credits = json.optObject("credits") ?: return null
+        val userInfo = json.optObject("user_info")
+        val lines = buildList {
+            // 일일(유료는 주간) 리프레시 크레딧. 분모가 없거나 0이면 % 라인을 만들지 않는다.
+            val refresh = credits.optionalNumber("refreshCredits")
+            val maxRefresh = credits.optionalNumber("maxRefreshCredits")
+            if (refresh != null && maxRefresh != null && maxRefresh > 0.0) {
+                val interval = credits.optionalString("refreshInterval")?.lowercase(Locale.US).orEmpty()
+                val label = if (interval.contains("week")) "주간 리프레시" else "일간 리프레시"
+                add(
+                    manusQuotaLine(
+                        "manus:refresh", label,
+                        refresh, maxRefresh,
+                        manusResetAt(credits),
+                        source
+                    )
+                )
+            }
+            // 유료 계정의 월간 구독 크레딧(무료 계정에는 필드 자체가 없다).
+            val periodic = credits.optionalNumber("periodicCredits")
+            val proMonthly = credits.optionalNumber("proMonthlyCredits")
+            if (periodic != null && proMonthly != null && proMonthly > 0.0) {
+                add(
+                    manusQuotaLine(
+                        "manus:periodic", "월간 구독 크레딧",
+                        periodic, proMonthly,
+                        null,
+                        source
+                    )
+                )
+            }
+            credits.optionalNumber("totalCredits")?.let { total ->
+                add(amountOnlyLine("manus:total", "잔여 크레딧", total, "credits", "", source))
+            }
+        }
+        val plan = (json.optionalString("plan") ?: userInfo?.optionalString("membershipVersion"))
+            ?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() }
+        return snapshot(
+            ProviderId.MANUS,
+            plan = plan,
+            account = json.optionalString("account")
+                ?: userInfo?.optionalString("email")
+                ?: userInfo?.optionalString("name"),
+            fetchedAt = fetchedAt,
+            lines = lines
+        )
+    }
+
+    private fun manusQuotaLine(
+        key: String,
+        label: String,
+        remaining: Double,
+        limit: Double,
+        resetsAt: String?,
+        source: ProviderPayloadSource
+    ): ProviderUsageLine {
+        return ProviderUsageLine(
+            key = key,
+            label = label,
+            remainingPercent = (remaining / limit).coerceIn(0.0, 1.0).toFloat(),
+            usedAmount = (limit - remaining).coerceAtLeast(0.0),
+            limitAmount = limit,
+            remainingAmount = remaining.coerceAtLeast(0.0),
+            unit = "credits",
+            resetsAt = resetsAt,
+            sourceLabel = source.label,
+            confidence = source.confidence
+        )
+    }
+
+    private fun manusResetAt(credits: JSONObject): String? {
+        val raw = credits.optionalString("nextRefreshTime")?.takeIf { it.isNotBlank() } ?: return null
+        // "2026-09-19T15:00:00Z" 같은 ISO 시각은 그대로, Unix timestamp면 밀리초로 변환한다.
+        raw.toLongOrNull()?.let { epoch ->
+            val millis = if (epoch < 10_000_000_000L) epoch * 1000L else epoch
+            return runCatching { Instant.ofEpochMilli(millis).toString() }.getOrNull()
+        }
+        return runCatching { Instant.parse(raw).toString() }.getOrNull() ?: raw
     }
 
     private fun latestDevinDay(dailyUsage: JSONObject?): Double? {

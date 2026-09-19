@@ -28,7 +28,8 @@ object ProviderCardCatalogPolicy {
             ProviderId.GROK,
             ProviderId.KIMI,
             ProviderId.KIRO,
-            ProviderId.DEVIN -> ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT
+            ProviderId.DEVIN,
+            ProviderId.MANUS -> ProviderCardMultiplicity.SINGLE_RESERVED_DEFAULT
         }
         return if (released) ProviderCardProviderPolicy.Released(multiplicity) else ProviderCardProviderPolicy.Unsupported
     }

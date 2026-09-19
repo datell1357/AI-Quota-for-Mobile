@@ -15,7 +15,8 @@ enum class ProviderId(val storageId: String, val displayName: String) {
     GROK("grok", "Grok"),
     KIMI("kimi", "Kimi"),
     KIRO("kiro", "Kiro"),
-    DEVIN("devin", "Devin");
+    DEVIN("devin", "Devin"),
+    MANUS("manus", "Manus");
 
     companion object {
         /**

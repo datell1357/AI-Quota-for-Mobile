@@ -2618,4 +2618,105 @@ class ProviderUsageNormalizerTest {
             )
         )
     }
+
+    @Test
+    fun manusFreeAccountPayloadNormalizesRefreshAndTotal() {
+        val snapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.MANUS,
+            """
+            {
+              "provider": "manus",
+              "account": "user@example.com",
+              "plan": "free",
+              "credits": {
+                "totalCredits": 1300,
+                "freeCredits": 1000,
+                "refreshCredits": 210,
+                "maxRefreshCredits": 300,
+                "nextRefreshTime": "2026-09-19T15:00:00Z",
+                "refreshInterval": "daily"
+              },
+              "user_info": {"membershipVersion": "free", "userType": "USER_TYPE_PERSONAL"}
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.NETWORK_RESPONSE
+        )!!
+
+        assertEquals(ProviderConnectionState.CONNECTED, snapshot.connectionState)
+        assertEquals("Free", snapshot.plan)
+        assertEquals("user@example.com", snapshot.account)
+        val labels = snapshot.lines.map { it.label }
+        assertEquals(listOf("일간 리프레시", "잔여 크레딧"), labels)
+        val refresh = snapshot.lines[0]
+        assertEquals(0.70f, refresh.remainingPercent ?: 0f, 0.001f)
+        assertEquals(90.0, refresh.usedAmount ?: 0.0, 0.001)
+        assertEquals(300.0, refresh.limitAmount ?: 0.0, 0.001)
+        assertEquals(210.0, refresh.remainingAmount ?: 0.0, 0.001)
+        assertEquals("2026-09-19T15:00:00Z", refresh.resetsAt)
+        assertEquals(1300.0, snapshot.lines[1].usedAmount ?: 0.0, 0.001)
+        assertEquals("credits", snapshot.lines[1].unit)
+    }
+
+    @Test
+    fun manusPaidAccountPayloadAddsPeriodicLine() {
+        val snapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.MANUS,
+            """
+            {
+              "provider": "manus",
+              "credits": {
+                "totalCredits": 4500,
+                "refreshCredits": 300,
+                "maxRefreshCredits": 300,
+                "nextRefreshTime": "2026-09-19T15:00:00Z",
+                "refreshInterval": "daily",
+                "periodicCredits": 3000,
+                "proMonthlyCredits": 4000
+              },
+              "user_info": {"membershipVersion": "pro"}
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.NETWORK_RESPONSE
+        )!!
+
+        assertEquals("Pro", snapshot.plan)
+        val labels = snapshot.lines.map { it.label }
+        assertEquals(listOf("일간 리프레시", "월간 구독 크레딧", "잔여 크레딧"), labels)
+        assertEquals(0.75f, snapshot.lines[1].remainingPercent ?: 0f, 0.001f)
+    }
+
+    @Test
+    fun manusPayloadSkipsPercentLineWhenDenominatorMissing() {
+        // 팀 계정 등 maxRefreshCredits가 0이면 % 라인을 만들지 않는다.
+        val snapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.MANUS,
+            """
+            {
+              "provider": "manus",
+              "credits": {"totalCredits": 5000, "refreshCredits": 0, "maxRefreshCredits": 0}
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.NETWORK_RESPONSE
+        )!!
+
+        assertEquals(listOf("잔여 크레딧"), snapshot.lines.map { it.label })
+    }
+
+    @Test
+    fun manusPayloadWithoutCreditsReturnsNull() {
+        assertNull(
+            ProviderUsageNormalizer.normalize(
+                ProviderId.MANUS,
+                """{"provider": "manus", "user_info": {"membershipVersion": "free"}}""",
+                ProviderPayloadSource.NETWORK_RESPONSE
+            )
+        )
+        assertNull(
+            ProviderUsageNormalizer.normalize(
+                ProviderId.MANUS,
+                """{}""",
+                ProviderPayloadSource.NETWORK_RESPONSE
+            )
+        )
+    }
 }

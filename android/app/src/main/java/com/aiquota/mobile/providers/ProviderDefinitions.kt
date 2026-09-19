@@ -378,6 +378,27 @@ object ProviderDefinitionRegistry {
             authStoreKind = ProviderAuthStoreKind.WEBVIEW_PROFILE,
             collectionKind = ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE,
             sessionProbeUrl = "https://app.devin.ai/"
+        ),
+        ProviderDefinition(
+            providerId = ProviderId.MANUS,
+            loginStartUrl = "https://manus.im/login",
+            allowedHosts = setOf(
+                "manus.im",
+                "www.manus.im",
+                "api.manus.im",
+                "accounts.google.com",
+                "ssl.gstatic.com",
+                "www.gstatic.com",
+                "login.microsoftonline.com",
+                "appleid.apple.com"
+            ),
+            collectorAllowedHosts = setOf(
+                "api.manus.im"
+            ),
+            preferredUsageEndpoint = "https://api.manus.im/user.v1.UserService/GetAvailableCredits",
+            authStoreKind = ProviderAuthStoreKind.WEBVIEW_PROFILE,
+            collectionKind = ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE,
+            sessionProbeUrl = "https://manus.im/app"
         )
     // 노출 순서는 defaultOrder()를 따르고, 아직 노출하지 않는 provider(GROK·KIMI)의 정의는
     // 목록 뒤에 남겨 둔다. 정의를 지우면 definitionFor()가 예외를 던지므로 순서만 미룬다.

@@ -27,6 +27,7 @@ object ProviderSessionRevivePolicy {
         return when (providerId) {
             ProviderId.KIRO -> "kiro_session_expired"
             ProviderId.DEVIN -> "devin_session_expired"
+            ProviderId.MANUS -> "manus_session_expired"
             else -> null
         }
     }
@@ -36,6 +37,7 @@ object ProviderSessionRevivePolicy {
         return when (providerId) {
             ProviderId.KIRO -> "https://app.kiro.dev/settings/account"
             ProviderId.DEVIN -> "https://app.devin.ai/"
+            ProviderId.MANUS -> "https://manus.im/app"
             else -> null
         }
     }

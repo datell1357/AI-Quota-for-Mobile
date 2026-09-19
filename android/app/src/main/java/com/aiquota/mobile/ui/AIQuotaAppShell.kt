@@ -1781,6 +1781,7 @@ internal fun providerNavigationLabel(providerId: ProviderId, alias: String? = nu
         ProviderId.KIMI -> "Kimi"
         ProviderId.KIRO -> "Kiro"
         ProviderId.DEVIN -> "Devin"
+        ProviderId.MANUS -> "Manus"
     }
 }
 

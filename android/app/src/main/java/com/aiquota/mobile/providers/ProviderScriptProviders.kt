@@ -45,6 +45,7 @@ object ProviderScriptProviders {
             ProviderId.KIMI -> "kimi-local"
             ProviderId.KIRO -> "kiro-local"
             ProviderId.DEVIN -> "devin-web"
+            ProviderId.MANUS -> "manus-web"
         }
     }
 }

@@ -51,6 +51,7 @@ private class AndroidExactLoginContextStore(context: Context) : ExactAccountLogi
     private val codex = CodexNativeAuthContextStore(context)
     private val claude = ClaudeNativeRequestContextStore(context)
     private val devin = DevinAuthContextStore(context)
+    private val manus = ManusAuthContextStore(context)
 
     override fun save(
         binding: AccountLoginSessionBinding,
@@ -59,6 +60,7 @@ private class AndroidExactLoginContextStore(context: Context) : ExactAccountLogi
         ProviderId.CODEX -> codex.saveExact(binding, value)
         ProviderId.CLAUDE -> claude.saveExact(binding, value)
         ProviderId.DEVIN -> devin.saveExact(binding, value)
+        ProviderId.MANUS -> manus.saveExact(binding, value)
         // 나머지 provider는 따로 저장할 네이티브 인증 컨텍스트가 없다. "저장할 것이 없음"을
         // 실패로 돌려주면 로그인 완료가 통째로 거부돼, 로그인에 성공하고 사용량까지 받아온
         // 카드가 "연결 끊김"으로 남는다(2026-09-04 실측: Kiro exactLoginCommitted=false
@@ -71,6 +73,7 @@ private class AndroidExactLoginContextStore(context: Context) : ExactAccountLogi
             ProviderId.CODEX -> codex.restoreExact(binding)
             ProviderId.CLAUDE -> claude.restoreExact(binding)
             ProviderId.DEVIN -> devin.restoreExact(binding)
+            ProviderId.MANUS -> manus.restoreExact(binding)
             else -> emptyMap()
         }
 
@@ -78,6 +81,7 @@ private class AndroidExactLoginContextStore(context: Context) : ExactAccountLogi
         ProviderId.CODEX -> codex.clearExact(accountId)
         ProviderId.CLAUDE -> claude.clearExact(accountId)
         ProviderId.DEVIN -> devin.clearExact(accountId)
+        ProviderId.MANUS -> manus.clearExact(accountId)
         // 지울 컨텍스트가 없는 provider도 성공으로 본다. 실패로 돌리면 로그아웃이 거부된다.
         else -> true
     }

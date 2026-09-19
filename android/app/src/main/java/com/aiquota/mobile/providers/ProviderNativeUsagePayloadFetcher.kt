@@ -17,6 +17,7 @@ internal typealias CursorJsonFetcher = (String, String?) -> String
 internal typealias KimiJsonFetcher = (String, String?) -> String
 
 internal typealias KiroJsonFetcher = (String, String?) -> String
+internal typealias ManusJsonFetcher = (String, Map<String, String>) -> String
 
 object ProviderNativeUsagePayloadFetcher {
     fun bridgeUsagePayload(
@@ -97,6 +98,7 @@ object ProviderNativeUsagePayloadFetcher {
             ProviderId.KIMI -> fetchKimiPayload()
             ProviderId.KIRO -> fetchKiroPayload()
             ProviderId.DEVIN -> fetchDevinPayload(userAgent, requestHeadersForUrl, fetchJson)
+            ProviderId.MANUS -> fetchManusPayload(requestHeadersForUrl)
             ProviderId.COPILOT -> NativePayloadResult(
                 payload = CopilotNativeUsageFetcher.fetchUsagePayload(),
                 diagnostic = "copilot_usage_unavailable"
@@ -153,6 +155,20 @@ object ProviderNativeUsagePayloadFetcher {
 
     internal fun kiroDiagnosticForTest(fetchJson: KiroJsonFetcher): String? {
         return fetchKiroPayload(fetchJson).diagnostic
+    }
+
+    internal fun manusUsagePayloadForTest(
+        requestHeadersForUrl: (String) -> Map<String, String>,
+        fetchJson: ManusJsonFetcher
+    ): String? {
+        return fetchManusPayload(requestHeadersForUrl, fetchJson).payload
+    }
+
+    internal fun manusDiagnosticForTest(
+        requestHeadersForUrl: (String) -> Map<String, String>,
+        fetchJson: ManusJsonFetcher
+    ): String? {
+        return fetchManusPayload(requestHeadersForUrl, fetchJson).diagnostic
     }
 
     private fun codexFetchedPayload(rawText: String, plan: String?, accountId: String?, account: String?): JSONObject? {
@@ -1235,6 +1251,61 @@ object ProviderNativeUsagePayloadFetcher {
             ?.takeIf { it.isNotBlank() }
     }
 
+    private fun fetchManusPayload(
+        requestHeadersForUrl: (String) -> Map<String, String>,
+        fetchJson: ManusJsonFetcher = ManusNativeUsageFetcher::fetchJson
+    ): NativePayloadResult {
+        val statuses = mutableListOf<String>()
+        val credits = fetchManusWrapped(
+            MANUS_CREDITS_URL, statuses, requestHeadersForUrl(MANUS_CREDITS_URL), fetchJson
+        )
+        if (credits.optInt("status") == HTTP_UNAUTHORIZED) {
+            // Bearer JWT 만료는 파싱 실패와 구분해 세션 revive가 잡을 수 있게 한다.
+            return NativePayloadResult(null, "manus_session_expired", statuses)
+        }
+        val creditsJson = credits.jsonObject()
+            ?: return NativePayloadResult(null, "manus_usage_unavailable", statuses)
+        val userInfo = fetchManusWrapped(
+            MANUS_USER_INFO_URL, statuses, requestHeadersForUrl(MANUS_USER_INFO_URL), fetchJson
+        )
+        val userInfoJson = userInfo.jsonObject()
+        val payload = JSONObject()
+            .put("provider", ProviderId.MANUS.storageId)
+            .put("credits", creditsJson)
+            .put("user_info", userInfoJson ?: JSONObject())
+        userInfoJson?.let { info ->
+            val user = info.optJSONObject("user")
+            val account = manusFirstString(info, MANUS_ACCOUNT_KEYS)
+                ?: user?.let { manusFirstString(it, MANUS_ACCOUNT_KEYS) }
+            account?.let { payload.put("account", it) }
+            info.optString("membershipVersion").takeIf { it.isNotBlank() }?.let {
+                payload.put("plan", it)
+            }
+        }
+        return verifiedPayload(ProviderId.MANUS, payload, "manus_usage_unavailable", statuses)
+    }
+
+    private fun fetchManusWrapped(
+        url: String,
+        statuses: MutableList<String>,
+        requestHeaders: Map<String, String>,
+        fetchJson: ManusJsonFetcher
+    ): JSONObject {
+        val wrapped = runCatching { JSONObject(fetchJson(url, requestHeaders)) }
+            .getOrElse { JSONObject().put("ok", false).put("url", url).put("error", it.javaClass.simpleName) }
+        statuses += "${urlStatusLabel(url)}:${wrapped.optInt("status", -1)}:${wrapped.optString("error")}"
+        return wrapped
+    }
+
+    private fun manusFirstString(source: JSONObject, keys: List<String>): String? {
+        return keys.firstNotNullOfOrNull { key ->
+            source.opt(key)
+                ?.takeIf { it != JSONObject.NULL }
+                ?.toString()
+                ?.takeIf { it.isNotBlank() && it != "null" }
+        }
+    }
+
     private fun fetchWrapped(
         providerId: ProviderId,
         url: String,
@@ -1434,6 +1505,9 @@ object ProviderNativeUsagePayloadFetcher {
     private const val DEVIN_MEMBERSHIP_URL = "https://app.devin.ai/api/users/current-membership"
     private const val DEVIN_ORGANIZATIONS_URL = "https://app.devin.ai/api/organizations"
     private const val DEVIN_SUBSCRIPTION_URL = "https://app.devin.ai/api/billing/subscription"
+    private const val MANUS_CREDITS_URL = "https://api.manus.im/user.v1.UserService/GetAvailableCredits"
+    private const val MANUS_USER_INFO_URL = "https://api.manus.im/user.v1.UserService/UserInfo"
+    private val MANUS_ACCOUNT_KEYS = listOf("email", "account", "name", "nickname", "displayName")
     private const val KIMI_SUBSCRIPTION_STATS_URL =
         "https://www.kimi.com/apiv2/kimi.gateway.membership.v2.MembershipService/GetSubscriptionStats"
 

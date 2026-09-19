@@ -73,6 +73,12 @@ object ProviderWebCollectorScripts {
                     host == "auth.devin.ai" ||
                     (host == "app.devin.ai" &&
                         (path.contains("login") || path.contains("signin") || path.contains("sign-in")))
+            ProviderId.MANUS ->
+                host == "accounts.google.com" ||
+                    host == "login.microsoftonline.com" ||
+                    host == "appleid.apple.com" ||
+                    ((host == "manus.im" || host == "www.manus.im") &&
+                        (path.contains("login") || path.contains("signin") || path.contains("sign-in")))
         }
     }
 
@@ -239,6 +245,11 @@ object ProviderWebCollectorScripts {
                     !path.contains("login") &&
                     !path.contains("signin") &&
                     !path.contains("sign-in")
+            ProviderId.MANUS ->
+                (host == "manus.im" || host == "www.manus.im") &&
+                    !path.contains("login") &&
+                    !path.contains("signin") &&
+                    !path.contains("sign-in")
         }
     }
 
@@ -290,6 +301,7 @@ object ProviderWebCollectorScripts {
             ProviderId.KIRO,
             ProviderId.ANTIGRAVITY -> false
             ProviderId.DEVIN -> false
+            ProviderId.MANUS -> false
         }
     }
 
@@ -436,6 +448,8 @@ object ProviderWebCollectorScripts {
                     (path.contains("usage") || path.contains("quota") || path.contains("plan"))
             ProviderId.DEVIN ->
                 host == "app.devin.ai" && path.startsWith("/api/")
+            ProviderId.MANUS ->
+                host == "api.manus.im"
             else -> false
         }
     }

@@ -120,6 +120,11 @@ object ProviderWebSessionClearPolicy {
                 "https://devin.ai",
                 "https://www.devin.ai"
             )
+            ProviderId.MANUS -> listOf(
+                "https://manus.im",
+                "https://www.manus.im",
+                "https://api.manus.im"
+            )
         }
     }
 
@@ -139,6 +144,8 @@ object ProviderWebSessionClearPolicy {
             // Kiro는 GitHub·Google·AWS Builder ID로 로그인하므로 연결된 동안 두 IdP를 보존한다.
             ProviderId.KIRO -> setOf(SharedIdentity.GOOGLE, SharedIdentity.GITHUB)
             ProviderId.DEVIN -> setOf(SharedIdentity.GOOGLE, SharedIdentity.GITHUB)
+            // Manus는 Google·Microsoft·Apple 로그인을 지원하지만 Apple은 공유 IdP 추적 대상이 아니다.
+            ProviderId.MANUS -> setOf(SharedIdentity.GOOGLE)
         }
     }
 

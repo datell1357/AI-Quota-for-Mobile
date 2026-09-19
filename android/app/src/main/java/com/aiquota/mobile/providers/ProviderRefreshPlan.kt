@@ -153,6 +153,7 @@ object ProviderRefreshPlan {
             ProviderId.KIMI -> "about:blank"
             ProviderId.KIRO -> "about:blank"
             ProviderId.DEVIN -> "about:blank"
+            ProviderId.MANUS -> "about:blank"
         }
     }
 

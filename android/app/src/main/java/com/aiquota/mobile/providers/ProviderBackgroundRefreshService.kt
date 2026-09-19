@@ -127,6 +127,7 @@ class ProviderBackgroundRefreshService : Service() {
     private val codexNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
     private val claudeNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
     private val devinNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
+    private val manusNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
     private var pendingManualProviderId: ProviderId? = null
     private val pendingExactManualRefreshes = ExactManualRefreshQueue()
     private var exactRefreshCoordinator: AndroidProviderAccountRefreshCoordinator? = null
@@ -1066,6 +1067,9 @@ class ProviderBackgroundRefreshService : Service() {
                         if (job.providerId == ProviderId.DEVIN) {
                             devinNativeFetchHeaders.clear()
                         }
+                        if (job.providerId == ProviderId.MANUS) {
+                            manusNativeFetchHeaders.clear()
+                        }
                         Log.i(
                             TAG,
                             "sessionRevive provider=${job.providerId.storageId} " +
@@ -1208,6 +1212,7 @@ class ProviderBackgroundRefreshService : Service() {
         if (!usesNamedProfile) {
             prepareSharedWebSessionForCollection(webView, job.providerId)
             restoreDevinAuthContext(active)
+            restoreManusAuthContext(active)
         } else {
             cookieManager.setAcceptCookie(true)
             cookieManager.flush()
@@ -1292,6 +1297,21 @@ class ProviderBackgroundRefreshService : Service() {
         }
         if (restoredHeaders.isEmpty()) return
         devinNativeFetchHeaders.putAll(restoredHeaders)
+    }
+
+    private fun restoreManusAuthContext(active: ServiceWebRefreshJob) {
+        val job = active.job
+        if (job.providerId != ProviderId.MANUS) return
+        if (active.warmUpPending) return
+        val store = ManusAuthContextStore(applicationContext)
+        val binding = job.binding?.takeIf { it.accountId.providerId == ProviderId.MANUS }
+        val restoredHeaders = if (binding == null) {
+            store.restore()
+        } else {
+            store.restoreExact(binding)
+        }
+        if (restoredHeaders.isEmpty()) return
+        manusNativeFetchHeaders.putAll(restoredHeaders)
     }
 
     private fun destroyProviderWebView(providerId: ProviderId) {
@@ -1459,6 +1479,9 @@ class ProviderBackgroundRefreshService : Service() {
         // 세션 복원을 판단할 수 없다. SPA가 새 auth1 토큰으로 인증 API를 부를 때까지 기다린다.
         if (providerId == ProviderId.DEVIN &&
             !DevinNativeHeaderStore.hasCredentials(devinNativeFetchHeaders)
+        ) return
+        if (providerId == ProviderId.MANUS &&
+            !ManusNativeHeaderStore.hasCredentials(manusNativeFetchHeaders)
         ) return
         val requestId = active.requestId
         mainHandler.post {
@@ -1641,6 +1664,7 @@ class ProviderBackgroundRefreshService : Service() {
             captureCodexNativeFetchHeaders(ownerAccountId, ownerProviderId, url, request.requestHeaders.orEmpty())
             captureClaudeNativeFetchHeaders(ownerAccountId, ownerProviderId, url, request.requestHeaders.orEmpty())
             captureDevinNativeFetchHeaders(ownerAccountId, ownerProviderId, url, request.requestHeaders.orEmpty())
+            captureManusNativeFetchHeaders(ownerAccountId, ownerProviderId, url, request.requestHeaders.orEmpty())
             maybeStartCodexAboutBlankCollection(ownerAccountId, view, url)
             maybeStartClaudeAboutBlankCollection(ownerAccountId, view, url)
             maybeCompleteSessionReviveFromResource(ownerAccountId, view, url)
@@ -2033,6 +2057,7 @@ class ProviderBackgroundRefreshService : Service() {
                     CLAUDE_NATIVE_HEADER_WILDCARD_KEY,
                 )
                 ProviderId.DEVIN -> DevinNativeHeaderStore.headersFor(storedHeaders, url)
+                ProviderId.MANUS -> ManusNativeHeaderStore.headersFor(storedHeaders, url)
                 else -> emptyMap()
             }
         }
@@ -2040,6 +2065,7 @@ class ProviderBackgroundRefreshService : Service() {
             ProviderId.CODEX -> codexNativeFetchHeadersFor(url)
             ProviderId.CLAUDE -> claudeNativeFetchHeadersFor(url)
             ProviderId.DEVIN -> devinNativeFetchHeadersFor(url)
+            ProviderId.MANUS -> manusNativeFetchHeadersFor(url)
             else -> emptyMap()
         }
     }
@@ -2245,6 +2271,34 @@ class ProviderBackgroundRefreshService : Service() {
         }
     }
 
+    private fun captureManusNativeFetchHeaders(
+        ownerAccountId: ProviderAccountId,
+        providerId: ProviderId,
+        url: String,
+        requestHeaders: Map<String, String>,
+    ) {
+        if (providerId != ProviderId.MANUS) return
+        val active = currentWebJobFor(ownerAccountId) ?: return
+        if (!ManusNativeHeaderStore.capture(manusNativeFetchHeaders, url, requestHeaders)) return
+        Log.d(TAG, "capturedNativeHeaders provider=manus path=${pathOf(url)}")
+        saveManusAuthContext(active)
+    }
+
+    private fun manusNativeFetchHeadersFor(url: String): Map<String, String> {
+        return ManusNativeHeaderStore.headersFor(manusNativeFetchHeaders, url)
+    }
+
+    private fun saveManusAuthContext(active: ServiceWebRefreshJob) {
+        val authContext = ManusNativeHeaderStore.snapshotAuthContext(manusNativeFetchHeaders)
+        if (authContext.isEmpty()) return
+        val binding = active.job.binding?.takeIf { it.accountId.providerId == ProviderId.MANUS }
+        if (binding == null) {
+            ManusAuthContextStore(applicationContext).save(authContext)
+        } else {
+            ManusAuthContextStore(applicationContext).saveExact(binding, authContext)
+        }
+    }
+
     private fun replaySafeProviderRequestHeadersFor(active: ServiceWebRefreshJob, url: String): Map<String, String> {
         return when (active.job.providerId) {
             ProviderId.CLAUDE -> ClaudeNativeHeaderStore.replaySafeHeaders(requestHeadersForJob(active, url))
@@ -2273,6 +2327,9 @@ class ProviderBackgroundRefreshService : Service() {
         }
         if (providerId == ProviderId.DEVIN) {
             devinNativeFetchHeaders.clear()
+        }
+        if (providerId == ProviderId.MANUS) {
+            manusNativeFetchHeaders.clear()
         }
     }
 
