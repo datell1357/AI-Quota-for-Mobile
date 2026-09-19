@@ -1060,6 +1060,12 @@ class ProviderBackgroundRefreshService : Service() {
                     ) {
                         // 이번 주기에서 실제로 provider 페이지를 로드하므로 여기서 대기를 해제한다.
                         ProviderSessionReviveStore.clear(job.providerId)
+                        // 복원된 자격 증명이 만료된 상태라 revive를 시작한 것이다. 워밍업 완료는
+                        // SPA가 새 토큰으로 쏜 인증 요청을 새로 캡처하는 순간이어야 하므로,
+                        // 저장본이 hasCredentials를 만족시키지 못하게 지운다.
+                        if (job.providerId == ProviderId.DEVIN) {
+                            devinNativeFetchHeaders.clear()
+                        }
                         Log.i(
                             TAG,
                             "sessionRevive provider=${job.providerId.storageId} " +
@@ -1201,6 +1207,7 @@ class ProviderBackgroundRefreshService : Service() {
         webView.webViewClient = ServiceCollectorWebViewClient(job.accountId, active.requestId)
         if (!usesNamedProfile) {
             prepareSharedWebSessionForCollection(webView, job.providerId)
+            restoreDevinAuthContext(active)
         } else {
             cookieManager.setAcceptCookie(true)
             cookieManager.flush()
@@ -1239,7 +1246,6 @@ class ProviderBackgroundRefreshService : Service() {
         restoreCodexDebugNativeAuthContext(providerId)
         restoreCodexNativeAuthContext(providerId)
         restoreClaudeNativeRequestContext(providerId)
-        restoreDevinAuthContext(providerId)
         CookieManager.getInstance().flush()
         webView.onResume()
         webView.resumeTimers()
@@ -1271,9 +1277,19 @@ class ProviderBackgroundRefreshService : Service() {
         claudeNativeFetchHeaders.putAll(restoredHeaders)
     }
 
-    private fun restoreDevinAuthContext(providerId: ProviderId) {
-        if (providerId != ProviderId.DEVIN) return
-        val restoredHeaders = DevinAuthContextStore(applicationContext).restore()
+    private fun restoreDevinAuthContext(active: ServiceWebRefreshJob) {
+        val job = active.job
+        if (job.providerId != ProviderId.DEVIN) return
+        // Revive 대기 중엔 새 인증 요청의 캡처가 hasCredentials를 성립시켜야 하므로
+        // 만료된 저장본을 복원하지 않는다.
+        if (active.warmUpPending) return
+        val store = DevinAuthContextStore(applicationContext)
+        val binding = job.binding?.takeIf { it.accountId.providerId == ProviderId.DEVIN }
+        val restoredHeaders = if (binding == null) {
+            store.restore()
+        } else {
+            store.restoreExact(binding)
+        }
         if (restoredHeaders.isEmpty()) return
         devinNativeFetchHeaders.putAll(restoredHeaders)
     }
@@ -1439,6 +1455,11 @@ class ProviderBackgroundRefreshService : Service() {
         if (!active.warmUpPending) return
         if (ProviderSessionRevivePolicy.reviveUrl(providerId) == null) return
         if (!ProviderWebCollectorScripts.shouldRunCollectorOnResource(providerId, url)) return
+        // Devin은 랜딩/로그인 페이지도 /api/analytics/ingest를 쏘므로 URL만으론
+        // 세션 복원을 판단할 수 없다. SPA가 새 auth1 토큰으로 인증 API를 부를 때까지 기다린다.
+        if (providerId == ProviderId.DEVIN &&
+            !DevinNativeHeaderStore.hasCredentials(devinNativeFetchHeaders)
+        ) return
         val requestId = active.requestId
         mainHandler.post {
             val current = currentWebJobFor(ownerAccountId) ?: return@post

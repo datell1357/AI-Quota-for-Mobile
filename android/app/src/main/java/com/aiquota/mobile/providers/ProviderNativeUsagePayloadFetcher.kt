@@ -1139,10 +1139,13 @@ object ProviderNativeUsagePayloadFetcher {
         var membershipJson = membership.jsonObject()
         var orgId = membershipJson?.optJSONObject("org")?.optString("org_id")?.takeIf { it.isNotBlank() }
             ?: devinOrgIdFromRequestHeaders(requestHeadersForUrl(DEVIN_MEMBERSHIP_URL))
+        var authFailed = membership.optInt("status") == HTTP_UNAUTHORIZED
         if (orgId == null) {
             // 로그인 직후에는 org 헤더가 아직 캡처되지 않을 수 있다.
             // Bearer만으로 조직 목록을 받는 GET 폴백으로 org를 해석하고 membership을 재시도한다.
-            orgId = fetchDevinOrganizationsOrgId(userAgent, requestHeadersForUrl, fetchJson, statuses)
+            val orgsResponse = fetchDevinOrganizationsResponse(userAgent, requestHeadersForUrl, fetchJson, statuses)
+            authFailed = authFailed || orgsResponse.optInt("status") == HTTP_UNAUTHORIZED
+            orgId = devinOrgIdFromOrganizationsResponse(orgsResponse)
             if (orgId != null) {
                 val retry = fetchWrapped(
                     ProviderId.DEVIN,
@@ -1156,7 +1159,12 @@ object ProviderNativeUsagePayloadFetcher {
                 retry.jsonObject()?.let { membershipJson = it }
             }
         }
-        if (orgId == null) return NativePayloadResult(null, "devin_org_unavailable", statuses)
+        // organizations는 org 컨텍스트가 필요 없으므로 거기까지 401이면 Bearer 자체가 죽은 것이다.
+        // 세션 쿠키로 재발급하는 revive 경로가 진단을 구분해 사용한다.
+        if (orgId == null) {
+            val diagnostic = if (authFailed) "devin_session_expired" else "devin_org_unavailable"
+            return NativePayloadResult(null, diagnostic, statuses)
+        }
         val quota = fetchWrapped(
             ProviderId.DEVIN, devinOrgUrl(orgId, "billing/quota/usage"), statuses, userAgent,
             requestHeadersForUrl(devinOrgUrl(orgId, "billing/quota/usage")), fetchJson
@@ -1183,13 +1191,13 @@ object ProviderNativeUsagePayloadFetcher {
         return verifiedPayload(ProviderId.DEVIN, payload, "devin_usage_unavailable", statuses)
     }
 
-    private fun fetchDevinOrganizationsOrgId(
+    private fun fetchDevinOrganizationsResponse(
         userAgent: String,
         requestHeadersForUrl: (String) -> Map<String, String>,
         fetchJson: NativeJsonFetcher,
         statuses: MutableList<String>
-    ): String? {
-        val response = fetchWrapped(
+    ): JSONObject {
+        return fetchWrapped(
             ProviderId.DEVIN,
             DEVIN_ORGANIZATIONS_URL,
             statuses,
@@ -1197,6 +1205,9 @@ object ProviderNativeUsagePayloadFetcher {
             requestHeadersForUrl(DEVIN_ORGANIZATIONS_URL),
             fetchJson
         )
+    }
+
+    private fun devinOrgIdFromOrganizationsResponse(response: JSONObject): String? {
         val body = response.opt("json") ?: return null
         val orgs = when (body) {
             is JSONArray -> body
@@ -1419,6 +1430,7 @@ object ProviderNativeUsagePayloadFetcher {
     private const val CODEX_SUBSCRIPTIONS_URL = "https://chatgpt.com/backend-api/subscriptions"
     private const val CODEX_WHAM_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage"
     private const val GEMINI_USAGE_PAGE_URL = "https://gemini.google.com/usage"
+    private const val HTTP_UNAUTHORIZED = 401
     private const val DEVIN_MEMBERSHIP_URL = "https://app.devin.ai/api/users/current-membership"
     private const val DEVIN_ORGANIZATIONS_URL = "https://app.devin.ai/api/organizations"
     private const val DEVIN_SUBSCRIPTION_URL = "https://app.devin.ai/api/billing/subscription"

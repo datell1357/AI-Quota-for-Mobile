@@ -26,6 +26,7 @@ object ProviderSessionRevivePolicy {
     fun expiredDiagnosticFor(providerId: ProviderId): String? {
         return when (providerId) {
             ProviderId.KIRO -> "kiro_session_expired"
+            ProviderId.DEVIN -> "devin_session_expired"
             else -> null
         }
     }
@@ -34,6 +35,7 @@ object ProviderSessionRevivePolicy {
     fun reviveUrl(providerId: ProviderId): String? {
         return when (providerId) {
             ProviderId.KIRO -> "https://app.kiro.dev/settings/account"
+            ProviderId.DEVIN -> "https://app.devin.ai/"
             else -> null
         }
     }
