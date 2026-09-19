@@ -78,6 +78,9 @@ class ProviderSessionResetter(context: Context) {
             ProviderId.CLAUDE -> {
                 ClaudeNativeRequestContextStore(appContext).clear()
             }
+            ProviderId.DEVIN -> {
+                DevinAuthContextStore(appContext).clear()
+            }
             ProviderId.COPILOT,
             ProviderId.CURSOR,
             ProviderId.GROK,

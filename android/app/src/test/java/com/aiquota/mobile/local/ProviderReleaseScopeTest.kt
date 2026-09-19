@@ -49,8 +49,11 @@ class ProviderReleaseScopeTest {
         val visible = ProviderPreferencesCodec.visibleProviders(storedOrder, emptySet())
 
         assertTrue(visible.contains(ProviderId.GROK))
-        assertEquals(ProviderId.GROK, visible.last())
-        assertEquals(storedOrder, visible.dropLast(1))
+        assertEquals(
+            listOf(ProviderId.GROK, ProviderId.DEVIN),
+            visible.takeLast(2)
+        )
+        assertEquals(storedOrder, visible.dropLast(2))
     }
 
     @Test

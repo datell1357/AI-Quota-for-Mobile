@@ -209,6 +209,7 @@
     <string name="glm_connection_status_collecting">Collecting GLM usage...</string>
     <string name="glm_connection_status_invalid_key">GLM API key is invalid or expired.</string>
     <string name="glm_connection_status_payload_unavailable">GLM usage payload was not available: %1$s</string>
+
     <string name="settings_connection_management_title">Connection management</string>
     <string name="settings_connection_management_body">Disconnect provider sessions on this device.</string>
     <string name="settings_connection_management_empty">No provider cards on this device.</string>

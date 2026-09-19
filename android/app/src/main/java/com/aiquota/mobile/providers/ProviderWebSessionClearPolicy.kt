@@ -114,6 +114,12 @@ object ProviderWebSessionClearPolicy {
                 "https://prod.us-east-1.auth.desktop.kiro.dev",
                 "https://kiro-prod-us-east-1.auth.us-east-1.amazoncognito.com"
             )
+            ProviderId.DEVIN -> listOf(
+                "https://app.devin.ai",
+                "https://auth.devin.ai",
+                "https://devin.ai",
+                "https://www.devin.ai"
+            )
         }
     }
 
@@ -132,6 +138,7 @@ object ProviderWebSessionClearPolicy {
             ProviderId.OPENCODE -> setOf(SharedIdentity.GOOGLE, SharedIdentity.GITHUB)
             // Kiro는 GitHub·Google·AWS Builder ID로 로그인하므로 연결된 동안 두 IdP를 보존한다.
             ProviderId.KIRO -> setOf(SharedIdentity.GOOGLE, SharedIdentity.GITHUB)
+            ProviderId.DEVIN -> setOf(SharedIdentity.GOOGLE, SharedIdentity.GITHUB)
         }
     }
 

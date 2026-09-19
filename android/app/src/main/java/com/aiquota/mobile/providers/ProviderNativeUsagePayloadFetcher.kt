@@ -96,6 +96,7 @@ object ProviderNativeUsagePayloadFetcher {
             ProviderId.GROK -> fetchGrokPayload()
             ProviderId.KIMI -> fetchKimiPayload()
             ProviderId.KIRO -> fetchKiroPayload()
+            ProviderId.DEVIN -> fetchDevinPayload(userAgent, requestHeadersForUrl, fetchJson)
             ProviderId.COPILOT -> NativePayloadResult(
                 payload = CopilotNativeUsageFetcher.fetchUsagePayload(),
                 diagnostic = "copilot_usage_unavailable"
@@ -1117,6 +1118,112 @@ object ProviderNativeUsagePayloadFetcher {
             "resetInSec=${text.contains("resetInSec")}"
     }
 
+    /**
+     * Devin 구독 사용량. 로그인 WebView에서 캡처한 `authorization` + `x-cog-org-id` 헤더로
+     * app.devin.ai의 프런트엔드 billing 엔드포인트를 그대로 부른다. 쿠키는 필요 없다(실측).
+     */
+    private fun fetchDevinPayload(
+        userAgent: String,
+        requestHeadersForUrl: (String) -> Map<String, String>,
+        fetchJson: NativeJsonFetcher
+    ): NativePayloadResult {
+        val statuses = mutableListOf<String>()
+        val membership = fetchWrapped(
+            ProviderId.DEVIN,
+            DEVIN_MEMBERSHIP_URL,
+            statuses,
+            userAgent,
+            requestHeadersForUrl(DEVIN_MEMBERSHIP_URL),
+            fetchJson
+        )
+        var membershipJson = membership.jsonObject()
+        var orgId = membershipJson?.optJSONObject("org")?.optString("org_id")?.takeIf { it.isNotBlank() }
+            ?: devinOrgIdFromRequestHeaders(requestHeadersForUrl(DEVIN_MEMBERSHIP_URL))
+        if (orgId == null) {
+            // 로그인 직후에는 org 헤더가 아직 캡처되지 않을 수 있다.
+            // Bearer만으로 조직 목록을 받는 GET 폴백으로 org를 해석하고 membership을 재시도한다.
+            orgId = fetchDevinOrganizationsOrgId(userAgent, requestHeadersForUrl, fetchJson, statuses)
+            if (orgId != null) {
+                val retry = fetchWrapped(
+                    ProviderId.DEVIN,
+                    DEVIN_MEMBERSHIP_URL,
+                    statuses,
+                    userAgent,
+                    requestHeadersForUrl(DEVIN_MEMBERSHIP_URL) +
+                        (DevinNativeHeaderStore.HEADER_ORG_ID to orgId),
+                    fetchJson
+                )
+                retry.jsonObject()?.let { membershipJson = it }
+            }
+        }
+        if (orgId == null) return NativePayloadResult(null, "devin_org_unavailable", statuses)
+        val quota = fetchWrapped(
+            ProviderId.DEVIN, devinOrgUrl(orgId, "billing/quota/usage"), statuses, userAgent,
+            requestHeadersForUrl(devinOrgUrl(orgId, "billing/quota/usage")), fetchJson
+        )
+        val dailyUsage = fetchWrapped(
+            ProviderId.DEVIN, devinOrgUrl(orgId, "billing/usage/daily-usage"), statuses, userAgent,
+            requestHeadersForUrl(devinOrgUrl(orgId, "billing/usage/daily-usage")), fetchJson
+        )
+        val stats = fetchWrapped(
+            ProviderId.DEVIN, devinOrgUrl(orgId, "billing/usage/stats"), statuses, userAgent,
+            requestHeadersForUrl(devinOrgUrl(orgId, "billing/usage/stats")), fetchJson
+        )
+        val subscription = fetchWrapped(
+            ProviderId.DEVIN, DEVIN_SUBSCRIPTION_URL, statuses, userAgent,
+            requestHeadersForUrl(DEVIN_SUBSCRIPTION_URL), fetchJson
+        )
+        val payload = JSONObject()
+            .put("provider", ProviderId.DEVIN.storageId)
+            .put("account", membershipJson?.optJSONObject("user")?.optString("email")?.takeIf { it.isNotBlank() })
+            .put("quota", quota.jsonObject() ?: JSONObject())
+            .put("daily_usage", dailyUsage.jsonObject() ?: JSONObject())
+            .put("stats", stats.jsonObject() ?: JSONObject())
+            .put("subscription", subscription.jsonObject() ?: JSONObject())
+        return verifiedPayload(ProviderId.DEVIN, payload, "devin_usage_unavailable", statuses)
+    }
+
+    private fun fetchDevinOrganizationsOrgId(
+        userAgent: String,
+        requestHeadersForUrl: (String) -> Map<String, String>,
+        fetchJson: NativeJsonFetcher,
+        statuses: MutableList<String>
+    ): String? {
+        val response = fetchWrapped(
+            ProviderId.DEVIN,
+            DEVIN_ORGANIZATIONS_URL,
+            statuses,
+            userAgent,
+            requestHeadersForUrl(DEVIN_ORGANIZATIONS_URL),
+            fetchJson
+        )
+        val body = response.opt("json") ?: return null
+        val orgs = when (body) {
+            is JSONArray -> body
+            is JSONObject -> body.optJSONArray("organizations")
+                ?: body.optJSONArray("orgs")
+                ?: return body.optJSONObject("org")?.optString("org_id")?.takeIf { it.isNotBlank() }
+            else -> return null
+        }
+        for (i in 0 until orgs.length()) {
+            val org = orgs.optJSONObject(i) ?: continue
+            org.optString("org_id").takeIf { it.isNotBlank() }?.let { return it }
+            org.optString("id").takeIf { it.isNotBlank() }?.let { return it }
+        }
+        return null
+    }
+
+    private fun devinOrgUrl(orgId: String, path: String): String {
+        return "https://app.devin.ai/api/$orgId/$path"
+    }
+
+    private fun devinOrgIdFromRequestHeaders(headers: Map<String, String>): String? {
+        return headers.entries
+            .firstOrNull { (name, _) -> name.equals(DevinNativeHeaderStore.HEADER_ORG_ID, ignoreCase = true) }
+            ?.value
+            ?.takeIf { it.isNotBlank() }
+    }
+
     private fun fetchWrapped(
         providerId: ProviderId,
         url: String,
@@ -1312,6 +1419,9 @@ object ProviderNativeUsagePayloadFetcher {
     private const val CODEX_SUBSCRIPTIONS_URL = "https://chatgpt.com/backend-api/subscriptions"
     private const val CODEX_WHAM_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage"
     private const val GEMINI_USAGE_PAGE_URL = "https://gemini.google.com/usage"
+    private const val DEVIN_MEMBERSHIP_URL = "https://app.devin.ai/api/users/current-membership"
+    private const val DEVIN_ORGANIZATIONS_URL = "https://app.devin.ai/api/organizations"
+    private const val DEVIN_SUBSCRIPTION_URL = "https://app.devin.ai/api/billing/subscription"
     private const val KIMI_SUBSCRIPTION_STATS_URL =
         "https://www.kimi.com/apiv2/kimi.gateway.membership.v2.MembershipService/GetSubscriptionStats"
 

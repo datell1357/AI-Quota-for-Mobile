@@ -2534,4 +2534,88 @@ class ProviderUsageNormalizerTest {
         assertNull(line.remainingPercent)
         assertEquals(5.0, line.remainingAmount ?: 0.0, 0.001)
     }
+
+    @Test
+    fun devinSubscriptionPayloadNormalizesQuotaAndAcus() {
+        val snapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.DEVIN,
+            """
+            {
+              "provider": "devin",
+              "account": "user@example.com",
+              "quota": {
+                "is_quota_plan": true,
+                "daily_percentage": 12.5,
+                "weekly_percentage": 3,
+                "daily_reset_at": "2026-09-19T00:00:00-08:00",
+                "weekly_reset_at": "2026-09-20T00:00:00-08:00",
+                "overage_balance": 0.0
+              },
+              "daily_usage": {
+                "total": 1.5,
+                "days": [
+                  {"date": "2026-09-15", "amount": 0.25, "cumulative": 0.25},
+                  {"date": "2026-09-16", "amount": 1.25, "cumulative": 1.5}
+                ]
+              },
+              "stats": {
+                "available_acus": 8.5,
+                "cycle_total_acu_usage": 1.5
+              },
+              "subscription": {"slug": "pro", "status": "active"}
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.NETWORK_RESPONSE
+        )!!
+
+        assertEquals(ProviderConnectionState.CONNECTED, snapshot.connectionState)
+        assertEquals("Pro", snapshot.plan)
+        assertEquals("user@example.com", snapshot.account)
+        val labels = snapshot.lines.map { it.label }
+        assertEquals(listOf("일간 한도", "주간 한도", "오늘 사용", "이번 주기 사용", "잔여 ACU"), labels)
+        assertEquals(0.875f, snapshot.lines[0].remainingPercent ?: 0f, 0.001f)
+        assertEquals("2026-09-19T00:00:00-08:00", snapshot.lines[0].resetsAt)
+        assertEquals(0.97f, snapshot.lines[1].remainingPercent ?: 0f, 0.001f)
+        assertEquals("2026-09-20T00:00:00-08:00", snapshot.lines[1].resetsAt)
+        assertEquals(1.25, snapshot.lines[2].usedAmount ?: 0.0, 0.001)
+        assertEquals(1.5, snapshot.lines[3].usedAmount ?: 0.0, 0.001)
+        assertEquals(8.5, snapshot.lines[4].usedAmount ?: 0.0, 0.001)
+    }
+
+    @Test
+    fun devinQuotaOnlyPayloadStillNormalizes() {
+        val snapshot = ProviderUsageNormalizer.normalize(
+            ProviderId.DEVIN,
+            """
+            {
+              "provider": "devin",
+              "quota": {"daily_percentage": 0, "weekly_percentage": 42},
+              "subscription": {"slug": "pro"}
+            }
+            """.trimIndent(),
+            ProviderPayloadSource.NETWORK_RESPONSE
+        )!!
+
+        assertEquals(listOf("일간 한도", "주간 한도"), snapshot.lines.map { it.label })
+        assertEquals(1.0f, snapshot.lines[0].remainingPercent ?: 0f, 0.001f)
+        assertEquals(0.58f, snapshot.lines[1].remainingPercent ?: 0f, 0.001f)
+    }
+
+    @Test
+    fun devinPayloadWithoutUsageReturnsNull() {
+        assertNull(
+            ProviderUsageNormalizer.normalize(
+                ProviderId.DEVIN,
+                """{"provider": "devin", "subscription": {"slug": "pro"}}""",
+                ProviderPayloadSource.NETWORK_RESPONSE
+            )
+        )
+        assertNull(
+            ProviderUsageNormalizer.normalize(
+                ProviderId.DEVIN,
+                """{}""",
+                ProviderPayloadSource.NETWORK_RESPONSE
+            )
+        )
+    }
 }

@@ -242,6 +242,7 @@ class ProviderCardCatalogTest {
             ProviderId.CURSOR,
             ProviderId.GROK,
             ProviderId.KIRO,
+            ProviderId.DEVIN,
         )
         val unsupported = setOf(ProviderId.KIMI)
         assertEquals(ProviderId.entries.toSet(), unlimited + single + unsupported)

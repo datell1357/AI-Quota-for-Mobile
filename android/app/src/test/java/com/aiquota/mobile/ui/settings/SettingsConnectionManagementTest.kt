@@ -43,7 +43,8 @@ class SettingsConnectionManagementTest {
                 ProviderId.OPENCODE,
                 ProviderId.GLM,
                 ProviderId.GEMINI,
-                ProviderId.COPILOT
+                ProviderId.COPILOT,
+                ProviderId.DEVIN
             ),
             settingsConnectionProviderOrder(order)
         )

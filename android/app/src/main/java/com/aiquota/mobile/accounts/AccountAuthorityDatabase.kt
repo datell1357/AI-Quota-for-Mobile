@@ -733,6 +733,7 @@ internal class AccountAuthorityDatabase(
 
     private fun validateProviderCardCatalog(db: SQLiteDatabase) {
         validateProviderCardCatalogSchema(db)
+        pruneRemovedCatalogProviders(db)
         val activeRanks = mutableListOf<Long>()
         val activeAliases = mutableSetOf<Pair<ProviderId, String>>()
         var accountCount = 0L
@@ -958,6 +959,35 @@ internal class AccountAuthorityDatabase(
             if (normalized.normalizedKey !in activeAliasKeys) return normalized
         }
         malformedCatalog("Provider-card alias allocation exhausted")
+    }
+
+    /**
+     * enum에서 빠진 provider의 계정 행을 제거한다. 제공자를 삭제한 업데이트를 받은 사용자가
+     * 실행 크래시로 잠기지 않게 하기 위한 방어다. RESTRICT 자식(삭제 저널, 마이그레이션 링크)을
+     * 먼저 지우고 accounts를 지우면 나머지 자식은 FK CASCADE로 함께 정리된다.
+     */
+    private fun pruneRemovedCatalogProviders(db: SQLiteDatabase) {
+        val known = ProviderId.entries.map { it.storageId }
+        val placeholders = known.joinToString(",") { "?" }
+        val args = known.toTypedArray()
+        if (tableExists(db, "provider_card_migration_links")) {
+            db.delete("provider_card_migration_links", "provider_id NOT IN ($placeholders)", args)
+        }
+        if (tableExists(db, "provider_card_deletion_journal")) {
+            db.delete("provider_card_deletion_journal", "provider_id NOT IN ($placeholders)", args)
+        }
+        db.delete("accounts", "provider_id NOT IN ($placeholders)", args)
+        // provider_id만 키로 쓰는 테이블들은 FK가 없어 따로 정리한다.
+        listOf(
+            "named_profile_lifecycle",
+            "account_usage_primary",
+            "account_usage_projection_targets",
+            "legacy_usage_conflicts",
+        ).forEach { table ->
+            if (tableExists(db, table)) {
+                db.delete(table, "provider_id NOT IN ($placeholders)", args)
+            }
+        }
     }
 
     private fun malformedCatalog(message: String): Nothing =

@@ -152,6 +152,7 @@ object ProviderRefreshPlan {
             ProviderId.GROK -> "about:blank"
             ProviderId.KIMI -> "about:blank"
             ProviderId.KIRO -> "about:blank"
+            ProviderId.DEVIN -> "about:blank"
         }
     }
 

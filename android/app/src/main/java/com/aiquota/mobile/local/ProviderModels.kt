@@ -14,7 +14,8 @@ enum class ProviderId(val storageId: String, val displayName: String) {
     CURSOR("cursor", "Cursor"),
     GROK("grok", "Grok"),
     KIMI("kimi", "Kimi"),
-    KIRO("kiro", "Kiro");
+    KIRO("kiro", "Kiro"),
+    DEVIN("devin", "Devin");
 
     companion object {
         /**
@@ -24,7 +25,10 @@ enum class ProviderId(val storageId: String, val displayName: String) {
          * 검증이 끝나면 GROK 다음에 KIMI를 넣으면 그대로 살아난다.
          */
         fun defaultOrder(): List<ProviderId> =
-            listOf(CLAUDE, CODEX, CURSOR, GROK, KIRO, OPENCODE, GLM, ANTIGRAVITY, GEMINI, COPILOT)
+            listOf(
+                CLAUDE, CODEX, CURSOR, GROK, KIRO, OPENCODE, GLM, ANTIGRAVITY, GEMINI, COPILOT,
+                DEVIN
+            )
 
         fun fromStorageId(value: String?): ProviderId? {
             val normalized = value?.trim().orEmpty()

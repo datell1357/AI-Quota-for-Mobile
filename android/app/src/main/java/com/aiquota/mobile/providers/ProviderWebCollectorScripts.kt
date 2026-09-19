@@ -68,6 +68,11 @@ object ProviderWebCollectorScripts {
                     host.endsWith(".amazoncognito.com") ||
                     (host == "app.kiro.dev" &&
                         (path.contains("login") || path.contains("signin") || path.contains("sign-in")))
+            ProviderId.DEVIN ->
+                host == "accounts.google.com" ||
+                    host == "auth.devin.ai" ||
+                    (host == "app.devin.ai" &&
+                        (path.contains("login") || path.contains("signin") || path.contains("sign-in")))
         }
     }
 
@@ -229,6 +234,11 @@ object ProviderWebCollectorScripts {
                     !path.contains("login") &&
                     !path.contains("signin") &&
                     !path.contains("sign-in")
+            ProviderId.DEVIN ->
+                host == "app.devin.ai" &&
+                    !path.contains("login") &&
+                    !path.contains("signin") &&
+                    !path.contains("sign-in")
         }
     }
 
@@ -279,6 +289,7 @@ object ProviderWebCollectorScripts {
             ProviderId.KIMI,
             ProviderId.KIRO,
             ProviderId.ANTIGRAVITY -> false
+            ProviderId.DEVIN -> false
         }
     }
 
@@ -423,6 +434,8 @@ object ProviderWebCollectorScripts {
             ProviderId.ANTIGRAVITY ->
                 (host == "antigravity.google" || host == "www.antigravity.google") &&
                     (path.contains("usage") || path.contains("quota") || path.contains("plan"))
+            ProviderId.DEVIN ->
+                host == "app.devin.ai" && path.startsWith("/api/")
             else -> false
         }
     }

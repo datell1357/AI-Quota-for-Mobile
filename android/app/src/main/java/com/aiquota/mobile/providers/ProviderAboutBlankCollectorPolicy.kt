@@ -13,6 +13,7 @@ object ProviderAboutBlankCollectorPolicy {
             providerId == ProviderId.CURSOR ||
             providerId == ProviderId.GROK ||
             providerId == ProviderId.KIMI ||
-            providerId == ProviderId.KIRO
+            providerId == ProviderId.KIRO ||
+            providerId == ProviderId.DEVIN
     }
 }

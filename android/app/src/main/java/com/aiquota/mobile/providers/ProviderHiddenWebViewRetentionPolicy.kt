@@ -14,7 +14,8 @@ object ProviderHiddenWebViewRetentionPolicy {
             ProviderId.CURSOR,
             ProviderId.GROK,
             ProviderId.KIMI,
-            ProviderId.KIRO -> true
+            ProviderId.KIRO,
+            ProviderId.DEVIN -> true
             ProviderId.ANTIGRAVITY -> false
         }
     }

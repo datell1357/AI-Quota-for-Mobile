@@ -354,6 +354,30 @@ object ProviderDefinitionRegistry {
             authStoreKind = ProviderAuthStoreKind.WEBVIEW_PROFILE,
             collectionKind = ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE,
             sessionProbeUrl = "https://app.kiro.dev/settings/account"
+        ),
+        ProviderDefinition(
+            providerId = ProviderId.DEVIN,
+            loginStartUrl = "https://app.devin.ai/auth/signup",
+            allowedHosts = setOf(
+                "devin.ai",
+                "app.devin.ai",
+                "auth.devin.ai",
+                "api.devin.ai",
+                "docs.devin.ai",
+                "cognition.com",
+                "www.cognition.com",
+                "accounts.google.com",
+                "ssl.gstatic.com",
+                "www.gstatic.com",
+                "github.com"
+            ),
+            collectorAllowedHosts = setOf(
+                "app.devin.ai"
+            ),
+            preferredUsageEndpoint = "https://app.devin.ai/api/billing/subscription",
+            authStoreKind = ProviderAuthStoreKind.WEBVIEW_PROFILE,
+            collectionKind = ProviderCollectionKind.NATIVE_WEBVIEW_BRIDGE,
+            sessionProbeUrl = "https://app.devin.ai/"
         )
     // 노출 순서는 defaultOrder()를 따르고, 아직 노출하지 않는 provider(GROK·KIMI)의 정의는
     // 목록 뒤에 남겨 둔다. 정의를 지우면 definitionFor()가 예외를 던지므로 순서만 미룬다.

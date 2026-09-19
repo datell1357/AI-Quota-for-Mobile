@@ -26,6 +26,7 @@ fun providerIconRes(providerId: ProviderId): Int {
         ProviderId.GROK -> R.drawable.ic_provider_grok
         ProviderId.KIMI -> R.drawable.ic_provider_kimi
         ProviderId.KIRO -> R.drawable.ic_provider_kiro
+        ProviderId.DEVIN -> R.drawable.ic_provider_devin
     }
 }
 
@@ -44,6 +45,7 @@ fun providerIconRes(providerId: String): Int {
         "grok", "xai", "x-ai" -> R.drawable.ic_provider_grok
         "kimi", "moonshot", "moonshotai" -> R.drawable.ic_provider_kimi
         "kiro", "kiro-dev", "kiro_dev" -> R.drawable.ic_provider_kiro
+        "devin", "cognition" -> R.drawable.ic_provider_devin
         else -> R.drawable.ic_provider_unknown
     }
 }
@@ -80,5 +82,6 @@ internal fun providerIconVisualScale(providerId: ProviderId): Float {
         ProviderId.GROK -> 0.80f
         ProviderId.KIMI -> 0.80f
         ProviderId.KIRO -> 0.78f
+        ProviderId.DEVIN -> 0.76f
     }
 }

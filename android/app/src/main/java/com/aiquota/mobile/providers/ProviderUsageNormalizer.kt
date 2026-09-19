@@ -5,6 +5,7 @@ import com.aiquota.mobile.local.ProviderId
 import com.aiquota.mobile.local.ProviderRefreshState
 import com.aiquota.mobile.local.ProviderUsageLine
 import com.aiquota.mobile.local.ProviderUsageSnapshot
+import com.aiquota.mobile.local.UsageSeverity
 import java.time.Instant
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -51,6 +52,7 @@ object ProviderUsageNormalizer {
             ProviderId.GROK -> normalizeGrok(json, source, fetchedAt)
             ProviderId.KIMI -> normalizeKimi(json, source, fetchedAt)
             ProviderId.KIRO -> normalizeKiro(json, source, fetchedAt)
+            ProviderId.DEVIN -> normalizeDevin(json, source, fetchedAt)
         }
         return snapshot?.takeIf { it.lines.isNotEmpty() }
     }
@@ -173,6 +175,107 @@ object ProviderUsageNormalizer {
         val timestamp = value.toLong()
         val millis = if (timestamp < 10_000_000_000L) timestamp * 1000L else timestamp
         return runCatching { Instant.ofEpochMilli(millis).toString() }.getOrNull()
+    }
+
+    private fun normalizeDevin(json: JSONObject, source: ProviderPayloadSource, fetchedAt: String): ProviderUsageSnapshot? {
+        val quota = json.optObject("quota")
+        val dailyUsage = json.optObject("daily_usage")
+        val stats = json.optObject("stats")
+        val subscription = json.optObject("subscription")
+        val lines = buildList {
+            quota?.optionalNumber("daily_percentage")?.let { usedPercent ->
+                add(
+                    devinQuotaLine(
+                        "devin:daily_quota", "일간 한도",
+                        usedPercent, quota.optionalString("daily_reset_at"), source
+                    )
+                )
+            }
+            quota?.optionalNumber("weekly_percentage")?.let { usedPercent ->
+                add(
+                    devinQuotaLine(
+                        "devin:weekly_quota", "주간 한도",
+                        usedPercent, quota.optionalString("weekly_reset_at"), source
+                    )
+                )
+            }
+            latestDevinDay(dailyUsage)?.let { acus ->
+                add(amountOnlyLine("devin:today_acus", "오늘 사용", acus, "ACU", "", source))
+            }
+            stats?.optionalNumber("cycle_total_acu_usage")?.let { acus ->
+                add(amountOnlyLine("devin:cycle_acus", "이번 주기 사용", acus, "ACU", "", source))
+            }
+            stats?.optionalNumber("available_acus")?.let { acus ->
+                add(amountOnlyLine("devin:available_acus", "잔여 ACU", acus, "ACU", "", source))
+            }
+        }
+        val plan = subscription?.optionalString("slug")
+            ?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() }
+        return snapshot(
+            ProviderId.DEVIN,
+            plan = plan,
+            account = json.optionalString("account"),
+            fetchedAt = fetchedAt,
+            lines = lines
+        )
+    }
+
+    private fun latestDevinDay(dailyUsage: JSONObject?): Double? {
+        val days = dailyUsage?.optJSONArray("days") ?: return null
+        var latestDate = ""
+        var latestAcus: Double? = null
+        for (index in 0 until days.length()) {
+            val entry = days.optJSONObject(index) ?: continue
+            val date = entry.optionalString("date") ?: continue
+            val amount = entry.optionalNumber("amount") ?: continue
+            if (date >= latestDate) {
+                latestDate = date
+                latestAcus = amount
+            }
+        }
+        return latestAcus
+    }
+
+    private fun devinQuotaLine(
+        key: String,
+        label: String,
+        usedPercent: Double,
+        resetsAt: String?,
+        source: ProviderPayloadSource
+    ): ProviderUsageLine {
+        return ProviderUsageLine(
+            key = key,
+            label = label,
+            remainingPercent = ((100.0 - usedPercent) / 100.0).coerceIn(0.0, 1.0).toFloat(),
+            resetsAt = resetsAt,
+            sourceLabel = source.label,
+            confidence = source.confidence
+        )
+    }
+
+    private fun amountOnlyLine(
+        key: String,
+        label: String,
+        amount: Double,
+        unit: String,
+        prefix: String,
+        source: ProviderPayloadSource
+    ): ProviderUsageLine {
+        return ProviderUsageLine(
+            key = key,
+            label = label,
+            usedAmount = amount,
+            unit = unit,
+            remainingText = "$prefix${formatAmountText(amount)} $unit".trim(),
+            sourceLabel = source.label,
+            confidence = source.confidence
+        )
+    }
+
+    private fun formatAmountText(value: Double, maxDecimals: Int = 2): String {
+        val rounded = value.roundToInt()
+        if (kotlin.math.abs(value - rounded) < 0.001) return rounded.toString()
+        return String.format(Locale.US, "%.${maxDecimals}f", value)
     }
 
     private fun normalizeOpenCode(json: JSONObject, source: ProviderPayloadSource, fetchedAt: String): ProviderUsageSnapshot? {

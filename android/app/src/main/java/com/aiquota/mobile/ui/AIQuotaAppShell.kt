@@ -528,9 +528,9 @@ fun AIQuotaAppShell(
         coroutineScope.launch {
             providerSessionResetter.awaitProviderWebSessionCleanup(accountId.providerId)
             val launchResult = runCatching {
-                val loginIntent = when (accountId.providerId) {
-                    ProviderId.GLM -> GlmApiKeyActivity.createIntent(launchContext, accountId)
-                    ProviderId.ANTIGRAVITY -> AntigravityLoopbackOAuthActivity.createIntent(launchContext, accountId)
+                val loginIntent = when {
+                    accountId.providerId == ProviderId.GLM -> GlmApiKeyActivity.createIntent(launchContext, accountId)
+                    accountId.providerId == ProviderId.ANTIGRAVITY -> AntigravityLoopbackOAuthActivity.createIntent(launchContext, accountId)
                     else -> WebLoginActivity.createIntent(launchContext, accountId, startUrl)
                 }
                 if (launchContext !is Activity) loginIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -1780,6 +1780,7 @@ internal fun providerNavigationLabel(providerId: ProviderId, alias: String? = nu
         ProviderId.GROK -> "Grok"
         ProviderId.KIMI -> "Kimi"
         ProviderId.KIRO -> "Kiro"
+        ProviderId.DEVIN -> "Devin"
     }
 }
 

@@ -126,6 +126,7 @@ open class WebLoginActivity : Activity() {
     private var currentBridgeUserAgent = ProviderWebViewUserAgent.loginUserAgent()
     private val codexNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
     private val claudeNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
+    private val devinNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
     private val geminiUsageRpcIds = linkedSetOf<String>()
     private val popupViews = mutableSetOf<WebView>()
     @Volatile
@@ -257,6 +258,7 @@ open class WebLoginActivity : Activity() {
         }
         restoreCodexNativeAuthContext()
         restoreClaudeNativeRequestContext()
+        restoreDevinAuthContext()
         webView = createConfiguredWebView(
             cookieManager,
             capabilities,
@@ -638,6 +640,9 @@ open class WebLoginActivity : Activity() {
             captureCodexAccountId(url)
             captureCodexNativeFetchHeaders(request)
             val capturedClaudeHeaders = captureClaudeNativeFetchHeaders(request)
+            if (providerId == ProviderId.DEVIN && captureDevinNativeFetchHeaders(request)) {
+                view.post { maybeStartAboutBlankNativeCollection(view, url, "resource") }
+            }
             if (captureGlmNativeFetchHeaders(request)) {
                 view.post {
                     val pageUrl = view.url ?: GlmProviderUrls.WEB_USAGE_URL
@@ -1580,6 +1585,12 @@ open class WebLoginActivity : Activity() {
         val grokChatSession = providerId == ProviderId.GROK &&
             ProviderLoginStrategy.shouldStartGrokNativeCollection(url, cookiesFor(url))
         if (!usageResource && !grokChatSession) return false
+        // Devin의 공개 랜딩/로그인 페이지도 /api/analytics/ingest 같은 비인증 호출을 쏜다.
+        // Authorization 헤더가 잡히기 전에 수집을 시작하면 401만 받고 화면이 닫히므로,
+        // 첫 인증 API 요청(=로그인 완료 신호)까지 기다린다.
+        if (providerId == ProviderId.DEVIN &&
+            !DevinNativeHeaderStore.hasCredentials(devinNativeFetchHeaders)
+        ) return false
         aboutBlankNativeCollectionStarted = true
         loginCookieManager().flush()
         collectorInjectionKeys.clear()
@@ -1716,6 +1727,7 @@ open class WebLoginActivity : Activity() {
             ProviderId.CODEX -> codexNativeFetchHeadersFor(url)
             ProviderId.CLAUDE -> claudeNativeFetchHeadersFor(url)
             ProviderId.GLM -> glmNativeFetchHeadersFor(url)
+            ProviderId.DEVIN -> devinNativeFetchHeadersFor(url)
             else -> emptyMap()
         }
     }
@@ -2126,6 +2138,43 @@ open class WebLoginActivity : Activity() {
         codexNativeFetchHeaders.putAll(restoredHeaders)
     }
 
+    private fun captureDevinNativeFetchHeaders(request: WebResourceRequest): Boolean {
+        if (providerId != ProviderId.DEVIN) return false
+        val url = request.url.toString()
+        if (!DevinNativeHeaderStore.capture(
+                devinNativeFetchHeaders,
+                url,
+                request.requestHeaders.orEmpty()
+            )
+        ) return false
+        Log.d("AIQuotaLogin", "provider=devin capturedNativeHeaders route=api")
+        saveDevinAuthContext()
+        return true
+    }
+
+    private fun devinNativeFetchHeadersFor(url: String): Map<String, String> {
+        return DevinNativeHeaderStore.headersFor(devinNativeFetchHeaders, url)
+    }
+
+    private fun saveDevinAuthContext() {
+        if (exactLoginBinding != null) return
+        val authContext = DevinNativeHeaderStore.snapshotAuthContext(devinNativeFetchHeaders)
+        if (authContext.isEmpty()) return
+        DevinAuthContextStore(applicationContext).save(authContext)
+    }
+
+    private fun restoreDevinAuthContext() {
+        if (providerId != ProviderId.DEVIN) return
+        val binding = exactLoginBinding
+        val restoredHeaders = if (binding != null) {
+            exactLoginComposition?.coordinator?.restore(binding).orEmpty()
+        } else {
+            DevinAuthContextStore(applicationContext).restore()
+        }
+        if (restoredHeaders.isEmpty()) return
+        devinNativeFetchHeaders.putAll(restoredHeaders)
+    }
+
     private fun captureGeminiUsageRpcId(url: String): Boolean {
         if (providerId != ProviderId.GEMINI) return false
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
@@ -2185,6 +2234,7 @@ open class WebLoginActivity : Activity() {
             val context = when (providerId) {
                 ProviderId.CODEX -> CodexNativeHeaderStore.snapshotAuthContext(codexNativeFetchHeaders)
                 ProviderId.CLAUDE -> ClaudeNativeHeaderStore.snapshotRequestContext(claudeNativeFetchHeaders)
+                ProviderId.DEVIN -> DevinNativeHeaderStore.snapshotAuthContext(devinNativeFetchHeaders)
                 else -> emptyMap()
             }
             // 이 경로가 조용히 실패하면 로그인에 성공하고도 카드가 "연결 끊김"으로 남는다.
@@ -2717,7 +2767,8 @@ open class WebLoginActivity : Activity() {
         private val ABOUT_BLANK_NATIVE_LOGIN_PROVIDERS = setOf(
             ProviderId.GROK,
             ProviderId.KIMI,
-            ProviderId.KIRO
+            ProviderId.KIRO,
+            ProviderId.DEVIN
         )
         private const val NATIVE_USAGE_COLLECTION_TIMEOUT_MS = 20_000L
         private const val GEMINI_USAGE_REDIRECT_MIN_INTERVAL_MS = 1_500L

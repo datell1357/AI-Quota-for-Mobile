@@ -8,7 +8,8 @@ import java.io.DataOutputStream
 
 internal enum class CredentialVaultProvider(val providerId: ProviderId, internal val aadTag: Int) {
     CLAUDE(ProviderId.CLAUDE, 1),
-    CODEX(ProviderId.CODEX, 2);
+    CODEX(ProviderId.CODEX, 2),
+    DEVIN(ProviderId.DEVIN, 3);
 
     companion object {
         fun parse(providerId: ProviderId): CredentialVaultProvider =

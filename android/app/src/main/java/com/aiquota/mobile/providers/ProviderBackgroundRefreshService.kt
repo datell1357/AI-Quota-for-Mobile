@@ -126,6 +126,7 @@ class ProviderBackgroundRefreshService : Service() {
     private val webJobLastUrls = mutableMapOf<Long, String>()
     private val codexNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
     private val claudeNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
+    private val devinNativeFetchHeaders = ConcurrentHashMap<String, Map<String, String>>()
     private var pendingManualProviderId: ProviderId? = null
     private val pendingExactManualRefreshes = ExactManualRefreshQueue()
     private var exactRefreshCoordinator: AndroidProviderAccountRefreshCoordinator? = null
@@ -1238,6 +1239,7 @@ class ProviderBackgroundRefreshService : Service() {
         restoreCodexDebugNativeAuthContext(providerId)
         restoreCodexNativeAuthContext(providerId)
         restoreClaudeNativeRequestContext(providerId)
+        restoreDevinAuthContext(providerId)
         CookieManager.getInstance().flush()
         webView.onResume()
         webView.resumeTimers()
@@ -1267,6 +1269,13 @@ class ProviderBackgroundRefreshService : Service() {
         val restoredHeaders = ClaudeNativeRequestContextStore(applicationContext).restore()
         if (restoredHeaders.isEmpty()) return
         claudeNativeFetchHeaders.putAll(restoredHeaders)
+    }
+
+    private fun restoreDevinAuthContext(providerId: ProviderId) {
+        if (providerId != ProviderId.DEVIN) return
+        val restoredHeaders = DevinAuthContextStore(applicationContext).restore()
+        if (restoredHeaders.isEmpty()) return
+        devinNativeFetchHeaders.putAll(restoredHeaders)
     }
 
     private fun destroyProviderWebView(providerId: ProviderId) {
@@ -1610,6 +1619,7 @@ class ProviderBackgroundRefreshService : Service() {
             captureCodexAccountId(ownerAccountId, url)
             captureCodexNativeFetchHeaders(ownerAccountId, ownerProviderId, url, request.requestHeaders.orEmpty())
             captureClaudeNativeFetchHeaders(ownerAccountId, ownerProviderId, url, request.requestHeaders.orEmpty())
+            captureDevinNativeFetchHeaders(ownerAccountId, ownerProviderId, url, request.requestHeaders.orEmpty())
             maybeStartCodexAboutBlankCollection(ownerAccountId, view, url)
             maybeStartClaudeAboutBlankCollection(ownerAccountId, view, url)
             maybeCompleteSessionReviveFromResource(ownerAccountId, view, url)
@@ -2001,12 +2011,14 @@ class ProviderBackgroundRefreshService : Service() {
                     url,
                     CLAUDE_NATIVE_HEADER_WILDCARD_KEY,
                 )
+                ProviderId.DEVIN -> DevinNativeHeaderStore.headersFor(storedHeaders, url)
                 else -> emptyMap()
             }
         }
         return when (job.providerId) {
             ProviderId.CODEX -> codexNativeFetchHeadersFor(url)
             ProviderId.CLAUDE -> claudeNativeFetchHeadersFor(url)
+            ProviderId.DEVIN -> devinNativeFetchHeadersFor(url)
             else -> emptyMap()
         }
     }
@@ -2175,6 +2187,43 @@ class ProviderBackgroundRefreshService : Service() {
         return ClaudeNativeHeaderStore.headersFor(claudeNativeFetchHeaders, url, CLAUDE_NATIVE_HEADER_WILDCARD_KEY)
     }
 
+    private fun captureDevinNativeFetchHeaders(
+        ownerAccountId: ProviderAccountId,
+        providerId: ProviderId,
+        url: String,
+        requestHeaders: Map<String, String>,
+    ) {
+        if (providerId != ProviderId.DEVIN) return
+        val active = currentWebJobFor(ownerAccountId) ?: return
+        if (jobUsesNamedProfileSession(active.job) && active.job.providerId == ProviderId.DEVIN) {
+            if (!DevinNativeHeaderStore.capture(active.exactNativeFetchHeaders, url, requestHeaders)) return
+        } else {
+            if (!DevinNativeHeaderStore.capture(devinNativeFetchHeaders, url, requestHeaders)) return
+        }
+        Log.d(TAG, "capturedNativeHeaders provider=devin path=${pathOf(url)}")
+        saveDevinAuthContext(active)
+    }
+
+    private fun devinNativeFetchHeadersFor(url: String): Map<String, String> {
+        return DevinNativeHeaderStore.headersFor(devinNativeFetchHeaders, url)
+    }
+
+    private fun saveDevinAuthContext(active: ServiceWebRefreshJob) {
+        val storedHeaders = if (jobUsesNamedProfileSession(active.job)) {
+            active.exactNativeFetchHeaders
+        } else {
+            devinNativeFetchHeaders
+        }
+        val authContext = DevinNativeHeaderStore.snapshotAuthContext(storedHeaders)
+        if (authContext.isEmpty()) return
+        val binding = active.job.binding?.takeIf { it.accountId.providerId == ProviderId.DEVIN }
+        if (binding == null) {
+            DevinAuthContextStore(applicationContext).save(authContext)
+        } else {
+            DevinAuthContextStore(applicationContext).saveExact(binding, authContext)
+        }
+    }
+
     private fun replaySafeProviderRequestHeadersFor(active: ServiceWebRefreshJob, url: String): Map<String, String> {
         return when (active.job.providerId) {
             ProviderId.CLAUDE -> ClaudeNativeHeaderStore.replaySafeHeaders(requestHeadersForJob(active, url))
@@ -2200,6 +2249,9 @@ class ProviderBackgroundRefreshService : Service() {
     private fun clearClaudeNativeFetchHeaders(providerId: ProviderId) {
         if (providerId == ProviderId.CLAUDE) {
             claudeNativeFetchHeaders.clear()
+        }
+        if (providerId == ProviderId.DEVIN) {
+            devinNativeFetchHeaders.clear()
         }
     }
 

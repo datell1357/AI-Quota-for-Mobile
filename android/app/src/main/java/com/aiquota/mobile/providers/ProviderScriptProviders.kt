@@ -44,6 +44,7 @@ object ProviderScriptProviders {
             ProviderId.GROK -> "grok-local"
             ProviderId.KIMI -> "kimi-local"
             ProviderId.KIRO -> "kiro-local"
+            ProviderId.DEVIN -> "devin-web"
         }
     }
 }
