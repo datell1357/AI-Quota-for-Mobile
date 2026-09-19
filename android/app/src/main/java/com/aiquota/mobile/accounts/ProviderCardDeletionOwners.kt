@@ -79,7 +79,12 @@ class AccountUsageCompatibilityProjectionClearer(
     private val repository: AccountUsageRepository,
     private val reconcileCardProjection: () -> Boolean = { true },
 ) : CompatibilityProjectionClearer {
-    override fun clear(accountId: ProviderAccountId): Boolean =
-        repository.reconcileLegacyProjection() !is AccountUsageProjectionResult.Failed &&
-            reconcileCardProjection()
+    override fun clear(accountId: ProviderAccountId): Boolean {
+        val projection = repository.reconcileLegacyProjection()
+        // A malformed legacy aggregate predates this card and no retry can parse it;
+        // transient projection failures still fail so the journal retries them.
+        val legacySettled = projection !is AccountUsageProjectionResult.Failed ||
+            projection.reason == AccountUsageProjectionFailure.MALFORMED_LEGACY_DATA
+        return legacySettled && reconcileCardProjection()
+    }
 }

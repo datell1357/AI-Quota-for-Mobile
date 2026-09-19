@@ -114,7 +114,7 @@
     <string name="provider_removal_result_item">%1$s (%2$s): %3$s</string>
     <string name="provider_removal_status_completed">Removed</string>
     <string name="provider_removal_status_pending">Cleanup pending</string>
-    <string name="provider_removal_status_failed">Failed; card retained</string>
+    <string name="provider_removal_status_failed">Removed; cleanup will retry</string>
     <string name="provider_removal_status_rejected">Not removed; request rejected</string>
     <string name="provider_removal_error_stale">This card changed. Close and reopen the dialog before trying again.</string>
     <string name="provider_removal_error_missing">This card is no longer available.</string>

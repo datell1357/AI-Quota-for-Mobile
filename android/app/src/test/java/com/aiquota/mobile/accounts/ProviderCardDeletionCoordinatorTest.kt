@@ -420,6 +420,34 @@ class ProviderCardDeletionCoordinatorTest {
     }
 
     @Test
+    fun malformedLegacyAggregateFromARemovedProviderDoesNotFailDeletion() {
+        // Production regression: a migrated device whose legacy provider_snapshots blob
+        // still carries a provider id the enum no longer has (e.g. deepseek) failed every
+        // card deletion with COMPATIBILITY_CLEAR_FAILED even though the card was gone.
+        val fixture = fixture("malformed-legacy")
+        val sibling = id(ProviderId.CODEX, 600)
+        val selected = id(ProviderId.CODEX, 601)
+        fixture.authority.register(seed(sibling, 70))
+        fixture.authority.register(seed(selected, 30))
+        val siblingBefore = accountHash(fixture.authority, sibling)
+        val usageAuthority = MainProcessAccountAuthority.open(context, fixture.name).also(opened::add)
+        val repository = AccountUsageRepository.openForTest(
+            usageAuthority,
+            MalformedLegacyProjectionStore,
+        )
+
+        val result = coordinator(
+            fixture.authority,
+            compatibility = AccountUsageCompatibilityProjectionClearer(repository),
+        ).delete(selected)
+
+        assertTrue(result is ProviderCardDeletionResult.Completed)
+        assertEquals(AccountDeletionState.ERASED, account(fixture.authority, selected).deletionState)
+        assertEquals(siblingBefore, accountHash(fixture.authority, sibling))
+        runCatching { repository.close() }
+    }
+
+    @Test
     fun zeroOneAndThousandArtifactsAndCardsDeleteInBoundedExactKeyOperations() {
         listOf(0, 1, 1_000).forEach { artifactCount ->
             val fixture = fixture("scale-$artifactCount")
@@ -737,6 +765,28 @@ class ProviderCardDeletionCoordinatorTest {
         val calls = mutableListOf<ProviderAccountId>()
         override fun supports(providerId: ProviderId) = providerId in supported
         override fun erase(accountId: ProviderAccountId): Boolean = true.also { calls += accountId }
+    }
+
+    private object MalformedLegacyProjectionStore : LegacyProjectionStore {
+        private const val RAW = "{\"providers\":[{\"providerId\":\"deepseek\"}]}"
+
+        override fun captureAggregate() = LegacySourceCapture(
+            LegacySourceReceipt(
+                aggregatePresent = true,
+                aggregate = LegacyBlobReceipt(
+                    formatVersion = 1,
+                    byteLength = RAW.toByteArray(Charsets.UTF_8).size,
+                    sha256 = LegacyMigrationCodec.sha256(RAW),
+                ),
+                contexts = emptyList(),
+            ),
+            RAW,
+        )
+
+        override fun writeAggregate(raw: String) = true
+        override fun writeMirror(providerId: ProviderId, snapshot: ProviderUsageSnapshot?) = true
+        override fun writeCompatibilityCache(snapshots: List<ProviderUsageSnapshot>) = true
+        override fun readProjectionReceipt(projection: LegacyProjection): LegacyProjectionReceipt? = null
     }
 
     private class InjectedDeletionCrash(step: ProviderCardDeletionStep) : RuntimeException(step.name)
